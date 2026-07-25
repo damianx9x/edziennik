@@ -7,8 +7,9 @@ Komunikuj się po polsku i prostymi zdaniami. Najpierw podaj wynik oraz sposób
 sprawdzenia. Jeśli potrzebna jest czynność poza repozytorium, podaj jedną
 kompletną listę kroków zamiast serii pytań.
 
-Budujemy mobilny eDziennik małej szkoły językowej. Największy problem biznesowy
-to grafik oparty na trzech zasobach: sala, wykładowca i grupa. Role: dyrektor,
+Budujemy mobilny eDziennik prywatnej szkoły wyłącznie języka angielskiego.
+Największy problem biznesowy to grafik oparty na trzech zasobach: sala,
+wykładowca i grupa. Role: dyrektor,
 wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
 `PLAN_2026.md`, nie cała wizja produktu.
 
@@ -19,7 +20,9 @@ wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
 3. `PLAN_2026.md`.
 4. `ARCHITEKTURA.md`.
 5. `BEZPIECZENSTWO_I_RODO.md`.
-6. `DECYZJE.md`.
+6. `BRAND_I_UI.md`.
+7. `OBSERVABILITY_I_ZGLOSZENIA.md`.
+8. `DECYZJE.md`.
 
 Pierwotny RTF był materiałem wejściowym. Nie kopiuj z niego bezkrytycznie cen,
 uproszczeń prawnych ani decyzji technicznych.
@@ -76,6 +79,8 @@ migrację danych.
 - Zmiany bazy są migracjami. Preferuj wdrożenia rozszerzające, kompatybilne
   wstecz; usuwanie dopiero w późniejszym wydaniu.
 - Wrażliwe operacje zapisuj w audycie bez tokenów, haseł i nadmiarowych danych.
+- Diagnostyka i zgłoszenia zachowują kontrakt prywatności z
+  `OBSERVABILITY_I_ZGLOSZENIA.md`.
 
 ## UI dla osób nietechnicznych
 
@@ -108,6 +113,7 @@ migrację danych.
   token, IP oraz treść wiadomości.
 - Dyrektor ma 2FA przed prawdziwymi danymi.
 - Backup szyfrowany, poza repozytorium i regularnie odtwarzany testowo.
+- Nigdy nie rób zrzutu ekranu bez świadomego działania użytkownika i podglądu.
 
 ## Testy obowiązkowe
 

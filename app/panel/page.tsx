@@ -9,25 +9,27 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Brand } from "../components/brand";
+
 export const metadata: Metadata = { title: "Wybierz panel" };
 
 const portals = [
   {
     slug: "uczen",
     title: "Uczeń",
-    text: "Plan zajęć, materiały i prace domowe w prostym widoku na telefon.",
+    text: "Najbliższe zajęcia, materiały i zadania — bez przeklikiwania się przez szkolne menu.",
     icon: GraduationCap,
   },
   {
     slug: "rodzic",
     title: "Rodzic",
-    text: "Najważniejsze informacje o dziecku bez szukania w wiadomościach.",
+    text: "Plan i najważniejsze informacje o dziecku zawsze pod ręką.",
     icon: HeartHandshake,
   },
   {
     slug: "szkola",
     title: "Szkoła",
-    text: "Logowanie dyrektora i wykładowcy do grafiku oraz dziennika.",
+    text: "Grafik i dziennik dla dyrektora oraz wykładowców KLA.",
     icon: Building2,
   },
 ] as const;
@@ -38,11 +40,11 @@ export default function PanelPage() {
       <PanelTopbar />
       <section className="panel-content">
         <div className="panel-heading">
-          <span className="section-kicker">Witaj w eDzienniku</span>
+          <span className="section-kicker">eDziennik King’s</span>
           <h1>Jak chcesz wejść?</h1>
           <p>
-            Wybierz swój panel. Na następnym ekranie zobaczysz tylko informacje
-            potrzebne w Twojej roli.
+            Wybierz swój panel. Każdy widok jest krótki, czytelny i dopasowany
+            do tego, co robisz w KLA.
           </p>
         </div>
         <div className="portal-grid">
@@ -78,15 +80,7 @@ export default function PanelPage() {
 export function PanelTopbar() {
   return (
     <div className="panel-topbar">
-      <Link className="brand" href="/">
-        <span className="brand-mark" aria-hidden="true">
-          K
-        </span>
-        <span>
-          <strong>KLA</strong>
-          <small>eDziennik</small>
-        </span>
-      </Link>
+      <Brand compact />
       <Link className="back-link" href="/">
         <ArrowLeft size={18} aria-hidden="true" /> Strona szkoły
       </Link>

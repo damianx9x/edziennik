@@ -6,6 +6,9 @@ i osobnego backendu.
 ```text
 app/                         trasy i kompozycja
 modules/access-control/      centralne uprawnienia
+modules/brand/               treści i kontakt marki
+modules/demo-data/           wyłącznie dane syntetyczne
+modules/observability/       redakcja i diagnostyka
 modules/identity/            konta i role
 modules/people/              uczniowie, rodzice, wykładowcy
 modules/groups/              grupy i zapisy
@@ -50,6 +53,16 @@ równoważną blokadę współbieżności.
 
 E-mail, SMS i pliki mają interfejsy dostawców. Masowa wysyłka zawsze tworzy
 zadania kolejki z tempem, ponowieniami i limitem kosztu.
+
+## Obserwowalność
+
+Każde żądanie serwera docelowo dostaje `requestId`, który łączy log techniczny,
+zdarzenie Sentry i `FeedbackReport`. Logi są strukturalnymi rekordami JSON.
+Warstwa redakcji działa przed transportem do zewnętrznego dostawcy.
+
+Klient przechowuje w pamięci krótki bufor zdarzeń. Eksport wymaga działania
+użytkownika i nie odczytuje localStorage, cookie ani zawartości formularzy.
+Pełny projekt opisuje `OBSERVABILITY_I_ZGLOSZENIA.md`.
 
 ## Środowiska
 

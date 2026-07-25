@@ -46,20 +46,46 @@ enum ScheduleStatus {
   SUBSTITUTE
 }
 
-model School {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  slug        String   @unique
-  timeZone    String   @default("Europe/Warsaw")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum FeedbackStatus {
+  NEW
+  TRIAGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
 
-  users         User[]
-  rooms         Room[]
-  courseGroups  CourseGroup[]
-  parentLinks   ParentChild[]
-  scheduleSlots ScheduleSlot[]
-  auditLogs     AuditLog[]
+enum FeedbackCategory {
+  BUG
+  ACCESSIBILITY
+  DATA_PROBLEM
+  IDEA
+  OTHER
+}
+
+enum FeedbackPlatform {
+  IOS
+  ANDROID
+  MACOS
+  WINDOWS
+  LINUX
+  OTHER
+}
+
+model School {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  timeZone  String   @default("Europe/Warsaw")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  rooms           Room[]
+  courseGroups    CourseGroup[]
+  parentLinks     ParentChild[]
+  scheduleSlots   ScheduleSlot[]
+  auditLogs       AuditLog[]
+  feedbackReports FeedbackReport[]
 }
 
 model User {
@@ -75,7 +101,7 @@ model User {
   updatedAt     DateTime   @updatedAt
   archivedAt    DateTime?
 
-  school          School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  school          School           @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   teacherProfile  TeacherProfile?
   studentProfile  StudentProfile?
   parentLinks     ParentChild[]    @relation("ParentLinks")
@@ -85,6 +111,7 @@ model User {
   teachingSlots   ScheduleSlot[]   @relation("ScheduleTeacher")
   createdSlots    ScheduleSlot[]   @relation("ScheduleCreator")
   auditEvents     AuditLog[]       @relation("AuditActor")
+  feedbackReports FeedbackReport[] @relation("FeedbackReporter")
 
   @@unique([schoolId, email])
   @@index([schoolId, role, status])
@@ -107,9 +134,9 @@ model StudentProfile {
 }
 
 model ParentChild {
-  schoolId String   @db.Uuid
-  parentId String   @db.Uuid
-  childId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  parentId  String   @db.Uuid
+  childId   String   @db.Uuid
   createdAt DateTime @default(now())
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
@@ -121,13 +148,13 @@ model ParentChild {
 }
 
 model Room {
-  id         String   @id @default(uuid()) @db.Uuid
-  schoolId   String   @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  schoolId   String    @db.Uuid
   name       String
   capacity   Int?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
   school        School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
@@ -157,9 +184,9 @@ model CourseGroup {
 }
 
 model GroupTeacher {
-  groupId   String   @db.Uuid
-  teacherId String   @db.Uuid
-  isPrimary Boolean  @default(false)
+  groupId    String   @db.Uuid
+  teacherId  String   @db.Uuid
+  isPrimary  Boolean  @default(false)
   assignedAt DateTime @default(now())
 
   group   CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
@@ -201,11 +228,11 @@ model ScheduleSlot {
   updatedAt      DateTime       @updatedAt
   archivedAt     DateTime?
 
-  school   School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  group    CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  room     Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  teacher  User        @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
-  createdBy User       @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  school    School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group     CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  room      Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  teacher   User        @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  createdBy User        @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([schoolId, startAt, endAt])
   @@index([roomId, startAt, endAt])
@@ -231,4 +258,32 @@ model AuditLog {
   @@index([schoolId, createdAt])
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
+}
+
+model FeedbackReport {
+  id                   String           @id @default(uuid()) @db.Uuid
+  schoolId             String           @db.Uuid
+  reporterId           String?          @db.Uuid
+  referenceCode        String           @unique
+  reporterRole         UserRole
+  status               FeedbackStatus   @default(NEW)
+  category             FeedbackCategory @default(BUG)
+  description          String
+  route                String
+  platform             FeedbackPlatform
+  browser              String?
+  appRelease           String
+  diagnosticMetadata   Json?
+  screenshotStorageKey String?
+  screenshotConsentAt  DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  resolvedAt           DateTime?
+
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  reporter User?  @relation("FeedbackReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, status, createdAt])
+  @@index([reporterId, createdAt])
+  @@index([appRelease, createdAt])
 }

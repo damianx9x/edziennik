@@ -14,6 +14,12 @@ Otwórz `http://localhost:3000`. Zatrzymanie: `Control + C`.
 Instalator sprawdza Node.js, instaluje wersje z lockfile, tworzy `.env` tylko
 gdy go nie ma, generuje klienta Prisma i nigdy nie nadpisuje istniejących haseł.
 
+Panel demonstracyjny szkoły:
+`eDziennik → Szkoła → Zobacz panel demonstracyjny`.
+
+Przycisk z czerwoną ikoną błędu jest zawsze dostępny. Pozwala pobrać bezpieczny
+plik diagnostyczny, który można dołączyć do kolejnego zadania Codex.
+
 ## Codzienna praca
 
 1. Opisz jeden etap albo jeden błąd.
@@ -48,6 +54,15 @@ createdb edziennik_kla
 
 Potem uzupełnij `DATABASE_URL` w `.env`. Migracji produkcji nie uruchamiaj bez
 kopii i planu wycofania.
+
+Wyłącznie dla lokalnego środowiska testowego:
+
+```bash
+npm run db:migrate:dev
+npm run db:seed:demo
+```
+
+Tworzy 8 grup KLA i 35 syntetycznych uczniów z domeną `invalid.example`.
 
 ## Pokaz klientce
 

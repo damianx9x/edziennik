@@ -1,7 +1,8 @@
 # eDziennik KLA
 
-Mobilny eDziennik małej szkoły językowej. Etap 0: fundament, strona startowa,
-brama Uczeń/Rodzic/Szkoła, model PostgreSQL i centralne uprawnienia.
+Mobilny eDziennik King’s Language Academy. Etap 0.5: spersonalizowana strona,
+brama Uczeń/Rodzic/Szkoła, panel demo, diagnostyka, model PostgreSQL i centralne
+uprawnienia.
 
 ## Start
 
@@ -18,6 +19,8 @@ Otwórz `http://localhost:3000`.
 npm run check
 npm run build
 npm run package:release
+npm run db:migrate:dev
+npm run db:seed:demo
 ```
 
 ## Dokumenty
@@ -27,6 +30,8 @@ npm run package:release
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,
 - `ARCHITEKTURA.md` — moduły i dane,
 - `BEZPIECZENSTWO_I_RODO.md` — bramka przed prawdziwymi danymi,
+- `BRAND_I_UI.md` — marka, treści i kontrolowany system UI,
+- `OBSERVABILITY_I_ZGLOSZENIA.md` — logi, zrzuty i zgłoszenia,
 - `AGENTS.md` — zasady kolejnych sesji,
 - `DECYZJE.md` — historia decyzji.
 

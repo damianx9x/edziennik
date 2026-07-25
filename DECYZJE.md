@@ -38,3 +38,34 @@ administrować Linuksem.
 **Data:** 2026-07-25
 **Decyzja:** dostęp dyrektora nie jest ukrytym DW; jest opisany i audytowany.
 **Dlaczego:** przejrzystość oraz proporcjonalność ograniczają ryzyko prywatności.
+
+## ADR-007 — marka KLA bez zdjęć dzieci na stagingu
+
+**Data:** 2026-07-25
+**Decyzja:** używamy prawdziwego logo i zweryfikowanych informacji biznesowych,
+ale nie kopiujemy zdjęć ani nazw dzieci do repozytorium lub stagingu.
+**Dlaczego:** minimalizacja danych, trwały wygląd i prostsza procedura zgód.
+
+## ADR-008 — zgłoszenie lokalne przed wysyłką serwerową
+
+**Data:** 2026-07-25
+**Decyzja:** Etap 0.5 przygotowuje lokalną paczkę diagnostyczną i korzysta z
+systemowego udostępniania. Chroniony zapis i automatyczny e-mail włączymy po
+uwierzytelnianiu w Etapie 1.
+**Dlaczego:** publiczny endpoint z plikami przed logowaniem byłby źródłem spamu
+i ryzyka ujawnienia danych.
+
+## ADR-009 — kontrolowany system UI
+
+**Data:** 2026-07-25
+**Decyzja:** tokeny marki, semantyczny HTML, Nunito Sans, Lucide i oficjalne
+komponenty; ImageGen tylko dla osobnych materiałów marketingowych.
+**Dlaczego:** spójność, dostępność i mniejszy „generatywny” wygląd.
+
+## ADR-010 — wyłącznie język angielski
+
+**Data:** 2026-07-25
+**Decyzja:** KLA opisujemy jako prywatną szkołę wyłącznie języka angielskiego.
+Nie promujemy innych języków, matematyki, robotyki ani zajęć artystycznych.
+**Dlaczego:** bezpośrednia informacja właściciela projektu jest aktualnym
+źródłem prawdy i ma pierwszeństwo przed starszym opisem profilu społecznościowego.
