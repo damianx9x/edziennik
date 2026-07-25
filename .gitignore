@@ -6,6 +6,7 @@
 /outputs
 /out
 /work
+/.data
 .DS_Store
 *.log
 *.pem

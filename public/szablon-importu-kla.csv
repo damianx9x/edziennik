@@ -1,0 +1,7 @@
+typ;identyfikator;imie;nazwisko;email;telefon;nazwa;pojemnosc;poziom;grupa;rodzic_email;dziecko_id
+sala;;;;;;Cambridge;8;;;;
+grupa;;;;;;MONACO;;A2;;;
+wykladowca;;Lektor;Demo;wykladowca.demo@invalid.example;;;;;;;;;
+uczen;STU-DEMO-001;Uczen;Demo;;;;;;MONACO;;
+rodzic;;Rodzic;Demo;rodzic.demo@invalid.example;;;;;;;;;
+relacja;;;;;;;;;;rodzic.demo@invalid.example;STU-DEMO-001

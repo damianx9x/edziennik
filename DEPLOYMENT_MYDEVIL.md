@@ -27,7 +27,7 @@ Na Macu uruchom:
 npm run package:release
 ```
 
-Powstanie `outputs/edziennik-kla-stage-1.zip`. Paczka zawiera samodzielny
+Powstanie `outputs/edziennik-kla-stage-2.zip`. Paczka zawiera samodzielny
 serwer Next.js, migracje, zasoby statyczne, `migrate.sh`, `start.sh` i
 przykładowe nazwy zmiennych. Nie zawiera `.env`, haseł, bazy ani danych
 użytkowników.

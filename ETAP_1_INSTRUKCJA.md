@@ -64,7 +64,7 @@ Reset bazy testowej usuwa tę konfigurację i tworzy czyste konto demo.
 
 - `outputs/kla-szkielet-etap-0-5-home-pl.zip` — statyczny pokaz do
   `/kla-preview` przez FTP; nie ma działającego logowania,
-- `outputs/edziennik-kla-stage-1.zip` — pełna aplikacja z logowaniem; wymaga
+- `outputs/edziennik-kla-stage-2.zip` — bieżąca pełna aplikacja; wymaga
   hostingu Node.js i PostgreSQL.
 
 Nie wgrywaj paczki Node.js do zwykłego WebFTP home.pl. Po lokalnej akceptacji

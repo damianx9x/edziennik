@@ -12,7 +12,7 @@ npm run build
 release_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/edziennik-kla-release.XXXXXX")"
 release_root="$release_tmp_dir/edziennik-kla"
 release_output_dir="$project_dir/outputs"
-release_zip="$release_output_dir/edziennik-kla-stage-1.zip"
+release_zip="$release_output_dir/edziennik-kla-stage-2.zip"
 
 if [[ -z "$release_tmp_dir" || ! -d "$release_tmp_dir" ]]; then
   echo "Nie udało się utworzyć bezpiecznego katalogu tymczasowego."
@@ -33,9 +33,11 @@ rm -f -- \
   "$release_root/.env.production.local" \
   "$release_root/.env.test" \
   "$release_root/.env.test.local"
+rm -rf -- "$release_root/.data"
 
 cp -R .next/static "$release_root/.next/static"
-cp -R public "$release_root/public"
+mkdir -p "$release_root/public"
+cp -R public/. "$release_root/public/"
 cp -R prisma "$release_root/prisma"
 cp prisma.config.ts "$release_root/prisma.config.ts"
 mkdir -p "$release_root/migration-tools"
@@ -52,6 +54,7 @@ cp scripts/release-start.sh "$release_root/start.sh"
 cp scripts/release-migrate.sh "$release_root/migrate.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
+cp ETAP_2_INSTRUKCJA.md "$release_root/ETAP_2_INSTRUKCJA.md"
 cp BEZPIECZENSTWO_I_RODO.md "$release_root/BEZPIECZENSTWO_I_RODO.md"
 cp BRAND_I_UI.md "$release_root/BRAND_I_UI.md"
 cp ZAKRES_STARTOWY.md "$release_root/ZAKRES_STARTOWY.md"

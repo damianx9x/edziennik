@@ -13,6 +13,7 @@ modules/observability/       redakcja i diagnostyka
 modules/identity/            konta i role
 modules/people/              uczniowie, rodzice, wykładowcy
 modules/groups/              grupy i zapisy
+modules/imports/             podgląd i transakcyjny zapis CSV/XLSX
 modules/schedule/            grafik i kolizje
 modules/attendance/          lekcje i obecności
 modules/notifications/       in-app, e-mail, SMS
@@ -42,6 +43,19 @@ zaproszenia tworzy `AuditLog` bez adresu e-mail i tokenu.
 Każda chroniona strona pobiera sesję na serwerze, sprawdza `schoolId`, status
 konta, rolę oraz centralne `can(...)`. Dyrektor bez aktywnego TOTP jest
 przekierowany do konfiguracji, zanim zobaczy swój panel.
+
+## Kartoteki i import — Etap 2
+
+Sale, grupy, wykładowcy, rodzice i uczniowie należą do jednej szkoły przez
+`schoolId`. Uczeń może istnieć bez konta logowania i ma szkolny identyfikator
+zewnętrzny. Relacje rodzic–dziecko, zapisy do grup i przydziały wykładowców są
+osobnymi rekordami, które można archiwizować bez niszczenia historii.
+
+Import CSV/XLSX ma dwie jawne fazy. Podgląd waliduje nagłówki, limity,
+powiązania i duplikaty, a oryginalny plik zapisuje poza `public/`. Zatwierdzenie
+ponownie odczytuje plik, sprawdza jego SHA-256 i wykonuje cały zapis w jednej
+transakcji. Log audytowy przechowuje wyłącznie liczby i identyfikatory
+techniczne, bez treści arkusza.
 
 ## Edytowalna strona publiczna
 
@@ -94,7 +108,7 @@ zadania kolejki z tempem, ponowieniami i limitem kosztu.
 ### Pliki
 
 `FileStorage` oddziela metadane biznesowe od magazynu binarnego. Lokalnie zapis
-może działać na dysku poza `public/`; staging i produkcja używają prywatnego
+działa w `.data/private-files` poza `public/`; staging i produkcja używają prywatnego
 magazynu S3-compatible. Aplikacja wydaje krótkotrwały adres podpisany dopiero po
 sprawdzeniu `can(...)`. Umowa, materiał i oddane zadanie wskazują rekord pliku,
 nie publiczny URL.

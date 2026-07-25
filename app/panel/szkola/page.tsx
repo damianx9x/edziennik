@@ -3,7 +3,7 @@ import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
-  Clock3,
+  Database,
   FileSignature,
   MailPlus,
   MapPin,
@@ -68,12 +68,12 @@ function DirectorDashboard({ name }: { name: string }) {
         </Link>
       </header>
 
-      <section className="stage-one-banner" aria-label="Status Etapu 1">
+      <section className="stage-one-banner" aria-label="Status Etapu 2">
         <div>
           <CheckCircle2 aria-hidden="true" />
           <span>
-            <strong>Etap 1 działa</strong>
-            <small>Logowanie, role, zaproszenia i 2FA dyrektora</small>
+            <strong>Etap 2 działa</strong>
+            <small>Kartoteki, bezpieczny import i prywatne pliki</small>
           </span>
         </div>
         <span className="stage-one-badge">Bezpieczny dostęp</span>
@@ -96,13 +96,13 @@ function DirectorDashboard({ name }: { name: string }) {
             <ShieldCheck aria-hidden="true" /> Konto chronione
           </div>
         </article>
-        <article className="panel-metric panel-metric-muted">
-          <span>Do Etapu 2</span>
+        <article className="panel-metric">
+          <span>Dane szkoły</span>
           <strong>Kartoteki</strong>
-          <p>Import uczniów i przypisanie rodziców pojawią się w kolejnym etapie.</p>
-          <div className="metric-waiting">
-            <Clock3 aria-hidden="true" /> Przygotowane w architekturze
-          </div>
+          <p>Dodawaj sale, grupy i osoby pojedynczo lub z arkusza CSV/XLSX.</p>
+          <Link href="/panel/szkola/kartoteki">
+            Otwórz kartoteki <Database aria-hidden="true" />
+          </Link>
         </article>
       </div>
 

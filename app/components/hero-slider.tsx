@@ -109,7 +109,7 @@ export function HeroSlider({
                 src={slide.src}
                 alt={slide.alt}
                 fill
-                priority={index === 0}
+                loading={index === 0 ? "eager" : "lazy"}
                 unoptimized={slide.src.startsWith("data:")}
                 sizes="(max-width: 760px) 100vw, 55vw"
                 style={{ objectPosition: slide.position }}

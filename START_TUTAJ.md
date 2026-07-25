@@ -17,9 +17,14 @@ gdy go nie ma, generuje klienta Prisma i nigdy nie nadpisuje istniejących hase�
 Panel demonstracyjny szkoły:
 `eDziennik → Szkoła → Zobacz panel demonstracyjny`.
 
-Działający Etap 1:
+Logowanie z Etapu 1:
 `eDziennik → wybór roli → Zaloguj się`. Konta testowe i bezpieczna procedura
 są opisane w `ETAP_1_INSTRUKCJA.md`.
+
+Kartoteki z Etapu 2:
+`eDziennik → Szkoła → Zaloguj się → Kartoteki`. Dyrektor może dodać pojedynczą
+salę, grupę lub osobę albo najpierw sprawdzić import CSV/XLSX. Procedura i
+szablon są opisane w `ETAP_2_INSTRUKCJA.md`.
 
 Edycja strony bez kodowania:
 `panel demonstracyjny → Treść strony`. W tej wersji zmiany zapisują się tylko
@@ -38,7 +43,7 @@ plik diagnostyczny, który można dołączyć do kolejnego zadania Codex.
 
 Przykład:
 
-> Przeczytaj AGENTS.md i PLAN_2026.md. Zrealizuj Etap 1 do końca, z testami
+> Przeczytaj AGENTS.md i PLAN_2026.md. Zrealizuj bieżący etap do końca, z testami
 > klikania 375×812 i 1440×900, zrzutami i aktualnym pakietem.
 
 Błąd opisz jednym zdaniem:
@@ -93,5 +98,5 @@ Późniejsze środowiska aplikacji:
 - `panel.kingslanguageacademy.pl` — produkcja po odbiorze.
 
 Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
-`edziennik-kla-stage-1.zip` wymaga hostingu Node.js i procedury z
+`edziennik-kla-stage-2.zip` wymaga hostingu Node.js i procedury z
 `DEPLOYMENT_MYDEVIL.md`.

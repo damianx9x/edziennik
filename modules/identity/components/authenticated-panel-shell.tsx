@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarDays,
+  ContactRound,
   GraduationCap,
   Home,
   MailPlus,
@@ -16,7 +17,7 @@ import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 
 import { SignOutButton } from "./sign-out-button";
 
-type PanelSection = "home" | "invitations";
+type PanelSection = "home" | "invitations" | "records";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "DIRECTOR") {
@@ -27,6 +28,12 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         label: "Zaproszenia",
         icon: MailPlus,
         key: "invitations",
+      },
+      {
+        href: "/panel/szkola/kartoteki",
+        label: "Kartoteki",
+        icon: ContactRound,
+        key: "records",
       },
       {
         href: "/panel/szkola#grafik",
@@ -147,7 +154,7 @@ export function AuthenticatedPanelShell({
             <span className="status-dot" />
             <div>
               <strong>Bezpieczna sesja</strong>
-              <small>Etap 1 · dostęp wg roli</small>
+              <small>Etap 2 · dostęp wg roli</small>
             </div>
           </div>
         </aside>

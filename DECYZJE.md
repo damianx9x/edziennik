@@ -178,6 +178,31 @@ są pokazywane raz i wymagają świadomego potwierdzenia zapisania.
 
 **Data:** 2026-07-25
 **Decyzja:** `package:preview` buduje z izolowanej kopii tylko publiczne trasy
-statyczne, a `package:release` zawiera pełny serwer Etapu 1 i migracje.
+statyczne, a `package:release` zawiera pełny serwer bieżącego etapu i migracje.
 **Dlaczego:** home.pl FTP nie uruchomi bezpiecznych sesji ani PostgreSQL, ale
 nadal może służyć do pokazu strony bez udawania pełnej aplikacji.
+
+## ADR-024 — dwuetapowy, transakcyjny import
+
+**Data:** 2026-07-25
+**Decyzja:** podgląd importu zapisuje prywatny plik i raport walidacji, a
+zatwierdzenie ponownie sprawdza SHA-256, ponownie parsuje plik i zapisuje dane
+w jednej transakcji.
+**Dlaczego:** użytkownik widzi błędy przed zmianą bazy, a podmiana pliku lub
+częściowy zapis nie pozostawiają niespójnych kartotek.
+
+## ADR-025 — rekord ucznia bez konta logowania
+
+**Data:** 2026-07-25
+**Decyzja:** uczeń może mieć kartotekę i szkolny `externalId` bez adresu e-mail
+i konta. Konto logowania pozostaje osobnym, późniejszym krokiem.
+**Dlaczego:** szkoła musi prowadzić grupy również dla dzieci, które nie
+korzystają samodzielnie z panelu, bez tworzenia sztucznych adresów kontaktowych.
+
+## ADR-026 — archiwizacja danych podstawowych
+
+**Data:** 2026-07-25
+**Decyzja:** sale, grupy, osoby i ich powiązania są archiwizowane, a nie
+fizycznie kasowane w codziennym interfejsie.
+**Dlaczego:** przyszły grafik, umowy, płatności i dziennik wymagają ciągłości
+historii; usuwanie odbywa się osobną procedurą retencji.

@@ -51,6 +51,8 @@ musi zatwierdzić prawnik lub IOD klientki.
 - [ ] Walidacja na serwerze.
 - [ ] Logi bez haseł, tokenów, treści, pełnego IP i zbędnych danych.
 - [ ] Załączniki: rozmiar, typ, kontrola dostępu i skanowanie.
+- [ ] Pliki importu są prywatne, mają ustaloną retencję i są usuwane zgodnie
+      z harmonogramem po zakończeniu importu.
 - [ ] Eksporty krótkotrwałe i audytowane.
 - [ ] ContractAcceptance niezmienne.
 - [ ] Odczyt rozmowy przez dyrektora audytowany.
@@ -72,3 +74,8 @@ musi zatwierdzić prawnik lub IOD klientki.
 Nie zbieramy PESEL, zdrowia, pełnego adresu, zdjęcia ani daty urodzenia „na
 przyszłość”. Nowe pole wymaga celu, podstawy, odbiorców, retencji i odpowiedzi,
 czy usługa może działać bez niego.
+
+Import próbny zawsze korzysta z danych syntetycznych i domeny
+`invalid.example`. Przed pierwszym importem prawdziwych danych trzeba zamknąć
+bramkę produkcji, ustalić retencję pliku źródłowego i wykonać zaszyfrowaną
+kopię bazy.

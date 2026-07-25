@@ -1,9 +1,10 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etap 1 dodaje działające konta
-wyłącznie przez zaproszenie, cztery role, bezpieczne sesje, odzyskiwanie hasła
-i obowiązkowe TOTP 2FA dyrektora. Strona, slider, statyczny pokaz home.pl,
-edytor demonstracyjny i diagnostyka z Etapu 0.7 pozostają dostępne.
+Mobilny eDziennik King’s Language Academy. Etap 2 dodaje kartoteki sal, grup
+i osób, relacje rodzic–dziecko, import CSV/XLSX z podglądem, archiwizację oraz
+prywatny magazyn plików. Konta przez zaproszenie, cztery role, bezpieczne sesje,
+odzyskiwanie hasła i obowiązkowe TOTP 2FA dyrektora z Etapu 1 pozostają
+podstawą dostępu.
 
 ## Start
 
@@ -30,13 +31,14 @@ npm run db:seed:demo
 `INSTRUKCJA_HOME_PL.md`.
 
 `package:release` tworzy aplikację Node.js
-`outputs/edziennik-kla-stage-1.zip`. Ta paczka wymaga PostgreSQL i hostingu
+`outputs/edziennik-kla-stage-2.zip`. Ta paczka wymaga PostgreSQL i hostingu
 Node.js; zwykłe FTP jej nie uruchomi.
 
 ## Dokumenty
 
 - `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
 - `ETAP_1_INSTRUKCJA.md` — uruchomienie i odbiór logowania oraz ról,
+- `ETAP_2_INSTRUKCJA.md` — kartoteki, szablon importu i odbiór Etapu 2,
 - `PLAN_2026.md` — zakres i harmonogram,
 - `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,

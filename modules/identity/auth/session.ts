@@ -83,9 +83,11 @@ export async function requirePanelAccess(
   return session;
 }
 
-export async function requireDirector(): Promise<ActiveSession> {
+export async function requireDirector(
+  returnPath = "/panel/szkola/zaproszenia",
+): Promise<ActiveSession> {
   return requirePanelAccess(
     "view:director-dashboard",
-    "/panel/szkola/zaproszenia",
+    returnPath,
   );
 }

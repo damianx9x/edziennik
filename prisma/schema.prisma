@@ -71,6 +71,23 @@ enum FeedbackPlatform {
   OTHER
 }
 
+enum StoredFilePurpose {
+  IMPORT_SOURCE
+  PROFILE_ATTACHMENT
+  SITE_IMAGE
+  CONTRACT
+  LEARNING_MATERIAL
+  HOMEWORK_SUBMISSION
+  FEEDBACK_SCREENSHOT
+}
+
+enum ImportStatus {
+  PREVIEW_READY
+  COMMITTED
+  FAILED
+  ARCHIVED
+}
+
 model School {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -87,6 +104,8 @@ model School {
   auditLogs       AuditLog[]
   feedbackReports FeedbackReport[]
   invitations     Invitation[]
+  storedFiles     StoredFile[]
+  importBatches   ImportBatch[]
 }
 
 model User {
@@ -99,6 +118,7 @@ model User {
   emailVerified    Boolean    @default(false)
   image            String?
   phone            String?
+  externalId       String?
   banned           Boolean?   @default(false)
   banReason        String?
   banExpires       DateTime?
@@ -123,7 +143,10 @@ model User {
   feedbackReports FeedbackReport[] @relation("FeedbackReporter")
   sentInvitations Invitation[]     @relation("InvitationSender")
   usedInvitations Invitation[]     @relation("InvitationRecipient")
+  uploadedFiles   StoredFile[]     @relation("FileUploader")
+  importBatches   ImportBatch[]    @relation("ImportCreator")
 
+  @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
   @@index([archivedAt])
 }
@@ -238,10 +261,11 @@ model StudentProfile {
 }
 
 model ParentChild {
-  schoolId  String   @db.Uuid
-  parentId  String   @db.Uuid
-  childId   String   @db.Uuid
-  createdAt DateTime @default(now())
+  schoolId   String    @db.Uuid
+  parentId   String    @db.Uuid
+  childId    String    @db.Uuid
+  createdAt  DateTime  @default(now())
+  archivedAt DateTime?
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   parent User   @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Restrict)
@@ -249,6 +273,7 @@ model ParentChild {
 
   @@id([parentId, childId])
   @@index([schoolId, childId])
+  @@index([schoolId, archivedAt])
 }
 
 model Room {
@@ -288,16 +313,18 @@ model CourseGroup {
 }
 
 model GroupTeacher {
-  groupId    String   @db.Uuid
-  teacherId  String   @db.Uuid
-  isPrimary  Boolean  @default(false)
-  assignedAt DateTime @default(now())
+  groupId    String    @db.Uuid
+  teacherId  String    @db.Uuid
+  isPrimary  Boolean   @default(false)
+  assignedAt DateTime  @default(now())
+  archivedAt DateTime?
 
   group   CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
   teacher User        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
 
   @@id([groupId, teacherId])
   @@index([teacherId])
+  @@index([archivedAt])
 }
 
 model Enrollment {
@@ -390,4 +417,50 @@ model FeedbackReport {
   @@index([schoolId, status, createdAt])
   @@index([reporterId, createdAt])
   @@index([appRelease, createdAt])
+}
+
+model StoredFile {
+  id           String            @id @default(uuid()) @db.Uuid
+  schoolId     String            @db.Uuid
+  uploadedById String            @db.Uuid
+  storageKey   String            @unique
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String            @db.Char(64)
+  purpose      StoredFilePurpose
+  createdAt    DateTime          @default(now())
+  archivedAt   DateTime?
+
+  school        School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  uploadedBy    User          @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  importBatches ImportBatch[] @relation("ImportSource")
+
+  @@index([schoolId, purpose, createdAt])
+  @@index([uploadedById, createdAt])
+  @@index([archivedAt])
+}
+
+model ImportBatch {
+  id            String       @id @default(uuid()) @db.Uuid
+  schoolId      String       @db.Uuid
+  createdById   String       @db.Uuid
+  sourceFileId  String       @db.Uuid
+  status        ImportStatus @default(PREVIEW_READY)
+  totalRows     Int
+  validRows     Int
+  errorRows     Int
+  duplicateRows Int
+  errorSummary  Json?
+  createdAt     DateTime     @default(now())
+  committedAt   DateTime?
+  archivedAt    DateTime?
+
+  school     School     @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdBy  User       @relation("ImportCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sourceFile StoredFile @relation("ImportSource", fields: [sourceFileId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, status, createdAt])
+  @@index([createdById, createdAt])
+  @@index([sourceFileId])
 }
