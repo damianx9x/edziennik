@@ -32,6 +32,8 @@ przed publiczną publikacją.
 - Nunito Sans daje przyjazny charakter i zachowuje czytelność UI.
 - Lucide zapewnia jeden spójny zestaw ikon.
 - Karty mają czytelną hierarchię, niewiele efektów i wyraźne stany focus.
+- Animacje są krótkie i funkcjonalne: potwierdzają akcję, pokazują zmianę stanu
+  albo zachowują ciągłość między widokami.
 - Obrazy AI nie są częścią krytycznego interfejsu. Mogą powstać tylko jako
   osobne materiały marketingowe lub karta social.
 
@@ -50,10 +52,20 @@ funkcji.
 6. Test klawiatury, dotyku, kontrastu i `prefers-reduced-motion`.
 7. Klikane QA na 375×812 i 1440×900 przed każdym wydaniem.
 
+## Ruch i mikrointerakcje
+
+Projektowy skill `$design-kla-ui` jest źródłem reguł nowoczesnego UI i animacji.
+Używa wspólnych czasów oraz easingów, preferuje `transform` i `opacity`, nie
+opóźnia działania użytkownika i zawsze zapewnia spokojny wariant
+`prefers-reduced-motion`. Nie dodajemy biblioteki animacji do prostych efektów
+CSS. Drag-and-drop dostanie ruch dopiero razem z pełną obsługą klawiatury i
+czytelnym komunikatem kolizji.
+
 ## Skille Codex
 
 25 lipca zainstalowano:
 
+- `design-kla-ui` — projektowy system UI i dostępnego ruchu KLA,
 - `figma-generate-design`,
 - `figma-implement-design`,
 - `figma-create-design-system-rules`,

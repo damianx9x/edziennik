@@ -69,3 +69,13 @@ komponenty; ImageGen tylko dla osobnych materiałów marketingowych.
 Nie promujemy innych języków, matematyki, robotyki ani zajęć artystycznych.
 **Dlaczego:** bezpośrednia informacja właściciela projektu jest aktualnym
 źródłem prawdy i ma pierwszeństwo przed starszym opisem profilu społecznościowego.
+
+## ADR-011 — projektowy kontrakt ruchu
+
+**Data:** 2026-07-25
+**Decyzja:** każda praca nad interfejsem korzysta ze skilla `$design-kla-ui`.
+Animacje są krótkie, funkcjonalne, oparte głównie na `transform` i `opacity`
+oraz mają wariant `prefers-reduced-motion`. Bibliotekę ruchu dodajemy tylko dla
+uzasadnionej, złożonej interakcji.
+**Dlaczego:** jeden kontrakt zapobiega przypadkowym efektom, pogorszeniu
+dostępności i niespójnemu „generatywnemu” wyglądowi.

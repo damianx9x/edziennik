@@ -84,6 +84,7 @@ migrację danych.
 
 ## UI dla osób nietechnicznych
 
+- Przy projektowaniu lub zmianie UI używaj skilla `$design-kla-ui`.
 - Mobile-first dla 375 px, potem desktop.
 - Element interaktywny minimum 44 × 44 px.
 - Brak poziomego przewijania.
@@ -95,6 +96,9 @@ migrację danych.
 - Akcja nieodwracalna ma potwierdzenie z opisem skutku.
 - Grafik: dzień po dniu na telefonie, tydzień na desktopie.
 - Semantyczny HTML, klawiatura, focus, WCAG AA, `prefers-reduced-motion`.
+- Ruch wyjaśnia zmianę stanu lub daje informację zwrotną; nie jest dekoracją.
+- Proste animacje realizuj CSS i wspólnymi tokenami. Nie dodawaj biblioteki
+  animacji bez konkretnej potrzeby i decyzji.
 
 ## Bezpieczeństwo
 
