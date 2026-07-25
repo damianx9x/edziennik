@@ -1,10 +1,14 @@
 import {
   ArrowLeft,
+  BookOpenCheck,
   CalendarDays,
   ChevronRight,
   Clock3,
+  FileSignature,
   MapPin,
+  MessagesSquare,
   MoreHorizontal,
+  ReceiptText,
   Search,
   Users,
 } from "lucide-react";
@@ -23,6 +27,41 @@ const todayLessons = [
   { time: "14:20", groupId: "toronto-2d", room: "Sala Cambridge" },
   { time: "15:45", groupId: "barcelona-3", room: "Sala Barcelona" },
   { time: "17:10", groupId: "monaco-8", room: "Sala Oxford" },
+] as const;
+
+const schoolModules = [
+  {
+    icon: FileSignature,
+    title: "Umowy",
+    value: "12",
+    detail: "oczekuje na akceptację",
+    action: "Sprawdź umowy",
+    tone: "red",
+  },
+  {
+    icon: MessagesSquare,
+    title: "Wiadomości",
+    value: "3",
+    detail: "nowe rozmowy",
+    action: "Otwórz skrzynkę",
+    tone: "blue",
+  },
+  {
+    icon: ReceiptText,
+    title: "Płatności",
+    value: "5",
+    detail: "statusów do sprawdzenia",
+    action: "Oznacz status",
+    tone: "gold",
+  },
+  {
+    icon: BookOpenCheck,
+    title: "Zadania",
+    value: "4",
+    detail: "aktywne w grupach",
+    action: "Zobacz monitoring",
+    tone: "green",
+  },
 ] as const;
 
 export default function DemoDashboardPage() {
@@ -50,7 +89,7 @@ export default function DemoDashboardPage() {
             <a href="#grupy">
               <Clock3 aria-hidden="true" /> Grafik
             </a>
-            <a href="#grupy">
+            <a href="#centrum">
               <MoreHorizontal aria-hidden="true" /> Więcej
             </a>
           </nav>
@@ -90,6 +129,37 @@ export default function DemoDashboardPage() {
               <small>osób w tym zestawie</small>
             </article>
           </div>
+
+          <section className="school-centre" id="centrum">
+            <div className="card-heading">
+              <div>
+                <span className="section-kicker">Centrum szkoły</span>
+                <h2>Sprawy wymagające uwagi</h2>
+              </div>
+              <span className="demo-helper">Dane demonstracyjne</span>
+            </div>
+            <div className="school-module-grid">
+              {schoolModules.map((module) => {
+                const Icon = module.icon;
+                return (
+                  <article
+                    className={`school-module school-module-${module.tone}`}
+                    key={module.title}
+                  >
+                    <div className="school-module-icon">
+                      <Icon aria-hidden="true" />
+                    </div>
+                    <span>{module.title}</span>
+                    <strong>{module.value}</strong>
+                    <small>{module.detail}</small>
+                    <button type="button">
+                      {module.action} <ChevronRight aria-hidden="true" />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
           <div className="dashboard-grid">
             <section className="today-card" id="dzisiaj">
@@ -139,7 +209,10 @@ export default function DemoDashboardPage() {
                 Sprawdź kolizje <ChevronRight aria-hidden="true" />
               </button>
               <button type="button">
-                Wyślij informację <ChevronRight aria-hidden="true" />
+                Wyślij ogłoszenie <ChevronRight aria-hidden="true" />
+              </button>
+              <button type="button">
+                Przygotuj umowę <ChevronRight aria-hidden="true" />
               </button>
             </aside>
           </div>
@@ -184,7 +257,7 @@ export default function DemoDashboardPage() {
         <a href="#grupy">
           <Users aria-hidden="true" /> Grupy
         </a>
-        <a href="#grupy">
+        <a href="#centrum">
           <MoreHorizontal aria-hidden="true" /> Więcej
         </a>
       </nav>

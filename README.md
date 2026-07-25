@@ -1,8 +1,8 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etap 0.5: spersonalizowana strona,
-brama Uczeń/Rodzic/Szkoła, panel demo, diagnostyka, model PostgreSQL i centralne
-uprawnienia.
+Mobilny eDziennik King’s Language Academy. Etap 0.6: strona z dostępnym
+sliderem zdjęć, brama Uczeń/Rodzic/Szkoła, centrum czterech modułów startowych,
+diagnostyka, model PostgreSQL i centralne uprawnienia.
 
 ## Start
 
@@ -27,6 +27,7 @@ npm run db:seed:demo
 
 - `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
 - `PLAN_2026.md` — zakres i harmonogram,
+- `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,
 - `ARCHITEKTURA.md` — moduły i dane,
 - `BEZPIECZENSTWO_I_RODO.md` — bramka przed prawdziwymi danymi,

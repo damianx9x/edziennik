@@ -29,7 +29,7 @@ import { sanitizeDiagnosticText } from "../../modules/observability/sanitize";
 const supportEmail =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "kingsjezykiobce@gmail.com";
 const appRelease =
-  process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.1.1-stage-0.5";
+  process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.2.0-stage-0.6";
 
 const roleLabels = {
   student: "Uczeń",

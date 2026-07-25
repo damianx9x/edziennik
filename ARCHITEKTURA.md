@@ -17,6 +17,10 @@ modules/attendance/          lekcje i obecności
 modules/notifications/       in-app, e-mail, SMS
 modules/contracts/           wersje i akceptacje
 modules/messaging/           rozmowy i audyt
+modules/payments/            ręczne statusy i historia
+modules/learning-content/    materiały i zadania
+modules/files/               metadane prywatnych plików
+modules/jobs/                Outbox i zadania kolejki
 lib/                         baza, auth, logi
 prisma/                      schemat i migracje
 scripts/                     instalacja i wydania
@@ -53,6 +57,41 @@ równoważną blokadę współbieżności.
 
 E-mail, SMS i pliki mają interfejsy dostawców. Masowa wysyłka zawsze tworzy
 zadania kolejki z tempem, ponowieniami i limitem kosztu.
+
+### Pliki
+
+`FileStorage` oddziela metadane biznesowe od magazynu binarnego. Lokalnie zapis
+może działać na dysku poza `public/`; staging i produkcja używają prywatnego
+magazynu S3-compatible. Aplikacja wydaje krótkotrwały adres podpisany dopiero po
+sprawdzeniu `can(...)`. Umowa, materiał i oddane zadanie wskazują rekord pliku,
+nie publiczny URL.
+
+### Kolejka i wysyłka
+
+Tabela `Outbox` powstaje w tej samej transakcji co operacja biznesowa. Worker
+pg-boss na PostgreSQL odbiera rekord, uruchamia odpowiedni provider i zapisuje
+wynik, liczbę prób oraz bezpieczny kod błędu. Dzięki temu nie potrzebujemy
+Redis w pilocie, a e-mail nie ginie po restarcie procesu.
+
+### Umowy
+
+`ContractVersion` jest append-only i zawiera skrót niezmiennego PDF.
+`ContractAcceptance` wskazuje dokładną wersję i dowody akceptacji. Wbudowany
+przepływ nie jest nazywany podpisem kwalifikowanym. `SignatureProvider` stanowi
+granicę dla przyszłej integracji z dostawcą podpisu.
+
+### Komunikator
+
+PostgreSQL przechowuje wątki, uczestników, wiadomości i odczyty. Pilot pobiera
+zmiany kontrolowanym odświeżaniem. Interfejs `RealtimeProvider` pozwala później
+dodać WebSocket bez zmiany reguł uprawnień. Ogłoszenie masowe tworzy osobny
+rekord odbiorcy i osobne zadanie wysyłki, więc ma mierzalny status.
+
+### Płatności i zadania
+
+`PaymentStatusChange` zachowuje historię ręcznych zmian bez obsługi kart lub
+rachunków bankowych. Materiały i zadania korzystają z tego samego
+`FileStorage`, ale mają odrębne reguły dostępu dla grupy, rodzica i ucznia.
 
 ## Obserwowalność
 

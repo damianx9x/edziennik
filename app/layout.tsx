@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   },
   description:
     "Prywatna szkoła języka angielskiego dla dzieci i młodzieży. Małe grupy na Pomorzu i online oraz prosty eDziennik KLA.",
+  icons: {
+    icon: [{ url: "/kla-logo.jpg", type: "image/jpeg" }],
+    apple: [{ url: "/kla-logo.jpg", type: "image/jpeg" }],
+  },
   openGraph: {
     title: "King’s Language Academy — nauka, która dodaje odwagi",
     description:

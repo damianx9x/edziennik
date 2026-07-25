@@ -1,8 +1,8 @@
 import {
   ArrowRight,
   BookOpenCheck,
-  CalendarCheck,
   Check,
+  FileSignature,
   GraduationCap,
   Globe2,
   HeartHandshake,
@@ -10,7 +10,7 @@ import {
   MessageCircleMore,
   MessagesSquare,
   Phone,
-  Plane,
+  ReceiptText,
   School,
   ShieldCheck,
   Sparkles,
@@ -19,12 +19,12 @@ import {
 import Link from "next/link";
 
 import { Brand } from "./components/brand";
+import { HeroSlider } from "./components/hero-slider";
 import {
   klaBrand,
   klaLocations,
   klaOffer,
 } from "../modules/brand/content";
-import { demoGroups } from "../modules/demo-data/groups";
 
 const offerIcons = [MessagesSquare, School, BookOpenCheck, Globe2] as const;
 
@@ -87,41 +87,7 @@ export default function Home() {
           </ul>
         </div>
 
-        <div className="hero-board" aria-label="Podgląd dnia w KLA">
-          <div className="hero-board-top">
-            <span className="board-date">Dziś w KLA</span>
-            <span className="board-live">
-              <span aria-hidden="true" /> 3 zajęcia
-            </span>
-          </div>
-          <div className="hero-board-heading">
-            <span>Wtorek</span>
-            <strong>Pełen dobrych spotkań</strong>
-          </div>
-          <div className="lesson-list">
-            {demoGroups.slice(0, 3).map((group, index) => (
-              <article className={`lesson lesson-${group.accent}`} key={group.id}>
-                <time>{["14:20", "15:45", "17:10"][index]}</time>
-                <div>
-                  <strong>{group.name}</strong>
-                  <span>
-                    {group.classLabel} · {group.studentCount} osób
-                  </span>
-                </div>
-                <ArrowRight size={18} aria-hidden="true" />
-              </article>
-            ))}
-          </div>
-          <div className="schedule-success">
-            <CalendarCheck aria-hidden="true" />
-            <span>
-              <strong>Wszystko na swoim miejscu</strong>
-              Grupa, sala i wykładowca bez kolizji
-            </span>
-          </div>
-          <div className="board-sticker sticker-top">Hello!</div>
-          <div className="board-sticker sticker-bottom">Let’s go</div>
-        </div>
+        <HeroSlider />
       </section>
 
       <section className="proof-strip" aria-label="King’s Language Academy w skrócie">
@@ -169,35 +135,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="travel-section">
-        <div className="travel-copy">
-          <span className="section-kicker section-kicker-light">
-            Język w prawdziwym świecie
-          </span>
-          <h2>Od sali lekcyjnej aż po Londyn.</h2>
-          <p>
-            Nauka zostaje na dłużej, gdy łączy się z przygodą. Wyjazdy i
-            projekty KLA pozwalają używać języka w naturalnych sytuacjach,
-            odkrywać kulturę i wracać z historiami, które chce się opowiadać.
-          </p>
-          <a
-            className="button button-light"
-            href={klaBrand.facebookUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Zobacz życie szkoły
-            <ArrowRight size={18} aria-hidden="true" />
-          </a>
+      <section className="editorial-story">
+        <span className="editorial-number" aria-hidden="true">
+          01
+        </span>
+        <div>
+          <span className="section-kicker">Język w prawdziwym świecie</span>
+          <h2>Angielski nie kończy się na ostatniej stronie podręcznika.</h2>
         </div>
-        <div className="travel-visual" aria-hidden="true">
-          <div className="travel-ticket">
-            <span>KLA ADVENTURE</span>
-            <strong>GDANSK → LONDON</strong>
-            <small>language · culture · confidence</small>
-          </div>
-          <Plane className="travel-plane" />
-          <div className="travel-badge">EN</div>
+        <div className="editorial-story-copy">
+          <p>
+            W KLA rozmowa, kultura i wspólne doświadczenia są częścią nauki.
+            Dzięki temu dzieci nie tylko znają odpowiedź — mają też odwagę, by
+            powiedzieć ją po angielsku.
+          </p>
+          <a href={klaBrand.facebookUrl} target="_blank" rel="noreferrer">
+            Zobacz życie szkoły <ArrowRight aria-hidden="true" />
+          </a>
         </div>
       </section>
 
@@ -257,6 +211,44 @@ export default function Home() {
             icon={<ShieldCheck aria-hidden="true" />}
             title="Dyrektor"
             text="Grafik, grupy i spokojna kontrola działania szkoły w jednym miejscu."
+          />
+        </div>
+      </section>
+
+      <section className="section core-modules-section" id="mozliwosci">
+        <SectionHeading
+          kicker="W pierwszej wersji"
+          title="Najważniejsze sprawy szkoły. W jednym spokojnym miejscu."
+          text="Panel ma zdejmować pracę z głowy, a nie dokładać kolejny system do obsługi. Każdy moduł prowadzi użytkownika jednym czytelnym przepływem."
+        />
+        <div className="core-modules-grid">
+          <CoreModule
+            number="01"
+            icon={<FileSignature aria-hidden="true" />}
+            title="Umowy online"
+            text="Przypisanie umowy, niezmienna wersja PDF, bezpieczna akceptacja i komplet dowodów."
+            detail="Rodzic · Dyrektor"
+          />
+          <CoreModule
+            number="02"
+            icon={<MessagesSquare aria-hidden="true" />}
+            title="Komunikator i ogłoszenia"
+            text="Rozmowy grupowe, wiadomości służbowe i wysyłka informacji do całej wybranej grupy."
+            detail="Grupy · E-mail"
+          />
+          <CoreModule
+            number="03"
+            icon={<ReceiptText aria-hidden="true" />}
+            title="Status płatności"
+            text="Dyrektor ręcznie oznacza status, a rodzic widzi prostą i aktualną informację."
+            detail="Bez płatności online"
+          />
+          <CoreModule
+            number="04"
+            icon={<BookOpenCheck aria-hidden="true" />}
+            title="Materiały i zadania"
+            text="Materiały dla grupy, termin zadania i czytelny monitoring oddania bez szukania w czatach."
+            detail="Wykładowca · Uczeń"
           />
         </div>
       </section>
@@ -333,6 +325,32 @@ function Role({
         <p>{text}</p>
       </div>
       <ArrowRight aria-hidden="true" />
+    </article>
+  );
+}
+
+function CoreModule({
+  number,
+  icon,
+  title,
+  text,
+  detail,
+}: {
+  number: string;
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  detail: string;
+}) {
+  return (
+    <article className="core-module">
+      <div className="core-module-top">
+        <span>{number}</span>
+        {icon}
+      </div>
+      <h3>{title}</h3>
+      <p>{text}</p>
+      <small>{detail}</small>
     </article>
   );
 }

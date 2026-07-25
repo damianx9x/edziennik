@@ -11,18 +11,21 @@ Budujemy mobilny eDziennik prywatnej szkoły wyłącznie języka angielskiego.
 Największy problem biznesowy to grafik oparty na trzech zasobach: sala,
 wykładowca i grupa. Role: dyrektor,
 wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
-`PLAN_2026.md`, nie cała wizja produktu.
+`PLAN_2026.md` i `ZAKRES_STARTOWY.md`: zawiera podstawowe umowy online,
+komunikator z masowymi ogłoszeniami, ręczny status płatności oraz materiały i
+zadania. Nie jest to cała wizja produktu.
 
 ## Źródła prawdy
 
 1. Bieżące polecenie użytkownika.
 2. `AGENTS.md`.
 3. `PLAN_2026.md`.
-4. `ARCHITEKTURA.md`.
-5. `BEZPIECZENSTWO_I_RODO.md`.
-6. `BRAND_I_UI.md`.
-7. `OBSERVABILITY_I_ZGLOSZENIA.md`.
-8. `DECYZJE.md`.
+4. `ZAKRES_STARTOWY.md`.
+5. `ARCHITEKTURA.md`.
+6. `BEZPIECZENSTWO_I_RODO.md`.
+7. `BRAND_I_UI.md`.
+8. `OBSERVABILITY_I_ZGLOSZENIA.md`.
+9. `DECYZJE.md`.
 
 Pierwotny RTF był materiałem wejściowym. Nie kopiuj z niego bezkrytycznie cen,
 uproszczeń prawnych ani decyzji technicznych.

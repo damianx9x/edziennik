@@ -46,6 +46,8 @@ administrować Linuksem.
 ale nie kopiujemy zdjęć ani nazw dzieci do repozytorium lub stagingu.
 **Dlaczego:** minimalizacja danych, trwały wygląd i prostsza procedura zgód.
 
+Ta decyzja została doprecyzowana przez ADR-012.
+
 ## ADR-008 — zgłoszenie lokalne przed wysyłką serwerową
 
 **Data:** 2026-07-25
@@ -79,3 +81,46 @@ oraz mają wariant `prefers-reduced-motion`. Bibliotekę ruchu dodajemy tylko dl
 uzasadnionej, złożonej interakcji.
 **Dlaczego:** jeden kontrakt zapobiega przypadkowym efektom, pogorszeniu
 dostępności i niespójnemu „generatywnemu” wyglądowi.
+
+## ADR-012 — kontrolowane zdjęcia szkoły
+
+**Data:** 2026-07-25
+**Decyzja:** za zgodą właściciela używamy trzech publicznych zdjęć KLA:
+autobusu wyjazdowego, dorosłej przedstawicielki z nagrodą i grupy pokazanej od
+tyłu. Nie używamy zbliżeń twarzy dzieci ani nazw.
+**Dlaczego:** prawdziwe materiały wzmacniają wiarygodność i usuwają sztuczny
+wygląd, a selekcja nadal minimalizuje dane małoletnich.
+
+## ADR-013 — cztery moduły w zakresie startowym
+
+**Data:** 2026-07-25
+**Decyzja:** pilot do 1 września zawiera podstawowe umowy online, komunikator z
+masowymi ogłoszeniami, ręczny status płatności oraz materiały i zadania.
+**Dlaczego:** są to funkcje wymagane do rozpoczęcia pracy szkoły. Ich granice
+określa `ZAKRES_STARTOWY.md`; funkcje zaawansowane pozostają po pilocie.
+
+## ADR-014 — kolejka bez dodatkowej bazy
+
+**Data:** 2026-07-25
+**Decyzja:** zadania asynchroniczne realizują tabela Outbox i pg-boss działający
+na tym samym PostgreSQL. Dostawcy e-mail/SMS pozostają za interfejsami.
+**Dlaczego:** zachowujemy ponowienia i mierzalny status bez utrzymywania Redis,
+a wzorzec można później skalować niezależnym workerem.
+
+## ADR-015 — prywatne pliki i wymienny podpis
+
+**Data:** 2026-07-25
+**Decyzja:** pliki przechodzą przez `FileStorage` i prywatny magazyn
+S3-compatible; umowy mają append-only wersje i `SignatureProvider`.
+**Dlaczego:** materiały, zadania, zgłoszenia i umowy korzystają z jednego
+bezpiecznego mechanizmu, a przyszły dostawca zaawansowanego podpisu nie wymaga
+przepisania logiki biznesowej.
+
+## ADR-016 — slider Embla bez biblioteki animacji
+
+**Data:** 2026-07-25
+**Decyzja:** slider używa Embla 8.6, `next/image`, ręcznych kontrolek i
+zatrzymania dla focus, interakcji oraz `prefers-reduced-motion`. Pozostały ruch
+realizują tokeny CSS.
+**Dlaczego:** Embla zapewnia lekkie gesty i kontrolę zachowania, a proste
+mikrointerakcje nie uzasadniają kolejnej biblioteki.

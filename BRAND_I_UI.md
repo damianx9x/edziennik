@@ -32,6 +32,8 @@ przed publiczną publikacją.
 - Nunito Sans daje przyjazny charakter i zachowuje czytelność UI.
 - Lucide zapewnia jeden spójny zestaw ikon.
 - Karty mają czytelną hierarchię, niewiele efektów i wyraźne stany focus.
+- Strona główna ma redakcyjny układ, duże prawdziwe zdjęcia i proste linie
+  podziału zamiast zestawu wielobarwnych „kart AI”.
 - Animacje są krótkie i funkcjonalne: potwierdzają akcję, pokazują zmianę stanu
   albo zachowują ciągłość między widokami.
 - Obrazy AI nie są częścią krytycznego interfejsu. Mogą powstać tylko jako
@@ -66,6 +68,8 @@ czytelnym komunikatem kolizji.
 25 lipca zainstalowano:
 
 - `design-kla-ui` — projektowy system UI i dostępnego ruchu KLA,
+- `figma-use` — obowiązkowy oficjalny przepływ zapisu do Figma,
+- `figma-generate-library` — budowanie profesjonalnej biblioteki komponentów,
 - `figma-generate-design`,
 - `figma-implement-design`,
 - `figma-create-design-system-rules`,
@@ -73,9 +77,11 @@ czytelnym komunikatem kolizji.
 - `security-threat-model`,
 - `sentry`.
 
-Są dostępne od następnego zadania Codex. Skille Figma wymagają połączenia
-oficjalnego pluginu Figma. Nie jest on konieczny do dalszego programowania, ale
-warto go połączyć przed projektowaniem dużego panelu grafiku.
+Nowo zainstalowane skille są dostępne po ponownym uruchomieniu Codex. Skille
+Figma wymagają połączenia oficjalnego pluginu Figma. Nie jest on konieczny do
+dalszego programowania, ale warto go połączyć przed projektowaniem dużego
+panelu grafiku. Nie instalujemy niesprawdzonych paczek promptów zewnętrznych,
+szczególnie w projekcie przetwarzającym dane dzieci.
 
 Wbudowane i już dostępne:
 
@@ -86,6 +92,8 @@ Wbudowane i już dostępne:
 
 ## Prywatność materiałów
 
-Do repozytorium trafiło logo. Zdjęcia dzieci z profilu nie są kopiowane do
-aplikacji ani stagingu. Z przekazanego zrzutu zapisano tylko nazwy grup i ich
-liczebność; nazw uczniów nie przeniesiono.
+Do repozytorium trafiło logo i trzy zdjęcia wybrane z publicznego profilu za
+zgodą właściciela: autobus wyjazdowy, dorosła przedstawicielka KLA z nagrodą
+oraz grupa sfotografowana od tyłu. Nie użyto zbliżeń twarzy dzieci ani podpisów
+z nazwami. Z przekazanego zrzutu zapisano tylko nazwy grup i ich liczebność;
+nazw uczniów nie przeniesiono.
