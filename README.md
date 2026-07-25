@@ -1,0 +1,40 @@
+# eDziennik KLA
+
+Mobilny eDziennik małej szkoły językowej. Etap 0: fundament, strona startowa,
+brama Uczeń/Rodzic/Szkoła, model PostgreSQL i centralne uprawnienia.
+
+## Start
+
+```bash
+./scripts/setup-macos.sh
+npm run dev
+```
+
+Otwórz `http://localhost:3000`.
+
+## Kontrola
+
+```bash
+npm run check
+npm run build
+npm run package:release
+```
+
+## Dokumenty
+
+- `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
+- `PLAN_2026.md` — zakres i harmonogram,
+- `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,
+- `ARCHITEKTURA.md` — moduły i dane,
+- `BEZPIECZENSTWO_I_RODO.md` — bramka przed prawdziwymi danymi,
+- `AGENTS.md` — zasady kolejnych sesji,
+- `DECYZJE.md` — historia decyzji.
+
+## Wymagania i środowisko
+
+Node.js 22.13–24 LTS, npm 11, PostgreSQL od Etapu 1. UI Etapu 0 działa bez
+bazy. Skopiuj `.env.example` do `.env`; nigdy nie commituj `.env`. Puste klucze
+e-mail/SMS są celowe.
+
+Pilot jest przygotowany do samodzielnego serwera Node na MyDevil MD2.
+Procedura: `DEPLOYMENT_MYDEVIL.md`.

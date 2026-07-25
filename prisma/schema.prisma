@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  DIRECTOR
+  TEACHER
+  PARENT
+  STUDENT
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum CefrLevel {
+  PRE_A1
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+  MIXED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ScheduleStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+  SUBSTITUTE
+}
+
+model School {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  timeZone    String   @default("Europe/Warsaw")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users         User[]
+  rooms         Room[]
+  courseGroups  CourseGroup[]
+  parentLinks   ParentChild[]
+  scheduleSlots ScheduleSlot[]
+  auditLogs     AuditLog[]
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  schoolId      String     @db.Uuid
+  email         String
+  name          String
+  role          UserRole
+  status        UserStatus @default(INVITED)
+  emailVerified Boolean    @default(false)
+  phone         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  archivedAt    DateTime?
+
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacherProfile  TeacherProfile?
+  studentProfile  StudentProfile?
+  parentLinks     ParentChild[]    @relation("ParentLinks")
+  childLinks      ParentChild[]    @relation("ChildLinks")
+  groupTeaching   GroupTeacher[]
+  enrollments     Enrollment[]
+  teachingSlots   ScheduleSlot[]   @relation("ScheduleTeacher")
+  createdSlots    ScheduleSlot[]   @relation("ScheduleCreator")
+  auditEvents     AuditLog[]       @relation("AuditActor")
+
+  @@unique([schoolId, email])
+  @@index([schoolId, role, status])
+  @@index([archivedAt])
+}
+
+model TeacherProfile {
+  userId      String  @id @db.Uuid
+  displayName String?
+  notes       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+model StudentProfile {
+  userId    String    @id @db.Uuid
+  birthDate DateTime? @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+model ParentChild {
+  schoolId String   @db.Uuid
+  parentId String   @db.Uuid
+  childId  String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  parent User   @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Restrict)
+  child  User   @relation("ChildLinks", fields: [childId], references: [id], onDelete: Restrict)
+
+  @@id([parentId, childId])
+  @@index([schoolId, childId])
+}
+
+model Room {
+  id         String   @id @default(uuid()) @db.Uuid
+  schoolId   String   @db.Uuid
+  name       String
+  capacity   Int?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  archivedAt DateTime?
+
+  school        School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlots ScheduleSlot[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, isActive])
+}
+
+model CourseGroup {
+  id         String    @id @default(uuid()) @db.Uuid
+  schoolId   String    @db.Uuid
+  name       String
+  cefrLevel  CefrLevel @default(MIXED)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  school        School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teachers      GroupTeacher[]
+  enrollments   Enrollment[]
+  scheduleSlots ScheduleSlot[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, isActive])
+}
+
+model GroupTeacher {
+  groupId   String   @db.Uuid
+  teacherId String   @db.Uuid
+  isPrimary Boolean  @default(false)
+  assignedAt DateTime @default(now())
+
+  group   CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  teacher User        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@id([groupId, teacherId])
+  @@index([teacherId])
+}
+
+model Enrollment {
+  groupId   String           @db.Uuid
+  studentId String           @db.Uuid
+  status    EnrollmentStatus @default(ACTIVE)
+  joinedAt  DateTime         @default(now())
+  endedAt   DateTime?
+
+  group   CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  student User        @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@id([groupId, studentId])
+  @@index([studentId, status])
+}
+
+model ScheduleSlot {
+  id             String         @id @default(uuid()) @db.Uuid
+  schoolId       String         @db.Uuid
+  groupId        String         @db.Uuid
+  roomId         String         @db.Uuid
+  teacherId      String         @db.Uuid
+  createdById    String         @db.Uuid
+  startAt        DateTime
+  endAt          DateTime
+  timeZone       String         @default("Europe/Warsaw")
+  recurrenceRule String?
+  seriesId       String?        @db.Uuid
+  status         ScheduleStatus @default(PLANNED)
+  version        Int            @default(1)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  archivedAt     DateTime?
+
+  school   School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group    CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  room     Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  teacher  User        @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  createdBy User       @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, startAt, endAt])
+  @@index([roomId, startAt, endAt])
+  @@index([teacherId, startAt, endAt])
+  @@index([groupId, startAt, endAt])
+  @@index([seriesId])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  schoolId      String   @db.Uuid
+  actorId       String?  @db.Uuid
+  action        String
+  entityType    String
+  entityId      String?
+  metadata      Json?
+  ipAddressHash String?
+  createdAt     DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  actor  User?  @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}

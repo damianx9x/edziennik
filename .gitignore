@@ -1,0 +1,15 @@
+/node_modules
+/.next
+/app/generated/prisma
+/coverage
+/outputs
+/work
+.DS_Store
+*.log
+*.pem
+*.sqlite
+*.sqlite-journal
+*.tsbuildinfo
+*.zip
+.env*
+!.env.example
