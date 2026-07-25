@@ -1,6 +1,6 @@
 {
   "name": "edziennik-kla",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0 <25"
@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:preview": "prisma generate && KLA_STATIC_PREVIEW=1 next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -21,7 +22,8 @@
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "security:check": "node scripts/check-no-secrets.mjs",
     "check": "npm run lint && npm run typecheck && npm run db:validate && npm run test && npm run security:check",
-    "package:release": "./scripts/package-release.sh"
+    "package:release": "./scripts/package-release.sh",
+    "package:preview": "./scripts/package-home-preview.sh"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",

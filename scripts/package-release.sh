@@ -12,7 +12,7 @@ npm run build
 release_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/edziennik-kla-release.XXXXXX")"
 release_root="$release_tmp_dir/edziennik-kla"
 release_output_dir="$project_dir/outputs"
-release_zip="$release_output_dir/edziennik-kla-stage-0-6.zip"
+release_zip="$release_output_dir/edziennik-kla-stage-0-7.zip"
 
 if [[ -z "$release_tmp_dir" || ! -d "$release_tmp_dir" ]]; then
   echo "Nie udało się utworzyć bezpiecznego katalogu tymczasowego."
@@ -21,6 +21,19 @@ fi
 
 mkdir -p "$release_root/.next" "$release_output_dir"
 cp -R .next/standalone/. "$release_root/"
+
+# Next.js standalone może skopiować lokalne pliki środowiskowe. Paczka nigdy
+# nie może zawierać sekretów z komputera wykonawcy.
+rm -f -- \
+  "$release_root/.env" \
+  "$release_root/.env.local" \
+  "$release_root/.env.development" \
+  "$release_root/.env.development.local" \
+  "$release_root/.env.production" \
+  "$release_root/.env.production.local" \
+  "$release_root/.env.test" \
+  "$release_root/.env.test.local"
+
 cp -R .next/static "$release_root/.next/static"
 cp -R public "$release_root/public"
 cp scripts/release-start.sh "$release_root/start.sh"
@@ -29,9 +42,19 @@ cp BEZPIECZENSTWO_I_RODO.md "$release_root/BEZPIECZENSTWO_I_RODO.md"
 cp BRAND_I_UI.md "$release_root/BRAND_I_UI.md"
 cp ZAKRES_STARTOWY.md "$release_root/ZAKRES_STARTOWY.md"
 cp OBSERVABILITY_I_ZGLOSZENIA.md "$release_root/OBSERVABILITY_I_ZGLOSZENIA.md"
+cp INSTRUKCJA_HOME_PL.md "$release_root/INSTRUKCJA_HOME_PL.md"
 cp START_TUTAJ.md "$release_root/START_TUTAJ.md"
 cp .env.example "$release_root/.env.example"
 chmod +x "$release_root/start.sh"
+
+unsafe_env_file="$(
+  find "$release_root" -maxdepth 1 -type f -name '.env*' \
+    ! -name '.env.example' -print -quit
+)"
+if [[ -n "$unsafe_env_file" ]]; then
+  echo "Przerwano: paczka zawiera prywatny plik środowiskowy."
+  exit 1
+fi
 
 rm -f -- "$release_zip"
 (

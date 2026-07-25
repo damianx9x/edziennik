@@ -4,6 +4,7 @@
 /app/generated/prisma
 /coverage
 /outputs
+/out
 /work
 .DS_Store
 *.log

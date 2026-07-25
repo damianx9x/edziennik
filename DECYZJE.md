@@ -124,3 +124,28 @@ zatrzymania dla focus, interakcji oraz `prefers-reduced-motion`. Pozostały ruch
 realizują tokeny CSS.
 **Dlaczego:** Embla zapewnia lekkie gesty i kontrolę zachowania, a proste
 mikrointerakcje nie uzasadniają kolejnej biblioteki.
+
+## ADR-017 — statyczny szkielet na home.pl
+
+**Data:** 2026-07-25
+**Decyzja:** Etap 0–0,5 ma dodatkowy eksport statyczny dla zwykłego hostingu
+home.pl. Nie zastępuje on wydania Node.js pełnego eDziennika.
+**Dlaczego:** klientka może szybko i tanio ocenić stronę oraz UX na własnej
+domenie, bez udawania, że hosting plików obsłuży logowanie, kolejkę i bazę.
+
+## ADR-018 — jedna domena kanoniczna
+
+**Data:** 2026-07-25
+**Decyzja:** `kingslanguageacademy.pl` jest domeną główną, a `kingsedu.pl`
+przekierowuje do niej kodem 301. Obie domeny mają SSL.
+**Dlaczego:** krótki adres jest wygodny w komunikacji, a jeden adres główny
+zapobiega duplikacji strony i porządkuje przyszłe linki.
+
+## ADR-019 — edytor treści bez publicznego zapisu
+
+**Data:** 2026-07-25
+**Decyzja:** demonstracyjny edytor używa walidowanego zapisu w przeglądarce i
+kopii JSON. Wspólna publikacja do bazy i plików jest dostępna dopiero po
+logowaniu dyrektora.
+**Dlaczego:** zachowujemy wczesny, intuicyjny test obsługi, ale nie tworzymy
+niechronionego CMS, do którego każdy odwiedzający mógłby wysłać treść lub plik.

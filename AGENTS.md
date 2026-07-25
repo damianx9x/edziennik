@@ -15,6 +15,11 @@ wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
 komunikator z masowymi ogłoszeniami, ręczny status płatności oraz materiały i
 zadania. Nie jest to cała wizja produktu.
 
+Domena główna szkoły to `kingslanguageacademy.pl`. Krótka domena
+`kingsedu.pl` przekierowuje do niej kodem 301. Statyczny pokaz Etapu 0–0,5 może
+działać na zwykłym hostingu home.pl; pełna aplikacja nadal wymaga Node.js i
+PostgreSQL.
+
 ## Źródła prawdy
 
 1. Bieżące polecenie użytkownika.

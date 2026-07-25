@@ -17,6 +17,10 @@ gdy go nie ma, generuje klienta Prisma i nigdy nie nadpisuje istniejących hase�
 Panel demonstracyjny szkoły:
 `eDziennik → Szkoła → Zobacz panel demonstracyjny`.
 
+Edycja strony bez kodowania:
+`panel demonstracyjny → Treść strony`. W tej wersji zmiany zapisują się tylko
+w danej przeglądarce. Użyj `Eksportuj kopię`, aby przekazać je dalej.
+
 Przycisk z czerwoną ikoną błędu jest zawsze dostępny. Pozwala pobrać bezpieczny
 plik diagnostyczny, który można dołączyć do kolejnego zadania Codex.
 
@@ -66,10 +70,22 @@ Tworzy 8 grup KLA i 35 syntetycznych uczniów z domeną `invalid.example`.
 
 ## Pokaz klientce
 
-Do czasu stagingu pokazuj lokalnie. Później:
+Gotową stronę pokazową dla home.pl utworzysz poleceniem:
 
-- `staging.domena.pl` — dane wymyślone,
-- `panel.domena.pl` — produkcja po odbiorze.
+```bash
+npm run package:preview
+```
 
-Paczka z `outputs` wymaga hostingu Node.js i procedury z
-`DEPLOYMENT_MYDEVIL.md`; nie jest stroną do zwykłego FTP.
+Paczka pojawi się w
+`outputs/kla-szkielet-etap-0-5-home-pl.zip`. Dokładne kroki dla domen
+`kingslanguageacademy.pl`, `kingsedu.pl`, SSL i WebFTP opisuje
+`INSTRUKCJA_HOME_PL.md`.
+
+Późniejsze środowiska aplikacji:
+
+- `staging.kingslanguageacademy.pl` — dane wymyślone,
+- `panel.kingslanguageacademy.pl` — produkcja po odbiorze.
+
+Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
+`edziennik-kla-stage-0-7.zip` wymaga hostingu Node.js i procedury z
+`DEPLOYMENT_MYDEVIL.md`.

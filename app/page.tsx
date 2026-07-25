@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowRight,
   BookOpenCheck,
@@ -20,15 +22,13 @@ import Link from "next/link";
 
 import { Brand } from "./components/brand";
 import { HeroSlider } from "./components/hero-slider";
-import {
-  klaBrand,
-  klaLocations,
-  klaOffer,
-} from "../modules/brand/content";
+import { useSiteContent } from "../modules/site-content/site-content-provider";
 
 const offerIcons = [MessagesSquare, School, BookOpenCheck, Globe2] as const;
 
 export default function Home() {
+  const { content } = useSiteContent();
+
   return (
     <main>
       <header className="site-header">
@@ -50,28 +50,24 @@ export default function Home() {
         <div className="hero-copy">
           <span className="eyebrow">
             <Sparkles size={16} aria-hidden="true" />
-            King’s Language Academy
+            {content.hero.eyebrow}
           </span>
           <h1>
-            Nauka, która
-            <span> dodaje odwagi.</span>
+            {content.hero.title}
+            <span> {content.hero.accent}</span>
           </h1>
-          <p className="hero-lead">
-            Prywatna szkoła języka angielskiego dla dzieci i młodzieży.
-            Kameralne grupy, dużo mówienia i zajęcia, na które chce się wracać
-            — blisko domu i online.
-          </p>
+          <p className="hero-lead">{content.hero.description}</p>
           <div className="hero-actions">
             <Link
               className="button button-primary"
               href="/panel"
               data-testid="hero-panel-link"
             >
-              Przejdź do eDziennika
+              {content.hero.primaryCta}
               <ArrowRight size={19} aria-hidden="true" />
             </Link>
             <a className="button button-secondary" href="#zajecia">
-              Poznaj KLA
+              {content.hero.secondaryCta}
             </a>
           </div>
           <ul className="trust-list" aria-label="Najważniejsze zalety">
@@ -87,36 +83,26 @@ export default function Home() {
           </ul>
         </div>
 
-        <HeroSlider />
+        <HeroSlider slides={content.slides} />
       </section>
 
       <section className="proof-strip" aria-label="King’s Language Academy w skrócie">
-        <div>
-          <strong>2–8</strong>
-          <span>osób w grupie</span>
-        </div>
-        <div>
-          <strong>8+</strong>
-          <span>lokalizacji i online</span>
-        </div>
-        <div>
-          <strong>100%</strong>
-          <span>poleceń na profilu KLA</span>
-        </div>
-        <div>
-          <strong>1</strong>
-          <span>prosty eDziennik</span>
-        </div>
+        {content.proof.map((item) => (
+          <div key={`${item.value}-${item.label}`}>
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+          </div>
+        ))}
       </section>
 
       <section className="section offer-section" id="zajecia">
         <SectionHeading
-          kicker="Tylko angielski. Naprawdę dobrze."
-          title="Jedna specjalizacja, wiele sposobów na postęp"
-          text="KLA koncentruje się wyłącznie na języku angielskim. Mówienie, rozumienie, czytanie i pisanie rozwijają się razem, w tempie dopasowanym do wieku i potrzeb grupy."
+          kicker={content.offer.kicker}
+          title={content.offer.title}
+          text={content.offer.text}
         />
         <div className="offer-grid">
-          {klaOffer.map((item, index) => {
+          {content.offer.cards.map((item, index) => {
             const Icon = offerIcons[index];
             return (
               <article className={`offer-card offer-${item.tone}`} key={item.title}>
@@ -127,7 +113,7 @@ export default function Home() {
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
                 <span className="offer-more">
-                  Program dopasowany do grupy
+                  {item.detail}
                 </span>
               </article>
             );
@@ -140,17 +126,13 @@ export default function Home() {
           01
         </span>
         <div>
-          <span className="section-kicker">Język w prawdziwym świecie</span>
-          <h2>Angielski nie kończy się na ostatniej stronie podręcznika.</h2>
+          <span className="section-kicker">{content.story.kicker}</span>
+          <h2>{content.story.title}</h2>
         </div>
         <div className="editorial-story-copy">
-          <p>
-            W KLA rozmowa, kultura i wspólne doświadczenia są częścią nauki.
-            Dzięki temu dzieci nie tylko znają odpowiedź — mają też odwagę, by
-            powiedzieć ją po angielsku.
-          </p>
-          <a href={klaBrand.facebookUrl} target="_blank" rel="noreferrer">
-            Zobacz życie szkoły <ArrowRight aria-hidden="true" />
+          <p>{content.story.text}</p>
+          <a href={content.contact.facebookUrl} target="_blank" rel="noreferrer">
+            {content.story.linkLabel} <ArrowRight aria-hidden="true" />
           </a>
         </div>
       </section>
@@ -158,12 +140,12 @@ export default function Home() {
       <section className="section locations-section" id="lokalizacje">
         <div className="locations-layout">
           <SectionHeading
-            kicker="KLA jest blisko"
-            title="Spotkajmy się na Pomorzu albo online"
-            text="Wybierz wygodną lokalizację. Aktualny grafik i dostępność miejsc potwierdzi zespół szkoły."
+            kicker={content.locations.kicker}
+            title={content.locations.title}
+            text={content.locations.text}
           />
           <div className="location-list">
-            {klaLocations.map((location) => (
+            {content.locations.items.map((location) => (
               <span key={location}>
                 <MapPin aria-hidden="true" /> {location}
               </span>
@@ -175,100 +157,93 @@ export default function Home() {
       <section className="digital-section" id="jak-to-dziala">
         <div className="digital-intro">
           <span className="section-kicker section-kicker-light">
-            Cyfrowe zaplecze, ludzkie podejście
+            {content.digital.kicker}
           </span>
-          <h2>Jedno proste miejsce dla całej społeczności KLA.</h2>
-          <p>
-            Rodzic, uczeń, wykładowca i dyrektor widzą tylko to, czego potrzebują.
-            Plan, obecności i najważniejsze informacje są pod ręką — szczególnie
-            na telefonie.
-          </p>
+          <h2>{content.digital.title}</h2>
+          <p>{content.digital.text}</p>
           <Link className="button button-red" href="/panel">
-            Wybierz swój panel <ArrowRight size={19} aria-hidden="true" />
+            {content.digital.cta} <ArrowRight size={19} aria-hidden="true" />
           </Link>
         </div>
         <div className="role-list">
           <Role
             number="01"
             icon={<HeartHandshake aria-hidden="true" />}
-            title="Rodzic"
-            text="Plan dziecka, obecności, postępy i ważne wiadomości bez szukania w czatach."
+            title={content.digital.roles[0].title}
+            text={content.digital.roles[0].text}
           />
           <Role
             number="02"
             icon={<GraduationCap aria-hidden="true" />}
-            title="Uczeń"
-            text="Najbliższe zajęcia, materiały i zadania w lekkim widoku na telefon."
+            title={content.digital.roles[1].title}
+            text={content.digital.roles[1].text}
           />
           <Role
             number="03"
             icon={<Users aria-hidden="true" />}
-            title="Wykładowca"
-            text="Dzisiejsze grupy, szybka obecność i komunikacja z właściwymi osobami."
+            title={content.digital.roles[2].title}
+            text={content.digital.roles[2].text}
           />
           <Role
             number="04"
             icon={<ShieldCheck aria-hidden="true" />}
-            title="Dyrektor"
-            text="Grafik, grupy i spokojna kontrola działania szkoły w jednym miejscu."
+            title={content.digital.roles[3].title}
+            text={content.digital.roles[3].text}
           />
         </div>
       </section>
 
       <section className="section core-modules-section" id="mozliwosci">
         <SectionHeading
-          kicker="W pierwszej wersji"
-          title="Najważniejsze sprawy szkoły. W jednym spokojnym miejscu."
-          text="Panel ma zdejmować pracę z głowy, a nie dokładać kolejny system do obsługi. Każdy moduł prowadzi użytkownika jednym czytelnym przepływem."
+          kicker={content.modules.kicker}
+          title={content.modules.title}
+          text={content.modules.text}
         />
         <div className="core-modules-grid">
           <CoreModule
             number="01"
             icon={<FileSignature aria-hidden="true" />}
-            title="Umowy online"
-            text="Przypisanie umowy, niezmienna wersja PDF, bezpieczna akceptacja i komplet dowodów."
-            detail="Rodzic · Dyrektor"
+            title={content.modules.cards[0].title}
+            text={content.modules.cards[0].text}
+            detail={content.modules.cards[0].detail}
           />
           <CoreModule
             number="02"
             icon={<MessagesSquare aria-hidden="true" />}
-            title="Komunikator i ogłoszenia"
-            text="Rozmowy grupowe, wiadomości służbowe i wysyłka informacji do całej wybranej grupy."
-            detail="Grupy · E-mail"
+            title={content.modules.cards[1].title}
+            text={content.modules.cards[1].text}
+            detail={content.modules.cards[1].detail}
           />
           <CoreModule
             number="03"
             icon={<ReceiptText aria-hidden="true" />}
-            title="Status płatności"
-            text="Dyrektor ręcznie oznacza status, a rodzic widzi prostą i aktualną informację."
-            detail="Bez płatności online"
+            title={content.modules.cards[2].title}
+            text={content.modules.cards[2].text}
+            detail={content.modules.cards[2].detail}
           />
           <CoreModule
             number="04"
             icon={<BookOpenCheck aria-hidden="true" />}
-            title="Materiały i zadania"
-            text="Materiały dla grupy, termin zadania i czytelny monitoring oddania bez szukania w czatach."
-            detail="Wykładowca · Uczeń"
+            title={content.modules.cards[3].title}
+            text={content.modules.cards[3].text}
+            detail={content.modules.cards[3].detail}
           />
         </div>
       </section>
 
       <section className="contact-section">
         <div>
-          <span className="section-kicker">Masz pytanie?</span>
-          <h2>Porozmawiajmy o najlepszym starcie.</h2>
-          <p>
-            Napisz lub zadzwoń. Zespół KLA pomoże dobrać zajęcia, lokalizację i
-            grupę odpowiednią dla dziecka.
-          </p>
+          <span className="section-kicker">{content.contact.kicker}</span>
+          <h2>{content.contact.title}</h2>
+          <p>{content.contact.text}</p>
         </div>
         <div className="contact-actions">
-          <a className="button button-primary" href={klaBrand.phoneHref}>
-            <Phone aria-hidden="true" /> {klaBrand.phoneDisplay}
+          <a className="button button-primary" href={content.contact.phoneHref}>
+            <Phone aria-hidden="true" /> {content.contact.phoneDisplay}
           </a>
           <a
             className="button button-secondary"
-            href={`mailto:${klaBrand.supportEmail}`}
+            href={`mailto:${content.contact.email}`}
           >
             <MessageCircleMore aria-hidden="true" /> Napisz do KLA
           </a>

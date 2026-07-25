@@ -11,34 +11,13 @@ import {
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const slides = [
-  {
-    src: "/photos/kla-london-bus.jpg",
-    alt: "Fioletowy autobus przed Warner Bros. Studio Tour London",
-    kicker: "Angielski poza salą",
-    title: "Język prowadzi dalej",
-    text: "Wyjazdy KLA zamieniają słówka i rozmowy w prawdziwe doświadczenia.",
-    position: "center",
-  },
-  {
-    src: "/photos/kla-award.jpg",
-    alt: "Przedstawicielka KLA z dyplomem plebiscytu edukacyjnego",
-    kicker: "Docenieni na Pomorzu",
-    title: "Jakość, którą widać",
-    text: "Pierwsze miejsce KLA w plebiscycie edukacyjnym Dziennika Bałtyckiego 2025.",
-    position: "center 35%",
-  },
-  {
-    src: "/photos/kla-trip-together.jpg",
-    alt: "Grupa KLA podczas wspólnego wyjazdu, sfotografowana od tyłu",
-    kicker: "Razem odważniej",
-    title: "Małe grupy. Wielkie historie.",
-    text: "Dzieci uczą się mówić, współpracować i odkrywać świat po angielsku.",
-    position: "center",
-  },
-] as const;
+import type { SiteContent } from "../../modules/site-content/schema";
 
-export function HeroSlider() {
+export function HeroSlider({
+  slides,
+}: {
+  slides: SiteContent["slides"];
+}) {
   const autoplay = useMemo(
     () =>
       Autoplay({
@@ -120,7 +99,7 @@ export function HeroSlider() {
           {slides.map((slide, index) => (
             <article
               className="hero-slide"
-              key={slide.src}
+              key={slide.id}
               role="group"
               aria-roledescription="slajd"
               aria-label={`${index + 1} z ${slides.length}`}
@@ -131,6 +110,7 @@ export function HeroSlider() {
                 alt={slide.alt}
                 fill
                 priority={index === 0}
+                unoptimized={slide.src.startsWith("data:")}
                 sizes="(max-width: 760px) 100vw, 55vw"
                 style={{ objectPosition: slide.position }}
               />
@@ -167,7 +147,7 @@ export function HeroSlider() {
           {slides.map((slide, index) => (
             <button
               type="button"
-              key={slide.src}
+              key={slide.id}
               onClick={() => showSlide(index)}
               aria-label={`Pokaż zdjęcie ${index + 1}`}
               aria-current={selectedIndex === index ? "true" : undefined}

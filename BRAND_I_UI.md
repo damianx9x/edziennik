@@ -1,6 +1,6 @@
 # Marka i system UI KLA
 
-Stan: Etap 0.5, 25 lipca 2026.
+Stan: Etap 0.7, 25 lipca 2026.
 
 ## Źródło
 
@@ -42,6 +42,17 @@ przed publiczną publikacją.
 To celowo ogranicza „generatywny” wygląd: nie używamy przypadkowych gradientów,
 szklanych paneli, nadmiaru kapsułek, animacji ani dekoracyjnych dashboardów bez
 funkcji.
+
+## Edycja przez dyrektora
+
+Najważniejsze publiczne treści nie są rozrzucone po komponentach. Wspólny
+model obejmuje pierwszy ekran, slajdy, ofertę, historię, lokalizacje, panele,
+funkcje eDziennika i kontakt. Edytor używa prostych nazw, pokazuje limity i
+posiada jedną stałą akcję `Zapisz zmiany`.
+
+Zdjęcia slajdów można dodać, podmienić, usunąć i przestawić. Przeglądarka
+zmniejsza duże fotografie przed zapisem. W demie zapis jest lokalny; wersja
+produkcyjna dołączy wersjonowanie, bezpieczny magazyn i uprawnienie dyrektora.
 
 ## Sprawdzony workflow UI
 

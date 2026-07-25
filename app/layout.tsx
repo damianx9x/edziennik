@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 
 import { FeedbackWidget } from "./components/feedback-widget";
+import { SiteContentProvider } from "../modules/site-content/site-content-provider";
 import "./globals.css";
 
 const nunitoSans = Nunito_Sans({
@@ -52,8 +53,10 @@ export default function RootLayout({
   return (
     <html lang="pl" data-scroll-behavior="smooth">
       <body className={nunitoSans.variable}>
-        {children}
-        <FeedbackWidget />
+        <SiteContentProvider>
+          {children}
+          <FeedbackWidget />
+        </SiteContentProvider>
       </body>
     </html>
   );

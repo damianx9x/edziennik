@@ -8,6 +8,7 @@ import {
   MapPin,
   MessagesSquare,
   MoreHorizontal,
+  PencilLine,
   ReceiptText,
   Search,
   Users,
@@ -92,6 +93,9 @@ export default function DemoDashboardPage() {
             <a href="#centrum">
               <MoreHorizontal aria-hidden="true" /> Więcej
             </a>
+            <Link href="/panel/demo/ustawienia-strony">
+              <PencilLine aria-hidden="true" /> Treść strony
+            </Link>
           </nav>
           <div className="sidebar-note">
             <strong>Dane bezpieczne</strong>
@@ -136,7 +140,13 @@ export default function DemoDashboardPage() {
                 <span className="section-kicker">Centrum szkoły</span>
                 <h2>Sprawy wymagające uwagi</h2>
               </div>
-              <span className="demo-helper">Dane demonstracyjne</span>
+              <Link
+                className="demo-content-link"
+                href="/panel/demo/ustawienia-strony"
+                data-testid="open-site-editor"
+              >
+                <PencilLine aria-hidden="true" /> Edytuj stronę
+              </Link>
             </div>
             <div className="school-module-grid">
               {schoolModules.map((module) => {
@@ -257,9 +267,9 @@ export default function DemoDashboardPage() {
         <a href="#grupy">
           <Users aria-hidden="true" /> Grupy
         </a>
-        <a href="#centrum">
-          <MoreHorizontal aria-hidden="true" /> Więcej
-        </a>
+        <Link href="/panel/demo/ustawienia-strony">
+          <PencilLine aria-hidden="true" /> Strona
+        </Link>
       </nav>
     </main>
   );

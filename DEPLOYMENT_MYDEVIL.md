@@ -12,8 +12,8 @@ Oficjalne materiały:
 
 ## Docelowy układ
 
-- `staging.domena.pl` — osobna baza i dane demonstracyjne,
-- `panel.domena.pl` — produkcja dopiero po odbiorze,
+- `staging.kingslanguageacademy.pl` — osobna baza i dane demonstracyjne,
+- `panel.kingslanguageacademy.pl` — produkcja dopiero po odbiorze,
 - Node.js 22 lub 24 LTS,
 - PostgreSQL 16,
 - HTTPS z minimalnym TLS ustawionym w panelu,
@@ -27,9 +27,9 @@ Na Macu uruchom:
 npm run package:release
 ```
 
-Powstanie `outputs/edziennik-kla-stage-0.zip`. Paczka zawiera samodzielny serwer
-Next.js, zasoby statyczne, `start.sh` i przykładowe nazwy zmiennych. Nie zawiera
-`.env`, haseł, bazy ani danych użytkowników.
+Powstanie `outputs/edziennik-kla-stage-0-7.zip`. Paczka zawiera samodzielny
+serwer Next.js, zasoby statyczne, `start.sh` i przykładowe nazwy zmiennych. Nie
+zawiera `.env`, haseł, bazy ani danych użytkowników.
 
 ## Kolejność w panelu klientki
 

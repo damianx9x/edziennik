@@ -7,6 +7,7 @@ i osobnego backendu.
 app/                         trasy i kompozycja
 modules/access-control/      centralne uprawnienia
 modules/brand/               treści i kontakt marki
+modules/site-content/        publiczne treści, walidacja i edytor
 modules/demo-data/           wyłącznie dane syntetyczne
 modules/observability/       redakcja i diagnostyka
 modules/identity/            konta i role
@@ -27,6 +28,24 @@ scripts/                     instalacja i wydania
 ```
 
 Moduły powstają dopiero w przypisanym etapie.
+
+## Edytowalna strona publiczna
+
+`modules/site-content/schema.ts` jest jednym kontraktem treści dla strony i
+panelu dyrektora. Domyślne treści są wersjonowane w repozytorium. Statyczne demo
+zapisuje zatwierdzony obiekt w `localStorage` pod kontrolą Zod, dzięki czemu
+klientka może ocenić UX bez publicznego endpointu zapisu.
+
+To rozwiązanie jest celowo przejściowe. Po uwierzytelnianiu:
+
+- dyrektor zapisuje opublikowaną i roboczą wersję treści do PostgreSQL,
+- zdjęcia trafiają do prywatnego `FileStorage`,
+- publikacja jest chronioną akcją i tworzy `AuditLog`,
+- poprzednią wersję można przywrócić,
+- publiczna strona odczytuje tylko wersję opublikowaną.
+
+Schemat Zod i komponenty edytora pozostają wspólne, więc migracja nie wymaga
+projektowania interfejsu od początku.
 
 ## Przepływ
 
@@ -114,4 +133,6 @@ Nie kopiujemy produkcyjnej bazy na staging.
 ## Wdrożenie
 
 `next build` tworzy `.next/standalone`. `npm run package:release` pakuje serwer,
-zasoby, instrukcje i plik startowy. Szczegóły: `DEPLOYMENT_MYDEVIL.md`.
+zasoby, instrukcje i plik startowy. `npm run package:preview` tworzy odrębny
+statyczny eksport dla WebFTP home.pl. Szczegóły: `DEPLOYMENT_MYDEVIL.md` oraz
+`INSTRUKCJA_HOME_PL.md`.
