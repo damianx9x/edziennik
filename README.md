@@ -1,9 +1,9 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etap 0.7 domyka szkielet Etapu
-0–0,5: strona z dostępnym sliderem zdjęć, brama Uczeń/Rodzic/Szkoła, panel
-demonstracyjny, edytor treści dla dyrektora, diagnostyka, model PostgreSQL i
-centralne uprawnienia.
+Mobilny eDziennik King’s Language Academy. Etap 1 dodaje działające konta
+wyłącznie przez zaproszenie, cztery role, bezpieczne sesje, odzyskiwanie hasła
+i obowiązkowe TOTP 2FA dyrektora. Strona, slider, statyczny pokaz home.pl,
+edytor demonstracyjny i diagnostyka z Etapu 0.7 pozostają dostępne.
 
 ## Start
 
@@ -29,9 +29,14 @@ npm run db:seed:demo
 `outputs/kla-szkielet-etap-0-5-home-pl.zip`. Instrukcja:
 `INSTRUKCJA_HOME_PL.md`.
 
+`package:release` tworzy aplikację Node.js
+`outputs/edziennik-kla-stage-1.zip`. Ta paczka wymaga PostgreSQL i hostingu
+Node.js; zwykłe FTP jej nie uruchomi.
+
 ## Dokumenty
 
 - `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
+- `ETAP_1_INSTRUKCJA.md` — uruchomienie i odbiór logowania oraz ról,
 - `PLAN_2026.md` — zakres i harmonogram,
 - `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,
@@ -45,9 +50,8 @@ npm run db:seed:demo
 
 ## Wymagania i środowisko
 
-Node.js 22.13–24 LTS, npm 11, PostgreSQL od Etapu 1. UI Etapu 0 działa bez
-bazy. Skopiuj `.env.example` do `.env`; nigdy nie commituj `.env`. Puste klucze
-e-mail/SMS są celowe.
+Node.js 22.13–24 LTS, npm 11 i PostgreSQL. Skopiuj `.env.example` do `.env`;
+nigdy nie commituj `.env`. Puste klucze e-mail/SMS są celowe.
 
 Statyczny szkielet można pokazać na zwykłym hostingu home.pl. Pełny pilot z
 logowaniem i bazą jest przygotowany do samodzielnego serwera Node na MyDevil

@@ -12,7 +12,7 @@ npm run build
 release_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/edziennik-kla-release.XXXXXX")"
 release_root="$release_tmp_dir/edziennik-kla"
 release_output_dir="$project_dir/outputs"
-release_zip="$release_output_dir/edziennik-kla-stage-0-7.zip"
+release_zip="$release_output_dir/edziennik-kla-stage-1.zip"
 
 if [[ -z "$release_tmp_dir" || ! -d "$release_tmp_dir" ]]; then
   echo "Nie udało się utworzyć bezpiecznego katalogu tymczasowego."
@@ -36,8 +36,22 @@ rm -f -- \
 
 cp -R .next/static "$release_root/.next/static"
 cp -R public "$release_root/public"
+cp -R prisma "$release_root/prisma"
+cp prisma.config.ts "$release_root/prisma.config.ts"
+mkdir -p "$release_root/migration-tools"
+npm install \
+  --prefix "$release_root/migration-tools" \
+  --no-audit \
+  --no-fund \
+  --package-lock=false \
+  prisma@7.8.0 \
+  dotenv@17.2.3
+cp scripts/release-prisma.config.ts \
+  "$release_root/migration-tools/prisma.config.ts"
 cp scripts/release-start.sh "$release_root/start.sh"
+cp scripts/release-migrate.sh "$release_root/migrate.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
+cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
 cp BEZPIECZENSTWO_I_RODO.md "$release_root/BEZPIECZENSTWO_I_RODO.md"
 cp BRAND_I_UI.md "$release_root/BRAND_I_UI.md"
 cp ZAKRES_STARTOWY.md "$release_root/ZAKRES_STARTOWY.md"
@@ -45,7 +59,7 @@ cp OBSERVABILITY_I_ZGLOSZENIA.md "$release_root/OBSERVABILITY_I_ZGLOSZENIA.md"
 cp INSTRUKCJA_HOME_PL.md "$release_root/INSTRUKCJA_HOME_PL.md"
 cp START_TUTAJ.md "$release_root/START_TUTAJ.md"
 cp .env.example "$release_root/.env.example"
-chmod +x "$release_root/start.sh"
+chmod +x "$release_root/start.sh" "$release_root/migrate.sh"
 
 unsafe_env_file="$(
   find "$release_root" -maxdepth 1 -type f -name '.env*' \

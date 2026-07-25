@@ -29,6 +29,20 @@ scripts/                     instalacja i wydania
 
 Moduły powstają dopiero w przypisanym etapie.
 
+## Tożsamość i dostęp — Etap 1
+
+Better Auth obsługuje hasła, sesje, reset oraz TOTP. Adapter Prisma zapisuje
+rekordy uwierzytelniania w tej samej bazie PostgreSQL. Publiczna rejestracja
+jest wyłączona.
+
+Zaproszenie zawiera losowy token, ale baza przechowuje wyłącznie jego skrót
+SHA-256. Link działa raz i przez 7 dni. Utworzenie, cofnięcie i użycie
+zaproszenia tworzy `AuditLog` bez adresu e-mail i tokenu.
+
+Każda chroniona strona pobiera sesję na serwerze, sprawdza `schoolId`, status
+konta, rolę oraz centralne `can(...)`. Dyrektor bez aktywnego TOTP jest
+przekierowany do konfiguracji, zanim zobaczy swój panel.
+
 ## Edytowalna strona publiczna
 
 `modules/site-content/schema.ts` jest jednym kontraktem treści dla strony i
@@ -133,6 +147,7 @@ Nie kopiujemy produkcyjnej bazy na staging.
 ## Wdrożenie
 
 `next build` tworzy `.next/standalone`. `npm run package:release` pakuje serwer,
-zasoby, instrukcje i plik startowy. `npm run package:preview` tworzy odrębny
-statyczny eksport dla WebFTP home.pl. Szczegóły: `DEPLOYMENT_MYDEVIL.md` oraz
+migracje, zasoby, instrukcje i pliki `start.sh`/`migrate.sh`.
+`npm run package:preview` buduje odrębny statyczny eksport bez tras
+uwierzytelniania dla WebFTP home.pl. Szczegóły: `DEPLOYMENT_MYDEVIL.md` oraz
 `INSTRUKCJA_HOME_PL.md`.

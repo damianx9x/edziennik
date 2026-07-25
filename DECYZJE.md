@@ -149,3 +149,35 @@ kopii JSON. Wspólna publikacja do bazy i plików jest dostępna dopiero po
 logowaniu dyrektora.
 **Dlaczego:** zachowujemy wczesny, intuicyjny test obsługi, ale nie tworzymy
 niechronionego CMS, do którego każdy odwiedzający mógłby wysłać treść lub plik.
+
+## ADR-020 — konta wyłącznie przez jednorazowe zaproszenie
+
+**Data:** 2026-07-25
+**Decyzja:** publiczna rejestracja jest wyłączona. Dyrektor tworzy siedmiodniowy
+link, baza przechowuje tylko SHA-256 tokenu, a użycie jest atomowe i jednorazowe.
+**Dlaczego:** szkoła kontroluje dostęp, a wyciek bazy nie ujawnia aktywnych
+linków zaproszeń.
+
+## ADR-021 — e-mail globalnie unikalny
+
+**Data:** 2026-07-25
+**Decyzja:** jeden adres e-mail identyfikuje jedno konto w systemie; zakres
+szkoły nadal pochodzi z `schoolId` sesji.
+**Dlaczego:** upraszcza logowanie i reset hasła oraz zapobiega niejednoznacznym
+kontom. Obsługę wielu szkół jednym kontem rozważymy dopiero przy realnej
+potrzebie biznesowej.
+
+## ADR-022 — obowiązkowe TOTP dyrektora
+
+**Data:** 2026-07-25
+**Decyzja:** dyrektor nie otworzy panelu bez konfiguracji TOTP; kody awaryjne
+są pokazywane raz i wymagają świadomego potwierdzenia zapisania.
+**Dlaczego:** ta rola ma największy zakres danych i funkcji administracyjnych.
+
+## ADR-023 — osobne artefakty FTP i Node.js
+
+**Data:** 2026-07-25
+**Decyzja:** `package:preview` buduje z izolowanej kopii tylko publiczne trasy
+statyczne, a `package:release` zawiera pełny serwer Etapu 1 i migracje.
+**Dlaczego:** home.pl FTP nie uruchomi bezpiecznych sesji ani PostgreSQL, ale
+nadal może służyć do pokazu strony bez udawania pełnej aplikacji.

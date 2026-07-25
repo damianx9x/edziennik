@@ -86,22 +86,31 @@ model School {
   scheduleSlots   ScheduleSlot[]
   auditLogs       AuditLog[]
   feedbackReports FeedbackReport[]
+  invitations     Invitation[]
 }
 
 model User {
-  id            String     @id @default(uuid()) @db.Uuid
-  schoolId      String     @db.Uuid
-  email         String
-  name          String
-  role          UserRole
-  status        UserStatus @default(INVITED)
-  emailVerified Boolean    @default(false)
-  phone         String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  archivedAt    DateTime?
+  id               String     @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  schoolId         String     @db.Uuid
+  email            String     @unique
+  name             String
+  role             String     @default("PARENT")
+  status           UserStatus @default(INVITED)
+  emailVerified    Boolean    @default(false)
+  image            String?
+  phone            String?
+  banned           Boolean?   @default(false)
+  banReason        String?
+  banExpires       DateTime?
+  twoFactorEnabled Boolean?   @default(false)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  archivedAt       DateTime?
 
   school          School           @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  sessions        Session[]
+  accounts        Account[]
+  twoFactors      TwoFactor[]
   teacherProfile  TeacherProfile?
   studentProfile  StudentProfile?
   parentLinks     ParentChild[]    @relation("ParentLinks")
@@ -112,10 +121,105 @@ model User {
   createdSlots    ScheduleSlot[]   @relation("ScheduleCreator")
   auditEvents     AuditLog[]       @relation("AuditActor")
   feedbackReports FeedbackReport[] @relation("FeedbackReporter")
+  sentInvitations Invitation[]     @relation("InvitationSender")
+  usedInvitations Invitation[]     @relation("InvitationRecipient")
 
-  @@unique([schoolId, email])
   @@index([schoolId, role, status])
   @@index([archivedAt])
+}
+
+model Session {
+  id             String   @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String   @db.Uuid
+  impersonatedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model TwoFactor {
+  id                      String    @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  secret                  String
+  backupCodes             String
+  userId                  String    @db.Uuid
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model RateLimit {
+  id          String @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+model Invitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  schoolId       String    @db.Uuid
+  invitedById    String    @db.Uuid
+  acceptedUserId String?   @db.Uuid
+  email          String
+  name           String
+  role           String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  school       School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  invitedBy    User   @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedUser User?  @relation("InvitationRecipient", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, createdAt])
+  @@index([schoolId, email, acceptedAt, revokedAt])
+  @@index([expiresAt])
 }
 
 model TeacherProfile {

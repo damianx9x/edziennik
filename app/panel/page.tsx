@@ -77,7 +77,7 @@ export default function PanelPage() {
   );
 }
 
-export function PanelTopbar() {
+function PanelTopbar() {
   return (
     <div className="panel-topbar">
       <Brand compact />

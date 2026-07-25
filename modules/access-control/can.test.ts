@@ -64,4 +64,20 @@ describe("can", () => {
       can(student, "view:director-dashboard", { schoolId }),
     ).toBe(false);
   });
+
+  it.each([
+    [teacher, "view:teacher-dashboard"],
+    [parent, "view:parent-dashboard"],
+    [student, "view:student-dashboard"],
+  ] as const)("allows only the matching role panel", (actor, action) => {
+    expect(can(actor, action, { schoolId })).toBe(true);
+
+    const otherActors = [teacher, parent, student].filter(
+      (candidate) => candidate.id !== actor.id,
+    );
+
+    for (const otherActor of otherActors) {
+      expect(can(otherActor, action, { schoolId })).toBe(false);
+    }
+  });
 });

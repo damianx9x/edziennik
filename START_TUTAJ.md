@@ -17,6 +17,10 @@ gdy go nie ma, generuje klienta Prisma i nigdy nie nadpisuje istniejących hase�
 Panel demonstracyjny szkoły:
 `eDziennik → Szkoła → Zobacz panel demonstracyjny`.
 
+Działający Etap 1:
+`eDziennik → wybór roli → Zaloguj się`. Konta testowe i bezpieczna procedura
+są opisane w `ETAP_1_INSTRUKCJA.md`.
+
 Edycja strony bez kodowania:
 `panel demonstracyjny → Treść strony`. W tej wersji zmiany zapisują się tylko
 w danej przeglądarce. Użyj `Eksportuj kopię`, aby przekazać je dalej.
@@ -66,7 +70,9 @@ npm run db:migrate:dev
 npm run db:seed:demo
 ```
 
-Tworzy 8 grup KLA i 35 syntetycznych uczniów z domeną `invalid.example`.
+Tworzy 8 grup KLA, 36 syntetycznych uczniów oraz cztery konta ról z domeną
+`invalid.example`. Hasło testowe pochodzi wyłącznie z lokalnej zmiennej
+`KLA_DEMO_PASSWORD`.
 
 ## Pokaz klientce
 
@@ -87,5 +93,5 @@ Późniejsze środowiska aplikacji:
 - `panel.kingslanguageacademy.pl` — produkcja po odbiorze.
 
 Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
-`edziennik-kla-stage-0-7.zip` wymaga hostingu Node.js i procedury z
+`edziennik-kla-stage-1.zip` wymaga hostingu Node.js i procedury z
 `DEPLOYMENT_MYDEVIL.md`.

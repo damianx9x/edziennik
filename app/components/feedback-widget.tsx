@@ -29,7 +29,7 @@ import { sanitizeDiagnosticText } from "../../modules/observability/sanitize";
 const supportEmail =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "kingsjezykiobce@gmail.com";
 const appRelease =
-  process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.3.0-stage-0.7";
+  process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.4.0-stage-1";
 
 const roleLabels = {
   student: "Uczeń",
@@ -40,6 +40,10 @@ const roleLabels = {
 } as const;
 
 type FeedbackRole = keyof typeof roleLabels;
+
+function isFeedbackRole(value: unknown): value is FeedbackRole {
+  return typeof value === "string" && value in roleLabels;
+}
 type FeedbackStatus =
   | { kind: "idle" }
   | { kind: "working"; message: string }
@@ -136,6 +140,12 @@ export function FeedbackWidget() {
   }, [isOpen]);
 
   function openDialog() {
+    const panelRole = document.querySelector<HTMLElement>(
+      "[data-feedback-role]",
+    )?.dataset.feedbackRole;
+    if (isFeedbackRole(panelRole)) {
+      setRole(panelRole);
+    }
     setIsOpen(true);
     setStatus({ kind: "idle" });
     recordClientEvent({ code: "feedback_opened", level: "info" });

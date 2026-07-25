@@ -3,6 +3,9 @@ export type Role = "DIRECTOR" | "TEACHER" | "PARENT" | "STUDENT";
 export type Action =
   | "manage:school"
   | "view:director-dashboard"
+  | "view:teacher-dashboard"
+  | "view:parent-dashboard"
+  | "view:student-dashboard"
   | "view:group"
   | "edit:group"
   | "view:student"
@@ -42,6 +45,18 @@ export function can(
 
   if (action === "view:director-dashboard" || action === "manage:school") {
     return false;
+  }
+
+  if (action === "view:teacher-dashboard") {
+    return actor.role === "TEACHER";
+  }
+
+  if (action === "view:parent-dashboard") {
+    return actor.role === "PARENT";
+  }
+
+  if (action === "view:student-dashboard") {
+    return actor.role === "STUDENT";
   }
 
   if (action === "view:group" || action === "edit:group") {
