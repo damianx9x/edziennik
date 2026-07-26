@@ -9,6 +9,7 @@ import {
   MapPin,
   MessageCircleMore,
   ShieldCheck,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -99,7 +100,7 @@ function DirectorDashboard({ name }: { name: string }) {
         <article className="panel-metric">
           <span>Dane szkoły</span>
           <strong>Kartoteki</strong>
-          <p>Dodawaj sale, grupy i osoby pojedynczo lub z arkusza CSV/XLSX.</p>
+          <p>Wyszukuj osoby i otwieraj kompletne karty kontaktowe.</p>
           <Link href="/panel/szkola/kartoteki">
             Otwórz kartoteki <Database aria-hidden="true" />
           </Link>
@@ -158,18 +159,25 @@ function DirectorDashboard({ name }: { name: string }) {
             <small>Etap 4</small>
           </span>
         </article>
-        <article>
+        <article id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <span>
             <strong>Wiadomości</strong>
             <small>Etap 5</small>
           </span>
         </article>
-        <article>
+        <article id="platnosci">
           <CalendarClock aria-hidden="true" />
           <span>
             <strong>Status płatności</strong>
             <small>Etap 4</small>
+          </span>
+        </article>
+        <article id="postepy">
+          <TrendingUp aria-hidden="true" />
+          <span>
+            <strong>Postępy uczniów</strong>
+            <small>Etap 6</small>
           </span>
         </article>
       </section>

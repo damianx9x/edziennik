@@ -3,10 +3,14 @@
 import {
   Check,
   Clipboard,
+  Download,
   LoaderCircle,
   MailPlus,
+  QrCode,
   ShieldCheck,
 } from "lucide-react";
+import Image from "next/image";
+import QRCode from "qrcode";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -45,6 +49,7 @@ export function InvitationManager() {
     initialInvitationActionState,
   );
   const [copied, setCopied] = useState(false);
+  const [qrCode, setQrCode] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -52,6 +57,26 @@ export function InvitationManager() {
       formRef.current?.reset();
     }
   }, [state.status]);
+
+  useEffect(() => {
+    if (!state.invitationLink) return;
+
+    let cancelled = false;
+    void QRCode.toDataURL(state.invitationLink, {
+      width: 320,
+      margin: 2,
+      errorCorrectionLevel: "M",
+      color: {
+        dark: "#101c3d",
+        light: "#ffffff",
+      },
+    }).then((image) => {
+      if (!cancelled) setQrCode(image);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.invitationLink]);
 
   async function copyLink() {
     if (!state.invitationLink) return;
@@ -73,7 +98,8 @@ export function InvitationManager() {
           <span className="section-kicker">Nowe konto</span>
           <h2 id="invite-title">Zaproś jedną osobę</h2>
           <p>
-            Osoba sama ustawi hasło. Link działa raz i wygasa po 7 dniach.
+            Osoba sama ustawi hasło z linku lub kodu QR. Zaproszenie działa raz
+            i wygasa po 7 dniach.
           </p>
         </div>
       </div>
@@ -82,6 +108,10 @@ export function InvitationManager() {
         ref={formRef}
         className="auth-form invite-form"
         action={formAction}
+        onSubmit={() => {
+          setCopied(false);
+          setQrCode("");
+        }}
       >
         <div className="invite-form-grid">
           <label>
@@ -136,30 +166,65 @@ export function InvitationManager() {
         ) : null}
 
         {state.status === "success" && state.invitationLink ? (
-          <div className="invite-link-box">
-            <div>
-              <ShieldCheck aria-hidden="true" />
-              <span>
-                Bezpieczny link
-                <small>Udostępnij tylko zaproszonej osobie.</small>
-              </span>
+          <div className="invite-access-box">
+            <div className="invite-link-box">
+              <div>
+                <ShieldCheck aria-hidden="true" />
+                <span>
+                  Bezpieczny link
+                  <small>Udostępnij tylko zaproszonej osobie.</small>
+                </span>
+              </div>
+              <code>{state.invitationLink}</code>
+              <button
+                className="button button-secondary button-full"
+                type="button"
+                onClick={copyLink}
+              >
+                {copied ? (
+                  <>
+                    <Check aria-hidden="true" /> Skopiowano
+                  </>
+                ) : (
+                  <>
+                    <Clipboard aria-hidden="true" /> Skopiuj link
+                  </>
+                )}
+              </button>
             </div>
-            <code>{state.invitationLink}</code>
-            <button
-              className="button button-secondary button-full"
-              type="button"
-              onClick={copyLink}
-            >
-              {copied ? (
+            <div className="invite-qr-box">
+              <div>
+                <QrCode aria-hidden="true" />
+                <span>
+                  Kod QR do rejestracji
+                  <small>
+                    Po zeskanowaniu osoba ustawi hasło dla wybranej roli.
+                  </small>
+                </span>
+              </div>
+              {qrCode ? (
                 <>
-                  <Check aria-hidden="true" /> Skopiowano
+                  <Image
+                    src={qrCode}
+                    alt="Kod QR z jednorazowym zaproszeniem do eDziennika"
+                    width={240}
+                    height={240}
+                    unoptimized
+                  />
+                  <a
+                    className="button button-secondary button-full"
+                    href={qrCode}
+                    download="zaproszenie-kla-qr.png"
+                  >
+                    <Download aria-hidden="true" /> Pobierz kod QR
+                  </a>
                 </>
               ) : (
-                <>
-                  <Clipboard aria-hidden="true" /> Skopiuj link
-                </>
+                <span className="invite-qr-loading" role="status">
+                  Tworzę kod QR…
+                </span>
               )}
-            </button>
+            </div>
           </div>
         ) : null}
 

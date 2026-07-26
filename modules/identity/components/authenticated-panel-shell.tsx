@@ -2,6 +2,7 @@ import {
   Bell,
   CalendarDays,
   ContactRound,
+  FileSpreadsheet,
   GraduationCap,
   Home,
   MailPlus,
@@ -17,7 +18,7 @@ import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 
 import { SignOutButton } from "./sign-out-button";
 
-type PanelSection = "home" | "invitations" | "records";
+type PanelSection = "home" | "invitations" | "records" | "transfers";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "DIRECTOR") {
@@ -34,6 +35,13 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         label: "Kartoteki",
         icon: ContactRound,
         key: "records",
+      },
+      {
+        href: "/panel/szkola/importy",
+        label: "Import i eksport",
+        mobileLabel: "Pliki",
+        icon: FileSpreadsheet,
+        key: "transfers",
       },
       {
         href: "/panel/szkola#grafik",
@@ -172,7 +180,7 @@ export function AuthenticatedPanelShell({
               className={active === item.key ? "active" : undefined}
             >
               <Icon aria-hidden="true" />
-              <span>{item.label}</span>
+              <span>{"mobileLabel" in item ? item.mobileLabel : item.label}</span>
             </Link>
           );
         })}

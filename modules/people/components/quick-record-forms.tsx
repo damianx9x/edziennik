@@ -5,6 +5,7 @@ import {
   DoorOpen,
   GraduationCap,
   LoaderCircle,
+  Plus,
   Users,
 } from "lucide-react";
 import { useActionState } from "react";
@@ -36,17 +37,21 @@ export function QuickRecordForms() {
   );
 
   return (
-    <section className="quick-records" aria-labelledby="quick-records-title">
-      <div className="records-section-heading">
+    <details className="records-create-panel" id="dodaj">
+      <summary>
+        <span className="record-icon record-icon-yellow">
+          <Plus aria-hidden="true" />
+        </span>
         <div>
           <span className="section-kicker">Pojedyncze pozycje</span>
-          <h2 id="quick-records-title">Dodaj bez arkusza</h2>
-          <p>Trzy krótkie formularze do codziennych zmian.</p>
+          <strong>Dodaj nową kartotekę</strong>
+          <small>Osoba, grupa albo sala — bez używania arkusza</small>
         </div>
-      </div>
+      </summary>
 
-      <div className="quick-record-grid">
-        <details className="quick-record-card" open>
+      <div className="records-create-panel-body">
+        <div className="quick-record-grid">
+          <details className="quick-record-card">
           <summary>
             <span className="record-icon record-icon-yellow">
               <DoorOpen aria-hidden="true" />
@@ -78,9 +83,9 @@ export function QuickRecordForms() {
               state={roomState}
             />
           </form>
-        </details>
+          </details>
 
-        <details className="quick-record-card">
+          <details className="quick-record-card">
           <summary>
             <span className="record-icon record-icon-blue">
               <GraduationCap aria-hidden="true" />
@@ -111,9 +116,9 @@ export function QuickRecordForms() {
               state={groupState}
             />
           </form>
-        </details>
+          </details>
 
-        <details className="quick-record-card">
+          <details className="quick-record-card">
           <summary>
             <span className="record-icon record-icon-red">
               <Users aria-hidden="true" />
@@ -173,9 +178,10 @@ export function QuickRecordForms() {
               state={personState}
             />
           </form>
-        </details>
+          </details>
+        </div>
       </div>
-    </section>
+    </details>
   );
 }
 

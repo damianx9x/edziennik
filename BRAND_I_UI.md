@@ -1,6 +1,6 @@
 # Marka i system UI KLA
 
-Stan: Etap 0.7, 25 lipca 2026.
+Stan: Etap 2, 26 lipca 2026.
 
 ## Źródło
 
@@ -64,6 +64,16 @@ produkcyjna dołączy wersjonowanie, bezpieczny magazyn i uprawnienie dyrektora.
 5. Ikony wyłącznie z Lucide.
 6. Test klawiatury, dotyku, kontrastu i `prefers-reduced-motion`.
 7. Klikane QA na 375×812 i 1440×900 przed każdym wydaniem.
+
+## Wzorce panelu Etapu 2
+
+- Jedno logowanie — rola konta wybiera panel, a nie dodatkowy ekran użytkownika.
+- Kartoteki służą codziennej pracy: wyszukiwanie, filtr i otwarcie osoby.
+- Import, eksport i historia plików mają osobną pozycję nawigacji.
+- Karta osoby jest dużym dialogiem: kontakt, powiązania i sprawy w jednym
+  miejscu; na telefonie zachowuje się jak czytelny arkusz od dołu.
+- Dialog obsługuje przycisk zamknięcia, `Escape` i przywracanie fokusu.
+- Zaproszenie pokazuje link i QR razem; QR nie zmienia zasad bezpieczeństwa.
 
 ## Ruch i mikrointerakcje
 

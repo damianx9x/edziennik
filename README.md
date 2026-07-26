@@ -1,9 +1,10 @@
 # eDziennik KLA
 
 Mobilny eDziennik King’s Language Academy. Etap 2 dodaje kartoteki sal, grup
-i osób, relacje rodzic–dziecko, import CSV/XLSX z podglądem, archiwizację oraz
-prywatny magazyn plików. Konta przez zaproszenie, cztery role, bezpieczne sesje,
-odzyskiwanie hasła i obowiązkowe TOTP 2FA dyrektora z Etapu 1 pozostają
+i osób, dużą kartę osoby, relacje rodzic–dziecko, osobny import i eksport,
+archiwizację oraz prywatny magazyn plików. Jedno logowanie kieruje według roli,
+a zaproszenie można przekazać bezpiecznym linkiem lub kodem QR. Bezpieczne
+sesje, odzyskiwanie hasła i obowiązkowe TOTP 2FA dyrektora z Etapu 1 pozostają
 podstawą dostępu.
 
 ## Start

@@ -7,58 +7,42 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 import { Brand } from "../../components/brand";
 
-const roleLabels = {
-  uczen: "ucznia",
-  rodzic: "rodzica",
-  szkola: "szkoły",
-} as const;
-
-type RoleSlug = keyof typeof roleLabels;
-
 export function LoginPreview() {
-  const searchParams = useSearchParams();
-  const role = searchParams.get("rola");
-  const safeRole =
-    role && role in roleLabels ? (role as RoleSlug) : ("rodzic" as const);
-
   return (
     <main className="panel-shell">
       <div className="panel-topbar">
         <Brand compact />
-        <Link className="back-link" href="/panel">
-          <ArrowLeft size={18} aria-hidden="true" /> Zmień panel
+        <Link className="back-link" href="/">
+          <ArrowLeft size={18} aria-hidden="true" /> Strona szkoły
         </Link>
       </div>
       <section className="login-preview" aria-labelledby="login-title">
         <div className="login-preview-icon">
           <LockKeyhole aria-hidden="true" />
         </div>
-        <h1 id="login-title">Panel {roleLabels[safeRole]}</h1>
+        <h1 id="login-title">Jedno logowanie</h1>
         <p>
-          To bezpieczny podgląd pilota KLA. Logowanie, zaproszenia i cztery role
-          zostaną podłączone w Etapie 1.
+          E-mail i hasło wystarczą. System sam otworzy właściwy panel zgodnie z
+          rolą zapisaną na koncie.
         </p>
         <div className="stage-notice" role="status">
-          Nie prosimy jeszcze o e-mail ani hasło, bo aplikacja nie przechowuje
-          teraz żadnych danych użytkowników.
+          Publiczny pokaz nie przyjmuje prawdziwych danych logowania. Działające
+          konta są dostępne wyłącznie w bezpiecznej aplikacji Node.js.
         </div>
         <div className="login-actions">
-          {safeRole === "szkola" ? (
-            <Link
-              className="button button-primary button-full"
-              href="/panel/demo"
-              data-testid="open-demo-dashboard"
-            >
-              <LayoutDashboard aria-hidden="true" />
-              Zobacz panel demonstracyjny
-            </Link>
-          ) : null}
-          <Link className="button button-secondary button-full" href="/panel">
-            Wróć do wyboru panelu
+          <Link
+            className="button button-primary button-full"
+            href="/panel/demo"
+            data-testid="open-demo-dashboard"
+          >
+            <LayoutDashboard aria-hidden="true" />
+            Zobacz panel demonstracyjny
+          </Link>
+          <Link className="button button-secondary button-full" href="/">
+            Wróć na stronę szkoły
             <ArrowRight aria-hidden="true" />
           </Link>
         </div>

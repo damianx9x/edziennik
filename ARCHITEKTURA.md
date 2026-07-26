@@ -40,6 +40,10 @@ Zaproszenie zawiera losowy token, ale baza przechowuje wyłącznie jego skrót
 SHA-256. Link działa raz i przez 7 dni. Utworzenie, cofnięcie i użycie
 zaproszenia tworzy `AuditLog` bez adresu e-mail i tokenu.
 
+Kod QR jest wyłącznie inną formą przekazania tego samego linku. Rola pochodzi
+z zaproszenia, nie z formularza rejestracji. Jedna strona logowania odczytuje
+rolę z aktywnej sesji i przekierowuje do właściwego panelu.
+
 Każda chroniona strona pobiera sesję na serwerze, sprawdza `schoolId`, status
 konta, rolę oraz centralne `can(...)`. Dyrektor bez aktywnego TOTP jest
 przekierowany do konfiguracji, zanim zobaczy swój panel.
@@ -56,6 +60,10 @@ powiązania i duplikaty, a oryginalny plik zapisuje poza `public/`. Zatwierdzeni
 ponownie odczytuje plik, sprawdza jego SHA-256 i wykonuje cały zapis w jednej
 transakcji. Log audytowy przechowuje wyłącznie liczby i identyfikatory
 techniczne, bez treści arkusza.
+
+Eksport jest chronioną trasą dyrektora. Generuje CSV zgodny z parserem importu,
+pomija techniczne adresy rekordów bez konta i zapisuje w audycie tylko liczby.
+Import, eksport i historia operacji są oddzielone od codziennego katalogu osób.
 
 ## Edytowalna strona publiczna
 

@@ -47,7 +47,7 @@ export default async function InvitationsPage() {
           <h1>Zaproszenia i konta</h1>
           <p>
             Nie ma publicznej rejestracji. Każde konto zaczyna się od
-            jednorazowego linku wysłanego przez szkołę.
+            jednorazowego linku albo kodu QR utworzonego przez szkołę.
           </p>
         </div>
         <span className="role-security-chip">

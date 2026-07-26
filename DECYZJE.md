@@ -206,3 +206,21 @@ korzystają samodzielnie z panelu, bez tworzenia sztucznych adresów kontaktowyc
 fizycznie kasowane w codziennym interfejsie.
 **Dlaczego:** przyszły grafik, umowy, płatności i dziennik wymagają ciągłości
 historii; usuwanie odbywa się osobną procedurą retencji.
+
+## ADR-027 — jedno logowanie i QR jako nośnik zaproszenia
+
+**Data:** 2026-07-26
+**Decyzja:** system ma jeden formularz logowania, a docelowy panel wynika z roli
+aktywnego konta. Kod QR zawiera ten sam jednorazowy, siedmiodniowy i przypisany
+do roli link co zaproszenie tekstowe.
+**Dlaczego:** dodatkowy wybór roli był mylący i nie dawał bezpieczeństwa. QR
+upraszcza start na telefonie bez otwierania publicznej rejestracji.
+
+## ADR-028 — oddzielone operacje na plikach i eksport zgodny z importem
+
+**Data:** 2026-07-26
+**Decyzja:** import, eksport oraz historia operacji mają osobną kategorię,
+a kartoteki są katalogiem do codziennej pracy. Eksport dyrektora generuje CSV
+zgodny z parserem importu i zapisuje jedynie bezpieczne liczniki w audycie.
+**Dlaczego:** operacje techniczne nie mogą zaciemniać wyszukiwania osób, a jeden
+format ogranicza ręczne poprawki i ułatwia wykonanie kopii roboczej.

@@ -1,32 +1,34 @@
 import {
   Archive,
-  Database,
   DoorOpen,
-  Download,
+  FileSpreadsheet,
   GraduationCap,
+  Plus,
   ShieldCheck,
   UserRoundCheck,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { db } from "@/lib/server/db";
 import { archiveRecordAction } from "@/modules/groups/actions";
 import { cefrLabels } from "@/modules/groups/schema";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
-import { maskEmail } from "@/modules/identity/invitations/token";
-import { ImportWizard } from "@/modules/imports/components/import-wizard";
+import {
+  PersonDirectory,
+  type PersonDirectoryRecord,
+} from "@/modules/people/components/person-directory";
 import { QuickRecordForms } from "@/modules/people/components/quick-record-forms";
-import { recordRoleLabels } from "@/modules/people/schema";
 
-export const metadata: Metadata = { title: "Kartoteki i import" };
+export const metadata: Metadata = { title: "Kartoteki szkoły" };
 export const dynamic = "force-dynamic";
 
 export default async function RecordsPage() {
   const session = await requireDirector("/panel/szkola/kartoteki");
   const schoolId = session.user.schoolId;
-  const [rooms, groups, people, recentImports] = await Promise.all([
+  const [rooms, groups, people] = await Promise.all([
     db.room.findMany({
       where: { schoolId, archivedAt: null },
       orderBy: { name: "asc" },
@@ -59,40 +61,58 @@ export default async function RecordsPage() {
         archivedAt: null,
       },
       orderBy: [{ role: "asc" }, { name: "asc" }],
-      take: 200,
+      take: 300,
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
         externalId: true,
         role: true,
-        accounts: { select: { id: true }, take: 1 },
-        _count: {
-          select: {
-            groupTeaching: { where: { archivedAt: null } },
-            parentLinks: { where: { archivedAt: null } },
-            enrollments: { where: { status: "ACTIVE" } },
-          },
-        },
-      },
-    }),
-    db.importBatch.findMany({
-      where: { schoolId, archivedAt: null },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      select: {
-        id: true,
         status: true,
-        totalRows: true,
-        errorRows: true,
-        duplicateRows: true,
-        createdAt: true,
-        sourceFile: { select: { originalName: true } },
+        accounts: { select: { id: true }, take: 1 },
+        groupTeaching: {
+          where: { archivedAt: null },
+          select: { group: { select: { name: true } } },
+        },
+        parentLinks: {
+          where: { archivedAt: null },
+          select: { child: { select: { name: true } } },
+        },
+        enrollments: {
+          where: { status: "ACTIVE" },
+          select: { group: { select: { name: true } } },
+        },
       },
     }),
   ]);
 
-  const personCounts = people.reduce(
+  const directoryPeople: PersonDirectoryRecord[] = people.map((person) => {
+    const role = person.role as PersonDirectoryRecord["role"];
+    const relations =
+      role === "TEACHER"
+        ? person.groupTeaching.map((item) => item.group.name)
+        : role === "PARENT"
+          ? person.parentLinks.map((item) => item.child.name)
+          : person.enrollments.map((item) => item.group.name);
+    const recordOnlyEmail =
+      person.email.startsWith("record.") &&
+      person.email.endsWith("@invalid.example");
+
+    return {
+      id: person.id,
+      name: person.name,
+      email: recordOnlyEmail ? null : person.email,
+      phone: person.phone,
+      externalId: person.externalId,
+      role,
+      status: person.status,
+      hasAccount: person.accounts.length > 0,
+      relationLabel: formatRelationCount(role, relations.length),
+      relations,
+    };
+  });
+  const personCounts = directoryPeople.reduce(
     (counts, person) => {
       if (person.role === "TEACHER") counts.teachers += 1;
       if (person.role === "PARENT") counts.parents += 1;
@@ -106,275 +126,201 @@ export default async function RecordsPage() {
     <AuthenticatedPanelShell session={session} active="records">
       <header className="role-panel-heading records-page-heading">
         <div>
-          <span className="section-kicker">Etap 2 · dane szkoły</span>
-          <h1>Kartoteki i import</h1>
+          <span className="section-kicker">Dane szkoły</span>
+          <h1>Kartoteki</h1>
           <p>
-            Sale, grupy i osoby w jednym miejscu. Większą listę wczytasz z
-            arkusza, a system pokaże błędy przed zapisem.
+            Znajdź osobę i otwórz jej kartę. Grupy i sale są niżej, gotowe do
+            użycia w grafiku.
           </p>
         </div>
-        <a className="button button-primary" href="/szablon-importu-kla.csv">
-          <Download aria-hidden="true" /> Pobierz szablon
-        </a>
+        <div className="records-heading-actions">
+          <Link className="button button-secondary" href="/panel/szkola/importy">
+            <FileSpreadsheet aria-hidden="true" /> Import i eksport
+          </Link>
+          <a className="button button-primary" href="#dodaj">
+            <Plus aria-hidden="true" /> Dodaj
+          </a>
+        </div>
       </header>
 
-      <section className="records-safety-banner">
+      <section className="records-summary-strip" aria-label="Stan kartotek">
+        <a href="#osoby">
+          <Users aria-hidden="true" />
+          <span>
+            <strong>{personCounts.students}</strong>
+            Uczniowie
+          </span>
+        </a>
+        <a href="#osoby">
+          <UserRoundCheck aria-hidden="true" />
+          <span>
+            <strong>{personCounts.teachers}</strong>
+            Wykładowcy
+          </span>
+        </a>
+        <a href="#grupy">
+          <GraduationCap aria-hidden="true" />
+          <span>
+            <strong>{groups.length}</strong>
+            Grupy
+          </span>
+        </a>
+        <a href="#sale">
+          <DoorOpen aria-hidden="true" />
+          <span>
+            <strong>{rooms.length}</strong>
+            Sale
+          </span>
+        </a>
+      </section>
+
+      <section className="records-safety-banner records-safety-compact">
         <ShieldCheck aria-hidden="true" />
         <span>
-          <strong>Nic nie jest kasowane bezpowrotnie</strong>
-          <small>
-            Pozycje trafiają do archiwum, import ma podgląd, a pliki nie są
-            publiczne.
-          </small>
+          <strong>Zmiany pozostawiają historię</strong>
+          <small>Archiwizacja ukrywa rekord bez niszczenia jego powiązań.</small>
         </span>
       </section>
 
-      <div className="records-overview" aria-label="Stan kartotek">
-        <article>
-          <DoorOpen aria-hidden="true" />
-          <span>Sale</span>
-          <strong>{rooms.length}</strong>
-        </article>
-        <article>
-          <GraduationCap aria-hidden="true" />
-          <span>Grupy</span>
-          <strong>{groups.length}</strong>
-        </article>
-        <article>
-          <UserRoundCheck aria-hidden="true" />
-          <span>Wykładowcy</span>
-          <strong>{personCounts.teachers}</strong>
-        </article>
-        <article>
-          <Users aria-hidden="true" />
-          <span>Uczniowie</span>
-          <strong>{personCounts.students}</strong>
-        </article>
-      </div>
-
-      <nav className="records-jump-nav" aria-label="Sekcje kartotek">
-        <a href="#import">Import</a>
-        <a href="#sale">Sale</a>
-        <a href="#grupy">Grupy</a>
-        <a href="#osoby">Osoby</a>
-      </nav>
-
-      <ImportWizard />
       <QuickRecordForms />
 
-      <section className="records-card records-list-card" id="sale">
-        <RecordsHeading
-          icon={<DoorOpen aria-hidden="true" />}
-          title="Sale"
-          description="Zasób używany przy układaniu grafiku."
-          count={rooms.length}
-        />
-        {rooms.length === 0 ? (
-          <RecordsEmpty
-            title="Nie ma jeszcze sal"
-            text="Dodaj pierwszą salę powyżej albo użyj importu."
-          />
-        ) : (
-          <div className="records-table-wrap">
-            <table className="records-table">
-              <thead>
-                <tr>
-                  <th>Nazwa</th>
-                  <th>Miejsca</th>
-                  <th>Zajęcia</th>
-                  <th>
-                    <span className="sr-only">Działania</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rooms.map((room) => (
-                  <tr key={room.id}>
-                    <td data-label="Nazwa">
-                      <strong>{room.name}</strong>
-                    </td>
-                    <td data-label="Miejsca">{room.capacity ?? "Nie podano"}</td>
-                    <td data-label="Zajęcia">{room._count.scheduleSlots}</td>
-                    <td data-label="Działania">
-                      <ArchiveControl
-                        id={room.id}
-                        type="room"
-                        label={`salę ${room.name}`}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <div id="osoby">
+        <PersonDirectory people={directoryPeople} />
+      </div>
 
-      <section className="records-card records-list-card" id="grupy">
-        <RecordsHeading
-          icon={<GraduationCap aria-hidden="true" />}
-          title="Grupy"
-          description="Grupa połączy uczniów, wykładowców i plan lekcji."
-          count={groups.length}
-        />
-        {groups.length === 0 ? (
-          <RecordsEmpty
-            title="Nie ma jeszcze grup"
-            text="Dodaj pierwszą grupę powyżej albo użyj importu."
-          />
-        ) : (
-          <div className="records-table-wrap">
-            <table className="records-table">
-              <thead>
-                <tr>
-                  <th>Nazwa</th>
-                  <th>Poziom</th>
-                  <th>Uczniowie</th>
-                  <th>Wykładowcy</th>
-                  <th>
-                    <span className="sr-only">Działania</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+      <section className="resource-directory" aria-labelledby="resources-title">
+        <div className="records-section-heading">
+          <div>
+            <span className="section-kicker">Zasoby do grafiku</span>
+            <h2 id="resources-title">Grupy i sale</h2>
+            <p>Krótka lista bez mieszania jej z kartotekami osób.</p>
+          </div>
+        </div>
+
+        <div className="resource-directory-grid">
+          <article className="records-card resource-list-card" id="grupy">
+            <ResourceHeading
+              icon={<GraduationCap aria-hidden="true" />}
+              title="Grupy"
+              count={groups.length}
+            />
+            {groups.length === 0 ? (
+              <RecordsEmpty
+                title="Nie ma jeszcze grup"
+                text="Dodaj pierwszą grupę przyciskiem u góry."
+              />
+            ) : (
+              <ul>
                 {groups.map((group) => (
-                  <tr key={group.id}>
-                    <td data-label="Nazwa">
+                  <li key={group.id}>
+                    <span>
                       <strong>{group.name}</strong>
-                    </td>
-                    <td data-label="Poziom">
-                      {cefrLabels[group.cefrLevel as keyof typeof cefrLabels]}
-                    </td>
-                    <td data-label="Uczniowie">{group._count.enrollments}</td>
-                    <td data-label="Wykładowcy">{group._count.teachers}</td>
-                    <td data-label="Działania">
-                      <ArchiveControl
-                        id={group.id}
-                        type="group"
-                        label={`grupę ${group.name}`}
-                      />
-                    </td>
-                  </tr>
+                      <small>
+                        {cefrLabels[group.cefrLevel]} ·{" "}
+                        {formatSimpleCount(
+                          group._count.enrollments,
+                          "uczeń",
+                          "uczniów",
+                        )}{" "}
+                        ·{" "}
+                        {formatSimpleCount(
+                          group._count.teachers,
+                          "wykładowca",
+                          "wykładowców",
+                        )}
+                      </small>
+                    </span>
+                    <ArchiveControl
+                      id={group.id}
+                      type="group"
+                      label={`grupę ${group.name}`}
+                    />
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+              </ul>
+            )}
+          </article>
 
-      <section className="records-card records-list-card" id="osoby">
-        <RecordsHeading
-          icon={<Users aria-hidden="true" />}
-          title="Osoby"
-          description="Wykładowcy, rodzice i uczniowie widoczni tylko w tej szkole."
-          count={people.length}
-        />
-        {people.length === 0 ? (
-          <RecordsEmpty
-            title="Nie ma jeszcze osób"
-            text="Dodaj pojedynczą kartotekę albo użyj importu."
-          />
-        ) : (
-          <div className="records-table-wrap">
-            <table className="records-table">
-              <thead>
-                <tr>
-                  <th>Osoba</th>
-                  <th>Rola</th>
-                  <th>Konto</th>
-                  <th>Powiązania</th>
-                  <th>
-                    <span className="sr-only">Działania</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {people.map((person) => {
-                  const role =
-                    person.role as keyof typeof recordRoleLabels;
-                  const relations =
-                    role === "TEACHER"
-                      ? `${person._count.groupTeaching} grup`
-                      : role === "PARENT"
-                        ? `${person._count.parentLinks} dzieci`
-                        : `${person._count.enrollments} grup`;
-                  return (
-                    <tr key={person.id}>
-                      <td data-label="Osoba">
-                        <strong>{person.name}</strong>
-                        <small>{person.externalId ?? "Bez identyfikatora"}</small>
-                      </td>
-                      <td data-label="Rola">
-                        {recordRoleLabels[role] ?? "Użytkownik"}
-                      </td>
-                      <td data-label="Konto">
-                        {person.accounts.length > 0
-                          ? maskEmail(person.email)
-                          : "Bez aktywnego konta"}
-                      </td>
-                      <td data-label="Powiązania">{relations}</td>
-                      <td data-label="Działania">
-                        <ArchiveControl
-                          id={person.id}
-                          type="person"
-                          label={`kartotekę ${person.name}`}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="records-card import-history-card">
-        <RecordsHeading
-          icon={<Database aria-hidden="true" />}
-          title="Ostatnie importy"
-          description="Historia bez treści arkusza i danych osobowych w logach."
-          count={recentImports.length}
-        />
-        {recentImports.length === 0 ? (
-          <RecordsEmpty
-            title="Brak historii"
-            text="Pierwszy podgląd importu pojawi się tutaj."
-          />
-        ) : (
-          <div className="import-history">
-            {recentImports.map((item) => (
-              <article key={item.id}>
-                <span>
-                  <strong>{item.sourceFile.originalName}</strong>
-                  <small>
-                    {formatDate(item.createdAt)} · {item.totalRows} wierszy
-                  </small>
-                </span>
-                <span className={`import-status status-${item.status.toLowerCase()}`}>
-                  {importStatusLabel(item.status)}
-                </span>
-                <small>
-                  {item.errorRows} błędów · {item.duplicateRows} duplikatów
-                </small>
-              </article>
-            ))}
-          </div>
-        )}
+          <article className="records-card resource-list-card" id="sale">
+            <ResourceHeading
+              icon={<DoorOpen aria-hidden="true" />}
+              title="Sale"
+              count={rooms.length}
+            />
+            {rooms.length === 0 ? (
+              <RecordsEmpty
+                title="Nie ma jeszcze sal"
+                text="Dodaj pierwszą salę przyciskiem u góry."
+              />
+            ) : (
+              <ul>
+                {rooms.map((room) => (
+                  <li key={room.id}>
+                    <span>
+                      <strong>{room.name}</strong>
+                      <small>
+                        {room.capacity
+                          ? formatSimpleCount(
+                              room.capacity,
+                              "miejsce",
+                              "miejsc",
+                            )
+                          : "Nie podano liczby miejsc"}{" "}
+                        ·{" "}
+                        {formatSimpleCount(
+                          room._count.scheduleSlots,
+                          "zajęcie",
+                          "zajęć",
+                        )}
+                      </small>
+                    </span>
+                    <ArchiveControl
+                      id={room.id}
+                      type="room"
+                      label={`salę ${room.name}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        </div>
       </section>
     </AuthenticatedPanelShell>
   );
 }
 
-function RecordsHeading({
+function formatRelationCount(
+  role: PersonDirectoryRecord["role"],
+  count: number,
+) {
+  if (role === "PARENT") {
+    return formatSimpleCount(count, "dziecko", "dzieci");
+  }
+  return `${count} ${polishGroupNoun(count)}`;
+}
+
+function formatSimpleCount(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function polishGroupNoun(count: number) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (count === 1) return "grupa";
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) {
+    return "grupy";
+  }
+  return "grup";
+}
+
+function ResourceHeading({
   icon,
   title,
-  description,
   count,
 }: {
   icon: React.ReactNode;
   title: string;
-  description: string;
   count: number;
 }) {
   return (
@@ -382,7 +328,6 @@ function RecordsHeading({
       <span className="record-icon record-icon-blue">{icon}</span>
       <div>
         <h2>{title}</h2>
-        <p>{description}</p>
       </div>
       <span className="records-count">{count}</span>
     </div>
@@ -404,7 +349,7 @@ function ArchiveControl({
   label,
 }: {
   id: string;
-  type: "room" | "group" | "person";
+  type: "room" | "group";
   label: string;
 }) {
   return (
@@ -421,26 +366,5 @@ function ArchiveControl({
         </form>
       </div>
     </details>
-  );
-}
-
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("pl-PL", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Warsaw",
-  }).format(date);
-}
-
-function importStatusLabel(status: string) {
-  return (
-    {
-      PREVIEW_READY: "Podgląd",
-      COMMITTED: "Zapisany",
-      FAILED: "Błąd",
-      ARCHIVED: "Archiwum",
-    }[status] ?? status
   );
 }

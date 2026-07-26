@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { Brand } from "@/app/components/brand";
 import { authClient } from "@/lib/auth-client";
@@ -21,14 +21,6 @@ import {
   getRoleHome,
   getSafeReturnPath,
 } from "@/modules/identity/auth/redirects";
-
-const portalLabels = {
-  uczen: "ucznia",
-  rodzic: "rodzica",
-  szkola: "szkoły",
-} as const;
-
-type PortalSlug = keyof typeof portalLabels;
 
 function getErrorMessage(code: string | undefined, status: number): string {
   if (status === 429) {
@@ -46,17 +38,31 @@ function getErrorMessage(code: string | undefined, status: number): string {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roleParam = searchParams.get("rola");
-  const portal: PortalSlug =
-    roleParam && roleParam in portalLabels
-      ? (roleParam as PortalSlug)
-      : "rodzic";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [message, setMessage] = useState("");
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    void authClient.getSession().then((session) => {
+      if (!isCurrent) return;
+      const user = session.data?.user as
+        | { role?: unknown; status?: unknown }
+        | undefined;
+      if (user?.status === "ACTIVE" && isIdentityRole(user.role)) {
+        router.replace(getRoleHome(user.role));
+        router.refresh();
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,8 +116,8 @@ export function LoginForm() {
     <main className="auth-page">
       <div className="auth-topbar">
         <Brand compact />
-        <Link className="back-link" href="/panel">
-          <ArrowLeft size={18} aria-hidden="true" /> Zmień panel
+        <Link className="back-link" href="/">
+          <ArrowLeft size={18} aria-hidden="true" /> Strona szkoły
         </Link>
       </div>
 
@@ -139,11 +145,12 @@ export function LoginForm() {
             <KeyRound aria-hidden="true" />
           </div>
           <span className="auth-card-overline">
-            Panel {portalLabels[portal]}
+            Bezpieczny dostęp
           </span>
           <h2 id="login-title">Zaloguj się</h2>
           <p className="auth-card-lead">
-            Użyj adresu, na który przyszło zaproszenie.
+            Użyj adresu, na który przyszło zaproszenie. System sam rozpozna
+            Twoją rolę.
           </p>
 
           <form className="auth-form" onSubmit={submit} aria-busy={isPending}>

@@ -106,7 +106,7 @@ export const defaultSiteContent: SiteContent = {
     kicker: "Cyfrowe zaplecze, ludzkie podejście",
     title: "Jedno proste miejsce dla całej społeczności KLA.",
     text: "Rodzic, uczeń, wykładowca i dyrektor widzą tylko to, czego potrzebują. Plan, obecności i najważniejsze informacje są pod ręką — szczególnie na telefonie.",
-    cta: "Wybierz swój panel",
+    cta: "Przejdź do logowania",
     roles: [
       {
         title: "Rodzic",
