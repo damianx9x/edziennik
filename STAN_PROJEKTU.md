@@ -36,7 +36,7 @@ Termin pilota: 1 września 2026.
 - jednorazowe zaproszenia e-mail,
 - czasowe zaproszenia QR z rolą,
 - formularz rejestracji dla osób nietechnicznych,
-- obowiązkowe MFA dyrektora,
+- gotowy mechanizm MFA; czasowo wyłączony dla dyrektora w pilocie,
 - syntetyczne konta testowe.
 
 ### Etap 2 — wykonana część kartotek i narzędzi
@@ -74,11 +74,12 @@ Termin pilota: 1 września 2026.
 ## Zweryfikowane
 
 - `npm run check`,
-- 52 testy automatyczne,
+- 56 testów automatycznych,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
 - logowanie właściciela przekierowuje do konfiguracji MFA,
+- dyrektor w pilocie loguje się bez MFA, a diagnostyka pokazuje ten wyjątek,
 - paczki nie zawierają `.env`, lokalnej bazy ani haseł.
 
 ## Aktualne paczki
@@ -101,6 +102,14 @@ Termin pilota: 1 września 2026.
 - produkcyjnego prywatnego magazynu plików,
 - zewnętrznych backupów, retencji i pełnego monitoringu,
 - wyczyszczonej produkcyjnej bazy.
+
+## Świadomie przesunięte przed prawdziwe dane
+
+- ponowne włączenie obowiązkowego MFA dyrektora,
+- produkcyjna wysyłka e-mail i SMS,
+- prywatny magazyn plików poza dyskiem serwera,
+- zewnętrzny szyfrowany backup i test odtwarzania,
+- retencja, dokumenty prawne i końcowa checklista RODO.
 
 ## Najbliższa kolejność
 

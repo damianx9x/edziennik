@@ -38,6 +38,7 @@ COPY --from=builder --chown=kla:kla /app/prisma.config.ts ./prisma.config.ts
 COPY --chown=kla:kla scripts/release-prisma.config.ts ./migration-tools/prisma.config.ts
 COPY --chown=kla:kla scripts/setup-system-owner.mjs ./migration-tools/setup-owner.mjs
 COPY --chown=kla:kla scripts/seed-server-demo.mjs ./migration-tools/seed-demo.mjs
+COPY --chown=kla:kla scripts/apply-director-mfa-policy.mjs ./migration-tools/apply-director-mfa-policy.mjs
 COPY --chown=kla:kla deployment/home-vps/migration-tools-package.json ./migration-tools/package.json
 RUN npm install \
     --prefix ./migration-tools \
@@ -50,10 +51,11 @@ COPY --chown=kla:kla scripts/release-start.sh ./start.sh
 COPY --chown=kla:kla scripts/release-migrate.sh ./migrate.sh
 COPY --chown=kla:kla scripts/release-setup-owner.sh ./setup-owner.sh
 COPY --chown=kla:kla scripts/release-seed-demo.sh ./seed-demo.sh
+COPY --chown=kla:kla scripts/release-apply-director-mfa-policy.sh ./apply-director-mfa-policy.sh
 
 RUN mkdir -p /app/.data/private-files \
   && chown -R kla:kla /app \
-  && chmod +x /app/start.sh /app/migrate.sh /app/setup-owner.sh /app/seed-demo.sh
+  && chmod +x /app/start.sh /app/migrate.sh /app/setup-owner.sh /app/seed-demo.sh /app/apply-director-mfa-policy.sh
 
 USER kla
 

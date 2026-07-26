@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { can } from "@/modules/access-control/can";
 import { getRoleHome } from "@/modules/identity/auth/redirects";
-import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { isMfaRequiredForRole } from "@/modules/identity/auth/mfa-policy";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { TwoFactorSetup } from "@/modules/identity/components/two-factor-setup";
 
@@ -14,7 +14,7 @@ export default async function TwoFactorSetupPage() {
   const session = await requireActiveSession("/panel/bezpieczenstwo/2fa");
 
   if (
-    !isPrivilegedIdentityRole(session.user.role) ||
+    !isMfaRequiredForRole(session.user.role) ||
     !can(
       {
         id: session.user.id,

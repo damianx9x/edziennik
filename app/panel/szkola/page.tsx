@@ -94,11 +94,11 @@ function DirectorDashboard({ name }: { name: string }) {
           </Link>
         </article>
         <article className="panel-metric">
-          <span>Ochrona danych</span>
-          <strong>2FA aktywne</strong>
-          <p>Wrażliwe funkcje dyrektora wymagają dodatkowego kodu.</p>
+          <span>Tryb testowy</span>
+          <strong>Logowanie bez MFA</strong>
+          <p>Na czas odbioru dyrektor używa e-maila i hasła bez kodu z telefonu.</p>
           <div className="metric-safe">
-            <ShieldCheck aria-hidden="true" /> Konto chronione
+            <ShieldCheck aria-hidden="true" /> MFA przed prawdziwymi danymi
           </div>
         </article>
         <article className="panel-metric">

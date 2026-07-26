@@ -22,7 +22,22 @@ describe("system owner diagnostics", () => {
     expect(checks.find((check) => check.key === "storage")?.status).toBe(
       "error",
     );
+    expect(
+      checks.find((check) => check.key === "director-mfa")?.status,
+    ).toBe("ok");
     expect(JSON.stringify(checks)).not.toContain("short");
+  });
+
+  it("warns when director MFA is disabled for pilot testing", () => {
+    const checks = buildConfigurationChecks({
+      KLA_REQUIRE_DIRECTOR_MFA: "0",
+    });
+
+    expect(
+      checks.find((check) => check.key === "director-mfa"),
+    ).toMatchObject({
+      status: "warning",
+    });
   });
 
   it("redacts nested personal data and credentials from logs", () => {

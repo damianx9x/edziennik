@@ -58,6 +58,9 @@ for pid_file in "$app_pid_file" "$tunnel_pid_file"; do
   fi
 done
 
+node --env-file="$project_dir/.env" \
+  "$project_dir/scripts/apply-director-mfa-policy.mjs"
+
 mkdir -p "$state_dir" "$bin_dir" "$logs_dir"
 chmod 700 "$state_dir" "$bin_dir" "$logs_dir"
 
@@ -152,6 +155,7 @@ const allowedKeys = new Set([
   "NEXT_PUBLIC_SUPPORT_EMAIL",
   "LOG_LEVEL",
   "SENTRY_DSN",
+  "KLA_REQUIRE_DIRECTOR_MFA",
   "FILE_STORAGE_PROVIDER",
   "SIGNATURE_PROVIDER",
   "MESSAGE_REFRESH_MS",
@@ -284,8 +288,7 @@ const contents = [
   "Uczeń: uczen.panel.demo@invalid.example",
   `Wspólne hasło kont demo: ${demoPassword}`,
   "",
-  "Dyrektor przy pierwszym wejściu skonfiguruje MFA na swoim telefonie.",
-  "Kody awaryjne trzeba zapisać — nie pojawią się ponownie.",
+  "Dyrektor w bieżącym pilocie loguje się bez kodu MFA.",
   "",
   "Nie przekazuj klientce konta bog.",
   "Mac musi być włączony, podłączony do internetu i zasilania.",

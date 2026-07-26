@@ -7,7 +7,8 @@
 - osobny, chroniony panel każdej roli,
 - jednorazowe zaproszenia ważne 7 dni,
 - reset hasła i przygotowana wysyłka e-mail przez Resend,
-- obowiązkowe TOTP 2FA dyrektora z kodami awaryjnymi,
+- gotowe TOTP 2FA z kodami awaryjnymi; w pilocie wymagane tylko dla konta
+  `Bóg`,
 - limity prób logowania i resetu,
 - audyt zaproszeń bez zapisywania tokenu lub pełnego e-maila w logu,
 - automatyczne rozpoznanie roli w formularzu zgłoszenia błędu.
@@ -42,14 +43,12 @@ Nie wklejaj tego hasła do dokumentów, commita ani rozmowy z klientką.
 ## Test dyrektora
 
 1. Zaloguj się jako dyrektor.
-2. System musi od razu otworzyć konfigurację 2FA.
-3. Zeskanuj QR aplikacją Hasła na iPhonie, Google Authenticator albo Microsoft
-   Authenticator.
-4. Wpisz kod 6-cyfrowy.
-5. Zapisz kody awaryjne i potwierdź checkbox.
-6. Wyloguj się i zaloguj ponownie — system musi poprosić o kod.
+2. System otwiera panel szkoły bez konfiguracji i kodu 2FA.
+3. Otwórz kartoteki oraz zaproszenia i sprawdź dostęp dyrektora.
+4. Wyloguj się i zaloguj ponownie tymi samymi danymi.
 
-Reset bazy testowej usuwa tę konfigurację i tworzy czyste konto demo.
+Mechanizm 2FA pozostaje w kodzie. Przed wprowadzeniem prawdziwych danych
+ustawiamy `KLA_REQUIRE_DIRECTOR_MFA=1` i ponownie wykonujemy pełny test MFA.
 
 ## Test ról
 

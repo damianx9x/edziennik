@@ -21,6 +21,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "account:owner": "node --env-file=.env scripts/setup-system-owner.mjs",
+    "pilot:mfa:sync": "node --env-file=.env scripts/apply-director-mfa-policy.mjs",
     "host:mac:start": "./scripts/mac-test-host-start.sh",
     "host:mac:status": "./scripts/mac-test-host-status.sh",
     "host:mac:stop": "./scripts/mac-test-host-stop.sh",

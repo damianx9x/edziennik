@@ -52,7 +52,8 @@ chmod +x \
   "$release_root/scripts/release-start.sh" \
   "$release_root/scripts/release-migrate.sh" \
   "$release_root/scripts/release-setup-owner.sh" \
-  "$release_root/scripts/release-seed-demo.sh"
+  "$release_root/scripts/release-seed-demo.sh" \
+  "$release_root/scripts/release-apply-director-mfa-policy.sh"
 
 rm -f -- "$release_zip"
 (

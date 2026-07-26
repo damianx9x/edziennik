@@ -116,6 +116,7 @@ NEXT_PUBLIC_APP_URL=https://${app_domain}
 NEXT_PUBLIC_APP_RELEASE=0.5.0-stage-2
 NEXT_PUBLIC_SUPPORT_EMAIL=kingsjezykiobce@gmail.com
 KLA_SYSTEM_OWNER_SCHOOL_SLUG=kings-language-academy-demo
+KLA_REQUIRE_DIRECTOR_MFA=0
 FILE_STORAGE_PROVIDER=local
 KLA_PRIVATE_FILES_DIR=/app/.data/private-files
 EMAIL_FROM=
@@ -155,6 +156,7 @@ compose build --pull app
 compose up -d db
 compose run --rm app ./migrate.sh
 compose run --rm -e KLA_DEMO_PASSWORD="$demo_password" app ./seed-demo.sh
+compose run --rm app ./apply-director-mfa-policy.sh
 compose run --rm -e KLA_SYSTEM_OWNER_PASSWORD="$owner_password" app ./setup-owner.sh
 unset owner_password owner_password_repeat
 compose up -d

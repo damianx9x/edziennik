@@ -335,3 +335,16 @@ Jej uwagi rozpoczynają następny commit; nie poprawiamy kodu „w locie” na
 działającym pokazie.
 **Dlaczego:** zawsze wiadomo, którą wersję klientka ocenia, a błędny lub
 nieukończony lokalny kod nie trafia do odbioru.
+
+## ADR-039 — MFA dyrektora czasowo wyłączone w pilocie
+
+**Data:** 2026-07-26
+**Decyzja:** na czas odbioru na danych syntetycznych dyrektor loguje się bez
+drugiego składnika. Konto `SYSTEM_OWNER` nadal zawsze wymaga MFA. Politykę
+kontroluje `KLA_REQUIRE_DIRECTOR_MFA`; brak zmiennej oznacza bezpieczne
+wymuszenie, a wartość `0` jest jawnym wyjątkiem pilota. Diagnostyka pokazuje
+wyjątek jako ostrzeżenie. Przed prawdziwymi danymi ustawiamy wartość `1` i
+ponownie przechodzimy test MFA.
+**Dlaczego:** klientka ma szybciej testować bieżące funkcje bez zmiany danych
+logowania, ale wyjątek nie może osłabić konta technicznego ani zostać
+niezauważony przy przejściu na produkcję.

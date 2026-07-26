@@ -26,6 +26,7 @@ echo "Tworzę kopię bazy przed aktualizacją..."
 echo "Buduję nową wersję..."
 compose build --pull app
 compose run --rm app ./migrate.sh
+compose run --rm app ./apply-director-mfa-policy.sh
 compose up -d --remove-orphans
 compose ps
 

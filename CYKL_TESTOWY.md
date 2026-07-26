@@ -66,7 +66,7 @@ Przed wysłaniem linku sprawdzamy:
 - stronę główną i logowanie przez publiczny HTTPS,
 - logowanie odpowiednimi kontami demo,
 - odmowę wejścia do cudzej roli,
-- MFA dyrektora,
+- logowanie dyrektora bez MFA w pilocie oraz obowiązkowe MFA konta `Bóg`,
 - wylogowanie,
 - log aplikacji i tunelu.
 

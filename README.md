@@ -4,8 +4,9 @@ Mobilny eDziennik King’s Language Academy. Etap 2 dodaje kartoteki sal, grup
 i osób, dużą kartę osoby, relacje rodzic–dziecko, osobny import i eksport,
 archiwizację oraz prywatny magazyn plików. Jedno logowanie kieruje według roli,
 a zaproszenie można przekazać bezpiecznym linkiem lub kodem QR. Bezpieczne
-sesje, odzyskiwanie hasła i obowiązkowe TOTP 2FA dyrektora z Etapu 1 pozostają
-podstawą dostępu.
+sesje i odzyskiwanie hasła pozostają podstawą dostępu. Mechanizm TOTP jest
+gotowy; w pilocie dyrektor loguje się bez MFA, a konto `Bóg` nadal zawsze go
+wymaga.
 
 ## Start
 

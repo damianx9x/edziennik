@@ -7,9 +7,9 @@ import { can, type Action, type Actor } from "@/modules/access-control/can";
 
 import {
   isIdentityRole,
-  isPrivilegedIdentityRole,
   type IdentityRole,
 } from "./access";
+import { isMfaRequiredForRole } from "./mfa-policy";
 
 export type ActiveSession = AuthSession & {
   user: AuthSession["user"] & {
@@ -79,7 +79,7 @@ export async function requirePanelAccess(
   }
 
   if (
-    isPrivilegedIdentityRole(session.user.role) &&
+    isMfaRequiredForRole(session.user.role) &&
     session.user.twoFactorEnabled !== true
   ) {
     redirect("/panel/bezpieczenstwo/2fa");
@@ -115,7 +115,7 @@ export async function requireSchoolStaff(
     redirect("/panel/brak-dostepu");
   }
   if (
-    isPrivilegedIdentityRole(session.user.role) &&
+    isMfaRequiredForRole(session.user.role) &&
     session.user.twoFactorEnabled !== true
   ) {
     redirect("/panel/bezpieczenstwo/2fa");

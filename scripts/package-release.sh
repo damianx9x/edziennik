@@ -56,11 +56,15 @@ cp scripts/setup-system-owner.mjs \
   "$release_root/migration-tools/setup-owner.mjs"
 cp scripts/seed-server-demo.mjs \
   "$release_root/migration-tools/seed-demo.mjs"
+cp scripts/apply-director-mfa-policy.mjs \
+  "$release_root/migration-tools/apply-director-mfa-policy.mjs"
 cp scripts/release-start.sh "$release_root/start.sh"
 cp scripts/release-app.js "$release_root/app.js"
 cp scripts/release-migrate.sh "$release_root/migrate.sh"
 cp scripts/release-setup-owner.sh "$release_root/setup-owner.sh"
 cp scripts/release-seed-demo.sh "$release_root/seed-demo.sh"
+cp scripts/release-apply-director-mfa-policy.sh \
+  "$release_root/apply-director-mfa-policy.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
 cp DEPLOYMENT_HOME_VPS.md "$release_root/DEPLOYMENT_HOME_VPS.md"
 cp MAC_TEST_HOST.md "$release_root/MAC_TEST_HOST.md"
@@ -79,7 +83,8 @@ chmod +x \
   "$release_root/start.sh" \
   "$release_root/migrate.sh" \
   "$release_root/setup-owner.sh" \
-  "$release_root/seed-demo.sh"
+  "$release_root/seed-demo.sh" \
+  "$release_root/apply-director-mfa-policy.sh"
 
 unsafe_env_file="$(
   find "$release_root" -maxdepth 1 -type f -name '.env*' \

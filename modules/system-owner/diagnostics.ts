@@ -25,6 +25,8 @@ export function buildConfigurationChecks(
     storageProvider === "local" ||
     (storageProvider === "s3" && Boolean(environment.S3_BUCKET));
   const smsProvider = environment.SMS_PROVIDER ?? "disabled";
+  const directorMfaRequired =
+    environment.KLA_REQUIRE_DIRECTOR_MFA !== "0";
 
   return [
     {
@@ -88,6 +90,14 @@ export function buildConfigurationChecks(
         smsProvider !== "disabled" && environment.SMS_API_KEY
           ? "ok"
           : "warning",
+    },
+    {
+      key: "director-mfa",
+      label: "MFA dyrektora",
+      detail: directorMfaRequired
+        ? "Obowiązkowe przy otwieraniu panelu dyrektora."
+        : "Wyłączone na czas pilota — włącz przed prawdziwymi danymi.",
+      status: directorMfaRequired ? "ok" : "warning",
     },
     {
       key: "release",
