@@ -28,18 +28,25 @@ W katalogu projektu:
 npm run host:mac:start
 ```
 
+Uruchomienie jest dozwolone dopiero po lokalnych testach i commicie. Skrypt
+odmówi startu, jeśli repozytorium zawiera niezatwierdzone pliki. Dzięki temu
+klientka zawsze testuje jedną, możliwą do odtworzenia wersję.
+
 Skrypt:
 
 1. pobiera przypiętą wersję `cloudflared` dla Apple Silicon,
 2. sprawdza SHA-256 pobranego pliku,
 3. uruchamia tunel HTTPS do portu 3100,
-4. tworzy izolowaną kopię aplikacji w `.data/mac-test-host/runtime`,
+4. eksportuje bieżący commit do `.data/mac-test-host/runtime`,
 5. usuwa z jej środowiska hasło właściciela i hasło danych demo,
 6. buduje aplikację z publicznym adresem logowania,
 7. uruchamia produkcyjny serwer Next.js,
 8. sprawdza odpowiedź lokalną i publiczną,
 9. zapobiega uśpieniu Maca podczas działania aplikacji,
 10. tworzy prywatny plik z adresem i kontami testowymi.
+
+Plik przekazania i polecenie statusu pokazują skrót commita udostępnionego
+klientce.
 
 Dane do przekazania klientce:
 

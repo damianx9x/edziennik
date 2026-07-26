@@ -323,3 +323,15 @@ teście.
 **Dlaczego:** domowe łącze i NAT nie zapewniają stabilnego hostingu ani HTTPS,
 natomiast tunel wychodzący pozwala wykonać krótki odbiór bez zmiany routera.
 Losowy adres i brak SLA są akceptowalne wyłącznie dla tymczasowego testu.
+
+## ADR-038 — lokalna bramka jakości przed każdym odbiorem klientki
+
+**Data:** 2026-07-26
+**Decyzja:** każda zmiana najpierw przechodzi komplet lokalnych testów,
+następnie trafia do osobnego commita, a dopiero potem jest budowana na
+tymczasowym serwerze Mac z dokładnie tego commita. Klientka dostaje link HTTPS
+i konta syntetyczne dopiero po publicznym teście logowania, uprawnień i logów.
+Jej uwagi rozpoczynają następny commit; nie poprawiamy kodu „w locie” na
+działającym pokazie.
+**Dlaczego:** zawsze wiadomo, którą wersję klientka ocenia, a błędny lub
+nieukończony lokalny kod nie trafia do odbioru.

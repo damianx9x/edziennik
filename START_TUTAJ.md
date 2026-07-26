@@ -115,6 +115,8 @@ syntetyczne, konto `bog`, wymuszenie MFA i HTTPS. Instrukcja:
 `DEPLOYMENT_HOME_VPS.md`.
 
 Aktualny stan wykonanych funkcji i braków: `STAN_PROJEKTU.md`.
+Stała procedura lokalnych testów, commita i odbioru klientki:
+`CYKL_TESTOWY.md`.
 
 Tymczasowy pokaz z tego Maca:
 

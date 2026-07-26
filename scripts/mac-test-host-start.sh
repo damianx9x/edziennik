@@ -17,6 +17,7 @@ handoff_file="$state_dir/PRZEKAZ_KLIENTCE.txt"
 app_pid_file="$state_dir/app.pid"
 tunnel_pid_file="$state_dir/tunnel.pid"
 caffeinate_pid_file="$state_dir/caffeinate.pid"
+commit_file="$state_dir/commit.txt"
 app_port="${KLA_MAC_TEST_PORT:-3100}"
 
 cloudflared_version="2026.7.3"
@@ -37,6 +38,15 @@ if [[ ! -d "$project_dir/node_modules" ]]; then
   echo "Brak zależności. Wykonaj najpierw npm ci."
   exit 1
 fi
+
+if [[ -n "$(git -C "$project_dir" status --porcelain --untracked-files=normal)" ]]; then
+  echo "Repozytorium ma niezatwierdzone zmiany."
+  echo "Najpierw wykonaj lokalne testy i commit."
+  exit 1
+fi
+
+hosted_commit="$(git -C "$project_dir" rev-parse --verify HEAD)"
+hosted_commit_short="$(git -C "$project_dir" rev-parse --short=12 HEAD)"
 
 for pid_file in "$app_pid_file" "$tunnel_pid_file"; do
   if [[ -f "$pid_file" ]]; then
@@ -115,18 +125,14 @@ fi
 
 printf '%s\n' "$public_url" >"$public_url_file"
 chmod 600 "$public_url_file"
+printf '%s\n' "$hosted_commit" >"$commit_file"
+chmod 600 "$commit_file"
 
-echo "Przygotowuję izolowaną kopię aplikacji..."
+echo "Przygotowuję izolowaną kopię commita ${hosted_commit_short}..."
+rm -rf -- "$runtime_dir"
 mkdir -p "$runtime_dir"
-rm -rf -- "$runtime_dir/.next" "$runtime_dir/node_modules"
-rsync -a --delete \
-  --exclude '.data' \
-  --exclude '.env' \
-  --exclude '.git' \
-  --exclude '.next' \
-  --exclude 'node_modules' \
-  --exclude 'outputs' \
-  "$project_dir/" "$runtime_dir/"
+git -C "$project_dir" archive --format=tar "$hosted_commit" \
+  | tar -xf - -C "$runtime_dir"
 cp -cR "$project_dir/node_modules" "$runtime_dir/node_modules"
 
 node --input-type=module - \
@@ -256,10 +262,11 @@ printf '%s\n' "$caffeinate_pid" >"$caffeinate_pid_file"
 
 node --env-file="$project_dir/.env" --input-type=module - \
   "$handoff_file" \
-  "$public_url" <<'NODE'
+  "$public_url" \
+  "$hosted_commit_short" <<'NODE'
 import { chmodSync, writeFileSync } from "node:fs";
 
-const [, , targetPath, publicUrl] = process.argv;
+const [, , targetPath, publicUrl, hostedCommit] = process.argv;
 const demoPassword = process.env.KLA_DEMO_PASSWORD;
 if (!demoPassword) {
   throw new Error("Brak KLA_DEMO_PASSWORD w prywatnym .env.");
@@ -269,6 +276,7 @@ const contents = [
   "eDziennik KLA — dane do tymczasowego testu",
   "",
   `Adres: ${publicUrl}/panel/logowanie`,
+  `Wersja testowa: commit ${hostedCommit}`,
   "",
   "Dyrektor: dyrektor.demo@invalid.example",
   "Wykładowca: wykladowca.demo@invalid.example",

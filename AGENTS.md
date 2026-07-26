@@ -31,6 +31,7 @@ PostgreSQL.
 7. `BRAND_I_UI.md`.
 8. `OBSERVABILITY_I_ZGLOSZENIA.md`.
 9. `DECYZJE.md`.
+10. `CYKL_TESTOWY.md`.
 
 Pierwotny RTF był materiałem wejściowym. Nie kopiuj z niego bezkrytycznie cen,
 uproszczeń prawnych ani decyzji technicznych.
@@ -59,6 +60,24 @@ uproszczeń prawnych ani decyzji technicznych.
 - Bez force push i bez przepisywania współdzielonej historii.
 - Przed commitem: `npm run check`, `npm run build`.
 - Po etapie: `npm run package:release`.
+
+## Cykl odbioru każdej zmiany
+
+Każdy fragment funkcji przechodzi zawsze w tej kolejności:
+
+1. implementacja na gałęzi etapu,
+2. lokalne testy automatyczne i migracje,
+3. lokalne klikanie na telefonie 375 × 812 i komputerze 1440 × 900,
+4. kontrola konsoli, logów i zrzutów QA,
+5. commit wyłącznie przechodzącego stanu,
+6. uruchomienie serwera testowego na Macu dokładnie z tego commita,
+7. kontrola publicznego HTTPS, logowania i uprawnień,
+8. przekazanie klientce linku oraz kont demo,
+9. zapisanie jej uwag jako zakresu następnego commita.
+
+Nie udostępniaj klientce niezatwierdzonych lokalnie zmian ani brudnego
+worktree. Jeden publiczny odbiór wskazuje jeden konkretny commit. Szczegóły i
+komendy zawiera `CYKL_TESTOWY.md`.
 
 ## Stack
 

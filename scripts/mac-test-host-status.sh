@@ -5,6 +5,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 state_dir="$project_dir/.data/mac-test-host"
 url_file="$state_dir/public-url.txt"
+commit_file="$state_dir/commit.txt"
 
 read_status() {
   local label="$1"
@@ -26,6 +27,13 @@ read_status() {
 read_status "Aplikacja" "$state_dir/app.pid"
 read_status "Tunel HTTPS" "$state_dir/tunnel.pid"
 read_status "Blokada uśpienia" "$state_dir/caffeinate.pid"
+
+if [[ -f "$commit_file" ]]; then
+  hosted_commit="$(head -1 "$commit_file")"
+  if [[ "$hosted_commit" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Udostępniony commit: ${hosted_commit:0:12}"
+  fi
+fi
 
 if [[ -f "$url_file" ]]; then
   public_url="$(head -1 "$url_file")"
