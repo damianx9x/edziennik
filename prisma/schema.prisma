@@ -88,6 +88,23 @@ enum ImportStatus {
   ARCHIVED
 }
 
+enum InvitationKind {
+  EMAIL
+  ROLE_QR
+}
+
+enum RecordEntityType {
+  USER
+  ROOM
+  GROUP
+}
+
+enum RecordChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model School {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -106,6 +123,7 @@ model School {
   invitations     Invitation[]
   storedFiles     StoredFile[]
   importBatches   ImportBatch[]
+  recordChanges   RecordChangeRequest[]
 }
 
 model User {
@@ -127,24 +145,26 @@ model User {
   updatedAt        DateTime   @updatedAt
   archivedAt       DateTime?
 
-  school          School           @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  sessions        Session[]
-  accounts        Account[]
-  twoFactors      TwoFactor[]
-  teacherProfile  TeacherProfile?
-  studentProfile  StudentProfile?
-  parentLinks     ParentChild[]    @relation("ParentLinks")
-  childLinks      ParentChild[]    @relation("ChildLinks")
-  groupTeaching   GroupTeacher[]
-  enrollments     Enrollment[]
-  teachingSlots   ScheduleSlot[]   @relation("ScheduleTeacher")
-  createdSlots    ScheduleSlot[]   @relation("ScheduleCreator")
-  auditEvents     AuditLog[]       @relation("AuditActor")
-  feedbackReports FeedbackReport[] @relation("FeedbackReporter")
-  sentInvitations Invitation[]     @relation("InvitationSender")
-  usedInvitations Invitation[]     @relation("InvitationRecipient")
-  uploadedFiles   StoredFile[]     @relation("FileUploader")
-  importBatches   ImportBatch[]    @relation("ImportCreator")
+  school                 School                @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  sessions               Session[]
+  accounts               Account[]
+  twoFactors             TwoFactor[]
+  teacherProfile         TeacherProfile?
+  studentProfile         StudentProfile?
+  parentLinks            ParentChild[]         @relation("ParentLinks")
+  childLinks             ParentChild[]         @relation("ChildLinks")
+  groupTeaching          GroupTeacher[]
+  enrollments            Enrollment[]
+  teachingSlots          ScheduleSlot[]        @relation("ScheduleTeacher")
+  createdSlots           ScheduleSlot[]        @relation("ScheduleCreator")
+  auditEvents            AuditLog[]            @relation("AuditActor")
+  feedbackReports        FeedbackReport[]      @relation("FeedbackReporter")
+  sentInvitations        Invitation[]          @relation("InvitationSender")
+  usedInvitations        Invitation[]          @relation("InvitationRecipient")
+  uploadedFiles          StoredFile[]          @relation("FileUploader")
+  importBatches          ImportBatch[]         @relation("ImportCreator")
+  requestedRecordChanges RecordChangeRequest[] @relation("RecordChangeRequester")
+  reviewedRecordChanges  RecordChangeRequest[] @relation("RecordChangeReviewer")
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -222,19 +242,20 @@ model RateLimit {
 }
 
 model Invitation {
-  id             String    @id @default(uuid()) @db.Uuid
-  schoolId       String    @db.Uuid
-  invitedById    String    @db.Uuid
-  acceptedUserId String?   @db.Uuid
-  email          String
-  name           String
+  id             String         @id @default(uuid()) @db.Uuid
+  schoolId       String         @db.Uuid
+  invitedById    String         @db.Uuid
+  acceptedUserId String?        @db.Uuid
+  kind           InvitationKind @default(EMAIL)
+  email          String?
+  name           String?
   role           String
-  tokenHash      String    @unique
+  tokenHash      String         @unique
   expiresAt      DateTime
   acceptedAt     DateTime?
   revokedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   school       School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   invitedBy    User   @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Restrict)
@@ -242,7 +263,31 @@ model Invitation {
 
   @@index([schoolId, createdAt])
   @@index([schoolId, email, acceptedAt, revokedAt])
+  @@index([schoolId, kind, acceptedAt, revokedAt])
   @@index([expiresAt])
+}
+
+model RecordChangeRequest {
+  id            String             @id @default(uuid()) @db.Uuid
+  schoolId      String             @db.Uuid
+  requestedById String             @db.Uuid
+  reviewedById  String?            @db.Uuid
+  entityType    RecordEntityType
+  entityId      String
+  payload       Json
+  changedFields String[]
+  status        RecordChangeStatus @default(PENDING)
+  reviewNote    String?
+  createdAt     DateTime           @default(now())
+  reviewedAt    DateTime?
+
+  school      School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  requestedBy User   @relation("RecordChangeRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy  User?  @relation("RecordChangeReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, status, createdAt])
+  @@index([schoolId, entityType, entityId, createdAt])
+  @@index([requestedById, createdAt])
 }
 
 model TeacherProfile {

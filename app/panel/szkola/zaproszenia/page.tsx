@@ -31,6 +31,7 @@ export default async function InvitationsPage() {
       id: true,
       name: true,
       email: true,
+      kind: true,
       role: true,
       createdAt: true,
       expiresAt: true,
@@ -46,8 +47,8 @@ export default async function InvitationsPage() {
           <span className="section-kicker">Dostęp do eDziennika</span>
           <h1>Zaproszenia i konta</h1>
           <p>
-            Nie ma publicznej rejestracji. Każde konto zaczyna się od
-            jednorazowego linku albo kodu QR utworzonego przez szkołę.
+            Każde konto zaczyna się od jednorazowego linku lub czasowego kodu
+            QR utworzonego przez dyrektora.
           </p>
         </div>
         <span className="role-security-chip">
@@ -82,15 +83,25 @@ export default async function InvitationsPage() {
               {invitations.map((invitation) => {
                 const availability = getInvitationAvailability(invitation);
                 const role = invitation.role as keyof typeof invitationRoleLabels;
+                const displayName =
+                  invitation.kind === "ROLE_QR"
+                    ? `Kod QR: ${invitationRoleLabels[role] ?? "Użytkownik"}`
+                    : (invitation.name ?? "Zaproszona osoba");
                 return (
                   <article key={invitation.id}>
                     <div className="invitation-person">
                       <div aria-hidden="true">
-                        {invitation.name.slice(0, 1).toLocaleUpperCase("pl-PL")}
+                        {invitation.kind === "ROLE_QR"
+                          ? "QR"
+                          : displayName.slice(0, 1).toLocaleUpperCase("pl-PL")}
                       </div>
                       <span>
-                        <strong>{invitation.name}</strong>
-                        <small>{maskEmail(invitation.email)}</small>
+                        <strong>{displayName}</strong>
+                        <small>
+                          {invitation.email
+                            ? maskEmail(invitation.email)
+                            : "Dane wpisze zaproszona osoba"}
+                        </small>
                       </span>
                     </div>
                     <span className="invitation-role">
@@ -110,7 +121,7 @@ export default async function InvitationsPage() {
                         <button
                           className="invitation-revoke"
                           type="submit"
-                          aria-label={`Cofnij zaproszenie dla ${invitation.name}`}
+                          aria-label={`Cofnij zaproszenie: ${displayName}`}
                         >
                           <Ban aria-hidden="true" /> Cofnij
                         </button>

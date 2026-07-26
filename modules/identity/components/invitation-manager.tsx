@@ -4,6 +4,7 @@ import {
   Check,
   Clipboard,
   Download,
+  Link2,
   LoaderCircle,
   MailPlus,
   QrCode,
@@ -16,11 +17,22 @@ import { useFormStatus } from "react-dom";
 
 import {
   createInvitationAction,
+  createRoleQrInvitationAction,
 } from "@/modules/identity/invitations/actions";
-import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
-import { initialInvitationActionState } from "@/modules/identity/invitations/state";
+import {
+  invitationRoleLabels,
+  invitationValidityLabels,
+} from "@/modules/identity/invitations/schema";
+import {
+  initialInvitationActionState,
+  type InvitationActionState,
+} from "@/modules/identity/invitations/state";
 
-function SubmitInvitationButton() {
+function SubmitInvitationButton({
+  mode,
+}: {
+  mode: "email" | "qr";
+}) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -31,192 +43,128 @@ function SubmitInvitationButton() {
       {pending ? (
         <>
           <LoaderCircle className="spin" aria-hidden="true" />
-          Tworzę zaproszenie…
+          {mode === "qr" ? "Tworzę kod…" : "Tworzę zaproszenie…"}
+        </>
+      ) : mode === "qr" ? (
+        <>
+          <QrCode aria-hidden="true" />
+          Wygeneruj kod QR
         </>
       ) : (
         <>
           <MailPlus aria-hidden="true" />
-          Utwórz i wyślij zaproszenie
+          Utwórz i wyślij
         </>
       )}
     </button>
   );
 }
 
-export function InvitationManager() {
-  const [state, formAction] = useActionState(
-    createInvitationAction,
-    initialInvitationActionState,
-  );
-  const [copied, setCopied] = useState(false);
-  const [qrCode, setQrCode] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
+function InvitationResult({ state }: { state: InvitationActionState }) {
+  const [copiedLink, setCopiedLink] = useState("");
+  const [qrData, setQrData] = useState({ link: "", image: "" });
 
   useEffect(() => {
-    if (state.status === "success") {
-      formRef.current?.reset();
-    }
-  }, [state.status]);
-
-  useEffect(() => {
-    if (!state.invitationLink) return;
+    if (!state.invitationLink || state.invitationKind !== "ROLE_QR") return;
 
     let cancelled = false;
     void QRCode.toDataURL(state.invitationLink, {
-      width: 320,
+      width: 360,
       margin: 2,
       errorCorrectionLevel: "M",
-      color: {
-        dark: "#101c3d",
-        light: "#ffffff",
-      },
+      color: { dark: "#101c3d", light: "#ffffff" },
     }).then((image) => {
-      if (!cancelled) setQrCode(image);
+      if (!cancelled) setQrData({ link: state.invitationLink!, image });
     });
     return () => {
       cancelled = true;
     };
-  }, [state.invitationLink]);
+  }, [state.invitationKind, state.invitationLink]);
 
   async function copyLink() {
     if (!state.invitationLink) return;
     try {
       await navigator.clipboard.writeText(state.invitationLink);
-      setCopied(true);
+      setCopiedLink(state.invitationLink);
     } catch {
-      setCopied(false);
+      setCopiedLink("");
     }
   }
 
-  return (
-    <section className="invite-create-card" aria-labelledby="invite-title">
-      <div className="invite-card-heading">
-        <div className="auth-card-icon">
-          <MailPlus aria-hidden="true" />
-        </div>
-        <div>
-          <span className="section-kicker">Nowe konto</span>
-          <h2 id="invite-title">Zaproś jedną osobę</h2>
-          <p>
-            Osoba sama ustawi hasło z linku lub kodu QR. Zaproszenie działa raz
-            i wygasa po 7 dniach.
-          </p>
-        </div>
+  if (state.status === "idle") return null;
+  if (state.status === "error") {
+    return (
+      <div className="auth-message auth-message-error" role="alert">
+        {state.message}
       </div>
+    );
+  }
 
-      <form
-        ref={formRef}
-        className="auth-form invite-form"
-        action={formAction}
-        onSubmit={() => {
-          setCopied(false);
-          setQrCode("");
-        }}
-      >
-        <div className="invite-form-grid">
-          <label>
-            <span>Imię i nazwisko</span>
-            <input
-              type="text"
-              name="name"
-              autoComplete="name"
-              minLength={2}
-              maxLength={80}
-              required
-              placeholder="np. Anna Kowalska"
-            />
-          </label>
-          <label>
-            <span>Rola w eDzienniku</span>
-            <select name="role" defaultValue="PARENT" required>
-              {Object.entries(invitationRoleLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label>
-          <span>Adres e-mail</span>
-          <input
-            type="email"
-            name="email"
-            autoComplete="email"
-            inputMode="email"
-            required
-            placeholder="adres@domena.pl"
-          />
-        </label>
-
-        {state.status !== "idle" ? (
-          <div
-            className={`auth-message ${
-              state.status === "success"
-                ? "auth-message-success"
-                : "auth-message-error"
-            }`}
-            role={state.status === "error" ? "alert" : "status"}
-          >
-            {state.status === "success" ? (
-              <Check aria-hidden="true" />
-            ) : null}
-            {state.message}
-          </div>
-        ) : null}
-
-        {state.status === "success" && state.invitationLink ? (
-          <div className="invite-access-box">
-            <div className="invite-link-box">
-              <div>
-                <ShieldCheck aria-hidden="true" />
-                <span>
-                  Bezpieczny link
-                  <small>Udostępnij tylko zaproszonej osobie.</small>
-                </span>
-              </div>
-              <code>{state.invitationLink}</code>
-              <button
-                className="button button-secondary button-full"
-                type="button"
-                onClick={copyLink}
-              >
-                {copied ? (
-                  <>
-                    <Check aria-hidden="true" /> Skopiowano
-                  </>
-                ) : (
-                  <>
-                    <Clipboard aria-hidden="true" /> Skopiuj link
-                  </>
-                )}
-              </button>
+  return (
+    <>
+      <div className="auth-message auth-message-success" role="status">
+        <Check aria-hidden="true" />
+        {state.message}
+      </div>
+      {state.invitationLink ? (
+        <div
+          className={
+            state.invitationKind === "ROLE_QR"
+              ? "invite-access-box"
+              : "invite-access-box invite-access-box-single"
+          }
+        >
+          <div className="invite-link-box">
+            <div>
+              <ShieldCheck aria-hidden="true" />
+              <span>
+                Jednorazowy link
+                <small>Udostępnij go wyłącznie właściwej osobie.</small>
+              </span>
             </div>
+            <code>{state.invitationLink}</code>
+            <button
+              className="button button-secondary button-full"
+              type="button"
+              onClick={copyLink}
+            >
+              {copiedLink === state.invitationLink ? (
+                <>
+                  <Check aria-hidden="true" /> Skopiowano
+                </>
+              ) : (
+                <>
+                  <Clipboard aria-hidden="true" /> Skopiuj link
+                </>
+              )}
+            </button>
+          </div>
+          {state.invitationKind === "ROLE_QR" ? (
             <div className="invite-qr-box">
               <div>
                 <QrCode aria-hidden="true" />
                 <span>
-                  Kod QR do rejestracji
+                  {state.roleLabel ?? "Kod do rejestracji"}
                   <small>
-                    Po zeskanowaniu osoba ustawi hasło dla wybranej roli.
+                    Rola jest przypisana do kodu i nie może zostać zmieniona.
                   </small>
                 </span>
               </div>
-              {qrCode ? (
+              {qrData.link === state.invitationLink && qrData.image ? (
                 <>
                   <Image
-                    src={qrCode}
-                    alt="Kod QR z jednorazowym zaproszeniem do eDziennika"
-                    width={240}
-                    height={240}
+                    src={qrData.image}
+                    alt={`Jednorazowy kod QR dla roli ${state.roleLabel ?? ""}`}
+                    width={260}
+                    height={260}
                     unoptimized
                   />
                   <a
                     className="button button-secondary button-full"
-                    href={qrCode}
-                    download="zaproszenie-kla-qr.png"
+                    href={qrData.image}
+                    download={`zaproszenie-kla-${(state.roleLabel ?? "konto").toLocaleLowerCase("pl-PL")}.png`}
                   >
-                    <Download aria-hidden="true" /> Pobierz kod QR
+                    <Download aria-hidden="true" /> Pobierz kod
                   </a>
                 </>
               ) : (
@@ -225,11 +173,152 @@ export function InvitationManager() {
                 </span>
               )}
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
 
-        <SubmitInvitationButton />
-      </form>
+export function InvitationManager() {
+  const [mode, setMode] = useState<"email" | "qr">("email");
+  const [emailState, emailAction] = useActionState(
+    createInvitationAction,
+    initialInvitationActionState,
+  );
+  const [qrState, qrAction] = useActionState(
+    createRoleQrInvitationAction,
+    initialInvitationActionState,
+  );
+  const emailFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (emailState.status === "success") emailFormRef.current?.reset();
+  }, [emailState.status]);
+
+  return (
+    <section className="invite-create-card" aria-labelledby="invite-title">
+      <div className="invite-card-heading">
+        <div className="auth-card-icon">
+          {mode === "qr" ? (
+            <QrCode aria-hidden="true" />
+          ) : (
+            <MailPlus aria-hidden="true" />
+          )}
+        </div>
+        <div>
+          <span className="section-kicker">Nowe konto</span>
+          <h2 id="invite-title">Wybierz sposób zaproszenia</h2>
+          <p>
+            Rola jest zapisywana w zaproszeniu. Osoba zaproszona nie może jej
+            samodzielnie zmienić.
+          </p>
+        </div>
+      </div>
+
+      <div className="invite-method-switch" role="tablist" aria-label="Sposób zaproszenia">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "email"}
+          className={mode === "email" ? "is-active" : undefined}
+          onClick={() => setMode("email")}
+        >
+          <MailPlus aria-hidden="true" />
+          Zaproś e-mailem
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "qr"}
+          className={mode === "qr" ? "is-active" : undefined}
+          onClick={() => setMode("qr")}
+        >
+          <QrCode aria-hidden="true" />
+          Zaproś kodem QR
+        </button>
+      </div>
+
+      {mode === "email" ? (
+        <form ref={emailFormRef} className="auth-form invite-form" action={emailAction}>
+          <div className="invite-form-grid">
+            <label>
+              <span>Imię i nazwisko</span>
+              <input
+                type="text"
+                name="name"
+                autoComplete="name"
+                minLength={2}
+                maxLength={80}
+                required
+                placeholder="np. Anna Kowalska"
+              />
+              <small>Tak osoba będzie podpisana w eDzienniku.</small>
+            </label>
+            <label>
+              <span>Rola w eDzienniku</span>
+              <select name="role" defaultValue="PARENT" required>
+                {Object.entries(invitationRoleLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <small>Rola ustawi właściwe uprawnienia po rejestracji.</small>
+            </label>
+          </div>
+          <label>
+            <span>Adres e-mail</span>
+            <input
+              type="email"
+              name="email"
+              autoComplete="email"
+              inputMode="email"
+              required
+              placeholder="adres@domena.pl"
+            />
+            <small>Na ten adres zostanie wysłany jednorazowy link.</small>
+          </label>
+          <InvitationResult state={emailState} />
+          <SubmitInvitationButton mode="email" />
+        </form>
+      ) : (
+        <form className="auth-form invite-form" action={qrAction}>
+          <div className="invite-qr-intro">
+            <Link2 aria-hidden="true" />
+            <p>
+              Wygenerujesz czasowy, jednorazowy kod. Osoba po zeskanowaniu sama
+              wpisze swoje dane, a konto od razu otrzyma wybraną rolę.
+            </p>
+          </div>
+          <div className="invite-form-grid">
+            <label>
+              <span>Rola przypisana do kodu</span>
+              <select name="role" defaultValue="PARENT" required>
+                {Object.entries(invitationRoleLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Jak długo kod ma działać?</span>
+              <select name="validity" defaultValue="1h" required>
+                {Object.entries(invitationValidityLabels).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+          </div>
+          <InvitationResult state={qrState} />
+          <SubmitInvitationButton mode="qr" />
+        </form>
+      )}
     </section>
   );
 }

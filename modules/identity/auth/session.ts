@@ -91,3 +91,19 @@ export async function requireDirector(
     returnPath,
   );
 }
+
+export async function requireSchoolStaff(
+  returnPath = "/panel/szkola",
+): Promise<ActiveSession> {
+  const session = await requireActiveSession(returnPath);
+  if (session.user.role !== "DIRECTOR" && session.user.role !== "TEACHER") {
+    redirect("/panel/brak-dostepu");
+  }
+  if (
+    session.user.role === "DIRECTOR" &&
+    session.user.twoFactorEnabled !== true
+  ) {
+    redirect("/panel/bezpieczenstwo/2fa");
+  }
+  return session;
+}

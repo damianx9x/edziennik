@@ -1,33 +1,72 @@
 import {
-  Archive,
   DoorOpen,
-  FileSpreadsheet,
   GraduationCap,
   Plus,
   ShieldCheck,
   UserRoundCheck,
   Users,
+  Wrench,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { db } from "@/lib/server/db";
-import { archiveRecordAction } from "@/modules/groups/actions";
-import { cefrLabels } from "@/modules/groups/schema";
-import { requireDirector } from "@/modules/identity/auth/session";
+import { requireSchoolStaff } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import {
   PersonDirectory,
   type PersonDirectoryRecord,
 } from "@/modules/people/components/person-directory";
 import { QuickRecordForms } from "@/modules/people/components/quick-record-forms";
+import type { RecordHistoryEntry } from "@/modules/records/components/record-edit-form";
+import { ResourceDirectory } from "@/modules/records/components/resource-directory";
 
 export const metadata: Metadata = { title: "Kartoteki szkoły" };
 export const dynamic = "force-dynamic";
 
 export default async function RecordsPage() {
-  const session = await requireDirector("/panel/szkola/kartoteki");
+  const session = await requireSchoolStaff("/panel/szkola/kartoteki");
   const schoolId = session.user.schoolId;
+  const isDirector = session.user.role === "DIRECTOR";
+  const actorRole: "DIRECTOR" | "TEACHER" = isDirector
+    ? "DIRECTOR"
+    : "TEACHER";
+  const teaching = isDirector
+    ? []
+    : await db.groupTeacher.findMany({
+        where: { teacherId: session.user.id, archivedAt: null },
+        select: { groupId: true },
+      });
+  const teachingGroupIds = teaching.map((item) => item.groupId);
+
+  const peopleWhere = isDirector
+    ? {}
+    : {
+        OR: [
+          { id: session.user.id },
+          {
+            enrollments: {
+              some: { groupId: { in: teachingGroupIds }, status: "ACTIVE" as const },
+            },
+          },
+          {
+            parentLinks: {
+              some: {
+                archivedAt: null,
+                child: {
+                  enrollments: {
+                    some: {
+                      groupId: { in: teachingGroupIds },
+                      status: "ACTIVE" as const,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      };
+
   const [rooms, groups, people] = await Promise.all([
     db.room.findMany({
       where: { schoolId, archivedAt: null },
@@ -40,7 +79,11 @@ export default async function RecordsPage() {
       },
     }),
     db.courseGroup.findMany({
-      where: { schoolId, archivedAt: null },
+      where: {
+        schoolId,
+        archivedAt: null,
+        ...(isDirector ? {} : { id: { in: teachingGroupIds } }),
+      },
       orderBy: { name: "asc" },
       select: {
         id: true,
@@ -59,6 +102,7 @@ export default async function RecordsPage() {
         schoolId,
         role: { in: ["TEACHER", "PARENT", "STUDENT"] },
         archivedAt: null,
+        ...peopleWhere,
       },
       orderBy: [{ role: "asc" }, { name: "asc" }],
       take: 300,
@@ -87,6 +131,100 @@ export default async function RecordsPage() {
     }),
   ]);
 
+  const visibleIds = [
+    ...people.map((item) => item.id),
+    ...groups.map((item) => item.id),
+    ...rooms.map((item) => item.id),
+  ];
+  const [changeRequests, auditChanges] = await Promise.all([
+    db.recordChangeRequest.findMany({
+      where: { schoolId, entityId: { in: visibleIds } },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      select: {
+        id: true,
+        entityId: true,
+        status: true,
+        changedFields: true,
+        createdAt: true,
+        requestedBy: { select: { name: true } },
+      },
+    }),
+    db.auditLog.findMany({
+      where: {
+        schoolId,
+        entityId: { in: visibleIds },
+        action: {
+          in: [
+            "records.change.approved_directly",
+            "records.group.assigned",
+            "records.student.assigned",
+            "records.parent.linked",
+          ],
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      select: {
+        id: true,
+        entityId: true,
+        metadata: true,
+        createdAt: true,
+        actor: { select: { name: true } },
+        action: true,
+      },
+    }),
+  ]);
+  const historyById: Record<string, RecordHistoryEntry[]> = {};
+  for (const request of changeRequests) {
+    const entry: RecordHistoryEntry = {
+      id: request.id,
+      status: request.status,
+      label:
+        request.status === "PENDING"
+          ? "Propozycja zmiany"
+          : request.status === "APPROVED"
+            ? "Zmiana zatwierdzona"
+            : "Zmiana odrzucona",
+      actorName: request.requestedBy.name,
+      createdAt: formatHistoryDate(request.createdAt),
+      sortKey: request.createdAt.toISOString(),
+      fields: request.changedFields,
+    };
+    (historyById[request.entityId] ??= []).push(entry);
+  }
+  for (const change of auditChanges) {
+    if (!change.entityId) continue;
+    const metadata =
+      change.metadata && typeof change.metadata === "object"
+        ? (change.metadata as { changedFields?: unknown })
+        : null;
+    const fields = Array.isArray(metadata?.changedFields)
+      ? metadata.changedFields.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [];
+    (historyById[change.entityId] ??= []).push({
+      id: change.id,
+      status: "DIRECT",
+      label:
+        change.action === "records.group.assigned"
+          ? "Przypisano do grupy"
+          : change.action === "records.student.assigned"
+            ? "Dodano ucznia do grupy"
+            : change.action === "records.parent.linked"
+              ? "Zapisano relację rodzinną"
+              : "Zmiana zapisana przez dyrektora",
+      actorName: change.actor?.name ?? "System",
+      createdAt: formatHistoryDate(change.createdAt),
+      sortKey: change.createdAt.toISOString(),
+      fields,
+    });
+  }
+  for (const entries of Object.values(historyById)) {
+    entries.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  }
+
   const directoryPeople: PersonDirectoryRecord[] = people.map((person) => {
     const role = person.role as PersonDirectoryRecord["role"];
     const relations =
@@ -98,7 +236,6 @@ export default async function RecordsPage() {
     const recordOnlyEmail =
       person.email.startsWith("record.") &&
       person.email.endsWith("@invalid.example");
-
     return {
       id: person.id,
       name: person.name,
@@ -115,11 +252,10 @@ export default async function RecordsPage() {
   const personCounts = directoryPeople.reduce(
     (counts, person) => {
       if (person.role === "TEACHER") counts.teachers += 1;
-      if (person.role === "PARENT") counts.parents += 1;
       if (person.role === "STUDENT") counts.students += 1;
       return counts;
     },
-    { teachers: 0, parents: 0, students: 0 },
+    { teachers: 0, students: 0 },
   );
 
   return (
@@ -129,242 +265,110 @@ export default async function RecordsPage() {
           <span className="section-kicker">Dane szkoły</span>
           <h1>Kartoteki</h1>
           <p>
-            Znajdź osobę i otwórz jej kartę. Grupy i sale są niżej, gotowe do
-            użycia w grafiku.
+            Otwórz kartę osoby, grupy lub sali. Każda zmiana zostawia czytelny
+            ślad.
           </p>
         </div>
-        <div className="records-heading-actions">
-          <Link className="button button-secondary" href="/panel/szkola/importy">
-            <FileSpreadsheet aria-hidden="true" /> Import i eksport
-          </Link>
-          <a className="button button-primary" href="#dodaj">
-            <Plus aria-hidden="true" /> Dodaj
-          </a>
-        </div>
+        {isDirector ? (
+          <div className="records-heading-actions">
+            <Link
+              className="button button-secondary"
+              href="/panel/szkola/narzedzia#dane"
+            >
+              <Wrench aria-hidden="true" /> Narzędzia danych
+            </Link>
+            <a className="button button-primary" href="#dodaj">
+              <Plus aria-hidden="true" /> Dodaj
+            </a>
+          </div>
+        ) : null}
       </header>
 
       <section className="records-summary-strip" aria-label="Stan kartotek">
         <a href="#osoby">
           <Users aria-hidden="true" />
-          <span>
-            <strong>{personCounts.students}</strong>
-            Uczniowie
-          </span>
+          <span><strong>{personCounts.students}</strong>Uczniowie</span>
         </a>
         <a href="#osoby">
           <UserRoundCheck aria-hidden="true" />
-          <span>
-            <strong>{personCounts.teachers}</strong>
-            Wykładowcy
-          </span>
+          <span><strong>{personCounts.teachers}</strong>Wykładowcy</span>
         </a>
         <a href="#grupy">
           <GraduationCap aria-hidden="true" />
-          <span>
-            <strong>{groups.length}</strong>
-            Grupy
-          </span>
+          <span><strong>{groups.length}</strong>Grupy</span>
         </a>
         <a href="#sale">
           <DoorOpen aria-hidden="true" />
-          <span>
-            <strong>{rooms.length}</strong>
-            Sale
-          </span>
+          <span><strong>{rooms.length}</strong>Sale</span>
         </a>
       </section>
 
       <section className="records-safety-banner records-safety-compact">
         <ShieldCheck aria-hidden="true" />
         <span>
-          <strong>Zmiany pozostawiają historię</strong>
-          <small>Archiwizacja ukrywa rekord bez niszczenia jego powiązań.</small>
+          <strong>
+            {isDirector
+              ? "Zmiany zapisujesz od razu"
+              : "Twoje zmiany zatwierdza dyrektor"}
+          </strong>
+          <small>Historia kartoteki pokazuje autora, zakres i decyzję.</small>
         </span>
       </section>
 
-      <QuickRecordForms />
+      {isDirector ? <QuickRecordForms /> : null}
 
       <div id="osoby">
-        <PersonDirectory people={directoryPeople} />
+        <PersonDirectory
+          people={directoryPeople}
+          actorRole={actorRole}
+          historyById={historyById}
+        />
       </div>
 
-      <section className="resource-directory" aria-labelledby="resources-title">
-        <div className="records-section-heading">
-          <div>
-            <span className="section-kicker">Zasoby do grafiku</span>
-            <h2 id="resources-title">Grupy i sale</h2>
-            <p>Krótka lista bez mieszania jej z kartotekami osób.</p>
-          </div>
-        </div>
-
-        <div className="resource-directory-grid">
-          <article className="records-card resource-list-card" id="grupy">
-            <ResourceHeading
-              icon={<GraduationCap aria-hidden="true" />}
-              title="Grupy"
-              count={groups.length}
-            />
-            {groups.length === 0 ? (
-              <RecordsEmpty
-                title="Nie ma jeszcze grup"
-                text="Dodaj pierwszą grupę przyciskiem u góry."
-              />
-            ) : (
-              <ul>
-                {groups.map((group) => (
-                  <li key={group.id}>
-                    <span>
-                      <strong>{group.name}</strong>
-                      <small>
-                        {cefrLabels[group.cefrLevel]} ·{" "}
-                        {formatSimpleCount(
-                          group._count.enrollments,
-                          "uczeń",
-                          "uczniów",
-                        )}{" "}
-                        ·{" "}
-                        {formatSimpleCount(
-                          group._count.teachers,
-                          "wykładowca",
-                          "wykładowców",
-                        )}
-                      </small>
-                    </span>
-                    <ArchiveControl
-                      id={group.id}
-                      type="group"
-                      label={`grupę ${group.name}`}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-
-          <article className="records-card resource-list-card" id="sale">
-            <ResourceHeading
-              icon={<DoorOpen aria-hidden="true" />}
-              title="Sale"
-              count={rooms.length}
-            />
-            {rooms.length === 0 ? (
-              <RecordsEmpty
-                title="Nie ma jeszcze sal"
-                text="Dodaj pierwszą salę przyciskiem u góry."
-              />
-            ) : (
-              <ul>
-                {rooms.map((room) => (
-                  <li key={room.id}>
-                    <span>
-                      <strong>{room.name}</strong>
-                      <small>
-                        {room.capacity
-                          ? formatSimpleCount(
-                              room.capacity,
-                              "miejsce",
-                              "miejsc",
-                            )
-                          : "Nie podano liczby miejsc"}{" "}
-                        ·{" "}
-                        {formatSimpleCount(
-                          room._count.scheduleSlots,
-                          "zajęcie",
-                          "zajęć",
-                        )}
-                      </small>
-                    </span>
-                    <ArchiveControl
-                      id={room.id}
-                      type="room"
-                      label={`salę ${room.name}`}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-        </div>
-      </section>
+      <ResourceDirectory
+        actorRole={actorRole}
+        historyById={historyById}
+        groups={groups.map((group) => ({
+          id: group.id,
+          name: group.name,
+          cefrLevel: group.cefrLevel,
+          studentCount: group._count.enrollments,
+          teacherCount: group._count.teachers,
+        }))}
+        rooms={rooms.map((room) => ({
+          id: room.id,
+          name: room.name,
+          capacity: room.capacity,
+          scheduleCount: room._count.scheduleSlots,
+        }))}
+      />
     </AuthenticatedPanelShell>
   );
+}
+
+function formatHistoryDate(date: Date) {
+  return new Intl.DateTimeFormat("pl-PL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Warsaw",
+  }).format(date);
 }
 
 function formatRelationCount(
   role: PersonDirectoryRecord["role"],
   count: number,
 ) {
-  if (role === "PARENT") {
-    return formatSimpleCount(count, "dziecko", "dzieci");
-  }
-  return `${count} ${polishGroupNoun(count)}`;
-}
-
-function formatSimpleCount(count: number, singular: string, plural: string) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
-function polishGroupNoun(count: number) {
+  if (role === "PARENT") return `${count} ${count === 1 ? "dziecko" : "dzieci"}`;
   const lastTwo = count % 100;
   const last = count % 10;
-  if (count === 1) return "grupa";
-  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) {
-    return "grupy";
-  }
-  return "grup";
-}
-
-function ResourceHeading({
-  icon,
-  title,
-  count,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  count: number;
-}) {
-  return (
-    <div className="records-card-heading">
-      <span className="record-icon record-icon-blue">{icon}</span>
-      <div>
-        <h2>{title}</h2>
-      </div>
-      <span className="records-count">{count}</span>
-    </div>
-  );
-}
-
-function RecordsEmpty({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="records-empty">
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function ArchiveControl({
-  id,
-  type,
-  label,
-}: {
-  id: string;
-  type: "room" | "group";
-  label: string;
-}) {
-  return (
-    <details className="archive-control">
-      <summary>
-        <Archive aria-hidden="true" /> Archiwizuj
-      </summary>
-      <div>
-        <p>Ukryć {label}? Historia pozostanie w systemie.</p>
-        <form action={archiveRecordAction}>
-          <input type="hidden" name="recordId" value={id} />
-          <input type="hidden" name="recordType" value={type} />
-          <button type="submit">Tak, przenieś do archiwum</button>
-        </form>
-      </div>
-    </details>
-  );
+  const noun =
+    count === 1
+      ? "grupa"
+      : last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)
+        ? "grupy"
+        : "grup";
+  return `${count} ${noun}`;
 }

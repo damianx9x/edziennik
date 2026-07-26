@@ -3,6 +3,9 @@ export type InvitationActionState = {
   message: string;
   invitationLink?: string;
   emailSent?: boolean;
+  invitationKind?: "EMAIL" | "ROLE_QR";
+  roleLabel?: string;
+  expiresAt?: string;
 };
 
 export const initialInvitationActionState: InvitationActionState = {

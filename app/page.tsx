@@ -36,9 +36,8 @@ export default function Home() {
         <nav className="desktop-nav" aria-label="Główna nawigacja">
           <a href="#zajecia">Zajęcia</a>
           <a href="#lokalizacje">Lokalizacje</a>
-          <a href="#jak-to-dziala">eDziennik</a>
           <Link className="nav-panel-link" href="/panel">
-            Otwórz panel <ArrowRight size={17} aria-hidden="true" />
+            eDziennik <ArrowRight size={17} aria-hidden="true" />
           </Link>
         </nav>
         <Link className="mobile-panel-link" href="/panel">
@@ -256,7 +255,7 @@ export default function Home() {
           Wersja pilotażowa eDziennika · dane demonstracyjne · treści robocze do
           akceptacji KLA
         </p>
-        <Link href="/panel">Przejdź do panelu</Link>
+        <Link href="/panel">eDziennik</Link>
       </footer>
     </main>
   );

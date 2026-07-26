@@ -345,7 +345,7 @@ export function TwoFactorSetup({ firstName }: { firstName: string }) {
               type="button"
               onClick={finish}
             >
-              Otwórz panel szkoły <ArrowRight aria-hidden="true" />
+              Otwórz eDziennik <ArrowRight aria-hidden="true" />
             </button>
             <div className="security-fine-print">
               <KeyRound aria-hidden="true" />

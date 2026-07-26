@@ -4,12 +4,15 @@ import {
   Archive,
   ChevronRight,
   GraduationCap,
+  GripHorizontal,
+  History,
   IdCard,
   Mail,
   MessageCircleMore,
   Phone,
   Search,
   TrendingUp,
+  Pencil,
   UserRound,
   Users,
   WalletCards,
@@ -25,6 +28,12 @@ import {
 
 import { archiveRecordAction } from "@/modules/groups/actions";
 import { recordRoleLabels } from "@/modules/people/schema";
+import {
+  RecordEditForm,
+  RecordHistory,
+  type RecordHistoryEntry,
+} from "@/modules/records/components/record-edit-form";
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 export type PersonDirectoryRecord = {
   id: string;
@@ -48,13 +57,18 @@ const filters = [
 
 export function PersonDirectory({
   people,
+  actorRole,
+  historyById,
 }: {
   people: PersonDirectoryRecord[];
+  actorRole: "DIRECTOR" | "TEACHER";
+  historyById: Record<string, RecordHistoryEntry[]>;
 }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<(typeof filters)[number]["value"]>("ALL");
   const [selected, setSelected] = useState<PersonDirectoryRecord | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const filteredPeople = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pl-PL");
@@ -83,6 +97,7 @@ export function PersonDirectory({
   }
 
   function restoreFocus() {
+    resetDialogPosition();
     setSelected(null);
     lastTriggerRef.current?.focus();
   }
@@ -176,7 +191,14 @@ export function PersonDirectory({
       >
         {selected ? (
           <div className="person-dialog-shell">
-            <header className="person-dialog-header">
+            <header
+              className="person-dialog-header person-dialog-drag-handle"
+              onPointerDown={startDrag}
+            >
+              <GripHorizontal
+                className="person-dialog-grip"
+                aria-label="Przeciągnij, aby przesunąć okno"
+              />
               <PersonAvatar person={selected} large />
               <div>
                 <span>{recordRoleLabels[selected.role]}</span>
@@ -258,6 +280,66 @@ export function PersonDirectory({
                 )}
               </section>
 
+              <section aria-labelledby="person-edit-heading">
+                <div className="person-dialog-section-heading">
+                  <h3 id="person-edit-heading">
+                    <Pencil aria-hidden="true" /> Edytuj dane
+                  </h3>
+                  <span>
+                    {actorRole === "DIRECTOR"
+                      ? "Zapis bezpośredni"
+                      : "Wymaga zgody dyrektora"}
+                  </span>
+                </div>
+                <RecordEditForm
+                  key={selected.id}
+                  entityType="USER"
+                  entityId={selected.id}
+                  isDirector={actorRole === "DIRECTOR"}
+                >
+                  <div className="record-edit-grid">
+                    <label>
+                      <span>Imię i nazwisko</span>
+                      <input
+                        name="name"
+                        defaultValue={selected.name}
+                        required
+                        minLength={2}
+                        maxLength={120}
+                      />
+                    </label>
+                    <label>
+                      <span>Adres e-mail</span>
+                      <input
+                        name="email"
+                        type="email"
+                        defaultValue={selected.email ?? ""}
+                        placeholder="Nie podano"
+                      />
+                    </label>
+                    <label>
+                      <span>Telefon</span>
+                      <input
+                        name="phone"
+                        type="tel"
+                        defaultValue={selected.phone ?? ""}
+                        maxLength={30}
+                        placeholder="Nie podano"
+                      />
+                    </label>
+                    <label>
+                      <span>Identyfikator szkolny</span>
+                      <input
+                        name="externalId"
+                        defaultValue={selected.externalId ?? ""}
+                        maxLength={80}
+                        placeholder="Nie nadano"
+                      />
+                    </label>
+                  </div>
+                </RecordEditForm>
+              </section>
+
               <section aria-labelledby="person-modules-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-modules-heading">Sprawy tej osoby</h3>
@@ -284,10 +366,21 @@ export function PersonDirectory({
                   />
                 </div>
               </section>
+
+              <section aria-labelledby="person-history-heading">
+                <div className="person-dialog-section-heading">
+                  <h3 id="person-history-heading">
+                    <History aria-hidden="true" /> Historia zmian
+                  </h3>
+                  <span>Ślad zatwierdzeń i edycji</span>
+                </div>
+                <RecordHistory entries={historyById[selected.id] ?? []} />
+              </section>
             </div>
 
             <footer className="person-dialog-footer">
-              <details className="person-archive">
+              {actorRole === "DIRECTOR" ? (
+                <details className="person-archive">
                 <summary>
                   <Archive aria-hidden="true" /> Archiwizuj kartotekę
                 </summary>
@@ -303,6 +396,9 @@ export function PersonDirectory({
                   </form>
                 </div>
               </details>
+              ) : (
+                <span />
+              )}
               <button
                 className="button button-primary"
                 type="button"

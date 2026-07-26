@@ -18,7 +18,8 @@ Panel demonstracyjny szkoły:
 `eDziennik → Szkoła → Zobacz panel demonstracyjny`.
 
 Logowanie z Etapu 1:
-`eDziennik → wybór roli → Zaloguj się`. Konta testowe i bezpieczna procedura
+`eDziennik → Zaloguj się`. Rola konta automatycznie otwiera właściwy panel.
+Konta testowe i bezpieczna procedura
 są opisane w `ETAP_1_INSTRUKCJA.md`.
 
 Kartoteki z Etapu 2:
@@ -27,8 +28,9 @@ salę, grupę lub osobę albo najpierw sprawdzić import CSV/XLSX. Procedura i
 szablon są opisane w `ETAP_2_INSTRUKCJA.md`.
 
 Edycja strony bez kodowania:
-`panel demonstracyjny → Treść strony`. W tej wersji zmiany zapisują się tylko
-w danej przeglądarce. Użyj `Eksportuj kopię`, aby przekazać je dalej.
+`panel dyrektora → Narzędzia → Treść publicznej strony`. W tej wersji zmiany
+zapisują się tylko w danej przeglądarce. Użyj `Eksportuj kopię`, aby przekazać
+je do publikacji.
 
 Przycisk z czerwoną ikoną błędu jest zawsze dostępny. Pozwala pobrać bezpieczny
 plik diagnostyczny, który można dołączyć do kolejnego zadania Codex.

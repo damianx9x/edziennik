@@ -224,3 +224,44 @@ a kartoteki są katalogiem do codziennej pracy. Eksport dyrektora generuje CSV
 zgodny z parserem importu i zapisuje jedynie bezpieczne liczniki w audycie.
 **Dlaczego:** operacje techniczne nie mogą zaciemniać wyszukiwania osób, a jeden
 format ogranicza ręczne poprawki i ułatwia wykonanie kopii roboczej.
+
+## ADR-029 — osobne, czasowe zaproszenie QR przypisane do roli
+
+**Data:** 2026-07-26
+**Decyzja:** kod QR jest osobnym, jednorazowym zaproszeniem `ROLE_QR`.
+Dyrektor wybiera rolę i czas ważności, a zaproszona osoba dopiero na bezpiecznej
+stronie wpisuje imię, nazwisko, e-mail, opcjonalny telefon i hasło. Rola zawsze
+pochodzi z zaproszenia. Ta decyzja zastępuje część ADR-027 mówiącą, że QR jest
+tym samym siedmiodniowym linkiem co zaproszenie e-mail.
+**Dlaczego:** dyrektor może pokazać lub przekazać kod bez wcześniejszego
+przepisywania danych, ale nadal kontroluje uprawnienia i czas dostępu.
+
+## ADR-030 — reaktywacja zarchiwizowanego konta
+
+**Data:** 2026-07-26
+**Decyzja:** ponowne zaproszenie na e-mail zarchiwizowanego użytkownika tej
+samej szkoły reaktywuje istniejący rekord, resetuje poświadczenie i sesje oraz
+zachowuje identyfikator i historię. Aktywnego konta nie można zdublować.
+**Dlaczego:** globalna unikalność e-mail pozostaje bezpieczna, a archiwizacja
+nie blokuje legalnego powrotu do szkoły ani nie rozrywa wcześniejszych relacji.
+
+## ADR-031 — zatwierdzane korekty kartotek wykładowcy
+
+**Data:** 2026-07-26
+**Decyzja:** dyrektor edytuje kartotekę bezpośrednio. Wykładowca może przesłać
+propozycję dla przypisanej osoby lub grupy oraz sali; pełna nowa wartość trafia
+do chronionej tabeli `RecordChangeRequest`, a audyt zawiera tylko nazwy
+zmienionych pól. Dyrektor zatwierdza albo odrzuca propozycję w centrum
+powiadomień.
+**Dlaczego:** szkoła korzysta z wiedzy wykładowców bez oddania kontroli nad
+danymi podstawowymi. Historia pokazuje autora i decyzję bez kopiowania danych
+osobowych do logów.
+
+## ADR-032 — Narzędzia tylko dla dyrektora
+
+**Data:** 2026-07-26
+**Decyzja:** import, eksport, stan bazy, publikacja i edytor strony są zebrane
+w sekcji `Narzędzia`. Sekcja jest autoryzowana po stronie serwera wyłącznie dla
+dyrektora. Sekrety połączenia z bazą nigdy nie są edytowane w UI.
+**Dlaczego:** funkcje techniczne są łatwe do znalezienia, ale przypadkowa zmiana
+hasła bazy w przeglądarce nie może odciąć całej szkoły od danych.

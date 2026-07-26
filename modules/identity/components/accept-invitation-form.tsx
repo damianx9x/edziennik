@@ -8,6 +8,7 @@ import {
   KeyRound,
   LoaderCircle,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
@@ -16,7 +17,6 @@ import { useFormStatus } from "react-dom";
 import {
   acceptInvitationAction,
 } from "@/modules/identity/invitations/actions";
-import type { IdentityRole } from "@/modules/identity/auth/access";
 import { initialInvitationActionState } from "@/modules/identity/invitations/state";
 
 function AcceptButton() {
@@ -41,24 +41,21 @@ function AcceptButton() {
   );
 }
 
-const rolePortal = {
-  DIRECTOR: "szkola",
-  TEACHER: "szkola",
-  PARENT: "rodzic",
-  STUDENT: "uczen",
-} as const;
-
 export function AcceptInvitationForm({
   token,
-  name,
+  firstName,
+  lastName,
+  email,
   maskedEmail,
-  role,
+  kind,
   roleLabel,
 }: {
   token: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   maskedEmail: string;
-  role: IdentityRole;
+  kind: "EMAIL" | "ROLE_QR";
   roleLabel: string;
 }) {
   const [state, formAction] = useActionState(
@@ -78,7 +75,7 @@ export function AcceptInvitationForm({
         <p className="auth-card-lead">{state.message}</p>
         <Link
           className="button button-primary button-full"
-          href={`/panel/logowanie?rola=${rolePortal[role]}`}
+          href="/panel/logowanie"
         >
           Zaloguj się <ArrowRight aria-hidden="true" />
         </Link>
@@ -92,25 +89,89 @@ export function AcceptInvitationForm({
         <KeyRound aria-hidden="true" />
       </div>
       <span className="auth-card-overline">Zaproszenie KLA</span>
-      <h1>Ustaw dostęp do konta</h1>
+      <h1>Utwórz swoje konto</h1>
       <p className="auth-card-lead">
-        Rola: <strong>{roleLabel}</strong> · {maskedEmail}
+        Konto otrzyma rolę: <strong>{roleLabel}</strong>
+        {kind === "EMAIL" ? ` · ${maskedEmail}` : ""}
       </p>
 
       <form className="auth-form" action={formAction}>
         <input type="hidden" name="token" value={token} />
-        <label>
-          <span>Imię i nazwisko</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={name}
-            autoComplete="name"
-            minLength={2}
-            maxLength={80}
-            required
-          />
-        </label>
+        <div className="invitation-form-section">
+          <div className="invitation-form-section-heading">
+            <UserRound aria-hidden="true" />
+            <span>
+              <strong>Twoje dane</strong>
+              <small>Wpisz dane osoby, która będzie używać konta.</small>
+            </span>
+          </div>
+          <div className="invite-form-grid">
+            <label>
+              <span>Imię</span>
+              <input
+                type="text"
+                name="firstName"
+                defaultValue={firstName}
+                autoComplete="given-name"
+                minLength={2}
+                maxLength={80}
+                required
+                placeholder="np. Anna"
+              />
+            </label>
+            <label>
+              <span>Nazwisko</span>
+              <input
+                type="text"
+                name="lastName"
+                defaultValue={lastName}
+                autoComplete="family-name"
+                minLength={2}
+                maxLength={80}
+                required
+                placeholder="np. Kowalska"
+              />
+            </label>
+          </div>
+          <label>
+            <span>Adres e-mail</span>
+            <input
+              type="email"
+              name="email"
+              defaultValue={email}
+              readOnly={kind === "EMAIL"}
+              autoComplete="email"
+              inputMode="email"
+              required
+              placeholder="adres@domena.pl"
+            />
+            <small>
+              {kind === "EMAIL"
+                ? "Ten adres został przypisany przez szkołę."
+                : "Na ten adres będziesz się później logować."}
+            </small>
+          </label>
+          <label>
+            <span>Telefon <small>(opcjonalnie)</small></span>
+            <input
+              type="tel"
+              name="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              maxLength={30}
+              placeholder="np. +48 500 000 000"
+            />
+            <small>Przyda się szkole do pilnego kontaktu.</small>
+          </label>
+        </div>
+        <div className="invitation-form-section">
+          <div className="invitation-form-section-heading">
+            <KeyRound aria-hidden="true" />
+            <span>
+              <strong>Bezpieczne hasło</strong>
+              <small>Może to być łatwe do zapamiętania krótkie zdanie.</small>
+            </span>
+          </div>
         <label>
           <span>Hasło</span>
           <span className="password-field">
@@ -150,6 +211,7 @@ export function AcceptInvitationForm({
             required
           />
         </label>
+        </div>
 
         {state.status === "error" ? (
           <div className="auth-message auth-message-error" role="alert">
@@ -162,7 +224,7 @@ export function AcceptInvitationForm({
 
       <div className="invitation-privacy-note">
         <ShieldCheck aria-hidden="true" />
-        Link przestanie działać po utworzeniu konta.
+        Link przestanie działać po utworzeniu konta. Roli nie można tu zmienić.
       </div>
     </section>
   );

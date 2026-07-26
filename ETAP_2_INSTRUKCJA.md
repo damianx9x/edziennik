@@ -7,17 +7,18 @@ Dyrektor ma jedno miejsce do obsługi:
 - sal,
 - grup,
 - wykładowców, rodziców i uczniów,
-- dużej karty osoby z kontaktem, powiązaniami i skrótami do jej spraw,
+- dużej, przesuwanej i skalowalnej karty osoby z edycją i historią,
 - relacji rodzic–dziecko i przypisania ucznia do grupy,
 - importu CSV/XLSX z podglądem błędów,
 - eksportu aktywnych kartotek do zgodnego pliku CSV,
 - archiwizacji zamiast trwałego kasowania,
 - prywatnych plików poza katalogiem publicznym strony.
 
-Import, eksport i historia operacji mają własną pozycję `Import i eksport`.
-Nie zajmują miejsca w codziennym widoku kartotek.
+Import, eksport, status bazy oraz edycja publicznej strony są w pozycji
+`Narzędzia`, dostępnej wyłącznie dyrektorowi.
 
-Pozostałe role nie mają dostępu do kartotek szkoły.
+Wykładowca widzi tylko kartoteki wynikające z przypisanych grup. Może wysłać
+propozycję korekty; dyrektor zatwierdza ją w `Powiadomieniach`.
 
 ## Jak sprawdzić lokalnie
 
@@ -44,10 +45,13 @@ filtru roli. Dotknięcie osoby otwiera duże okno z:
 - imieniem i nazwiskiem, e-mailem, telefonem i identyfikatorem,
 - dziećmi, grupami albo przypisaniami,
 - przygotowanymi skrótami do wiadomości, płatności i postępów,
+- formularzem edycji,
+- historią zmian i decyzji,
 - świadomą archiwizacją.
 
-Okno zamyka się przyciskiem, `Escape` albo akcją `Gotowe`, a fokus wraca do
-otwartej wcześniej osoby.
+Na komputerze okno można przeciągać za nagłówek i skalować za prawy dolny róg.
+Na telefonie działa jako pełna karta dolna. Zamyka się przyciskiem, `Escape`
+albo akcją `Gotowe`, a fokus wraca do wcześniej otwartego elementu.
 
 ## Pojedyncza zmiana
 
@@ -62,7 +66,7 @@ potwierdzenia. Element znika z aktywnej listy, ale historia pozostaje w bazie.
 
 ## Import większej listy
 
-1. W menu wybierz `Import i eksport`.
+1. W menu wybierz `Narzędzia`, a następnie `Import i eksport`.
 2. Kliknij `Pobierz szablon CSV`.
 3. Otwórz plik w Excelu, Numbers albo LibreOffice.
 4. Nie zmieniaj nazw kolumn.
@@ -80,16 +84,26 @@ Przycisk `Pobierz CSV` tworzy kopię aktywnych kartotek zgodną z tym samym
 formatem. Eksport nie zawiera tokenów ani sztucznych technicznych adresów
 uczniów. Pobranie zapisuje w audycie wyłącznie identyfikator szkoły i liczby.
 
-## Zaproszenie z kodem QR
+## Zaproszenia i powrót zarchiwizowanej osoby
 
-W `Zaproszeniach` dyrektor wybiera rolę, imię i e-mail. Po utworzeniu może:
+W `Zaproszeniach` są dwa osobne sposoby:
 
-- skopiować jednorazowy link,
-- pokazać kod QR do zeskanowania telefonem,
-- pobrać QR jako PNG.
+- `Zaproś e-mailem` — dyrektor wpisuje dane i rolę,
+- `Zaproś kodem QR` — dyrektor wybiera rolę i czas ważności.
 
-QR nie otwiera publicznej rejestracji. Zawiera ten sam jednorazowy,
-siedmiodniowy i przypisany do wybranej roli token co bezpieczny link.
+Kod QR można pokazać, skopiować jako link lub pobrać jako PNG. Zaproszona osoba
+wpisuje imię, nazwisko, e-mail, opcjonalny telefon i hasło. Nie wybiera roli —
+jest ona trwale przypisana do kodu. Link jest jednorazowy.
+
+Jeżeli kartoteka była zarchiwizowana i dyrektor ponownie zaprosi ten sam e-mail,
+system reaktywuje wcześniejsze konto oraz zachowuje jego historię. Aktywnego
+konta nie można zdublować.
+
+## Centrum powiadomień
+
+Dzwonek w prawym górnym rogu pokazuje liczbę propozycji wykładowców. Dyrektor
+widzi rekord, autora, czas i nowe wartości. `Zatwierdź zmianę` zapisuje dane;
+`Odrzuć` pozostawia kartotekę bez zmian. Obie decyzje trafiają do historii.
 
 ## Ważne ograniczenia
 
@@ -104,13 +118,16 @@ siedmiodniowy i przypisany do wybranej roli token co bezpieczny link.
 ## Odbiór Etapu 2
 
 - [ ] Dyrektor widzi kartoteki.
-- [ ] Rodzic, uczeń i wykładowca nie otwierają kartotek dyrektora.
+- [ ] Rodzic i uczeń nie otwierają kartotek szkoły.
+- [ ] Wykładowca widzi wyłącznie przypisane kartoteki i wysyła propozycję.
+- [ ] Dyrektor zatwierdza propozycję z centrum powiadomień.
 - [ ] Jedno logowanie automatycznie otwiera panel właściwej roli.
 - [ ] Kliknięcie osoby otwiera dużą kartę i `Escape` przywraca fokus.
 - [ ] Dodanie i archiwizacja sali działają.
 - [ ] Szablon pokazuje podgląd przed zapisem.
 - [ ] Eksport CSV pobiera się z osobnej kategorii.
-- [ ] Zaproszenie pokazuje działający link i kod QR przypisany do roli.
+- [ ] Osobny, czasowy kod QR automatycznie nadaje przypisaną rolę.
+- [ ] Ponowne zaproszenie zarchiwizowanego e-maila reaktywuje konto.
 - [ ] Błędny wiersz blokuje cały import.
 - [ ] Ponowny import nie tworzy niekontrolowanych duplikatów.
 - [ ] Widok nie przewija się poziomo przy 375 px.

@@ -180,7 +180,12 @@ export async function commitImportAction(
 
   try {
     await db.$transaction(async (transaction) => {
-      await applyImportRows(transaction, session.user.schoolId, preview.rows);
+      await applyImportRows(
+        transaction,
+        session.user.schoolId,
+        session.user.id,
+        preview.rows,
+      );
       await transaction.importBatch.update({
         where: { id: batch.id },
         data: { status: "COMMITTED", committedAt: new Date() },
@@ -220,6 +225,7 @@ export async function commitImportAction(
 async function applyImportRows(
   transaction: Prisma.TransactionClient,
   schoolId: string,
+  actorId: string,
   rows: ImportRow[],
 ) {
   for (const row of rows.filter((item) => item.entity === "ROOM")) {
@@ -386,6 +392,26 @@ async function applyImportRows(
       update: { status: "ACTIVE", endedAt: null },
       create: { groupId, studentId },
     });
+    await transaction.auditLog.createMany({
+      data: [
+        {
+          schoolId,
+          actorId,
+          action: "records.group.assigned",
+          entityType: "User",
+          entityId: studentId,
+          metadata: { groupId, changedFields: ["groupAssignment"] },
+        },
+        {
+          schoolId,
+          actorId,
+          action: "records.student.assigned",
+          entityType: "CourseGroup",
+          entityId: groupId,
+          metadata: { studentId, changedFields: ["studentAssignment"] },
+        },
+      ],
+    });
   }
 
   for (const row of rows.filter((item) => item.entity === "RELATION")) {
@@ -425,6 +451,26 @@ async function applyImportRows(
         parentId: parent.id,
         childId: child.id,
       },
+    });
+    await transaction.auditLog.createMany({
+      data: [
+        {
+          schoolId,
+          actorId,
+          action: "records.parent.linked",
+          entityType: "User",
+          entityId: parent.id,
+          metadata: { changedFields: ["childLink"] },
+        },
+        {
+          schoolId,
+          actorId,
+          action: "records.parent.linked",
+          entityType: "User",
+          entityId: child.id,
+          metadata: { changedFields: ["parentLink"] },
+        },
+      ],
     });
   }
 }

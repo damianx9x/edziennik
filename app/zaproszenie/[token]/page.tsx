@@ -34,6 +34,7 @@ export default async function InvitationPage({
     select: {
       name: true,
       email: true,
+      kind: true,
       role: true,
       expiresAt: true,
       acceptedAt: true,
@@ -73,6 +74,10 @@ export default async function InvitationPage({
     );
   }
 
+  const nameParts = (invitation.name ?? "").trim().split(/\s+/).filter(Boolean);
+  const firstName = nameParts.shift() ?? "";
+  const lastName = nameParts.join(" ");
+
   return (
     <main className="invitation-page">
       <div className="auth-topbar">
@@ -84,9 +89,11 @@ export default async function InvitationPage({
       </div>
       <AcceptInvitationForm
         token={safeToken}
-        name={invitation.name}
-        maskedEmail={maskEmail(invitation.email)}
-        role={invitation.role}
+        firstName={firstName}
+        lastName={lastName}
+        email={invitation.email ?? ""}
+        maskedEmail={invitation.email ? maskEmail(invitation.email) : ""}
+        kind={invitation.kind}
         roleLabel={invitationRoleLabels[invitation.role]}
       />
     </main>

@@ -51,6 +51,7 @@ npm install \
 cp scripts/release-prisma.config.ts \
   "$release_root/migration-tools/prisma.config.ts"
 cp scripts/release-start.sh "$release_root/start.sh"
+cp scripts/release-app.js "$release_root/app.js"
 cp scripts/release-migrate.sh "$release_root/migrate.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"

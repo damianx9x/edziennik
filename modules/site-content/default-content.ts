@@ -8,7 +8,7 @@ export const defaultSiteContent: SiteContent = {
     accent: "dodaje odwagi.",
     description:
       "Prywatna szkoła języka angielskiego dla dzieci i młodzieży. Kameralne grupy, dużo mówienia i zajęcia, na które chce się wracać — blisko domu i online.",
-    primaryCta: "Przejdź do eDziennika",
+    primaryCta: "Otwórz eDziennik",
     secondaryCta: "Poznaj KLA",
   },
   slides: [
@@ -106,7 +106,7 @@ export const defaultSiteContent: SiteContent = {
     kicker: "Cyfrowe zaplecze, ludzkie podejście",
     title: "Jedno proste miejsce dla całej społeczności KLA.",
     text: "Rodzic, uczeń, wykładowca i dyrektor widzą tylko to, czego potrzebują. Plan, obecności i najważniejsze informacje są pod ręką — szczególnie na telefonie.",
-    cta: "Przejdź do logowania",
+    cta: "Otwórz eDziennik",
     roles: [
       {
         title: "Rodzic",

@@ -2,23 +2,28 @@ import {
   Bell,
   CalendarDays,
   ContactRound,
-  FileSpreadsheet,
   GraduationCap,
   Home,
   MailPlus,
   MessageCircleMore,
-  Users,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Brand } from "@/app/components/brand";
+import { db } from "@/lib/server/db";
 import type { ActiveSession } from "@/modules/identity/auth/session";
 import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 
 import { SignOutButton } from "./sign-out-button";
 
-type PanelSection = "home" | "invitations" | "records" | "transfers";
+type PanelSection =
+  | "home"
+  | "invitations"
+  | "records"
+  | "tools"
+  | "notifications";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "DIRECTOR") {
@@ -37,11 +42,16 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "records",
       },
       {
-        href: "/panel/szkola/importy",
-        label: "Import i eksport",
-        mobileLabel: "Pliki",
-        icon: FileSpreadsheet,
-        key: "transfers",
+        href: "/panel/szkola/narzedzia",
+        label: "Narzędzia",
+        icon: Wrench,
+        key: "tools",
+      },
+      {
+        href: "/panel/szkola/powiadomienia",
+        label: "Powiadomienia",
+        icon: Bell,
+        key: "notifications",
       },
       {
         href: "/panel/szkola#grafik",
@@ -55,10 +65,10 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
     return [
       { href: "/panel/szkola", label: "Start", icon: Home, key: "home" },
       {
-        href: "/panel/szkola#grupy",
-        label: "Grupy",
-        icon: Users,
-        key: "groups",
+        href: "/panel/szkola/kartoteki",
+        label: "Kartoteki",
+        icon: ContactRound,
+        key: "records",
       },
       {
         href: "/panel/szkola#wiadomosci",
@@ -102,7 +112,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
   ] as const;
 }
 
-export function AuthenticatedPanelShell({
+export async function AuthenticatedPanelShell({
   session,
   active = "home",
   children,
@@ -112,6 +122,15 @@ export function AuthenticatedPanelShell({
   children: ReactNode;
 }) {
   const navigation = getNavigation(session.user.role);
+  const pendingChangeCount =
+    session.user.role === "DIRECTOR"
+      ? await db.recordChangeRequest.count({
+          where: {
+            schoolId: session.user.schoolId,
+            status: "PENDING",
+          },
+        })
+      : 0;
   const feedbackRole = {
     DIRECTOR: "director",
     TEACHER: "teacher",
@@ -130,6 +149,18 @@ export function AuthenticatedPanelShell({
       <header className="app-panel-topbar">
         <Brand compact />
         <div className="app-panel-account">
+          {session.user.role === "DIRECTOR" ? (
+            <Link
+              className="app-panel-notifications"
+              href="/panel/szkola/powiadomienia"
+              aria-label={`Centrum powiadomień: ${pendingChangeCount} oczekujących zmian`}
+            >
+              <Bell aria-hidden="true" />
+              {pendingChangeCount > 0 ? (
+                <span>{pendingChangeCount > 99 ? "99+" : pendingChangeCount}</span>
+              ) : null}
+            </Link>
+          ) : null}
           <div className="app-panel-avatar" aria-hidden="true">
             {initials || "K"}
           </div>
@@ -180,7 +211,7 @@ export function AuthenticatedPanelShell({
               className={active === item.key ? "active" : undefined}
             >
               <Icon aria-hidden="true" />
-              <span>{"mobileLabel" in item ? item.mobileLabel : item.label}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}

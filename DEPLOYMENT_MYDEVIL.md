@@ -1,65 +1,199 @@
-# Wdrożenie na MyDevil — Etap 1
+# Pełny eDziennik na MyDevil — Node.js + PostgreSQL
 
-Nie wykonuj tej procedury na prawdziwych danych przed zamknięciem checklisty
-`BEZPIECZENSTWO_I_RODO.md`. Konto zakłada i opłaca klientka.
+## Najpierw ważne rozróżnienie
 
-Oficjalne materiały:
+Samo wgranie ZIP-a do zwykłego katalogu FTP **nie uruchomi pełnego
+eDziennika**. Strona pokazowa działa jako pliki statyczne, ale logowanie,
+zaproszenia, kartoteki i historia wymagają stale działającego Node.js oraz
+PostgreSQL.
 
-- [strony Node.js w MyDevil](https://wiki.mydevil.net/Strona_WWW),
-- [oferta i parametry](https://www.mydevil.net/nasza-oferta/),
-- [certyfikaty Let's Encrypt](https://wiki.mydevil.net/SSL),
-- [zarządzanie wersją Node przez mise](https://wiki.mydevil.net/Mise).
+Do testów z klientką używamy:
 
-## Docelowy układ
+- `staging.kingslanguageacademy.pl` — pełna aplikacja i wyłącznie dane demo,
+- osobnej bazy PostgreSQL dla stagingu,
+- hostingu MyDevil MD2 lub lepszego z SSH, Node.js i PostgreSQL,
+- `panel.kingslanguageacademy.pl` dopiero później, po bezpieczeństwie i odbiorze.
 
-- `staging.kingslanguageacademy.pl` — osobna baza i dane demonstracyjne,
-- `panel.kingslanguageacademy.pl` — produkcja dopiero po odbiorze,
-- Node.js 22 lub 24 LTS,
-- PostgreSQL 16,
-- HTTPS z minimalnym TLS ustawionym w panelu,
-- sekrety jako zmienne procesu Passenger, nie w repozytorium.
+Nie przenoś prawdziwych danych dzieci, dopóki nie jest zamknięta checklista
+`BEZPIECZENSTWO_I_RODO.md`.
 
-## Co generuje projekt
+## Co przygotowuje Codex
 
-Na Macu uruchom:
+Na Macu:
 
 ```bash
 npm run package:release
 ```
 
-Powstanie `outputs/edziennik-kla-stage-2.zip`. Paczka zawiera samodzielny
-serwer Next.js, migracje, zasoby statyczne, `migrate.sh`, `start.sh` i
-przykładowe nazwy zmiennych. Nie zawiera `.env`, haseł, bazy ani danych
-użytkowników.
+Gotowy plik:
 
-## Kolejność w panelu klientki
+```text
+outputs/edziennik-kla-stage-2.zip
+```
 
-1. Załóż dwie bazy PostgreSQL: staging i production, z różnymi użytkownikami
-   oraz hasłami.
-2. Dodaj domenę staging jako aplikację Node.js w środowisku `staging`.
-3. Wgraj i rozpakuj paczkę przez SFTP/SSH do katalogu wskazanego dla domeny.
-4. Ustaw zmienne `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-   `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` i `RESEND_API_KEY`. Sekret Better Auth
-   musi mieć co najmniej 32 losowe bajty i być inny dla stagingu oraz produkcji.
-5. Ustaw plik wykonywalny aplikacji zgodnie z aktualnym panelem MyDevil.
-   Dla paczki standalone punktem startu jest `server.js`; `start.sh` przyjmuje
-   opcjonalne zmienne `APP_HOST` i `APP_PORT`, a następnie bezpiecznie przekazuje
-   je procesowi Next.js.
-6. W katalogu paczki uruchom `./migrate.sh` najpierw wyłącznie dla stagingu.
-   Skrypt używa dołączonej, przypiętej wersji Prisma 7.8.0 i nie pobiera
-   narzędzi podczas wdrożenia. Przed migracją produkcji wykonaj i sprawdź backup.
-7. Dodaj Let's Encrypt i wymuś HTTPS.
-8. Uruchom testy smoke, test logowania ról i test izolacji danych.
-9. Skonfiguruj codzienny backup poza repozytorium i wykonaj próbne odtworzenie.
+Paczka zawiera zbudowany serwer Next.js, punkt startowy `app.js` dla
+Passengera, migracje bazy, publiczne zasoby, skrypt `migrate.sh` i tę
+instrukcję. Nie zawiera haseł, `.env`, bazy ani danych użytkowników.
 
-Po uruchomieniu sprawdź dodatkowo:
+## Jednorazowe ustawienie usługi
 
-- próba publicznej rejestracji jest odrzucana,
-- dyrektor musi skonfigurować TOTP,
-- rodzic, uczeń i wykładowca nie otwierają panelu dyrektora,
-- link zaproszenia działa tylko raz,
-- reset hasła unieważnia dotychczasowe sesje.
+Poniższe wartości wpisz własne:
 
-Dokładne kliknięcia i polecenia zostaną uzupełnione podczas Etapu 6 na podstawie
-aktualnego panelu konta klientki. Nie zgadujemy identyfikatorów domeny, ścieżek
-ani haseł.
+- `LOGIN` — login konta MyDevil,
+- `DOMENA` — `staging.kingslanguageacademy.pl`,
+- `NAZWA_BAZY` — nazwa nowej bazy stagingowej,
+- `pgsqlX.mydevil.net` — host pokazany dla Twojego serwera.
+
+### 1. DNS i strona Node.js
+
+1. W DNS domeny dodaj rekord dla `staging` zgodnie z danymi MyDevil.
+2. W DevilWEB otwórz `Strony WWW` → `Dodaj stronę`.
+3. Wpisz `staging.kingslanguageacademy.pl`.
+4. Jako typ wybierz `Node.js`, wersję 22.
+5. Włącz SSL Let’s Encrypt i wymuszenie HTTPS.
+
+MyDevil wymaga, aby aplikacja była w:
+
+```text
+/usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/public_nodejs
+```
+
+a plik startowy nazywał się `app.js`.
+
+### 2. PostgreSQL
+
+W DevilWEB:
+
+1. Otwórz `PostgreSQL`.
+2. Kliknij `Dodaj bazę`.
+3. Nadaj osobną nazwę i silne, losowe hasło tylko dla stagingu.
+4. Zapisz nazwę bazy/użytkownika i host `pgsqlX.mydevil.net`.
+
+Adres połączenia ma postać:
+
+```text
+postgresql://NAZWA_BAZY:HASLO@pgsqlX.mydevil.net:5432/NAZWA_BAZY?schema=public
+```
+
+Nie zapisuj tego adresu w repozytorium ani przesyłanej paczce.
+
+### 3. Wgranie paczki
+
+Połącz się przez SFTP lub SSH. Rozpakuj zawartość katalogu `edziennik-kla`
+bezpośrednio do `public_nodejs`, tak aby istniały:
+
+```text
+public_nodejs/app.js
+public_nodejs/server.js
+public_nodejs/.next/
+public_nodejs/public/
+public_nodejs/prisma/
+public_nodejs/migrate.sh
+```
+
+Nie może powstać dodatkowe zagnieżdżenie
+`public_nodejs/edziennik-kla/edziennik-kla`.
+
+Jeżeli MyDevil utworzył plik startowy HTML, usuń wyłącznie:
+
+```bash
+rm /usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/public_nodejs/public/index.html
+```
+
+### 4. Node.js 22 i zmienne środowiskowe
+
+Po SSH:
+
+```bash
+mkdir -p ~/bin
+ln -fs /usr/local/bin/node22 ~/bin/node
+ln -fs /usr/local/bin/npm22 ~/bin/npm
+```
+
+Passenger na MyDevil czyta zmienne z `~/.bash_profile`, nie z `.bashrc`.
+Dodaj tam poniższe wpisy z własnymi wartościami:
+
+```bash
+export DATABASE_URL='postgresql://NAZWA_BAZY:HASLO@pgsqlX.mydevil.net:5432/NAZWA_BAZY?schema=public'
+export BETTER_AUTH_SECRET='LOSOWY_SEKRET_MINIMUM_32_BAJTY'
+export BETTER_AUTH_URL='https://staging.kingslanguageacademy.pl'
+export NEXT_PUBLIC_APP_URL='https://staging.kingslanguageacademy.pl'
+export NEXT_PUBLIC_APP_RELEASE='stage-2'
+export NEXT_PUBLIC_SUPPORT_EMAIL='ADRES_SZKOLY'
+export EMAIL_FROM='ADRES_NADAWCY'
+export RESEND_API_KEY=''
+export FILE_STORAGE_PROVIDER='local'
+export KLA_PRIVATE_FILES_DIR='/usr/home/LOGIN/.kla-private/staging'
+export SMS_PROVIDER='disabled'
+```
+
+Utwórz prywatny katalog plików poza katalogiem WWW:
+
+```bash
+mkdir -p /usr/home/LOGIN/.kla-private/staging
+chmod 700 /usr/home/LOGIN/.kla-private/staging
+source ~/.bash_profile
+```
+
+### 5. Migracje i restart
+
+W katalogu aplikacji:
+
+```bash
+cd /usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/public_nodejs
+chmod +x migrate.sh start.sh
+./migrate.sh
+devil www restart staging.kingslanguageacademy.pl
+```
+
+Nie uruchamiaj `prisma migrate dev` na serwerze. Wdrożenie używa wyłącznie
+zatwierdzonych migracji przez `migrate deploy`.
+
+### 6. Sprawdzenie
+
+Otwórz:
+
+```text
+https://staging.kingslanguageacademy.pl
+```
+
+Sprawdź kolejno:
+
+1. strona główna i `eDziennik`,
+2. logowanie czterech kont demo,
+3. utworzenie zaproszenia i jednorazowego kodu QR,
+4. kartoteki, import podglądowy i centrum powiadomień,
+5. brak dostępu ucznia do `/panel/szkola`,
+6. wylogowanie i ponowne logowanie.
+
+Log błędów MyDevil:
+
+```text
+/usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/logs/error.log
+```
+
+Podgląd ostatnich wpisów:
+
+```bash
+tail -n 100 /usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/logs/error.log
+```
+
+Nie usuwaj katalogu `logs`.
+
+## Każda kolejna aktualizacja
+
+1. Lokalnie wykonaj testy i `npm run package:release`.
+2. Zrób backup bazy stagingowej.
+3. Wgraj nową paczkę do osobnego katalogu roboczego.
+4. Zachowaj zmienne w `~/.bash_profile` i prywatne pliki.
+5. Podmień pliki aplikacji w `public_nodejs`.
+6. Uruchom `./migrate.sh`.
+7. Wykonaj `devil www restart staging.kingslanguageacademy.pl`.
+8. Przejdź checklistę z punktu „Sprawdzenie”.
+
+## Źródła operatora
+
+- Node.js i Passenger: https://dev.pomoc.mydevil.net/Node.js/
+- PostgreSQL: https://pomoc.mydevil.net/PostgreSQL/
+- strony WWW: https://dev.pomoc.mydevil.net/Strona_WWW/
+- SSL: https://dev.pomoc.mydevil.net/SSL/
