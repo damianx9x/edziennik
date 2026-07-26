@@ -1,6 +1,12 @@
-export type Role = "DIRECTOR" | "TEACHER" | "PARENT" | "STUDENT";
+export type Role =
+  | "SYSTEM_OWNER"
+  | "DIRECTOR"
+  | "TEACHER"
+  | "PARENT"
+  | "STUDENT";
 
 export type Action =
+  | "view:owner-dashboard"
   | "manage:school"
   | "view:director-dashboard"
   | "view:teacher-dashboard"
@@ -35,7 +41,15 @@ export function can(
   action: Action,
   resource: Resource,
 ): boolean {
+  if (actor.role === "SYSTEM_OWNER") {
+    return true;
+  }
+
   if (actor.schoolId !== resource.schoolId) {
+    return false;
+  }
+
+  if (action === "view:owner-dashboard") {
     return false;
   }
 
@@ -43,7 +57,10 @@ export function can(
     return true;
   }
 
-  if (action === "view:director-dashboard" || action === "manage:school") {
+  if (
+    action === "view:director-dashboard" ||
+    action === "manage:school"
+  ) {
     return false;
   }
 

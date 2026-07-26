@@ -27,6 +27,12 @@ Kartoteki z Etapu 2:
 salę, grupę lub osobę albo najpierw sprawdzić import CSV/XLSX. Procedura i
 szablon są opisane w `ETAP_2_INSTRUKCJA.md`.
 
+Konto techniczne autora projektu:
+uzupełnij `KLA_SYSTEM_OWNER_PASSWORD` wyłącznie w prywatnym `.env`, wykonaj
+`npm run account:owner`, a następnie zaloguj się loginem `bog`. System wymusi
+MFA i otworzy `/panel/bog`. Pełna procedura oraz odzyskiwanie dostępu są w
+`ETAP_2_INSTRUKCJA.md`.
+
 Edycja strony bez kodowania:
 `panel dyrektora → Narzędzia → Treść publicznej strony`. W tej wersji zmiany
 zapisują się tylko w danej przeglądarce. Użyj `Eksportuj kopię`, aby przekazać

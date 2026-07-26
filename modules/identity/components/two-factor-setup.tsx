@@ -22,7 +22,15 @@ type SetupData = {
   backupCodes: string[];
 };
 
-export function TwoFactorSetup({ firstName }: { firstName: string }) {
+export function TwoFactorSetup({
+  firstName,
+  accountLabel,
+  returnPath,
+}: {
+  firstName: string;
+  accountLabel: string;
+  returnPath: string;
+}) {
   const router = useRouter();
   const [step, setStep] = useState<"password" | "verify" | "backup">(
     "password",
@@ -140,17 +148,17 @@ export function TwoFactorSetup({ firstName }: { firstName: string }) {
       setMessage("Potwierdź, że kody awaryjne są zapisane.");
       return;
     }
-    router.replace("/panel/szkola");
+    router.replace(returnPath);
     router.refresh();
   }
 
   return (
     <main className="security-setup-page">
       <section className="security-setup-intro">
-        <span className="auth-kicker">Ochrona konta dyrektora</span>
+        <span className="auth-kicker">Ochrona konta uprzywilejowanego</span>
         <h1>Jeszcze jeden krok, {firstName}.</h1>
         <p>
-          Konto dyrektora widzi najwięcej danych, dlatego wymaga kodu z
+          Konto {accountLabel} ma rozszerzony dostęp, dlatego wymaga kodu z
           telefonu przy logowaniu.
         </p>
         <ol className="security-steps" aria-label="Postęp konfiguracji">

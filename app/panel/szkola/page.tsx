@@ -26,8 +26,11 @@ export const dynamic = "force-dynamic";
 
 export default async function SchoolPanelPage() {
   const current = await requireActiveSession("/panel/szkola");
+  const isManagement =
+    current.user.role === "SYSTEM_OWNER" ||
+    current.user.role === "DIRECTOR";
   const session =
-    current.user.role === "DIRECTOR"
+    isManagement
       ? await requirePanelAccess(
           "view:director-dashboard",
           "/panel/szkola",
@@ -39,7 +42,8 @@ export default async function SchoolPanelPage() {
 
   return (
     <AuthenticatedPanelShell session={session}>
-      {session.user.role === "DIRECTOR" ? (
+      {session.user.role === "SYSTEM_OWNER" ||
+      session.user.role === "DIRECTOR" ? (
         <DirectorDashboard name={session.user.name} />
       ) : (
         <TeacherDashboard name={session.user.name} />
@@ -54,7 +58,7 @@ function DirectorDashboard({ name }: { name: string }) {
     <>
       <header className="role-panel-heading">
         <div>
-          <span className="section-kicker">Panel dyrektora</span>
+          <span className="section-kicker">Panel zarządzania szkołą</span>
           <h1>Dzień dobry, {firstName}</h1>
           <p>
             Dostęp jest zabezpieczony. Najważniejsze sprawy szkoły są w jednym

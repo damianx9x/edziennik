@@ -265,3 +265,26 @@ w sekcji `Narzędzia`. Sekcja jest autoryzowana po stronie serwera wyłącznie d
 dyrektora. Sekrety połączenia z bazą nigdy nie są edytowane w UI.
 **Dlaczego:** funkcje techniczne są łatwe do znalezienia, ale przypadkowa zmiana
 hasła bazy w przeglądarce nie może odciąć całej szkoły od danych.
+
+## ADR-033 — techniczny właściciel systemu ponad rolami szkoły
+
+**Data:** 2026-07-26
+**Decyzja:** jedna, nieprzydzielalna przez UI rola `SYSTEM_OWNER`, pokazywana
+jako `Bóg`, ma pełny dostęp między szkołami oraz osobne centrum diagnostyczne.
+Konto tworzy wyłącznie idempotentny skrypt z hasłem pobieranym z prywatnego
+`.env`; każda instalacja unieważnia sesje, a MFA jest obowiązkowe. Konto nie
+pojawia się w zaproszeniach, QR ani zwykłych kartotekach. Ta decyzja rozszerza
+ADR-032: `SYSTEM_OWNER` dziedziczy narzędzia dyrektora.
+**Dlaczego:** autor projektu potrzebuje legalnej ścieżki naprawy i diagnostyki,
+ale ukryte konto z hasłem w kodzie byłoby furtką i nie dawałoby audytu.
+
+## ADR-034 — dwie skale panelu przy wspólnym mobile-first
+
+**Data:** 2026-07-26
+**Decyzja:** interfejs codzienny nadal zaczyna się od 375 px, natomiast od
+1280 px panel wykorzystuje do 1720 px szerokości i do 1420 px treści.
+Formularze o złożonym wyniku, takie jak QR, dostają co najmniej 500 px i nie
+dzielą linku oraz kodu na zbyt wąskie kolumny. Między 1051 a 1279 px przechodzą
+w jeden czytelny stos.
+**Dlaczego:** rodzice i uczniowie pracują głównie na telefonie, a dyrektor oraz
+właściciel systemu potrzebują dużej przestrzeni roboczej na komputerze.

@@ -47,12 +47,17 @@ npm install \
   --no-fund \
   --package-lock=false \
   prisma@7.8.0 \
-  dotenv@17.2.3
+  dotenv@17.2.3 \
+  better-auth@1.6.25 \
+  pg@8.22.0
 cp scripts/release-prisma.config.ts \
   "$release_root/migration-tools/prisma.config.ts"
+cp scripts/setup-system-owner.mjs \
+  "$release_root/migration-tools/setup-owner.mjs"
 cp scripts/release-start.sh "$release_root/start.sh"
 cp scripts/release-app.js "$release_root/app.js"
 cp scripts/release-migrate.sh "$release_root/migrate.sh"
+cp scripts/release-setup-owner.sh "$release_root/setup-owner.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
 cp ETAP_2_INSTRUKCJA.md "$release_root/ETAP_2_INSTRUKCJA.md"
@@ -63,7 +68,10 @@ cp OBSERVABILITY_I_ZGLOSZENIA.md "$release_root/OBSERVABILITY_I_ZGLOSZENIA.md"
 cp INSTRUKCJA_HOME_PL.md "$release_root/INSTRUKCJA_HOME_PL.md"
 cp START_TUTAJ.md "$release_root/START_TUTAJ.md"
 cp .env.example "$release_root/.env.example"
-chmod +x "$release_root/start.sh" "$release_root/migrate.sh"
+chmod +x \
+  "$release_root/start.sh" \
+  "$release_root/migrate.sh" \
+  "$release_root/setup-owner.sh"
 
 unsafe_env_file="$(
   find "$release_root" -maxdepth 1 -type f -name '.env*' \

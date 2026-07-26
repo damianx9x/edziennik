@@ -3,16 +3,18 @@ import { redirect } from "next/navigation";
 
 import { can } from "@/modules/access-control/can";
 import { getRoleHome } from "@/modules/identity/auth/redirects";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { TwoFactorSetup } from "@/modules/identity/components/two-factor-setup";
 
-export const metadata: Metadata = { title: "Zabezpiecz konto dyrektora" };
+export const metadata: Metadata = { title: "Zabezpiecz konto uprzywilejowane" };
 export const dynamic = "force-dynamic";
 
 export default async function TwoFactorSetupPage() {
   const session = await requireActiveSession("/panel/bezpieczenstwo/2fa");
 
   if (
+    !isPrivilegedIdentityRole(session.user.role) ||
     !can(
       {
         id: session.user.id,
@@ -27,9 +29,19 @@ export default async function TwoFactorSetupPage() {
   }
 
   if (session.user.twoFactorEnabled === true) {
-    redirect("/panel/szkola");
+    redirect(getRoleHome(session.user.role));
   }
 
   const firstName = session.user.name.trim().split(/\s+/)[0] || "Dyrektorze";
-  return <TwoFactorSetup firstName={firstName} />;
+  return (
+    <TwoFactorSetup
+      firstName={firstName}
+      accountLabel={
+        session.user.role === "SYSTEM_OWNER"
+          ? "właściciela systemu"
+          : "dyrektora"
+      }
+      returnPath={getRoleHome(session.user.role)}
+    />
+  );
 }

@@ -4,6 +4,7 @@ import { getRoleHome, getSafeReturnPath } from "./redirects";
 
 describe("identity redirects", () => {
   it("maps every role to its own panel", () => {
+    expect(getRoleHome("SYSTEM_OWNER")).toBe("/panel/bog");
     expect(getRoleHome("DIRECTOR")).toBe("/panel/szkola");
     expect(getRoleHome("TEACHER")).toBe("/panel/szkola");
     expect(getRoleHome("PARENT")).toBe("/panel/rodzic");

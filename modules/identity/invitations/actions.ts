@@ -4,7 +4,7 @@ import { auth } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
 import { hashPassword } from "better-auth/crypto";
 import { revalidatePath } from "next/cache";
-import { isIdentityRole } from "@/modules/identity/auth/access";
+import { isInvitableIdentityRole } from "@/modules/identity/auth/access";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { sendAuthEmail } from "@/modules/identity/email/email-provider";
 
@@ -329,7 +329,7 @@ export async function acceptInvitationAction(
 
   if (
     !invitation ||
-    !isIdentityRole(invitation.role) ||
+    !isInvitableIdentityRole(invitation.role) ||
     invitation.acceptedAt ||
     invitation.revokedAt ||
     invitation.expiresAt.getTime() <= Date.now()

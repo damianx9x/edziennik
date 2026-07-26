@@ -32,8 +32,9 @@ outputs/edziennik-kla-stage-2.zip
 ```
 
 Paczka zawiera zbudowany serwer Next.js, punkt startowy `app.js` dla
-Passengera, migracje bazy, publiczne zasoby, skrypt `migrate.sh` i tę
-instrukcję. Nie zawiera haseł, `.env`, bazy ani danych użytkowników.
+Passengera, migracje bazy, publiczne zasoby, skrypty `migrate.sh` oraz
+`setup-owner.sh` i tę instrukcję. Nie zawiera haseł, `.env`, bazy ani danych
+użytkowników.
 
 ## Jednorazowe ustawienie usługi
 
@@ -125,6 +126,9 @@ export RESEND_API_KEY=''
 export FILE_STORAGE_PROVIDER='local'
 export KLA_PRIVATE_FILES_DIR='/usr/home/LOGIN/.kla-private/staging'
 export SMS_PROVIDER='disabled'
+export KLA_SYSTEM_OWNER_PASSWORD='PRYWATNE_HASLO_AUTORA'
+export KLA_SYSTEM_OWNER_SCHOOL_SLUG='kings-language-academy-demo'
+export KLA_SYSTEM_OWNER_RESET_MFA='0'
 ```
 
 Utwórz prywatny katalog plików poza katalogiem WWW:
@@ -141,8 +145,9 @@ W katalogu aplikacji:
 
 ```bash
 cd /usr/home/LOGIN/domains/staging.kingslanguageacademy.pl/public_nodejs
-chmod +x migrate.sh start.sh
+chmod +x migrate.sh start.sh setup-owner.sh
 ./migrate.sh
+./setup-owner.sh
 devil www restart staging.kingslanguageacademy.pl
 ```
 
@@ -163,8 +168,10 @@ Sprawdź kolejno:
 2. logowanie czterech kont demo,
 3. utworzenie zaproszenia i jednorazowego kodu QR,
 4. kartoteki, import podglądowy i centrum powiadomień,
-5. brak dostępu ucznia do `/panel/szkola`,
-6. wylogowanie i ponowne logowanie.
+5. pierwsze logowanie `bog`, wymuszenie MFA i otwarcie `/panel/bog`,
+6. brak dostępu dyrektora do `/panel/bog`,
+7. brak dostępu ucznia do `/panel/szkola`,
+8. wylogowanie i ponowne logowanie.
 
 Log błędów MyDevil:
 

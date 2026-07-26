@@ -21,6 +21,7 @@ import {
   getRoleHome,
   getSafeReturnPath,
 } from "@/modules/identity/auth/redirects";
+import { normalizeLoginIdentifier } from "@/modules/identity/auth/system-owner";
 
 function getErrorMessage(code: string | undefined, status: number): string {
   if (status === 429) {
@@ -71,7 +72,7 @@ export function LoginForm() {
 
     try {
       const result = await authClient.signIn.email({
-        email: email.trim(),
+        email: normalizeLoginIdentifier(email),
         password,
         rememberMe,
       });
@@ -149,18 +150,17 @@ export function LoginForm() {
           </span>
           <h2 id="login-title">Zaloguj się</h2>
           <p className="auth-card-lead">
-            Użyj adresu, na który przyszło zaproszenie. System sam rozpozna
-            Twoją rolę.
+            Użyj adresu, na który przyszło zaproszenie, albo przydzielonego
+            loginu technicznego. System sam rozpozna Twoją rolę.
           </p>
 
           <form className="auth-form" onSubmit={submit} aria-busy={isPending}>
             <label>
-              <span>Adres e-mail</span>
+              <span>Adres e-mail lub login</span>
               <input
-                name="email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
+                name="identifier"
+                type="text"
+                autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="np. rodzic@domena.pl"

@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { Brand } from "@/app/components/brand";
 import { db } from "@/lib/server/db";
-import { isIdentityRole } from "@/modules/identity/auth/access";
+import { isInvitableIdentityRole } from "@/modules/identity/auth/access";
 import { AcceptInvitationForm } from "@/modules/identity/components/accept-invitation-form";
 import {
   getInvitationAvailability,
@@ -49,7 +49,7 @@ export default async function InvitationPage({
   if (
     !invitation ||
     availability !== "ready" ||
-    !isIdentityRole(invitation.role)
+    !isInvitableIdentityRole(invitation.role)
   ) {
     return (
       <main className="auth-page auth-page-compact">

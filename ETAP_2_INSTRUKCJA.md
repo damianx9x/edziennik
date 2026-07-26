@@ -20,6 +20,10 @@ Import, eksport, status bazy oraz edycja publicznej strony są w pozycji
 Wykładowca widzi tylko kartoteki wynikające z przypisanych grup. Może wysłać
 propozycję korekty; dyrektor zatwierdza ją w `Powiadomieniach`.
 
+Autor projektu ma dodatkowe, stałe konto `Bóg`. Nie można go utworzyć przez
+zaproszenie ani kod QR. Dziedziczy panel dyrektora i ma osobne, audytowane
+centrum diagnostyczne.
+
 ## Jak sprawdzić lokalnie
 
 1. Uruchom PostgreSQL.
@@ -105,6 +109,40 @@ Dzwonek w prawym górnym rogu pokazuje liczbę propozycji wykładowców. Dyrekto
 widzi rekord, autora, czas i nowe wartości. `Zatwierdź zmianę` zapisuje dane;
 `Odrzuć` pozostawia kartotekę bez zmian. Obie decyzje trafiają do historii.
 
+## Konto Bóg i diagnostyka
+
+Hasła tej roli nigdy nie wpisujemy do kodu ani Gita. W prywatnym `.env` ustaw:
+
+```dotenv
+KLA_SYSTEM_OWNER_PASSWORD="tu-wpisz-prywatne-haslo"
+KLA_SYSTEM_OWNER_SCHOOL_SLUG="kings-language-academy-demo"
+KLA_SYSTEM_OWNER_RESET_MFA="0"
+```
+
+Następnie wykonaj:
+
+```bash
+npm run account:owner
+```
+
+Skrypt można uruchamiać ponownie: przywraca rolę, obraca hasło i wylogowuje
+stare sesje, ale zachowuje skonfigurowane MFA. Ustaw
+`KLA_SYSTEM_OWNER_RESET_MFA="1"` wyłącznie podczas świadomego odzyskiwania
+dostępu, a od razu po operacji wróć do `0`.
+
+Zaloguj się loginem `bog`. Pierwsze wejście wymusi połączenie aplikacji TOTP
+i zapisanie kodów awaryjnych. Trasa `/panel/bog` pokazuje stan bazy, usług,
+importów, zgłoszeń i audytu. `Pobierz raport` tworzy JSON bez haseł, tokenów,
+e-maili, telefonów, IP i treści wiadomości.
+
+W paczce serwerowej po migracji i uzupełnieniu prywatnego `.env` użyj:
+
+```bash
+./setup-owner.sh
+```
+
+Konta nie tworzy statyczna paczka FTP — wymaga aplikacji Node.js i PostgreSQL.
+
 ## Ważne ograniczenia
 
 - plik ma maksymalnie 5 MB, 1000 wierszy i 30 kolumn,
@@ -133,3 +171,7 @@ widzi rekord, autora, czas i nowe wartości. `Zatwierdź zmianę` zapisuje dane;
 - [ ] Widok nie przewija się poziomo przy 375 px.
 - [ ] Każdy element dotykowy ma co najmniej 44 × 44 px.
 - [ ] `npm run check`, `npm run build` i `npm run package:release` przechodzą.
+- [ ] Konto `Bóg` wymusza MFA i otwiera `/panel/bog`.
+- [ ] Dyrektor nie może otworzyć `/panel/bog`.
+- [ ] Raport diagnostyczny nie zawiera pól wrażliwych.
+- [ ] Zaproszenia mają wygodny układ przy 375 px i 1440 px.

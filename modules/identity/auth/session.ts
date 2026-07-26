@@ -5,7 +5,11 @@ import { cache } from "react";
 import { auth, type AuthSession } from "@/lib/server/auth";
 import { can, type Action, type Actor } from "@/modules/access-control/can";
 
-import { isIdentityRole, type IdentityRole } from "./access";
+import {
+  isIdentityRole,
+  isPrivilegedIdentityRole,
+  type IdentityRole,
+} from "./access";
 
 export type ActiveSession = AuthSession & {
   user: AuthSession["user"] & {
@@ -55,6 +59,7 @@ export async function requireActiveSession(
 export async function requirePanelAccess(
   action: Extract<
     Action,
+    | "view:owner-dashboard"
     | "view:director-dashboard"
     | "view:teacher-dashboard"
     | "view:parent-dashboard"
@@ -74,7 +79,7 @@ export async function requirePanelAccess(
   }
 
   if (
-    session.user.role === "DIRECTOR" &&
+    isPrivilegedIdentityRole(session.user.role) &&
     session.user.twoFactorEnabled !== true
   ) {
     redirect("/panel/bezpieczenstwo/2fa");
@@ -92,15 +97,25 @@ export async function requireDirector(
   );
 }
 
+export async function requireSystemOwner(
+  returnPath = "/panel/bog",
+): Promise<ActiveSession> {
+  return requirePanelAccess("view:owner-dashboard", returnPath);
+}
+
 export async function requireSchoolStaff(
   returnPath = "/panel/szkola",
 ): Promise<ActiveSession> {
   const session = await requireActiveSession(returnPath);
-  if (session.user.role !== "DIRECTOR" && session.user.role !== "TEACHER") {
+  if (
+    session.user.role !== "SYSTEM_OWNER" &&
+    session.user.role !== "DIRECTOR" &&
+    session.user.role !== "TEACHER"
+  ) {
     redirect("/panel/brak-dostepu");
   }
   if (
-    session.user.role === "DIRECTOR" &&
+    isPrivilegedIdentityRole(session.user.role) &&
     session.user.twoFactorEnabled !== true
   ) {
     redirect("/panel/bezpieczenstwo/2fa");

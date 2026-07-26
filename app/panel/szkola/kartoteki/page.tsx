@@ -27,7 +27,9 @@ export const dynamic = "force-dynamic";
 export default async function RecordsPage() {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
   const schoolId = session.user.schoolId;
-  const isDirector = session.user.role === "DIRECTOR";
+  const isDirector =
+    session.user.role === "SYSTEM_OWNER" ||
+    session.user.role === "DIRECTOR";
   const actorRole: "DIRECTOR" | "TEACHER" = isDirector
     ? "DIRECTOR"
     : "TEACHER";

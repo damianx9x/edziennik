@@ -24,6 +24,13 @@ describe("invitation validation", () => {
         role: "ADMIN",
       }).success,
     ).toBe(false);
+    expect(
+      createInvitationSchema.safeParse({
+        email: "owner@example.com",
+        name: "Właściciel",
+        role: "SYSTEM_OWNER",
+      }).success,
+    ).toBe(false);
   });
 
   it("requires matching, long passwords", () => {
@@ -57,6 +64,12 @@ describe("invitation validation", () => {
       createRoleQrInvitationSchema.safeParse({
         role: "ADMIN",
         validity: "forever",
+      }).success,
+    ).toBe(false);
+    expect(
+      createRoleQrInvitationSchema.safeParse({
+        role: "SYSTEM_OWNER",
+        validity: "1h",
       }).success,
     ).toBe(false);
   });

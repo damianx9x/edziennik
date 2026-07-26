@@ -219,7 +219,11 @@ export async function updateRecordAction(
   formData: FormData,
 ): Promise<RecordUpdateState> {
   const session = await requireActiveSession("/panel/szkola/kartoteki");
-  if (!["DIRECTOR", "TEACHER"].includes(session.user.role)) {
+  if (
+    !["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(
+      session.user.role,
+    )
+  ) {
     return { status: "error", message: "Nie masz dostępu do tej operacji." };
   }
   const entityTypeResult = entityTypeSchema.safeParse(formData.get("entityType"));
@@ -333,7 +337,12 @@ export async function updateRecordAction(
 
 export async function reviewRecordChangeAction(formData: FormData): Promise<void> {
   const session = await requireActiveSession("/panel/szkola/powiadomienia");
-  if (session.user.role !== "DIRECTOR") return;
+  if (
+    session.user.role !== "SYSTEM_OWNER" &&
+    session.user.role !== "DIRECTOR"
+  ) {
+    return;
+  }
   const requestId = String(formData.get("requestId") ?? "");
   const decision = formData.get("decision");
   if (!z.uuid().safeParse(requestId).success) return;

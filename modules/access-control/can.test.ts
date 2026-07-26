@@ -4,12 +4,34 @@ import { can, type Actor, type Resource } from "./can";
 const schoolId = "school-kla";
 const otherSchoolId = "school-other";
 
+const systemOwner: Actor = {
+  id: "owner-1",
+  schoolId,
+  role: "SYSTEM_OWNER",
+};
 const director: Actor = { id: "director-1", schoolId, role: "DIRECTOR" };
 const teacher: Actor = { id: "teacher-1", schoolId, role: "TEACHER" };
 const parent: Actor = { id: "parent-1", schoolId, role: "PARENT" };
 const student: Actor = { id: "student-1", schoolId, role: "STUDENT" };
 
 describe("can", () => {
+  it("allows only the system owner to open system diagnostics", () => {
+    expect(
+      can(systemOwner, "view:owner-dashboard", {
+        schoolId: otherSchoolId,
+      }),
+    ).toBe(true);
+    expect(
+      can(director, "view:owner-dashboard", { schoolId }),
+    ).toBe(false);
+  });
+
+  it("allows the system owner to troubleshoot resources across schools", () => {
+    expect(
+      can(systemOwner, "manage:school", { schoolId: otherSchoolId }),
+    ).toBe(true);
+  });
+
   it("allows a director to manage resources in their school", () => {
     expect(can(director, "manage:school", { schoolId })).toBe(true);
   });

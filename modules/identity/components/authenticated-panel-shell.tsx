@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bell,
   CalendarDays,
   ContactRound,
@@ -6,6 +7,8 @@ import {
   Home,
   MailPlus,
   MessageCircleMore,
+  ScrollText,
+  ShieldCheck,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
@@ -23,9 +26,62 @@ type PanelSection =
   | "invitations"
   | "records"
   | "tools"
-  | "notifications";
+  | "notifications"
+  | "logs";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
+  if (role === "SYSTEM_OWNER") {
+    return [
+      {
+        href: "/panel/bog",
+        label: "Centrum systemu",
+        icon: Activity,
+        key: "home",
+      },
+      {
+        href: "/panel/szkola",
+        label: "Panel szkoły",
+        icon: ShieldCheck,
+        key: "school",
+      },
+      {
+        href: "/panel/bog/logi",
+        label: "Głębokie logi",
+        icon: ScrollText,
+        key: "logs",
+      },
+      {
+        href: "/panel/szkola/zaproszenia",
+        label: "Zaproszenia",
+        icon: MailPlus,
+        key: "invitations",
+      },
+      {
+        href: "/panel/szkola/kartoteki",
+        label: "Kartoteki",
+        icon: ContactRound,
+        key: "records",
+      },
+      {
+        href: "/panel/szkola/narzedzia",
+        label: "Narzędzia",
+        icon: Wrench,
+        key: "tools",
+      },
+      {
+        href: "/panel/szkola/powiadomienia",
+        label: "Powiadomienia",
+        icon: Bell,
+        key: "notifications",
+      },
+      {
+        href: "/panel/szkola#grafik",
+        label: "Grafik",
+        icon: CalendarDays,
+        key: "schedule",
+      },
+    ] as const;
+  }
   if (role === "DIRECTOR") {
     return [
       { href: "/panel/szkola", label: "Start", icon: Home, key: "home" },
@@ -122,7 +178,12 @@ export async function AuthenticatedPanelShell({
   children: ReactNode;
 }) {
   const navigation = getNavigation(session.user.role);
+  const mobileNavigation =
+    session.user.role === "SYSTEM_OWNER"
+      ? navigation.slice(0, 5)
+      : navigation;
   const pendingChangeCount =
+    session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR"
       ? await db.recordChangeRequest.count({
           where: {
@@ -132,6 +193,7 @@ export async function AuthenticatedPanelShell({
         })
       : 0;
   const feedbackRole = {
+    SYSTEM_OWNER: "system-owner",
     DIRECTOR: "director",
     TEACHER: "teacher",
     PARENT: "parent",
@@ -149,7 +211,8 @@ export async function AuthenticatedPanelShell({
       <header className="app-panel-topbar">
         <Brand compact />
         <div className="app-panel-account">
-          {session.user.role === "DIRECTOR" ? (
+          {session.user.role === "SYSTEM_OWNER" ||
+          session.user.role === "DIRECTOR" ? (
             <Link
               className="app-panel-notifications"
               href="/panel/szkola/powiadomienia"
@@ -202,7 +265,7 @@ export async function AuthenticatedPanelShell({
       </div>
 
       <nav className="app-mobile-nav" aria-label="Nawigacja mobilna">
-        {navigation.map((item) => {
+        {mobileNavigation.map((item) => {
           const Icon = item.icon;
           return (
             <Link

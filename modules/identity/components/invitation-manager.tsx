@@ -23,6 +23,7 @@ import {
   invitationRoleLabels,
   invitationValidityLabels,
 } from "@/modules/identity/invitations/schema";
+import { invitableIdentityRoleValues } from "@/modules/identity/auth/access";
 import {
   initialInvitationActionState,
   type InvitationActionState,
@@ -258,9 +259,9 @@ export function InvitationManager() {
             <label>
               <span>Rola w eDzienniku</span>
               <select name="role" defaultValue="PARENT" required>
-                {Object.entries(invitationRoleLabels).map(([value, label]) => (
+                {invitableIdentityRoleValues.map((value) => (
                   <option key={value} value={value}>
-                    {label}
+                    {invitationRoleLabels[value]}
                   </option>
                 ))}
               </select>
@@ -295,9 +296,9 @@ export function InvitationManager() {
             <label>
               <span>Rola przypisana do kodu</span>
               <select name="role" defaultValue="PARENT" required>
-                {Object.entries(invitationRoleLabels).map(([value, label]) => (
+                {invitableIdentityRoleValues.map((value) => (
                   <option key={value} value={value}>
-                    {label}
+                    {invitationRoleLabels[value]}
                   </option>
                 ))}
               </select>

@@ -32,6 +32,7 @@ const appRelease =
   process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.4.0-stage-1";
 
 const roleLabels = {
+  "system-owner": "Bóg",
   student: "Uczeń",
   parent: "Rodzic",
   teacher: "Wykładowca",

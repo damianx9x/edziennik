@@ -1,6 +1,7 @@
 import type { IdentityRole } from "./access";
 
 const roleHome: Record<IdentityRole, string> = {
+  SYSTEM_OWNER: "/panel/bog",
   DIRECTOR: "/panel/szkola",
   TEACHER: "/panel/szkola",
   PARENT: "/panel/rodzic",

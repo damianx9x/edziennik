@@ -74,6 +74,11 @@ produkcyjna dołączy wersjonowanie, bezpieczny magazyn i uprawnienie dyrektora.
   miejscu; na telefonie zachowuje się jak czytelny arkusz od dołu.
 - Dialog obsługuje przycisk zamknięcia, `Escape` i przywracanie fokusu.
 - Zaproszenie pokazuje link i QR razem; QR nie zmienia zasad bezpieczeństwa.
+- Przy 1280 px i szerzej panel wykorzystuje dużą przestrzeń roboczą dyrektora:
+  do 1720 px całego panelu i 1420 px treści.
+- Złożony formularz na desktopie ma minimum 500 px. Link i QR układają się
+  pionowo, dzięki czemu kod nie jest ściskany; poniżej 1280 px cały obszar
+  zaproszeń przechodzi w jedną kolumnę.
 
 ## Ruch i mikrointerakcje
 

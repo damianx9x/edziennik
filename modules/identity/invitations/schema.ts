@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { identityRoleValues } from "../auth/access";
+import { invitableIdentityRoleValues } from "../auth/access";
 
 import { normalizeEmail } from "./token";
 
@@ -10,7 +10,7 @@ const personName = z
   .min(2, "Wpisz co najmniej 2 znaki.")
   .max(80, "To pole może mieć maksymalnie 80 znaków.");
 
-export const invitationRoleSchema = z.enum(identityRoleValues);
+export const invitationRoleSchema = z.enum(invitableIdentityRoleValues);
 
 export const createInvitationSchema = z.object({
   email: z
@@ -62,6 +62,7 @@ export const revokeInvitationSchema = z.object({
 });
 
 export const invitationRoleLabels = {
+  SYSTEM_OWNER: "Bóg",
   DIRECTOR: "Dyrektor",
   TEACHER: "Wykładowca",
   PARENT: "Rodzic",

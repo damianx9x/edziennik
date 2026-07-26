@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum UserRole {
+  SYSTEM_OWNER
   DIRECTOR
   TEACHER
   PARENT
