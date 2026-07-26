@@ -113,3 +113,15 @@ Pełne środowisko testowe na home.pl korzysta z osobnego VPS Linux oraz paczki
 `edziennik-kla-home-vps-stage-2.zip`. Instalator tworzy PostgreSQL, dane
 syntetyczne, konto `bog`, wymuszenie MFA i HTTPS. Instrukcja:
 `DEPLOYMENT_HOME_VPS.md`.
+
+Aktualny stan wykonanych funkcji i braków: `STAN_PROJEKTU.md`.
+
+Tymczasowy pokaz z tego Maca:
+
+```bash
+npm run host:mac:start
+npm run host:mac:status
+npm run host:mac:stop
+```
+
+Adres, zasady i logi opisuje `MAC_TEST_HOST.md`.

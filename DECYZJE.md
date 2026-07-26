@@ -310,3 +310,16 @@ salami. Konto `SYSTEM_OWNER` powstaje osobnym skryptem, a jego hasło nie jest
 zapisywane w stałym środowisku kontenera.
 **Dlaczego:** staging ma działać od pierwszego wejścia i dać się odtworzyć bez
 kopiowania bazy z laptopa, danych widocznych na zrzutach ani danych dzieci.
+
+## ADR-037 — tymczasowy test z Maca przez tunel wychodzący
+
+**Data:** 2026-07-26
+**Decyzja:** przed zakupem VPS klientka może testować izolowany build aplikacji
+uruchomiony na Macu przez losowy Cloudflare Quick Tunnel HTTPS. Nie otwieramy
+portu routera i nie używamy publicznego IP jako adresu logowania. Runtime,
+logi, PID-y oraz plik przekazania trafiają wyłącznie do ignorowanego `.data`.
+Tunel korzysta tylko z danych syntetycznych i jest ręcznie zatrzymywany po
+teście.
+**Dlaczego:** domowe łącze i NAT nie zapewniają stabilnego hostingu ani HTTPS,
+natomiast tunel wychodzący pozwala wykonać krótki odbiór bez zmiany routera.
+Losowy adres i brak SLA są akceptowalne wyłącznie dla tymczasowego testu.

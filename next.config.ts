@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const isStaticPreview = process.env.KLA_STATIC_PREVIEW === "1";
+const isMacTestHost = process.env.KLA_MAC_TEST_HOST === "1";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 const contentSecurityPolicy = [
@@ -51,9 +52,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: isStaticPreview ? "export" : "standalone",
+  outputFileTracingRoot: process.cwd(),
   trailingSlash: isStaticPreview,
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
-    unoptimized: isStaticPreview,
+    unoptimized: isStaticPreview || isMacTestHost,
   },
   poweredByHeader: false,
   reactStrictMode: true,
