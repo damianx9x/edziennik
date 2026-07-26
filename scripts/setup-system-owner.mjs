@@ -96,8 +96,8 @@ try {
          "id", "accountId", "providerId", "userId", "password",
          "createdAt", "updatedAt"
        )
-       VALUES ($1, $2, 'credential', $2, $3, NOW(), NOW())`,
-      [randomUUID(), userId, passwordHash],
+       VALUES ($1, $2, 'credential', $3, $4, NOW(), NOW())`,
+      [randomUUID(), userId, userId, passwordHash],
     );
   }
 
@@ -113,10 +113,11 @@ try {
        "id", "schoolId", "actorId", "action", "entityType", "entityId",
        "metadata", "createdAt"
      )
-     VALUES ($1, $2, $3, 'system.owner.provisioned', 'User', $3, $4::jsonb, NOW())`,
+     VALUES ($1, $2, $3, 'system.owner.provisioned', 'User', $4, $5::jsonb, NOW())`,
     [
       randomUUID(),
       school.id,
+      userId,
       userId,
       JSON.stringify({
         passwordRotated: true,

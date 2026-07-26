@@ -16,3 +16,6 @@
 *.zip
 .env*
 !.env.example
+!deployment/home-vps/.env.example
+/deployment/home-vps/DANE_TESTOWE.txt
+/deployment/home-vps/backups

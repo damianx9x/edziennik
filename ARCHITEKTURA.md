@@ -169,7 +169,8 @@ Nie kopiujemy produkcyjnej bazy na staging.
 ## Wdrożenie
 
 `next build` tworzy `.next/standalone`. `npm run package:release` pakuje serwer,
-migracje, zasoby, instrukcje i pliki `start.sh`/`migrate.sh`.
+migracje, zasoby, instrukcje i pliki `start.sh`/`migrate.sh`, a także osobny
+instalator VPS budowany na docelowym Linuksie.
 `npm run package:preview` buduje odrębny statyczny eksport bez tras
 uwierzytelniania dla WebFTP home.pl. Szczegóły: `DEPLOYMENT_MYDEVIL.md` oraz
-`INSTRUKCJA_HOME_PL.md`.
+`DEPLOYMENT_HOME_VPS.md` i `INSTRUKCJA_HOME_PL.md`.

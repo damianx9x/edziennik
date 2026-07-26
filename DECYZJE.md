@@ -288,3 +288,25 @@ dzielą linku oraz kodu na zbyt wąskie kolumny. Między 1051 a 1279 px przechod
 w jeden czytelny stos.
 **Dlaczego:** rodzice i uczniowie pracują głównie na telefonie, a dyrektor oraz
 właściciel systemu potrzebują dużej przestrzeni roboczej na komputerze.
+
+## ADR-035 — staging na VPS home.pl jako odrębny stos
+
+**Data:** 2026-07-26
+**Decyzja:** pełny staging działa na VPS Linux S lub lepszym z Ubuntu 24.04.
+Docker Compose uruchamia osobne kontenery Next.js, PostgreSQL 17 i Caddy.
+Baza i pliki używają nazwanych wolumenów, PostgreSQL nie publikuje portu, a
+Caddy kończy HTTPS. Obecny hosting współdzielony nadal służy wyłącznie
+statycznej stronie pokazowej.
+**Dlaczego:** hosting FTP nie utrzyma procesu Node.js. Budowanie obrazu na VPS
+usuwa też ryzyko przeniesienia zależności natywnych z macOS na Linux, a osobny
+staging izoluje syntetyczne dane od przyszłej produkcji.
+
+## ADR-036 — powtarzalny seed stagingu bez danych klientki
+
+**Data:** 2026-07-26
+**Decyzja:** pierwsza instalacja VPS po migracjach uruchamia idempotentny seed
+SQL z ośmioma grupami, syntetycznymi uczniami, czterema kontami ról i trzema
+salami. Konto `SYSTEM_OWNER` powstaje osobnym skryptem, a jego hasło nie jest
+zapisywane w stałym środowisku kontenera.
+**Dlaczego:** staging ma działać od pierwszego wejścia i dać się odtworzyć bez
+kopiowania bazy z laptopa, danych widocznych na zrzutach ani danych dzieci.

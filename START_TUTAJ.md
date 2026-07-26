@@ -108,3 +108,8 @@ Późniejsze środowiska aplikacji:
 Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
 `edziennik-kla-stage-2.zip` wymaga hostingu Node.js i procedury z
 `DEPLOYMENT_MYDEVIL.md`.
+
+Pełne środowisko testowe na home.pl korzysta z osobnego VPS Linux oraz paczki
+`edziennik-kla-home-vps-stage-2.zip`. Instalator tworzy PostgreSQL, dane
+syntetyczne, konto `bog`, wymuszenie MFA i HTTPS. Instrukcja:
+`DEPLOYMENT_HOME_VPS.md`.

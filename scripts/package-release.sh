@@ -54,11 +54,15 @@ cp scripts/release-prisma.config.ts \
   "$release_root/migration-tools/prisma.config.ts"
 cp scripts/setup-system-owner.mjs \
   "$release_root/migration-tools/setup-owner.mjs"
+cp scripts/seed-server-demo.mjs \
+  "$release_root/migration-tools/seed-demo.mjs"
 cp scripts/release-start.sh "$release_root/start.sh"
 cp scripts/release-app.js "$release_root/app.js"
 cp scripts/release-migrate.sh "$release_root/migrate.sh"
 cp scripts/release-setup-owner.sh "$release_root/setup-owner.sh"
+cp scripts/release-seed-demo.sh "$release_root/seed-demo.sh"
 cp DEPLOYMENT_MYDEVIL.md "$release_root/DEPLOYMENT_MYDEVIL.md"
+cp DEPLOYMENT_HOME_VPS.md "$release_root/DEPLOYMENT_HOME_VPS.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
 cp ETAP_2_INSTRUKCJA.md "$release_root/ETAP_2_INSTRUKCJA.md"
 cp BEZPIECZENSTWO_I_RODO.md "$release_root/BEZPIECZENSTWO_I_RODO.md"
@@ -71,7 +75,8 @@ cp .env.example "$release_root/.env.example"
 chmod +x \
   "$release_root/start.sh" \
   "$release_root/migrate.sh" \
-  "$release_root/setup-owner.sh"
+  "$release_root/setup-owner.sh" \
+  "$release_root/seed-demo.sh"
 
 unsafe_env_file="$(
   find "$release_root" -maxdepth 1 -type f -name '.env*' \
@@ -89,3 +94,4 @@ rm -f -- "$release_zip"
 )
 
 echo "Gotowy pakiet: $release_zip"
+"$project_dir/scripts/package-home-vps.sh" --skip-checks

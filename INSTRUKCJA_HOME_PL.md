@@ -1,9 +1,13 @@
-# Wdrożenie szkieletu KLA na home.pl
+# Statyczny szkielet KLA na hostingu FTP home.pl
 
 Instrukcja dla wersji pokazowej Etapu 0–0,5. Nie wymaga bazy danych ani Node.js.
 Na serwer wysyłamy wyłącznie gotową paczkę:
 
 `outputs/kla-szkielet-etap-0-5-home-pl.zip`
+
+Pełnego eDziennika z logowaniem i bazą nie wgrywamy do `/kla-preview`.
+Wymaga on VPS i paczki `edziennik-kla-home-vps-stage-2.zip`. Osobna instrukcja:
+`DEPLOYMENT_HOME_VPS.md`.
 
 Nie wysyłamy całego repozytorium, katalogu `.next`, pliku `.env`, bazy danych,
 backupów ani danych uczniów.
@@ -206,5 +210,4 @@ Ta paczka służy do pokazania strony, UX i przepływów. Nie zawiera serwera
 logowania, PostgreSQL, wspólnego CMS, wysyłki wiadomości, prawdziwych umów ani
 danych uczniów. Zwykły hosting współdzielony home.pl wystarcza dla prezentacji,
 ale nie dla docelowego eDziennika w obecnej architekturze. Wersja aplikacyjna
-będzie wdrażana na hostingu Node.js/PostgreSQL zgodnie z
-`DEPLOYMENT_MYDEVIL.md`.
+jest wdrażana na VPS zgodnie z `DEPLOYMENT_HOME_VPS.md`.

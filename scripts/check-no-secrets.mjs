@@ -53,7 +53,7 @@ for (const file of fileList) {
   }
 
   const extension = extname(file);
-  if (!textExtensions.has(extension) && file !== "Dockerfile") {
+  if (!textExtensions.has(extension) && !file.endsWith("Dockerfile")) {
     continue;
   }
 

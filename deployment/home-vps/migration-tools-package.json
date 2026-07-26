@@ -1,0 +1,11 @@
+{
+  "name": "kla-migration-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "better-auth": "1.6.25",
+    "dotenv": "17.2.3",
+    "pg": "8.22.0",
+    "prisma": "7.8.0"
+  }
+}
