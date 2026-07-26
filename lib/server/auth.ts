@@ -14,6 +14,10 @@ import {
 } from "@/modules/identity/email/email-provider";
 
 const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const rateLimitStorage =
+  process.env.KLA_AUTH_RATE_LIMIT_STORAGE === "memory"
+    ? "memory"
+    : "database";
 
 export const auth = betterAuth({
   appName: "eDziennik King’s Language Academy",
@@ -102,7 +106,7 @@ export const auth = betterAuth({
     enabled: true,
     window: 60,
     max: 60,
-    storage: "database",
+    storage: rateLimitStorage,
     modelName: "RateLimit",
     customRules: {
       "/sign-in/email": {

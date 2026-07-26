@@ -176,6 +176,7 @@ selected.push(`BETTER_AUTH_URL=${JSON.stringify(publicUrl)}`);
 selected.push(`NEXT_PUBLIC_APP_URL=${JSON.stringify(publicUrl)}`);
 selected.push(`KLA_PRIVATE_FILES_DIR=${JSON.stringify(privateFilesPath)}`);
 selected.push("KLA_MAC_TEST_HOST=1");
+selected.push("KLA_AUTH_RATE_LIMIT_STORAGE=memory");
 
 writeFileSync(targetPath, `${selected.join("\n")}\n`, { mode: 0o600 });
 chmodSync(targetPath, 0o600);

@@ -48,6 +48,9 @@ Skrypt:
 Plik przekazania i polecenie statusu pokazują skrót commita udostępnionego
 klientce.
 
+Limit prób logowania działa w pamięci pojedynczego procesu testowego i zeruje
+się po restarcie hosta. Docelowy VPS używa limitera bazodanowego.
+
 Dane do przekazania klientce:
 
 `.data/mac-test-host/PRZEKAZ_KLIENTCE.txt`
