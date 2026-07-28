@@ -25,7 +25,12 @@ read_status() {
 }
 
 read_status "Aplikacja" "$state_dir/app.pid"
-read_status "Tunel HTTPS" "$state_dir/tunnel.pid"
+if launchctl print "gui/$(id -u)/com.cloudflare.cloudflared" 2>/dev/null \
+  | grep -q 'state = running'; then
+  echo "Stały tunel HTTPS: działa"
+else
+  echo "Stały tunel HTTPS: zatrzymany"
+fi
 read_status "Blokada uśpienia" "$state_dir/caffeinate.pid"
 
 if [[ -f "$commit_file" ]]; then
@@ -37,7 +42,7 @@ fi
 
 if [[ -f "$url_file" ]]; then
   public_url="$(head -1 "$url_file")"
-  if [[ "$public_url" =~ ^https://[a-z0-9-]+\.trycloudflare\.com$ ]]; then
+  if [[ "$public_url" =~ ^https://demo\.kingslanguageacademy\.pl$ ]]; then
     http_status="$(
       curl --silent \
         --output /dev/null \
@@ -52,4 +57,4 @@ if [[ -f "$url_file" ]]; then
 fi
 
 echo "Log aplikacji: $state_dir/logs/app.log"
-echo "Log tunelu: $state_dir/logs/tunnel.log"
+echo "Log tunelu: $HOME/Library/Logs/com.cloudflare.cloudflared.out.log"

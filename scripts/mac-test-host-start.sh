@@ -5,24 +5,16 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 state_dir="$project_dir/.data/mac-test-host"
 runtime_dir="$state_dir/runtime"
-bin_dir="$state_dir/bin"
 logs_dir="$state_dir/logs"
-cloudflared_bin="$bin_dir/cloudflared"
-cloudflared_archive="$state_dir/cloudflared-darwin-arm64.tgz"
-cloudflared_log="$logs_dir/tunnel.log"
 build_log="$logs_dir/build.log"
 app_log="$logs_dir/app.log"
 public_url_file="$state_dir/public-url.txt"
 handoff_file="$state_dir/PRZEKAZ_KLIENTCE.txt"
 app_pid_file="$state_dir/app.pid"
-tunnel_pid_file="$state_dir/tunnel.pid"
 caffeinate_pid_file="$state_dir/caffeinate.pid"
 commit_file="$state_dir/commit.txt"
 app_port="${KLA_MAC_TEST_PORT:-3100}"
-
-cloudflared_version="2026.7.3"
-cloudflared_sha256="90c5a4f914d705fd70c135dba6d80b1791d254b08d6d4136301941f88330dd09"
-cloudflared_url="https://github.com/cloudflare/cloudflared/releases/download/${cloudflared_version}/cloudflared-darwin-arm64.tgz"
+public_url="${KLA_MAC_TEST_PUBLIC_URL:-https://demo.kingslanguageacademy.pl}"
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
   echo "Ten instalator jest przygotowany dla Maca Apple Silicon."
@@ -48,7 +40,7 @@ fi
 hosted_commit="$(git -C "$project_dir" rev-parse --verify HEAD)"
 hosted_commit_short="$(git -C "$project_dir" rev-parse --short=12 HEAD)"
 
-for pid_file in "$app_pid_file" "$tunnel_pid_file"; do
+for pid_file in "$app_pid_file"; do
   if [[ -f "$pid_file" ]]; then
     old_pid="$(tr -cd '0-9' <"$pid_file")"
     if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
@@ -61,26 +53,18 @@ done
 node --env-file="$project_dir/.env" \
   "$project_dir/scripts/apply-director-mfa-policy.mjs"
 
-mkdir -p "$state_dir" "$bin_dir" "$logs_dir"
-chmod 700 "$state_dir" "$bin_dir" "$logs_dir"
+mkdir -p "$state_dir" "$logs_dir"
+chmod 700 "$state_dir" "$logs_dir"
 
-if [[ ! -x "$cloudflared_bin" ]]; then
-  echo "Pobieram zweryfikowany cloudflared ${cloudflared_version}..."
-  curl --fail --location --silent --show-error \
-    "$cloudflared_url" \
-    --output "$cloudflared_archive"
-  archive_hash="$(shasum -a 256 "$cloudflared_archive" | awk '{print $1}')"
-  if [[ "$archive_hash" != "$cloudflared_sha256" ]]; then
-    echo "Suma SHA-256 cloudflared jest nieprawidłowa. Przerywam."
-    exit 1
-  fi
-  tar -xzf "$cloudflared_archive" -C "$bin_dir"
-  chmod 700 "$cloudflared_bin"
-  rm -f -- "$cloudflared_archive"
+if ! launchctl print "gui/$(id -u)/com.cloudflare.cloudflared" 2>/dev/null \
+  | grep -q 'state = running'; then
+  echo "Stały tunel Cloudflare nie działa."
+  echo "Uruchom usługę kla-demo i spróbuj ponownie."
+  exit 1
 fi
 
 cleanup_host() {
-  for pid_file in "$app_pid_file" "$tunnel_pid_file" "$caffeinate_pid_file"; do
+  for pid_file in "$app_pid_file" "$caffeinate_pid_file"; do
     if [[ -f "$pid_file" ]]; then
       cleanup_pid="$(tr -cd '0-9' <"$pid_file")"
       if [[ -n "$cleanup_pid" ]] && kill -0 "$cleanup_pid" 2>/dev/null; then
@@ -92,37 +76,8 @@ cleanup_host() {
 }
 trap cleanup_host EXIT INT TERM
 
-: >"$cloudflared_log"
-"$cloudflared_bin" \
-  tunnel \
-  --url "http://127.0.0.1:${app_port}" \
-  --protocol http2 \
-  --no-autoupdate \
-  >"$cloudflared_log" 2>&1 &
-tunnel_pid=$!
-printf '%s\n' "$tunnel_pid" >"$tunnel_pid_file"
-
-public_url=""
-for attempt in {1..30}; do
-  public_url="$(
-    grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' "$cloudflared_log" \
-      | head -1 \
-      || true
-  )"
-  if [[ -n "$public_url" ]]; then
-    break
-  fi
-  if ! kill -0 "$tunnel_pid" 2>/dev/null; then
-    echo "Tunel zakończył się przed uzyskaniem adresu. Log:"
-    tail -80 "$cloudflared_log"
-    exit 1
-  fi
-  sleep 1
-done
-
-if [[ ! "$public_url" =~ ^https://[a-z0-9-]+\.trycloudflare\.com$ ]]; then
-  echo "Nie udało się uzyskać publicznego adresu HTTPS. Log:"
-  tail -80 "$cloudflared_log"
+if [[ ! "$public_url" =~ ^https://demo\.kingslanguageacademy\.pl$ ]]; then
+  echo "Nieprawidłowy stały adres testowy: $public_url"
   exit 1
 fi
 
@@ -308,17 +263,16 @@ echo
 echo "Dane do przekazania: $handoff_file"
 echo "Status: npm run host:mac:status"
 echo "Zatrzymanie: npm run host:mac:stop"
-echo "Proces nadzorujący pozostaje aktywny do zatrzymania hosta."
+echo "Stały tunel Cloudflare działa niezależnie od aplikacji."
+echo "Proces nadzorujący aplikację pozostaje aktywny do zatrzymania hosta."
 
 host_exit_status=0
-while kill -0 "$app_pid" 2>/dev/null \
-  && kill -0 "$tunnel_pid" 2>/dev/null; do
+while kill -0 "$app_pid" 2>/dev/null; do
   sleep 5
 done
-if ! kill -0 "$app_pid" 2>/dev/null \
-  || ! kill -0 "$tunnel_pid" 2>/dev/null; then
+if ! kill -0 "$app_pid" 2>/dev/null; then
   host_exit_status=1
 fi
 
-echo "Aplikacja lub tunel zakończyły działanie. Zamykam środowisko testowe."
+echo "Aplikacja zakończyła działanie. Zamykam środowisko testowe."
 exit "$host_exit_status"

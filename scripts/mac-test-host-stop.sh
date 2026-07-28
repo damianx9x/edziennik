@@ -47,12 +47,9 @@ stop_process \
   "$state_dir/app.pid" \
   "next-server"
 stop_process \
-  "tunel HTTPS" \
-  "$state_dir/tunnel.pid" \
-  "$state_dir/bin/cloudflared"
-stop_process \
   "blokadę uśpienia" \
   "$state_dir/caffeinate.pid" \
   "caffeinate"
 
-echo "Tymczasowy host na Macu jest zatrzymany."
+echo "Aplikacja testowa na Macu jest zatrzymana."
+echo "Stały tunel Cloudflare pozostaje aktywny i uruchamia się przy logowaniu."

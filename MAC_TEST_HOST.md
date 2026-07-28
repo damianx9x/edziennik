@@ -9,16 +9,16 @@ Mac ma lokalny adres za routerem. Sam publiczny adres operatora nie otworzy
 aplikacji bez publicznego IPv4, przekierowania portów, DNS i certyfikatu.
 Logowanie wymaga dodatkowo poprawnego adresu HTTPS dla bezpiecznych ciasteczek.
 
-Dlatego test używa Cloudflare Quick Tunnel:
+Dlatego test używa nazwanego Cloudflare Tunnel:
 
 - połączenie jest inicjowane z Maca na zewnątrz,
 - nie otwieramy portów routera,
-- klientka dostaje losowy adres `https://....trycloudflare.com`,
+- klientka zawsze używa `https://demo.kingslanguageacademy.pl`,
 - certyfikat HTTPS działa automatycznie,
-- tunel nie wymaga konta Cloudflare.
+- tunel `kla-demo` działa jako usługa użytkownika macOS.
 
-Adres jest tymczasowy i zmieni się po ponownym uruchomieniu tunelu. Quick
-Tunnel nie ma gwarancji dostępności i nie jest hostingiem produkcyjnym.
+Adres pozostaje stały. Mac nadal jest tymczasowym serwerem testowym i nie jest
+hostingiem produkcyjnym.
 
 ## Uruchomienie
 
@@ -34,10 +34,9 @@ klientka zawsze testuje jedną, możliwą do odtworzenia wersję.
 
 Skrypt:
 
-1. pobiera przypiętą wersję `cloudflared` dla Apple Silicon,
-2. sprawdza SHA-256 pobranego pliku,
-3. uruchamia tunel HTTPS do portu 3100,
-4. eksportuje bieżący commit do `.data/mac-test-host/runtime`,
+1. sprawdza działanie usługi tunelu `kla-demo`,
+2. używa stałego adresu HTTPS prowadzącego do portu 3100,
+3. eksportuje bieżący commit do `.data/mac-test-host/runtime`,
 5. usuwa z jej środowiska hasło właściciela i hasło danych demo,
 6. buduje aplikację z publicznym adresem logowania,
 7. uruchamia produkcyjny serwer Next.js,
@@ -81,7 +80,7 @@ npm run host:mac:status
 Logi:
 
 - `.data/mac-test-host/logs/app.log`,
-- `.data/mac-test-host/logs/tunnel.log`,
+- `~/Library/Logs/com.cloudflare.cloudflared.out.log`,
 - `.data/mac-test-host/logs/build.log`.
 
 Logi nie zawierają pliku `.env` ani hasła konta właściciela.
@@ -92,9 +91,9 @@ Logi nie zawierają pliku `.env` ani hasła konta właściciela.
 npm run host:mac:stop
 ```
 
-Zatrzymuje aplikację, tunel i blokadę uśpienia. Publiczny adres od razu
-przestaje działać. Lokalny serwer programistyczny na porcie 3000 pozostaje
-nietknięty.
+Zatrzymuje aplikację i blokadę uśpienia. Stały tunel pozostaje uruchomiony,
+ale bez aplikacji zwróci błąd połączenia. Lokalny serwer programistyczny na
+porcie 3000 pozostaje nietknięty.
 
 ## Sieć Play
 
