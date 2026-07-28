@@ -36,7 +36,8 @@ Skrypt:
 
 1. sprawdza działanie usługi tunelu `kla-demo`,
 2. używa stałego adresu HTTPS prowadzącego do portu 3100,
-3. eksportuje bieżący commit do `.data/mac-test-host/runtime`,
+3. eksportuje bieżący commit do prywatnego katalogu
+   `~/Library/Application Support/KLA Demo Host/runtime`,
 5. usuwa z jej środowiska hasło właściciela i hasło danych demo,
 6. buduje aplikację z publicznym adresem logowania,
 7. uruchamia produkcyjny serwer Next.js,
@@ -58,7 +59,7 @@ się po restarcie hosta. Docelowy VPS używa limitera bazodanowego.
 
 Dane do przekazania klientce:
 
-`.data/mac-test-host/PRZEKAZ_KLIENTCE.txt`
+`~/Library/Application Support/KLA Demo Host/PRZEKAZ_KLIENTCE.txt`
 
 Plik ma uprawnienia tylko dla właściciela konta na Macu i nie trafia do Git.
 Nie przekazuj klientce konta `bog`.
@@ -86,10 +87,10 @@ npm run host:mac:status
 
 Logi:
 
-- `.data/mac-test-host/logs/service.log`,
-- `.data/mac-test-host/logs/service-error.log`,
+- `~/Library/Application Support/KLA Demo Host/logs/service.log`,
+- `~/Library/Application Support/KLA Demo Host/logs/service-error.log`,
 - `~/Library/Logs/com.cloudflare.cloudflared.out.log`,
-- `.data/mac-test-host/logs/build.log`.
+- `~/Library/Application Support/KLA Demo Host/logs/build.log`.
 
 Logi nie zawierają pliku `.env` ani hasła konta właściciela.
 

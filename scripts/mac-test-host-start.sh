@@ -3,7 +3,7 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-state_dir="$project_dir/.data/mac-test-host"
+state_dir="${KLA_MAC_TEST_STATE_DIR:-$HOME/Library/Application Support/KLA Demo Host}"
 runtime_dir="$state_dir/runtime"
 logs_dir="$state_dir/logs"
 build_log="$logs_dir/build.log"
@@ -13,6 +13,7 @@ public_url_file="$state_dir/public-url.txt"
 handoff_file="$state_dir/PRZEKAZ_KLIENTCE.txt"
 commit_file="$state_dir/commit.txt"
 server_dir_file="$state_dir/server-dir.txt"
+installed_service_script="$state_dir/mac-test-host-app-service.sh"
 app_port="${KLA_MAC_TEST_PORT:-3100}"
 public_url="${KLA_MAC_TEST_PUBLIC_URL:-https://demo.kingslanguageacademy.pl}"
 app_label="pl.kingslanguageacademy.edziennik-demo"
@@ -77,7 +78,7 @@ node --input-type=module - \
   "$project_dir/.env" \
   "$runtime_dir/.env" \
   "$public_url" \
-  "$project_dir/.data/private-files" <<'NODE'
+  "$state_dir/private-files" <<'NODE'
 import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 
 const [, , sourcePath, targetPath, publicUrl, privateFilesPath] = process.argv;
@@ -148,14 +149,16 @@ cp -R "$runtime_dir/public" "$standalone_dir/public"
 
 printf '%s\n' "$standalone_dir" >"$server_dir_file"
 chmod 600 "$server_dir_file"
+cp "$project_dir/scripts/mac-test-host-app-service.sh" "$installed_service_script"
+chmod 700 "$installed_service_script"
 
 node_path="$(command -v node)"
 mkdir -p "$HOME/Library/LaunchAgents"
 node --input-type=module - \
   "$launch_agent_file" \
   "$app_label" \
-  "$project_dir/scripts/mac-test-host-app-service.sh" \
-  "$project_dir" \
+  "$installed_service_script" \
+  "$state_dir" \
   "$node_path" \
   "$app_port" \
   "$service_log" \

@@ -2,10 +2,9 @@
 
 set -euo pipefail
 
-project_dir="${1:?Brak katalogu projektu.}"
+state_dir="${1:?Brak katalogu usługi.}"
 node_path="${2:?Brak ścieżki do Node.js.}"
 app_port="${3:-3100}"
-state_dir="$project_dir/.data/mac-test-host"
 runtime_dir="$state_dir/runtime"
 server_dir_file="$state_dir/server-dir.txt"
 

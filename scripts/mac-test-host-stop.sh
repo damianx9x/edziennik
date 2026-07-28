@@ -2,8 +2,7 @@
 
 set -euo pipefail
 
-project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-state_dir="$project_dir/.data/mac-test-host"
+state_dir="${KLA_MAC_TEST_STATE_DIR:-$HOME/Library/Application Support/KLA Demo Host}"
 app_label="pl.kingslanguageacademy.edziennik-demo"
 launch_domain="gui/$(id -u)/${app_label}"
 
