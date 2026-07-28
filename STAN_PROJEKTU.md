@@ -1,6 +1,6 @@
 # Stan projektu eDziennika KLA
 
-Aktualizacja: 2026-07-26
+Aktualizacja: 2026-07-28
 
 ## Cel
 
@@ -52,6 +52,18 @@ Termin pilota: 1 września 2026.
 - historia i audyt ważnych operacji,
 - szeroki układ desktopowy oraz układ mobile-first.
 
+### Etap 3 — pierwsza część grafiku
+
+- wspólny plan z widokiem odpowiednim dla każdej roli,
+- sześć dni na komputerze i jeden dzień na telefonie,
+- ręczne dodawanie: grupa → termin → wykładowca → sala,
+- wyszarzenie zajętego lub za małego zasobu wraz z powodem,
+- serwerowa kontrola kolizji sali, wykładowcy, grupy i wspólnego ucznia,
+- Asystent układania grafiku z wymaganiami grup i dostępnością wykładowców,
+- deterministyczny szkic do sprawdzenia i osobnej publikacji,
+- istniejące lekcje zachowane podczas kolejnego generowania,
+- audyt utworzenia, przesunięcia, odwołania i publikacji grafiku.
+
 ### Właściciel techniczny
 
 - rola `SYSTEM_OWNER`, widoczna jako `Bóg`,
@@ -66,7 +78,8 @@ Termin pilota: 1 września 2026.
 - statyczny pokaz działa na zwykłym hostingu home.pl,
 - pełny instalator VPS dla Ubuntu 24.04,
 - Docker Compose: Next.js, PostgreSQL 17 i Caddy HTTPS,
-- idempotentny seed: 8 grup, 35 syntetycznych uczniów, 3 sale i 4 konta ról,
+- idempotentny seed: 8 grup z wymaganiami grafiku, 36 syntetycznych uczniów,
+  3 sale i 4 konta ról,
 - osobny instalator konta właściciela,
 - kopia bazy i aktualizacja z migracjami,
 - tymczasowe hostowanie testów z Maca przez tunel HTTPS.
@@ -74,26 +87,29 @@ Termin pilota: 1 września 2026.
 ## Zweryfikowane
 
 - `npm run check`,
-- 56 testów automatycznych,
+- 63 testy automatyczne,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
 - logowanie właściciela przekierowuje do konfiguracji MFA,
 - dyrektor w pilocie loguje się bez MFA, a diagnostyka pokazuje ten wyjątek,
 - paczki nie zawierają `.env`, lokalnej bazy ani haseł.
+- Asystent ułożył i opublikował 18 lekcji bez powtórzenia grupy tego samego dnia,
+- rodzic i uczeń widzą tylko powiązane grupy, a wykładowca nie ma edycji planu,
+- kontrola konsoli na nowej karcie nie wykazała ostrzeżeń ani błędów.
 
 ## Aktualne paczki
 
 - statyczny FTP:
   `outputs/kla-szkielet-etap-0-5-home-pl.zip`,
 - serwer Node:
-  `outputs/edziennik-kla-stage-2.zip`,
+  `outputs/edziennik-kla-stage-3.zip`,
 - pełny instalator VPS:
-  `outputs/edziennik-kla-home-vps-stage-2.zip`.
+  `outputs/edziennik-kla-home-vps-stage-3.zip`.
 
 ## Czego jeszcze nie ma w pilocie
 
-- właściwego modułu grafiku z kolizjami i drag-and-drop — Etap 3,
+- cyklicznych serii, wyjątków, tematu i szybkiej obecności — dalsza część Etapu 3,
 - umów i wersjonowania akceptacji — Etap 4,
 - komunikatora i masowych ogłoszeń — Etap 4,
 - statusów płatności — Etap 4,
@@ -113,8 +129,8 @@ Termin pilota: 1 września 2026.
 
 ## Najbliższa kolejność
 
-1. Odbiór obecnych kartotek, zaproszeń i panelu właściciela.
-2. Etap 3: grafik jako najważniejszy problem biznesowy.
+1. Odbiór Asystenta i ręcznego grafiku na syntetycznych danych.
+2. Dokończenie Etapu 3: serie, wyjątki, temat i obecność.
 3. Etap 4: umowy, komunikator, płatności, materiały i zadania.
 4. Etap 5: PWA, powiadomienia, raporty, instrukcje i odbiór pilota.
 5. Zakup VPS, staging, testy klientki, poprawki i dopiero produkcja.

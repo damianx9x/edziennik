@@ -12,7 +12,7 @@ npm run build
 release_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/edziennik-kla-release.XXXXXX")"
 release_root="$release_tmp_dir/edziennik-kla"
 release_output_dir="$project_dir/outputs"
-release_zip="$release_output_dir/edziennik-kla-stage-2.zip"
+release_zip="$release_output_dir/edziennik-kla-stage-3.zip"
 
 if [[ -z "$release_tmp_dir" || ! -d "$release_tmp_dir" ]]; then
   echo "Nie udało się utworzyć bezpiecznego katalogu tymczasowego."
@@ -72,6 +72,7 @@ cp STAN_PROJEKTU.md "$release_root/STAN_PROJEKTU.md"
 cp CYKL_TESTOWY.md "$release_root/CYKL_TESTOWY.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
 cp ETAP_2_INSTRUKCJA.md "$release_root/ETAP_2_INSTRUKCJA.md"
+cp ETAP_3_GRAFIK.md "$release_root/ETAP_3_GRAFIK.md"
 cp BEZPIECZENSTWO_I_RODO.md "$release_root/BEZPIECZENSTWO_I_RODO.md"
 cp BRAND_I_UI.md "$release_root/BRAND_I_UI.md"
 cp ZAKRES_STARTOWY.md "$release_root/ZAKRES_STARTOWY.md"

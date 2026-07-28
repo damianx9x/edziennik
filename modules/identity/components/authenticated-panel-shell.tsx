@@ -27,6 +27,7 @@ type PanelSection =
   | "records"
   | "tools"
   | "notifications"
+  | "schedule"
   | "logs";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
@@ -75,7 +76,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "notifications",
       },
       {
-        href: "/panel/szkola#grafik",
+        href: "/panel/plan",
         label: "Grafik",
         icon: CalendarDays,
         key: "schedule",
@@ -110,7 +111,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "notifications",
       },
       {
-        href: "/panel/szkola#grafik",
+        href: "/panel/plan",
         label: "Grafik",
         icon: CalendarDays,
         key: "schedule",
@@ -120,6 +121,12 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "TEACHER") {
     return [
       { href: "/panel/szkola", label: "Start", icon: Home, key: "home" },
+      {
+        href: "/panel/plan",
+        label: "Mój plan",
+        icon: CalendarDays,
+        key: "schedule",
+      },
       {
         href: "/panel/szkola/kartoteki",
         label: "Kartoteki",
@@ -138,7 +145,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
     return [
       { href: "/panel/rodzic", label: "Start", icon: Home, key: "home" },
       {
-        href: "/panel/rodzic#plan",
+        href: "/panel/plan",
         label: "Plan",
         icon: CalendarDays,
         key: "schedule",
@@ -154,7 +161,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
   return [
     { href: "/panel/uczen", label: "Start", icon: Home, key: "home" },
     {
-      href: "/panel/uczen#plan",
+      href: "/panel/plan",
       label: "Plan",
       icon: CalendarDays,
       key: "schedule",
@@ -180,8 +187,12 @@ export async function AuthenticatedPanelShell({
   const navigation = getNavigation(session.user.role);
   const mobileNavigation =
     session.user.role === "SYSTEM_OWNER"
-      ? navigation.slice(0, 5)
-      : navigation;
+      ? navigation.filter((item) =>
+          ["home", "school", "logs", "records", "schedule"].includes(item.key),
+        )
+      : session.user.role === "DIRECTOR"
+        ? navigation.filter((item) => item.key !== "tools")
+        : navigation;
   const pendingChangeCount =
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR"
@@ -256,7 +267,7 @@ export async function AuthenticatedPanelShell({
             <span className="status-dot" />
             <div>
               <strong>Bezpieczna sesja</strong>
-              <small>Etap 2 · dostęp wg roli</small>
+              <small>Etap 3 · dostęp wg roli</small>
             </div>
           </div>
         </aside>

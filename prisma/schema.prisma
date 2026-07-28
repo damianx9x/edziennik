@@ -47,6 +47,20 @@ enum ScheduleStatus {
   SUBSTITUTE
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ScheduleGenerationStatus {
+  READY
+  APPLIED
+  DISCARDED
+  FAILED
+}
+
 enum FeedbackStatus {
   NEW
   TRIAGED
@@ -114,17 +128,21 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users           User[]
-  rooms           Room[]
-  courseGroups    CourseGroup[]
-  parentLinks     ParentChild[]
-  scheduleSlots   ScheduleSlot[]
-  auditLogs       AuditLog[]
-  feedbackReports FeedbackReport[]
-  invitations     Invitation[]
-  storedFiles     StoredFile[]
-  importBatches   ImportBatch[]
-  recordChanges   RecordChangeRequest[]
+  users                  User[]
+  rooms                  Room[]
+  courseGroups           CourseGroup[]
+  parentLinks            ParentChild[]
+  scheduleSlots          ScheduleSlot[]
+  attendance             AttendanceRecord[]
+  availabilityWindows    AvailabilityWindow[]
+  schedulingRequirements SchedulingRequirement[]
+  scheduleGenerations    ScheduleGeneration[]
+  auditLogs              AuditLog[]
+  feedbackReports        FeedbackReport[]
+  invitations            Invitation[]
+  storedFiles            StoredFile[]
+  importBatches          ImportBatch[]
+  recordChanges          RecordChangeRequest[]
 }
 
 model User {
@@ -146,26 +164,32 @@ model User {
   updatedAt        DateTime   @updatedAt
   archivedAt       DateTime?
 
-  school                 School                @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  sessions               Session[]
-  accounts               Account[]
-  twoFactors             TwoFactor[]
-  teacherProfile         TeacherProfile?
-  studentProfile         StudentProfile?
-  parentLinks            ParentChild[]         @relation("ParentLinks")
-  childLinks             ParentChild[]         @relation("ChildLinks")
-  groupTeaching          GroupTeacher[]
-  enrollments            Enrollment[]
-  teachingSlots          ScheduleSlot[]        @relation("ScheduleTeacher")
-  createdSlots           ScheduleSlot[]        @relation("ScheduleCreator")
-  auditEvents            AuditLog[]            @relation("AuditActor")
-  feedbackReports        FeedbackReport[]      @relation("FeedbackReporter")
-  sentInvitations        Invitation[]          @relation("InvitationSender")
-  usedInvitations        Invitation[]          @relation("InvitationRecipient")
-  uploadedFiles          StoredFile[]          @relation("FileUploader")
-  importBatches          ImportBatch[]         @relation("ImportCreator")
-  requestedRecordChanges RecordChangeRequest[] @relation("RecordChangeRequester")
-  reviewedRecordChanges  RecordChangeRequest[] @relation("RecordChangeReviewer")
+  school                     School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  sessions                   Session[]
+  accounts                   Account[]
+  twoFactors                 TwoFactor[]
+  teacherProfile             TeacherProfile?
+  studentProfile             StudentProfile?
+  parentLinks                ParentChild[]           @relation("ParentLinks")
+  childLinks                 ParentChild[]           @relation("ChildLinks")
+  groupTeaching              GroupTeacher[]
+  enrollments                Enrollment[]
+  teachingSlots              ScheduleSlot[]          @relation("ScheduleTeacher")
+  createdSlots               ScheduleSlot[]          @relation("ScheduleCreator")
+  attendanceAsStudent        AttendanceRecord[]      @relation("AttendanceStudent")
+  attendanceRecorded         AttendanceRecord[]      @relation("AttendanceRecorder")
+  availabilityWindows        AvailabilityWindow[]    @relation("AvailabilityTeacher")
+  schedulingRequirements     SchedulingRequirement[] @relation("RequirementTeacher")
+  createdScheduleGenerations ScheduleGeneration[]    @relation("ScheduleGenerationCreator")
+  proposedScheduleSlots      ScheduleProposalSlot[]  @relation("ProposalTeacher")
+  auditEvents                AuditLog[]              @relation("AuditActor")
+  feedbackReports            FeedbackReport[]        @relation("FeedbackReporter")
+  sentInvitations            Invitation[]            @relation("InvitationSender")
+  usedInvitations            Invitation[]            @relation("InvitationRecipient")
+  uploadedFiles              StoredFile[]            @relation("FileUploader")
+  importBatches              ImportBatch[]           @relation("ImportCreator")
+  requestedRecordChanges     RecordChangeRequest[]   @relation("RecordChangeRequester")
+  reviewedRecordChanges      RecordChangeRequest[]   @relation("RecordChangeReviewer")
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -332,8 +356,11 @@ model Room {
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
-  school        School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  scheduleSlots ScheduleSlot[]
+  school                 School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlots          ScheduleSlot[]
+  availabilityWindows    AvailabilityWindow[]
+  schedulingRequirements SchedulingRequirement[] @relation("RequirementRoom")
+  proposedScheduleSlots  ScheduleProposalSlot[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -349,10 +376,13 @@ model CourseGroup {
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
-  school        School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  teachers      GroupTeacher[]
-  enrollments   Enrollment[]
-  scheduleSlots ScheduleSlot[]
+  school                School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teachers              GroupTeacher[]
+  enrollments           Enrollment[]
+  scheduleSlots         ScheduleSlot[]
+  availabilityWindows   AvailabilityWindow[]
+  schedulingRequirement SchedulingRequirement?
+  proposedScheduleSlots ScheduleProposalSlot[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -404,18 +434,139 @@ model ScheduleSlot {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   archivedAt     DateTime?
+  topic          String?
+  isLocked       Boolean        @default(false)
+  generationId   String?        @db.Uuid
 
-  school    School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  group     CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  room      Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  teacher   User        @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
-  createdBy User        @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  school     School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group      CourseGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  room       Room                @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  teacher    User                @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  createdBy  User                @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  attendance AttendanceRecord[]
+  generation ScheduleGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, startAt, endAt])
   @@index([roomId, startAt, endAt])
   @@index([teacherId, startAt, endAt])
   @@index([groupId, startAt, endAt])
   @@index([seriesId])
+  @@index([generationId])
+}
+
+model AvailabilityWindow {
+  id          String   @id @default(uuid()) @db.Uuid
+  schoolId    String   @db.Uuid
+  teacherId   String?  @db.Uuid
+  roomId      String?  @db.Uuid
+  groupId     String?  @db.Uuid
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+  isAvailable Boolean  @default(true)
+  preference  Int      @default(0)
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school  School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacher User?        @relation("AvailabilityTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  room    Room?        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  group   CourseGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, weekday, startMinute, endMinute])
+  @@index([teacherId, weekday])
+  @@index([roomId, weekday])
+  @@index([groupId, weekday])
+}
+
+model SchedulingRequirement {
+  id                   String   @id @default(uuid()) @db.Uuid
+  schoolId             String   @db.Uuid
+  groupId              String   @unique @db.Uuid
+  teacherId            String?  @db.Uuid
+  preferredRoomId      String?  @db.Uuid
+  lessonsPerWeek       Int      @default(2)
+  durationMinutes      Int      @default(60)
+  allowedWeekdays      Int[]    @default([1, 2, 3, 4, 5])
+  preferredWeekdays    Int[]    @default([])
+  earliestStartMinute  Int      @default(780)
+  latestEndMinute      Int      @default(1260)
+  preferredStartMinute Int?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  school        School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group         CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  teacher       User?       @relation("RequirementTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  preferredRoom Room?       @relation("RequirementRoom", fields: [preferredRoomId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, isActive])
+  @@index([teacherId])
+  @@index([preferredRoomId])
+}
+
+model ScheduleGeneration {
+  id          String                   @id @default(uuid()) @db.Uuid
+  schoolId    String                   @db.Uuid
+  createdById String                   @db.Uuid
+  weekStart   DateTime                 @db.Date
+  status      ScheduleGenerationStatus @default(READY)
+  score       Int
+  summary     Json
+  createdAt   DateTime                 @default(now())
+  appliedAt   DateTime?
+
+  school    School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdBy User                   @relation("ScheduleGenerationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  proposals ScheduleProposalSlot[]
+  slots     ScheduleSlot[]
+
+  @@index([schoolId, weekStart, createdAt])
+  @@index([createdById, createdAt])
+}
+
+model ScheduleProposalSlot {
+  id           String   @id @default(uuid()) @db.Uuid
+  generationId String   @db.Uuid
+  groupId      String   @db.Uuid
+  roomId       String   @db.Uuid
+  teacherId    String   @db.Uuid
+  startAt      DateTime
+  endAt        DateTime
+  score        Int      @default(0)
+  explanation  String?
+
+  generation ScheduleGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  group      CourseGroup        @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  room       Room               @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  teacher    User               @relation("ProposalTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  @@index([generationId, startAt])
+  @@index([groupId, startAt, endAt])
+  @@index([roomId, startAt, endAt])
+  @@index([teacherId, startAt, endAt])
+}
+
+model AttendanceRecord {
+  id             String           @id @default(uuid()) @db.Uuid
+  schoolId       String           @db.Uuid
+  scheduleSlotId String           @db.Uuid
+  studentId      String           @db.Uuid
+  recordedById   String           @db.Uuid
+  status         AttendanceStatus
+  note           String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlot ScheduleSlot @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+  student      User         @relation("AttendanceStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  recordedBy   User         @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleSlotId, studentId])
+  @@index([schoolId, studentId, createdAt])
 }
 
 model AuditLog {

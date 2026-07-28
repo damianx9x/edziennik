@@ -107,6 +107,7 @@ async function main() {
 
   let studentSequence = 1;
   let firstGroupId: string | null = null;
+  const demoGroupIds: string[] = [];
 
   for (const groupDefinition of demoGroups) {
     const group = await prisma.courseGroup.upsert({
@@ -124,6 +125,7 @@ async function main() {
       },
     });
     firstGroupId ??= group.id;
+    demoGroupIds.push(group.id);
 
     for (let index = 0; index < groupDefinition.studentCount; index += 1) {
       const sequence = String(studentSequence).padStart(3, "0");
@@ -218,8 +220,71 @@ async function main() {
     create: { userId: panelStudent.id },
   });
 
+  const demoRooms = await Promise.all(
+    [
+      { name: "Cambridge", capacity: 8 },
+      { name: "Oxford", capacity: 8 },
+      { name: "Online", capacity: 8 },
+    ].map((room) =>
+      prisma.room.upsert({
+        where: {
+          schoolId_name: {
+            schoolId: school.id,
+            name: room.name,
+          },
+        },
+        update: { capacity: room.capacity, isActive: true, archivedAt: null },
+        create: {
+          schoolId: school.id,
+          name: room.name,
+          capacity: room.capacity,
+        },
+      }),
+    ),
+  );
+
+  for (const [index, groupId] of demoGroupIds.entries()) {
+    const preferredRoom = demoRooms[index % demoRooms.length];
+    await prisma.groupTeacher.upsert({
+      where: {
+        groupId_teacherId: {
+          groupId,
+          teacherId: teacher.id,
+        },
+      },
+      update: { archivedAt: null, isPrimary: true },
+      create: {
+        groupId,
+        teacherId: teacher.id,
+        isPrimary: true,
+      },
+    });
+    await prisma.schedulingRequirement.upsert({
+      where: { groupId },
+      update: {
+        schoolId: school.id,
+        teacherId: teacher.id,
+        preferredRoomId: preferredRoom.id,
+        isActive: true,
+      },
+      create: {
+        schoolId: school.id,
+        groupId,
+        teacherId: teacher.id,
+        preferredRoomId: preferredRoom.id,
+        lessonsPerWeek: 2,
+        durationMinutes: 60,
+        allowedWeekdays: [1, 2, 3, 4, 5],
+        preferredWeekdays: [(index % 5) + 1],
+        earliestStartMinute: 15 * 60,
+        latestEndMinute: 20 * 60,
+        preferredStartMinute: (15 + (index % 4)) * 60,
+      },
+    });
+  }
+
   console.log(
-    `Dane demo gotowe: ${demoGroups.length} grup, ${studentSequence} syntetycznych uczniów i 4 konta ról.`,
+    `Dane demo gotowe: ${demoGroups.length} grup z wymaganiami grafiku, ${studentSequence} syntetycznych uczniów i 4 konta ról.`,
   );
 }
 

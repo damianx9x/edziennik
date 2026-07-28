@@ -348,3 +348,30 @@ ponownie przechodzimy test MFA.
 **Dlaczego:** klientka ma szybciej testować bieżące funkcje bez zmiany danych
 logowania, ale wyjątek nie może osłabić konta technicznego ani zostać
 niezauważony przy przejściu na produkcję.
+
+## ADR-040 — Asystent grafiku jako wymienny solver ograniczeń
+
+**Data:** 2026-07-28
+**Decyzja:** Etap 3 ma równorzędny tryb ręczny i automatyczny. Automat jest
+nazywany `Asystentem układania grafiku`, tworzy wyłącznie szkic i nigdy nie
+publikuje bez decyzji dyrektora. Twarde reguły obejmują salę, wykładowcę,
+grupę, wspólnego ucznia, dostępność i pojemność. Preferencje dnia, godziny,
+stabilnej sali oraz krótszych przerw wpływają na wynik, ale nie obchodzą reguł.
+Pilot używa deterministycznej implementacji TypeScript za interfejsem
+`ScheduleSolver`. Istniejące lekcje są stałe podczas kolejnego generowania.
+
+**Dlaczego:** KLA ma niewielką liczbę grup, więc osobny serwis Java/Python
+zwiększyłby koszt wdrożenia i awaryjność bez korzyści na tym etapie. Interfejs
+pozwala później podłączyć Timefold lub OR-Tools, jeśli liczba zasobów i
+złożoność preferencji uzasadnią zmianę.
+
+## ADR-041 — grafik dostępny bez przeciągania
+
+**Data:** 2026-07-28
+**Decyzja:** dnd-kit jest skrótem dla dyrektora na desktopie. Każde dodanie i
+przeniesienie ma formularz obsługiwany pojedynczym kliknięciem/dotykiem i
+klawiaturą. Niedostępne zasoby są wyszarzone z tekstowym powodem, a serwer
+sprawdza kolizję ponownie.
+
+**Dlaczego:** przeciąganie nie jest wystarczającą ani dostępną jedyną metodą
+obsługi, szczególnie na telefonie i dla użytkowników nietechnicznych.

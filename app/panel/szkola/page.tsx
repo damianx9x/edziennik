@@ -73,12 +73,12 @@ function DirectorDashboard({ name }: { name: string }) {
         </Link>
       </header>
 
-      <section className="stage-one-banner" aria-label="Status Etapu 2">
+      <section className="stage-one-banner" aria-label="Status Etapu 3">
         <div>
           <CheckCircle2 aria-hidden="true" />
           <span>
-            <strong>Etap 2 działa</strong>
-            <small>Kartoteki, bezpieczny import i prywatne pliki</small>
+            <strong>Etap 3 jest w testach</strong>
+            <small>Ręczny grafik i Asystent bez kolizji są już dostępne</small>
           </span>
         </div>
         <span className="stage-one-badge">Bezpieczny dostęp</span>
@@ -116,8 +116,8 @@ function DirectorDashboard({ name }: { name: string }) {
           <span className="section-kicker">Najważniejszy moduł projektu</span>
           <h2>Grafik sala + wykładowca + grupa</h2>
           <p>
-            W Etapie 3 ten ekran pozwoli układać tydzień przeciąganiem i od razu
-            pokaże każdą kolizję. Fundament danych jest już gotowy.
+            Układaj ręcznie albo poproś Asystenta o bezpieczną propozycję.
+            System sprawdza też uczniów zapisanych do kilku grup.
           </p>
           <div className="schedule-resource-pills">
             <span>
@@ -130,6 +130,9 @@ function DirectorDashboard({ name }: { name: string }) {
               <CalendarClock aria-hidden="true" /> Wykładowca
             </span>
           </div>
+          <Link className="button button-primary" href="/panel/plan">
+            Otwórz działający grafik <ArrowRight aria-hidden="true" />
+          </Link>
         </div>
         <div className="schedule-preview" aria-label="Podgląd przyszłego grafiku">
           <div className="schedule-preview-head">
@@ -150,7 +153,7 @@ function DirectorDashboard({ name }: { name: string }) {
           </div>
           <div className="schedule-coming">
             <AlertTriangle aria-hidden="true" />
-            Automatyczne wykrywanie kolizji w Etapie 3
+            4 rodzaje kolizji + szkic do zatwierdzenia
           </div>
         </div>
       </section>

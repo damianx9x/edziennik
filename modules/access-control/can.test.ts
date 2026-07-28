@@ -54,6 +54,9 @@ describe("can", () => {
 
     expect(can(teacher, "view:group", assignedGroup)).toBe(true);
     expect(can(teacher, "view:group", foreignGroup)).toBe(false);
+    expect(can(teacher, "view:schedule", assignedGroup)).toBe(true);
+    expect(can(teacher, "view:schedule", foreignGroup)).toBe(false);
+    expect(can(teacher, "manage:schedule", assignedGroup)).toBe(false);
   });
 
   it("allows a parent to open only a linked child", () => {

@@ -154,12 +154,13 @@ try {
     withProfile: "student",
   });
 
+  const roomIds = [];
   for (const [name, capacity] of [
     ["Cambridge", 8],
     ["Oxford", 8],
     ["Online", 8],
   ]) {
-    await client.query(
+    const roomResult = await client.query(
       `INSERT INTO "Room" (
          "id", "schoolId", "name", "capacity", "isActive",
          "createdAt", "updatedAt"
@@ -170,13 +171,16 @@ try {
          "capacity" = EXCLUDED."capacity",
          "isActive" = true,
          "archivedAt" = NULL,
-         "updatedAt" = NOW()`,
+         "updatedAt" = NOW()
+       RETURNING "id"`,
       [randomUUID(), schoolId, name, capacity],
     );
+    roomIds.push(roomResult.rows[0].id);
   }
 
   let firstGroupId;
   let studentSequence = 1;
+  const groupIds = [];
 
   for (const [city, classLabel, studentCount] of demoGroups) {
     const groupName = `KLA ${city} ${classLabel} 2025/26`;
@@ -196,6 +200,7 @@ try {
     );
     const groupId = groupResult.rows[0].id;
     firstGroupId ??= groupId;
+    groupIds.push(groupId);
 
     for (let index = 0; index < studentCount; index += 1) {
       const sequence = String(studentSequence).padStart(3, "0");
@@ -240,6 +245,47 @@ try {
       );
       studentSequence += 1;
     }
+  }
+
+  for (const [index, groupId] of groupIds.entries()) {
+    const preferredRoomId = roomIds[index % roomIds.length];
+    await client.query(
+      `INSERT INTO "GroupTeacher" (
+         "groupId", "teacherId", "isPrimary", "assignedAt"
+       )
+       VALUES ($1, $2, true, NOW())
+       ON CONFLICT ("groupId", "teacherId")
+       DO UPDATE SET "isPrimary" = true, "archivedAt" = NULL`,
+      [groupId, teacherId],
+    );
+    await client.query(
+      `INSERT INTO "SchedulingRequirement" (
+         "id", "schoolId", "groupId", "teacherId", "preferredRoomId",
+         "lessonsPerWeek", "durationMinutes", "allowedWeekdays",
+         "preferredWeekdays", "earliestStartMinute", "latestEndMinute",
+         "preferredStartMinute", "isActive", "createdAt", "updatedAt"
+       )
+       VALUES (
+         $1, $2, $3, $4, $5, 2, 60, ARRAY[1,2,3,4,5],
+         ARRAY[$6]::integer[], 900, 1200, $7, true, NOW(), NOW()
+       )
+       ON CONFLICT ("groupId")
+       DO UPDATE SET
+         "schoolId" = EXCLUDED."schoolId",
+         "teacherId" = EXCLUDED."teacherId",
+         "preferredRoomId" = EXCLUDED."preferredRoomId",
+         "isActive" = true,
+         "updatedAt" = NOW()`,
+      [
+        randomUUID(),
+        schoolId,
+        groupId,
+        teacherId,
+        preferredRoomId,
+        (index % 5) + 1,
+        (15 + (index % 4)) * 60,
+      ],
+    );
   }
 
   if (firstGroupId) {

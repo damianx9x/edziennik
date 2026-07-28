@@ -104,9 +104,32 @@ dostępu. Domyślne `can(...)` zwraca `false`.
 ## Grafik
 
 Konflikt istnieje, gdy nakładają się przedziały i wspólny jest zasób: sala,
-wykładowca lub grupa. UI pokazuje błąd szybko, ale autorytatywna kontrola działa
-w transakcji na serwerze. W Etapie 3 wybieramy ograniczenie PostgreSQL lub
-równoważną blokadę współbieżności.
+wykładowca, grupa albo uczeń zapisany do więcej niż jednej grupy. UI pokazuje
+błąd szybko, ale autorytatywna kontrola działa w transakcji z blokadą doradczą
+PostgreSQL per szkoła. Równoległe zapisy są dzięki temu sprawdzane kolejno.
+
+Ręczny grafik i Asystent używają tych samych rekordów `ScheduleSlot` oraz tej
+samej kontroli serwerowej. Przeciąganie jest skrótem. Formularz „Zmień termin”
+pozostaje pełną alternatywą dla dotyku, myszy i klawiatury.
+
+`ScheduleSolver` oddziela dane szkoły od algorytmu. Pilot ma deterministyczny
+solver TypeScript odpowiedni dla małej liczby grup KLA:
+
+1. tworzy możliwe terminy co 30 minut,
+2. odrzuca niedostępność, za małą salę i każdą twardą kolizję,
+3. układa najtrudniejsze grupy najpierw,
+4. punktuje preferowane dni, godziny, sale i krótsze przerwy wykładowcy,
+5. zapisuje `ScheduleGeneration` i `ScheduleProposalSlot` jako szkic,
+6. publikuje dopiero po ponownym sprawdzeniu kolizji i decyzji dyrektora.
+
+Asystent nie jest nazywany sztuczną inteligencją. To przewidywalna optymalizacja
+ograniczeń z wyjaśnieniem wyniku. Jeżeli skala wzrośnie, nowy adapter może użyć
+Timefold lub OR-Tools bez zmiany interfejsu, bazy ani ekranów.
+
+Tygodniowa dostępność jest zapisana jako `AvailabilityWindow`, a potrzeby grupy
+jako `SchedulingRequirement`. Dokładnie jeden zasób należy do okna
+dostępności, a poprawność minut, dni i długości lekcji chronią także
+ograniczenia bazy.
 
 ## Integracje
 

@@ -14,6 +14,9 @@ export type Action =
   | "view:student-dashboard"
   | "view:group"
   | "edit:group"
+  | "view:schedule"
+  | "manage:schedule"
+  | "edit:lesson"
   | "view:student"
   | "edit:attendance";
 
@@ -59,7 +62,8 @@ export function can(
 
   if (
     action === "view:director-dashboard" ||
-    action === "manage:school"
+    action === "manage:school" ||
+    action === "manage:schedule"
   ) {
     return false;
   }
@@ -76,7 +80,12 @@ export function can(
     return actor.role === "STUDENT";
   }
 
-  if (action === "view:group" || action === "edit:group") {
+  if (
+    action === "view:group" ||
+    action === "edit:group" ||
+    action === "view:schedule" ||
+    action === "edit:lesson"
+  ) {
     return (
       actor.role === "TEACHER" &&
       resource.teacherIds?.includes(actor.id) === true

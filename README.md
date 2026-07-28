@@ -1,12 +1,11 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etap 2 dodaje kartoteki sal, grup
-i osób, dużą kartę osoby, relacje rodzic–dziecko, osobny import i eksport,
-archiwizację oraz prywatny magazyn plików. Jedno logowanie kieruje według roli,
-a zaproszenie można przekazać bezpiecznym linkiem lub kodem QR. Bezpieczne
-sesje i odzyskiwanie hasła pozostają podstawą dostępu. Mechanizm TOTP jest
-gotowy; w pilocie dyrektor loguje się bez MFA, a konto `Bóg` nadal zawsze go
-wymaga.
+Mobilny eDziennik King’s Language Academy. Etap 3 dodaje wspólny plan dla
+wszystkich ról, ręczne układanie z wyszarzaniem zajętych zasobów oraz Asystenta,
+który tworzy propozycję bez kolizji sali, wykładowcy, grupy i wspólnego ucznia.
+Kartoteki, zaproszenia, import/eksport i prywatny magazyn plików z Etapów 1–2
+pozostają fundamentem. Mechanizm TOTP jest gotowy; w pilocie dyrektor loguje się
+bez MFA, a konto `Bóg` nadal zawsze go wymaga.
 
 ## Start
 
@@ -33,7 +32,7 @@ npm run db:seed:demo
 `INSTRUKCJA_HOME_PL.md`.
 
 `package:release` tworzy aplikację Node.js
-`outputs/edziennik-kla-stage-2.zip`. Ta paczka wymaga PostgreSQL i hostingu
+`outputs/edziennik-kla-stage-3.zip`. Ta paczka wymaga PostgreSQL i hostingu
 Node.js; zwykłe FTP jej nie uruchomi.
 
 ## Dokumenty
@@ -41,6 +40,7 @@ Node.js; zwykłe FTP jej nie uruchomi.
 - `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
 - `ETAP_1_INSTRUKCJA.md` — uruchomienie i odbiór logowania oraz ról,
 - `ETAP_2_INSTRUKCJA.md` — kartoteki, szablon importu i odbiór Etapu 2,
+- `ETAP_3_GRAFIK.md` — Asystent, ręczny grafik i checklista odbioru,
 - `PLAN_2026.md` — zakres i harmonogram,
 - `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,

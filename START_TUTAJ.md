@@ -27,6 +27,11 @@ Kartoteki z Etapu 2:
 salę, grupę lub osobę albo najpierw sprawdzić import CSV/XLSX. Procedura i
 szablon są opisane w `ETAP_2_INSTRUKCJA.md`.
 
+Grafik z Etapu 3:
+`eDziennik → Zaloguj się → Grafik`. Dyrektor wybiera **Ułóż automatycznie**
+albo **Ułóż ręcznie**. Wykładowca, rodzic i uczeń otwierają ten sam adres, ale
+widzą wyłącznie swój plan. Odbiór opisuje `ETAP_3_GRAFIK.md`.
+
 Konto techniczne autora projektu:
 uzupełnij `KLA_SYSTEM_OWNER_PASSWORD` wyłącznie w prywatnym `.env`, wykonaj
 `npm run account:owner`, a następnie zaloguj się loginem `bog`. System wymusi
@@ -106,11 +111,11 @@ Późniejsze środowiska aplikacji:
 - `panel.kingslanguageacademy.pl` — produkcja po odbiorze.
 
 Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
-`edziennik-kla-stage-2.zip` wymaga hostingu Node.js i procedury z
+`edziennik-kla-stage-3.zip` wymaga hostingu Node.js i procedury z
 `DEPLOYMENT_MYDEVIL.md`.
 
 Pełne środowisko testowe na home.pl korzysta z osobnego VPS Linux oraz paczki
-`edziennik-kla-home-vps-stage-2.zip`. Instalator tworzy PostgreSQL, dane
+`edziennik-kla-home-vps-stage-3.zip`. Instalator tworzy PostgreSQL, dane
 syntetyczne, konto `bog`, wymuszenie MFA i HTTPS. Instrukcja:
 `DEPLOYMENT_HOME_VPS.md`.
 
