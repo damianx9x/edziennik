@@ -1,6 +1,6 @@
 "use server";
 
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -11,6 +11,7 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import {
   getWeekStartKey,
   SCHOOL_TIME_ZONE,
+  scheduleGenerationSchema,
   schedulingRequirementSchema,
   teacherAvailabilitySchema,
 } from "./schema";
@@ -239,13 +240,25 @@ export async function saveTeacherAvailabilityAction(
 
 export async function generateScheduleAction(formData: FormData) {
   const session = await requireDirector(schedulePath);
-  const weekStart = getWeekStartKey(String(formData.get("weekStart") ?? ""));
-  const weekStartAt = fromZonedTime(
-    `${weekStart}T00:00:00`,
+  const parsed = scheduleGenerationSchema.safeParse({
+    scope: formData.get("scope"),
+    targetId: formData.get("targetId") || undefined,
+    rangeStart: formData.get("rangeStart"),
+    rangeEnd: formData.get("rangeEnd"),
+  });
+  if (!parsed.success) {
+    redirect(`${schedulePath}?blad=zakres`);
+  }
+  const { scope, targetId, rangeStart, rangeEnd } = parsed.data;
+  const firstWeek = getWeekStartKey(rangeStart);
+  const rangeStartAt = fromZonedTime(
+    `${rangeStart}T00:00:00`,
     SCHOOL_TIME_ZONE,
   );
-  const weekStartDate = new Date(`${weekStart}T00:00:00.000Z`);
-  const weekEndAt = addDays(weekStartAt, 7);
+  const rangeEndAt = addDays(
+    fromZonedTime(`${rangeEnd}T00:00:00`, SCHOOL_TIME_ZONE),
+    1,
+  );
 
   const [requirements, rooms, teachers, availability, fixedSlots] =
     await Promise.all([
@@ -302,8 +315,8 @@ export async function generateScheduleAction(formData: FormData) {
           schoolId: session.user.schoolId,
           archivedAt: null,
           status: { not: "CANCELLED" },
-          startAt: { lt: weekEndAt },
-          endAt: { gt: weekStartAt },
+          startAt: { lt: rangeEndAt },
+          endAt: { gt: rangeStartAt },
         },
         include: {
           group: {
@@ -318,69 +331,139 @@ export async function generateScheduleAction(formData: FormData) {
       }),
     ]);
 
-  const existingCounts = new Map<string, number>();
-  for (const slot of fixedSlots) {
-    existingCounts.set(
-      slot.groupId,
-      (existingCounts.get(slot.groupId) ?? 0) + 1,
+  let scopedRequirements = requirements;
+  let scopedRooms = rooms;
+  let scopeLabel = "Cała szkoła";
+  if (scope === "GROUP") {
+    scopedRequirements = requirements.filter(
+      (requirement) => requirement.groupId === targetId,
     );
+    scopeLabel =
+      scopedRequirements[0]?.group.name ?? "Wybrana grupa";
+  } else if (scope === "TEACHER") {
+    scopedRequirements = requirements.filter(
+      (requirement) => requirement.teacherId === targetId,
+    );
+    scopeLabel =
+      teachers.find((teacher) => teacher.id === targetId)?.name ??
+      "Wybrany wykładowca";
+  } else if (scope === "ROOM") {
+    scopedRequirements = requirements.filter(
+      (requirement) => requirement.preferredRoomId === targetId,
+    );
+    scopedRooms = rooms.filter((room) => room.id === targetId);
+    scopeLabel =
+      rooms.find((room) => room.id === targetId)?.name ?? "Wybrana sala";
   }
-  const result = deterministicScheduleSolver.solve({
-    weekStart,
-    requirements: requirements
-      .map((requirement) => ({
-        id: requirement.id,
-        groupId: requirement.groupId,
-        groupName: requirement.group.name,
-        studentIds: requirement.group.enrollments.map(
+  if (
+    scopedRequirements.length === 0 ||
+    scopedRooms.length === 0 ||
+    (scope !== "SCHOOL" && !targetId)
+  ) {
+    redirect(`${schedulePath}?blad=brak-zakresu`);
+  }
+
+  const proposals: ReturnType<
+    typeof deterministicScheduleSolver.solve
+  >["proposals"] = [];
+  const hardViolations: string[] = [];
+  const suggestions = new Set<string>();
+  let score = 0;
+  let exploredNodes = 0;
+  let weekStart = firstWeek;
+
+  while (weekStart <= rangeEnd) {
+    const weekStartAt = fromZonedTime(
+      `${weekStart}T00:00:00`,
+      SCHOOL_TIME_ZONE,
+    );
+    const weekEndAt = addDays(weekStartAt, 7);
+    const weekFixedSlots = fixedSlots.filter(
+      (slot) => slot.startAt < weekEndAt && slot.endAt > weekStartAt,
+    );
+    const existingCounts = new Map<string, number>();
+    for (const slot of weekFixedSlots) {
+      existingCounts.set(
+        slot.groupId,
+        (existingCounts.get(slot.groupId) ?? 0) + 1,
+      );
+    }
+    const result = deterministicScheduleSolver.solve({
+      weekStart,
+      rangeStart,
+      rangeEnd,
+      requirements: scopedRequirements
+        .map((requirement) => ({
+          id: requirement.id,
+          groupId: requirement.groupId,
+          groupName: requirement.group.name,
+          studentIds: requirement.group.enrollments.map(
+            (enrollment) => enrollment.studentId,
+          ),
+          teacherId: requirement.teacherId,
+          preferredRoomId: requirement.preferredRoomId,
+          lessonsPerWeek: Math.max(
+            0,
+            requirement.lessonsPerWeek -
+              (existingCounts.get(requirement.groupId) ?? 0),
+          ),
+          durationMinutes: requirement.durationMinutes,
+          allowedWeekdays: requirement.allowedWeekdays,
+          preferredWeekdays: requirement.preferredWeekdays,
+          earliestStartMinute: requirement.earliestStartMinute,
+          latestEndMinute: requirement.latestEndMinute,
+          preferredStartMinute: requirement.preferredStartMinute,
+        }))
+        .filter((requirement) => requirement.lessonsPerWeek > 0),
+      rooms: scopedRooms,
+      teachers,
+      availability,
+      fixedSlots: weekFixedSlots.map((slot) => ({
+        id: slot.id,
+        groupId: slot.groupId,
+        roomId: slot.roomId,
+        teacherId: slot.teacherId,
+        startAt: slot.startAt,
+        endAt: slot.endAt,
+        studentIds: slot.group.enrollments.map(
           (enrollment) => enrollment.studentId,
         ),
-        teacherId: requirement.teacherId,
-        preferredRoomId: requirement.preferredRoomId,
-        lessonsPerWeek: Math.max(
-          0,
-          requirement.lessonsPerWeek -
-            (existingCounts.get(requirement.groupId) ?? 0),
-        ),
-        durationMinutes: requirement.durationMinutes,
-        allowedWeekdays: requirement.allowedWeekdays,
-        preferredWeekdays: requirement.preferredWeekdays,
-        earliestStartMinute: requirement.earliestStartMinute,
-        latestEndMinute: requirement.latestEndMinute,
-        preferredStartMinute: requirement.preferredStartMinute,
-      }))
-      .filter((requirement) => requirement.lessonsPerWeek > 0),
-    rooms,
-    teachers,
-    availability,
-    fixedSlots: fixedSlots.map((slot) => ({
-      id: slot.id,
-      groupId: slot.groupId,
-      roomId: slot.roomId,
-      teacherId: slot.teacherId,
-      startAt: slot.startAt,
-      endAt: slot.endAt,
-      studentIds: slot.group.enrollments.map(
-        (enrollment) => enrollment.studentId,
+      })),
+    });
+    proposals.push(...result.proposals);
+    hardViolations.push(
+      ...result.hardViolations.map(
+        (violation) => `${weekStart}: ${violation}`,
       ),
-    })),
-  });
+    );
+    result.suggestions.forEach((suggestion) => suggestions.add(suggestion));
+    score += result.score;
+    exploredNodes += result.exploredNodes;
+    weekStart = format(
+      addDays(new Date(`${weekStart}T12:00:00.000Z`), 7),
+      "yyyy-MM-dd",
+    );
+  }
 
   const generation = await db.scheduleGeneration.create({
     data: {
       schoolId: session.user.schoolId,
       createdById: session.user.id,
-      weekStart: weekStartDate,
+      weekStart: new Date(`${firstWeek}T00:00:00.000Z`),
       status: "READY",
-      score: result.score,
+      score,
       summary: {
-        hardViolations: result.hardViolations,
-        suggestions: result.suggestions,
-        exploredNodes: result.exploredNodes,
+        hardViolations,
+        suggestions: [...suggestions],
+        exploredNodes,
         existingSlots: fixedSlots.length,
+        scope,
+        scopeLabel,
+        rangeStart,
+        rangeEnd,
       },
       proposals: {
-        create: result.proposals.map((proposal) => ({
+        create: proposals.map((proposal) => ({
           groupId: proposal.groupId,
           roomId: proposal.roomId,
           teacherId: proposal.teacherId,
@@ -401,15 +484,18 @@ export async function generateScheduleAction(formData: FormData) {
       entityType: "ScheduleGeneration",
       entityId: generation.id,
       metadata: {
-        weekStart,
-        proposalCount: result.proposals.length,
-        unresolvedCount: result.hardViolations.length,
+        scope,
+        targetId: targetId ?? null,
+        rangeStart,
+        rangeEnd,
+        proposalCount: proposals.length,
+        unresolvedCount: hardViolations.length,
       },
     },
   });
 
   redirect(
-    `${schedulePath}?tydzien=${weekStart}&propozycja=${generation.id}`,
+    `${schedulePath}?tydzien=${firstWeek}&propozycja=${generation.id}`,
   );
 }
 
@@ -443,6 +529,7 @@ export async function applyScheduleGenerationAction(formData: FormData) {
   }
   const summary = generation.summary as {
     hardViolations?: unknown[];
+    rangeStart?: string;
   };
   if ((summary.hardViolations?.length ?? 0) > 0) {
     redirect(`${schedulePath}?blad=propozycja-niepelna`);
@@ -518,16 +605,17 @@ export async function applyScheduleGenerationAction(formData: FormData) {
     });
   } catch {
     redirect(
-      `${schedulePath}?tydzien=${generation.weekStart
-        .toISOString()
-        .slice(0, 10)}&propozycja=${generation.id}&blad=kolizja`,
+      `${schedulePath}?tydzien=${
+        summary.rangeStart ??
+        generation.weekStart.toISOString().slice(0, 10)
+      }&propozycja=${generation.id}&blad=kolizja`,
     );
   }
 
   revalidatePath(schedulePath);
   redirect(
-    `${schedulePath}?tydzien=${generation.weekStart
-      .toISOString()
-      .slice(0, 10)}&sukces=opublikowano`,
+    `${schedulePath}?tydzien=${
+      summary.rangeStart ?? generation.weekStart.toISOString().slice(0, 10)
+    }&sukces=opublikowano`,
   );
 }

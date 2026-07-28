@@ -1,4 +1,11 @@
-import { addMinutes, format, isValid, startOfWeek } from "date-fns";
+import {
+  addMinutes,
+  differenceInCalendarDays,
+  format,
+  isValid,
+  parseISO,
+  startOfWeek,
+} from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { z } from "zod";
 
@@ -75,6 +82,51 @@ export const teacherAvailabilitySchema = z.object({
   message: "Godzina końca musi być późniejsza niż początek.",
   path: ["endMinute"],
 });
+
+export const scheduleGenerationSchema = z
+  .object({
+    scope: z.enum(["SCHOOL", "GROUP", "TEACHER", "ROOM"]),
+    targetId: z.string().optional(),
+    rangeStart: z.string().regex(datePattern, "Wybierz datę początkową."),
+    rangeEnd: z.string().regex(datePattern, "Wybierz datę końcową."),
+  })
+  .superRefine((value, context) => {
+    const start = parseISO(value.rangeStart);
+    const end = parseISO(value.rangeEnd);
+    if (!isValid(start) || !isValid(end)) {
+      context.addIssue({
+        code: "custom",
+        path: ["rangeEnd"],
+        message: "Wybierz poprawny zakres dat.",
+      });
+      return;
+    }
+    const days = differenceInCalendarDays(end, start);
+    if (days < 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["rangeEnd"],
+        message: "Data końcowa nie może być wcześniejsza niż początkowa.",
+      });
+    }
+    if (days > 55) {
+      context.addIssue({
+        code: "custom",
+        path: ["rangeEnd"],
+        message: "Jednorazowo możesz ułożyć maksymalnie 8 tygodni.",
+      });
+    }
+    if (
+      value.scope !== "SCHOOL" &&
+      !z.string().uuid().safeParse(value.targetId).success
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["targetId"],
+        message: "Wybierz grupę, wykładowcę albo salę.",
+      });
+    }
+  });
 
 export type ScheduleIntervalInput = z.infer<typeof scheduleIntervalSchema>;
 

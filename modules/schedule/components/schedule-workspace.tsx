@@ -116,12 +116,27 @@ export function ScheduleWorkspace({
   const [newDuration, setNewDuration] = useState(60);
   const [newTeacherId, setNewTeacherId] = useState("");
   const [newRoomId, setNewRoomId] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [feedback, setFeedback] = useState<ScheduleActionState>(
     initialActionState,
   );
   const [isMoving, setIsMoving] = useState(false);
+  async function createAndClose(
+    previousState: ScheduleActionState,
+    formData: FormData,
+  ) {
+    const result = await createScheduleSlotAction(previousState, formData);
+    if (result.status === "success") {
+      setFeedback(result);
+      setCreateOpen(false);
+      setNewGroupId("");
+      setNewTeacherId("");
+      setNewRoomId("");
+    }
+    return result;
+  }
   const [createState, createAction, createPending] = useActionState(
-    createScheduleSlotAction,
+    createAndClose,
     initialActionState,
   );
   const sensors = useSensors(
@@ -245,7 +260,11 @@ export function ScheduleWorkspace({
         </div>
 
         {canManage ? (
-          <details className="schedule-create">
+          <details
+            className="schedule-create"
+            open={createOpen}
+            onToggle={(event) => setCreateOpen(event.currentTarget.open)}
+          >
             <summary>
               <CalendarPlus aria-hidden="true" />
               Dodaj zajęcia
@@ -411,7 +430,7 @@ export function ScheduleWorkspace({
                   Termin grupy jest wolny. Wybierz dostępnego wykładowcę i salę.
                 </div>
               ) : null}
-              {createState.message ? (
+              {createState.status === "error" && createState.message ? (
                 <div
                   className={`schedule-message ${
                     createState.status === "error"
@@ -560,10 +579,11 @@ export function ScheduleWorkspace({
             ))}
           </div>
         </div>
-        {days.map((day) => (
+        {days.map((day, dayIndex) => (
           <ScheduleDayColumn
             key={day.key}
             day={day}
+            menuAlign={dayIndex < 3 ? "start" : "end"}
             hiddenOnMobile={day.key !== activeDay?.key}
             canManage={canManage}
             slots={filteredSlots.filter((slot) => slot.dateKey === day.key)}
@@ -579,11 +599,13 @@ function ScheduleDayColumn({
   slots,
   canManage,
   hiddenOnMobile,
+  menuAlign,
 }: {
   day: ScheduleDay;
   slots: ScheduleSlotView[];
   canManage: boolean;
   hiddenOnMobile: boolean;
+  menuAlign: "start" | "end";
 }) {
   return (
     <div
@@ -610,7 +632,12 @@ function ScheduleDayColumn({
           />
         ))}
         {slots.map((slot) => (
-          <LessonCard key={slot.id} slot={slot} canManage={canManage} />
+          <LessonCard
+            key={slot.id}
+            slot={slot}
+            canManage={canManage}
+            menuAlign={menuAlign}
+          />
         ))}
       </div>
     </div>
@@ -647,16 +674,27 @@ function ScheduleDropCell({
 function LessonCard({
   slot,
   canManage,
+  menuAlign,
 }: {
   slot: ScheduleSlotView;
   canManage: boolean;
+  menuAlign: "start" | "end";
 }) {
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [moveState, moveAction, movePending] = useActionState(
-    moveScheduleSlotFormAction,
+    async (previousState: ScheduleActionState, formData: FormData) => {
+      const result = await moveScheduleSlotFormAction(previousState, formData);
+      if (result.status === "success") setActionsOpen(false);
+      return result;
+    },
     initialActionState,
   );
   const [cancelState, cancelAction, cancelPending] = useActionState(
-    cancelScheduleSlotAction,
+    async (previousState: ScheduleActionState, formData: FormData) => {
+      const result = await cancelScheduleSlotAction(previousState, formData);
+      if (result.status === "success") setActionsOpen(false);
+      return result;
+    },
     initialActionState,
   );
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -677,7 +715,7 @@ function LessonCard({
     top,
     height,
     transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 20 : 4,
+    zIndex: isDragging ? 80 : actionsOpen ? 60 : 4,
   } satisfies CSSProperties;
 
   return (
@@ -712,7 +750,13 @@ function LessonCard({
         </div>
       </div>
       {canManage ? (
-        <details className="schedule-lesson-actions">
+        <details
+          className={`schedule-lesson-actions align-${menuAlign} ${
+            hour * 60 + minute >= 18 * 60 ? "align-up" : ""
+          }`}
+          open={actionsOpen}
+          onToggle={(event) => setActionsOpen(event.currentTarget.open)}
+        >
           <summary aria-label={`Opcje zajęć grupy ${slot.groupName}`}>•••</summary>
           <div>
             <form action={moveAction}>

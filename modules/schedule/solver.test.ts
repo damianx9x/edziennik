@@ -108,4 +108,32 @@ describe("deterministic schedule solver", () => {
     expect(result.proposals).toHaveLength(0);
     expect(result.hardViolations[0]).toContain("przypisz wykładowcę");
   });
+
+  it("keeps proposals inside the selected date range", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      rangeStart: "2026-07-29",
+      rangeEnd: "2026-07-31",
+      requirements: [
+        {
+          ...baseRequirement,
+          allowedWeekdays: [1, 3, 5],
+          preferredWeekdays: [1],
+          lessonsPerWeek: 2,
+        },
+      ],
+      rooms,
+      teachers,
+      availability: [],
+      fixedSlots: [],
+    });
+
+    expect(result.hardViolations).toEqual([]);
+    expect(
+      result.proposals.every((proposal) => {
+        const key = proposal.startAt.toISOString().slice(0, 10);
+        return key >= "2026-07-29" && key <= "2026-07-31";
+      }),
+    ).toBe(true);
+  });
 });

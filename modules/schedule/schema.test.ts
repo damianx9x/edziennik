@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getWeekStartKey,
   intervalsOverlap,
+  scheduleGenerationSchema,
   toUtcInterval,
 } from "./schema";
 
@@ -45,5 +46,22 @@ describe("schedule interval", () => {
 
   it("normalizes navigation to Monday", () => {
     expect(getWeekStartKey("2026-08-06")).toBe("2026-08-03");
+  });
+
+  it("accepts an eight-week generation range and rejects a longer one", () => {
+    expect(
+      scheduleGenerationSchema.safeParse({
+        scope: "SCHOOL",
+        rangeStart: "2026-07-27",
+        rangeEnd: "2026-09-20",
+      }).success,
+    ).toBe(true);
+    expect(
+      scheduleGenerationSchema.safeParse({
+        scope: "SCHOOL",
+        rangeStart: "2026-07-27",
+        rangeEnd: "2026-09-21",
+      }).success,
+    ).toBe(false);
   });
 });

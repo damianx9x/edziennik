@@ -1,6 +1,6 @@
 # Marka i system UI KLA
 
-Stan: Etap 2, 26 lipca 2026.
+Stan: Etap 3, 28 lipca 2026.
 
 ## Źródło
 

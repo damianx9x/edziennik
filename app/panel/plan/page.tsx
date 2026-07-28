@@ -341,11 +341,28 @@ export default async function SchedulePage({
         hardViolations?: string[];
         suggestions?: string[];
         existingSlots?: number;
+        scopeLabel?: string;
+        rangeStart?: string;
+        rangeEnd?: string;
       };
+      const generationRangeStart = summary.rangeStart ?? weekStartKey;
+      const generationRangeEnd =
+        summary.rangeEnd ??
+        format(addDays(new Date(`${weekStartKey}T12:00:00.000Z`), 5), "yyyy-MM-dd");
       generation = {
         id: raw.id,
         status: raw.status,
         score: raw.score,
+        scopeLabel: summary.scopeLabel ?? "Cała szkoła",
+        rangeLabel: `${format(
+          new Date(`${generationRangeStart}T12:00:00.000Z`),
+          "d MMM yyyy",
+          { locale: pl },
+        )} – ${format(
+          new Date(`${generationRangeEnd}T12:00:00.000Z`),
+          "d MMM yyyy",
+          { locale: pl },
+        )}`,
         hardViolations: summary.hardViolations ?? [],
         suggestions: summary.suggestions ?? [],
         existingSlots: summary.existingSlots ?? 0,

@@ -62,6 +62,8 @@ export type ScheduleGenerationView = {
   id: string;
   status: "READY" | "APPLIED" | "DISCARDED" | "FAILED";
   score: number;
+  scopeLabel: string;
+  rangeLabel: string;
   hardViolations: string[];
   suggestions: string[];
   existingSlots: number;

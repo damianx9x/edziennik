@@ -75,6 +75,8 @@ export type SolverResult = {
 export interface ScheduleSolver {
   solve(input: {
     weekStart: string;
+    rangeStart?: string;
+    rangeEnd?: string;
     requirements: SolverRequirement[];
     rooms: SolverRoom[];
     teachers: SolverResource[];
@@ -186,6 +188,8 @@ function buildCandidates(input: {
   taskId: string;
   requirement: SolverRequirement;
   weekStart: string;
+  rangeStart?: string;
+  rangeEnd?: string;
   rooms: SolverRoom[];
   teachers: SolverResource[];
   availability: SolverAvailability[];
@@ -195,6 +199,8 @@ function buildCandidates(input: {
     taskId,
     requirement,
     weekStart,
+    rangeStart,
+    rangeEnd,
     rooms,
     teachers,
     availability,
@@ -223,6 +229,12 @@ function buildCandidates(input: {
         addDays(new Date(`${weekStart}T12:00:00Z`), weekday - 1),
         "yyyy-MM-dd",
       );
+      if (
+        (rangeStart && dayKey < rangeStart) ||
+        (rangeEnd && dayKey > rangeEnd)
+      ) {
+        continue;
+      }
       const localStart = `${dayKey}T${String(
         Math.floor(startMinute / 60),
       ).padStart(2, "0")}:${String(startMinute % 60).padStart(2, "0")}:00`;
@@ -310,6 +322,8 @@ function buildCandidates(input: {
 export const deterministicScheduleSolver: ScheduleSolver = {
   solve({
     weekStart,
+    rangeStart,
+    rangeEnd,
     requirements,
     rooms,
     teachers,
@@ -331,6 +345,8 @@ export const deterministicScheduleSolver: ScheduleSolver = {
           taskId: task.id,
           requirement: task.requirement,
           weekStart,
+          rangeStart,
+          rangeEnd,
           rooms,
           teachers,
           availability,

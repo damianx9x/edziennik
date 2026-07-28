@@ -375,3 +375,19 @@ sprawdza kolizję ponownie.
 
 **Dlaczego:** przeciąganie nie jest wystarczającą ani dostępną jedyną metodą
 obsługi, szczególnie na telefonie i dla użytkowników nietechnicznych.
+
+## ADR-042 — zakres automatu i podgląd w dialogu
+
+**Data:** 2026-07-28
+**Decyzja:** dyrektor przed generowaniem wybiera zakres zasobów: całą szkołę,
+jedną grupę, wykładowcę albo salę, a następnie daty od–do. Jedno żądanie
+obejmuje maksymalnie osiem tygodni. Dla sali Asystent bierze grupy, które mają
+ją ustawioną jako preferowaną, i nie używa w tej propozycji innych sal.
+Wynik otwiera się w natywnym modalnym dialogu, który zatrzymuje fokus, obsługuje
+`Escape`, działa jako pełny arkusz na telefonie i nie publikuje bez osobnego
+potwierdzenia.
+
+**Dlaczego:** dyrektor może poprawiać mały fragment planu bez ponownego
+układania całej szkoły, a podgląd nie miesza się z długimi formularzami
+konfiguracji. Limit chroni synchroniczny pilot przed zbyt długim obliczeniem;
+większe okresy można układać partiami, a później przenieść do kolejki zadań.

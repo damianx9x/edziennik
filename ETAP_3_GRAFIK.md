@@ -15,6 +15,9 @@
 - tygodniowa dostępność wykładowcy,
 - wymagania grupy: liczba i długość lekcji, dni, zakres godzin, preferencje,
 - szkic automatyczny, podgląd i osobne zatwierdzenie,
+- zakres automatu: cała szkoła, grupa, wykładowca albo sala,
+- wybór okresu od–do, maksymalnie osiem tygodni,
+- duży modalny podgląd przed publikacją,
 - publikacja rejestrowana w audycie,
 - odwołanie lekcji dopiero po jawnym potwierdzeniu.
 
@@ -23,10 +26,11 @@
 1. Dyrektor otwiera **Grafik → Ułóż automatycznie**.
 2. Raz ustawia wymagania każdej grupy.
 3. Opcjonalnie zawęża dostępność wykładowców.
-4. Klika **Ułóż propozycję**.
-5. System pokazuje każdą proponowaną lekcję lub prostą listę braków.
-6. Dopiero po zaznaczeniu potwierdzenia dyrektor publikuje plan.
-7. Opublikowane lekcje pozostają na miejscu przy następnym generowaniu.
+4. Wybiera, czy układa całą szkołę, jedną grupę, wykładowcę albo salę.
+5. Ustawia daty od–do i klika **Ułóż i pokaż podgląd**.
+6. System otwiera duże okno z każdą proponowaną lekcją lub listą braków.
+7. Dopiero po zaznaczeniu potwierdzenia dyrektor publikuje plan.
+8. Opublikowane lekcje pozostają na miejscu przy następnym generowaniu.
    Można je wcześniej poprawić albo odwołać w trybie ręcznym.
 
 ## Jak sprawdzić ręcznie
@@ -36,10 +40,12 @@
 1. Zaloguj się jako dyrektor demo.
 2. Otwórz **Grafik**.
 3. W Asystencie otwórz jedną grupę i zmień preferowaną godzinę.
-4. Zapisz, wygeneruj szkic i sprawdź różne dni.
-5. Przejdź do **Ułóż ręcznie**.
-6. Otwórz **Dodaj zajęcia**, wybierz grupę i zajęty termin.
-7. Sprawdź, czy wykładowca i sala są szare i pokazują powód.
+4. Zapisz, wybierz jedną grupę i zakres tygodnia.
+5. Wygeneruj szkic i zamknij duży podgląd klawiszem `Escape`.
+6. Przejdź do **Ułóż ręcznie**.
+7. Otwórz **Dodaj zajęcia**, wybierz grupę i wolny termin.
+8. Sprawdź, czy po zapisie formularz się zamyka i pokazuje potwierdzenie.
+9. Otwórz menu `•••` i sprawdź, czy jest nad sąsiednimi lekcjami.
 
 ### Telefon 375 × 812
 

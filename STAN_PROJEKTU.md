@@ -60,6 +60,8 @@ Termin pilota: 1 września 2026.
 - wyszarzenie zajętego lub za małego zasobu wraz z powodem,
 - serwerowa kontrola kolizji sali, wykładowcy, grupy i wspólnego ucznia,
 - Asystent układania grafiku z wymaganiami grup i dostępnością wykładowców,
+- generowanie dla szkoły, grupy, wykładowcy albo sali i zakresu do 8 tygodni,
+- podgląd propozycji w dużym oknie przed publikacją,
 - deterministyczny szkic do sprawdzenia i osobnej publikacji,
 - istniejące lekcje zachowane podczas kolejnego generowania,
 - audyt utworzenia, przesunięcia, odwołania i publikacji grafiku.
@@ -87,7 +89,7 @@ Termin pilota: 1 września 2026.
 ## Zweryfikowane
 
 - `npm run check`,
-- 63 testy automatyczne,
+- 65 testów automatycznych,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
