@@ -1,11 +1,11 @@
 import {
   Activity,
+  BarChart3,
   Bell,
   CalendarDays,
   ContactRound,
   GraduationCap,
   Home,
-  MailPlus,
   MessageCircleMore,
   ScrollText,
   ShieldCheck,
@@ -26,6 +26,7 @@ type PanelSection =
   | "invitations"
   | "records"
   | "tools"
+  | "statistics"
   | "notifications"
   | "schedule"
   | "logs";
@@ -52,12 +53,6 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "logs",
       },
       {
-        href: "/panel/szkola/zaproszenia",
-        label: "Zaproszenia",
-        icon: MailPlus,
-        key: "invitations",
-      },
-      {
         href: "/panel/szkola/kartoteki",
         label: "Kartoteki",
         icon: ContactRound,
@@ -65,21 +60,21 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       },
       {
         href: "/panel/szkola/narzedzia",
-        label: "Narzędzia",
+        label: "Ustawienia",
         icon: Wrench,
         key: "tools",
-      },
-      {
-        href: "/panel/szkola/powiadomienia",
-        label: "Powiadomienia",
-        icon: Bell,
-        key: "notifications",
       },
       {
         href: "/panel/plan",
         label: "Grafik",
         icon: CalendarDays,
         key: "schedule",
+      },
+      {
+        href: "/panel/szkola/statystyki",
+        label: "Statystyki",
+        icon: BarChart3,
+        key: "statistics",
       },
     ] as const;
   }
@@ -87,34 +82,28 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
     return [
       { href: "/panel/szkola", label: "Start", icon: Home, key: "home" },
       {
-        href: "/panel/szkola/zaproszenia",
-        label: "Zaproszenia",
-        icon: MailPlus,
-        key: "invitations",
-      },
-      {
         href: "/panel/szkola/kartoteki",
         label: "Kartoteki",
         icon: ContactRound,
         key: "records",
       },
       {
-        href: "/panel/szkola/narzedzia",
-        label: "Narzędzia",
-        icon: Wrench,
-        key: "tools",
-      },
-      {
-        href: "/panel/szkola/powiadomienia",
-        label: "Powiadomienia",
-        icon: Bell,
-        key: "notifications",
-      },
-      {
         href: "/panel/plan",
         label: "Grafik",
         icon: CalendarDays,
         key: "schedule",
+      },
+      {
+        href: "/panel/szkola/narzedzia",
+        label: "Ustawienia",
+        icon: Wrench,
+        key: "tools",
+      },
+      {
+        href: "/panel/szkola/statystyki",
+        label: "Statystyki",
+        icon: BarChart3,
+        key: "statistics",
       },
     ] as const;
   }
@@ -191,7 +180,7 @@ export async function AuthenticatedPanelShell({
           ["home", "school", "logs", "records", "schedule"].includes(item.key),
         )
       : session.user.role === "DIRECTOR"
-        ? navigation.filter((item) => item.key !== "tools")
+        ? navigation
         : navigation;
   const pendingChangeCount =
     session.user.role === "SYSTEM_OWNER" ||
@@ -226,7 +215,7 @@ export async function AuthenticatedPanelShell({
           session.user.role === "DIRECTOR" ? (
             <Link
               className="app-panel-notifications"
-              href="/panel/szkola/powiadomienia"
+              href="/panel/szkola#sprawy"
               aria-label={`Centrum powiadomień: ${pendingChangeCount} oczekujących zmian`}
             >
               <Bell aria-hidden="true" />

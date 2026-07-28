@@ -413,3 +413,13 @@ Automatyczna synchronizacja obu list zostanie rozważona przy docelowym CMS.
 przydzielić grupie fizycznie niedostępną salę. Osobny zasób daje spójne filtry,
 bezpieczne reguły serwerowe oraz możliwość późniejszego dodania adresów,
 koordynatorów i godzin pracy bez przebudowy grup i sal.
+# 2026-07-28 — wspólny model nawigacji, Command Center i statystyki
+
+- Start panelu dyrektora jest Command Center: zawiera plan całej szkoły,
+  sprawy do decyzji i szybkie przejścia.
+- Zaproszenia są częścią Kartotek, a dotychczasowe Powiadomienia częścią Startu.
+- „Narzędzia” w interfejsie użytkownika nazywają się „Ustawienia”.
+- Statystyki są osobnym modułem dyrektora. Rejestrują ścieżkę, czas i
+  opcjonalnie konto, ale nie zapisują IP, urządzenia, treści ani parametrów URL.
+- Zdarzenia statystyczne są przechowywane przez 90 dni.
+- Wspólne reguły przyszłych modułów opisuje `PRZEWODNIK_MODULOW_UI.md`.

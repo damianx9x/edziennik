@@ -18,7 +18,7 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { ImportWizard } from "@/modules/imports/components/import-wizard";
 
-export const metadata: Metadata = { title: "Narzędzia" };
+export const metadata: Metadata = { title: "Ustawienia szkoły" };
 export const dynamic = "force-dynamic";
 
 export default async function TransfersPage() {
@@ -65,10 +65,10 @@ export default async function TransfersPage() {
       <header className="role-panel-heading transfers-page-heading">
         <div>
           <span className="section-kicker">Ustawienia szkoły</span>
-          <h1>Narzędzia</h1>
+          <h1>Ustawienia</h1>
           <p>
-            Importuj dane, sprawdź bazę i edytuj publiczną stronę bez szukania
-            ustawień w kilku miejscach.
+            Zmień stronę szkoły albo przenieś kartoteki z arkusza. Każda opcja
+            wyjaśnia, co się stanie przed zapisem.
           </p>
         </div>
         <span className="role-security-chip">
@@ -77,18 +77,18 @@ export default async function TransfersPage() {
         </span>
       </header>
 
-      <section className="tools-hub-grid" aria-label="Narzędzia dyrektora">
+      <section className="tools-hub-grid" aria-label="Ustawienia dyrektora">
         <article>
           <span className="record-icon record-icon-blue">
             <FileSpreadsheet aria-hidden="true" />
           </span>
           <div>
             <span className="section-kicker">Dane szkoły</span>
-            <h2>Import i eksport</h2>
-            <p>Arkusze, kopia robocza i historia operacji na kartotekach.</p>
+            <h2>Przenieś dane z arkusza</h2>
+            <p>Najpierw zobaczysz podgląd. Nic nie zapisze się samo.</p>
           </div>
           <a className="button button-secondary" href="#dane">
-            Przejdź do danych
+            Wybierz plik
           </a>
         </article>
         <article>
@@ -112,16 +112,15 @@ export default async function TransfersPage() {
             <HardDrive aria-hidden="true" />
           </span>
           <div>
-            <span className="section-kicker">Baza danych</span>
-            <h2>Połączenie działa</h2>
+            <span className="section-kicker">Stan danych</span>
+            <h2>Wszystko działa</h2>
             <p>
               {recordCounts[0]} kont · {recordCounts[1]} grup ·{" "}
-              {recordCounts[2]} sal. Hasła bazy pozostają bezpiecznie na
-              serwerze.
+              {recordCounts[2]} sal. Dane są dostępne i gotowe do pracy.
             </p>
           </div>
           <span className="tools-status">
-            <Activity aria-hidden="true" /> PostgreSQL online
+            <Activity aria-hidden="true" /> Połączenie aktywne
           </span>
         </article>
         <article>
@@ -129,11 +128,10 @@ export default async function TransfersPage() {
             <Globe2 aria-hidden="true" />
           </span>
           <div>
-            <span className="section-kicker">Publikacja</span>
-            <h2>Domena i wersja</h2>
+            <span className="section-kicker">Strona publiczna</span>
+            <h2>Zobacz efekt zmian</h2>
             <p>
-              Główna domena to kingslanguageacademy.pl. Wdrożenie pełnej
-              aplikacji wymaga Node.js i PostgreSQL.
+              Otwórz stronę tak, jak zobaczy ją rodzic lub przyszły uczeń.
             </p>
           </div>
           <Link className="button button-secondary" href="/" target="_blank">

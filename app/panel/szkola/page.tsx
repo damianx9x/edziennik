@@ -1,10 +1,12 @@
 import {
   AlertTriangle,
   ArrowRight,
+  BellRing,
   CalendarClock,
   CheckCircle2,
-  Database,
+  DoorOpen,
   FileSignature,
+  GraduationCap,
   MailPlus,
   MapPin,
   MessageCircleMore,
@@ -14,7 +16,9 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
+import { db } from "@/lib/server/db";
 import {
   requireActiveSession,
   requirePanelAccess,
@@ -44,7 +48,10 @@ export default async function SchoolPanelPage() {
     <AuthenticatedPanelShell session={session}>
       {session.user.role === "SYSTEM_OWNER" ||
       session.user.role === "DIRECTOR" ? (
-        <DirectorDashboard name={session.user.name} />
+        <DirectorDashboard
+          name={session.user.name}
+          schoolId={session.user.schoolId}
+        />
       ) : (
         <TeacherDashboard name={session.user.name} />
       )}
@@ -52,17 +59,70 @@ export default async function SchoolPanelPage() {
   );
 }
 
-function DirectorDashboard({ name }: { name: string }) {
+async function DirectorDashboard({
+  name,
+  schoolId,
+}: {
+  name: string;
+  schoolId: string;
+}) {
   const firstName = name.trim().split(/\s+/)[0] || "Dyrektorze";
+  const now = new Date();
+  const weekStart = startOfWeek(now);
+  const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
+  const [
+    slots,
+    pendingChanges,
+    activeInvitations,
+    openReports,
+    locations,
+    groups,
+    rooms,
+    students,
+  ] = await Promise.all([
+    db.scheduleSlot.findMany({
+      where: {
+        schoolId,
+        startAt: { gte: weekStart, lt: weekEnd },
+        status: { not: "CANCELLED" },
+      },
+      orderBy: { startAt: "asc" },
+      take: 80,
+      select: {
+        id: true,
+        startAt: true,
+        endAt: true,
+        group: { select: { name: true, location: { select: { name: true } } } },
+        room: { select: { name: true } },
+        teacher: { select: { name: true } },
+      },
+    }),
+    db.recordChangeRequest.count({ where: { schoolId, status: "PENDING" } }),
+    db.invitation.count({
+      where: { schoolId, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
+    }),
+    db.feedbackReport.count({
+      where: { schoolId, status: { in: ["NEW", "TRIAGED", "IN_PROGRESS"] } },
+    }),
+    db.location.count({ where: { schoolId, isActive: true, archivedAt: null } }),
+    db.courseGroup.count({ where: { schoolId, archivedAt: null } }),
+    db.room.count({ where: { schoolId, archivedAt: null } }),
+    db.user.count({ where: { schoolId, role: "STUDENT", archivedAt: null } }),
+  ]);
+  const daySlots = Array.from({ length: 6 }, (_, day) =>
+    slots.filter((slot) => dayIndex(slot.startAt) === day),
+  );
+  const matters = pendingChanges + activeInvitations + openReports;
+
   return (
     <>
       <header className="role-panel-heading">
         <div>
-          <span className="section-kicker">Panel zarządzania szkołą</span>
+          <span className="section-kicker">Command Center szkoły</span>
           <h1>Dzień dobry, {firstName}</h1>
           <p>
-            Dostęp jest zabezpieczony. Najważniejsze sprawy szkoły są w jednym
-            miejscu.
+            Plan całej szkoły, sprawy do decyzji i szybkie działania masz teraz
+            na jednym ekranie.
           </p>
         </div>
         <Link
@@ -73,90 +133,74 @@ function DirectorDashboard({ name }: { name: string }) {
         </Link>
       </header>
 
-      <section className="stage-one-banner" aria-label="Status Etapu 3">
+      <section className="command-status" aria-label="Stan szkoły">
         <div>
-          <CheckCircle2 aria-hidden="true" />
+          {matters ? <BellRing aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
           <span>
-            <strong>Etap 3 jest w testach</strong>
-            <small>Ręczny grafik i Asystent bez kolizji są już dostępne</small>
+            <strong>{matters ? `${matters} spraw wymaga uwagi` : "Wszystko pod kontrolą"}</strong>
+            <small>Najpierw decyzje, potem codzienna organizacja.</small>
           </span>
         </div>
-        <span className="stage-one-badge">Bezpieczny dostęp</span>
+        <a href="#sprawy">Przejdź do spraw <ArrowRight aria-hidden="true" /></a>
       </section>
 
-      <div className="director-overview">
-        <article className="panel-metric panel-metric-primary">
-          <span>Konta użytkowników</span>
-          <strong>Zaproszenia</strong>
-          <p>Dodawaj wykładowców, rodziców i uczniów bez publicznej rejestracji.</p>
-          <Link href="/panel/szkola/zaproszenia">
-            Zarządzaj dostępem <ArrowRight aria-hidden="true" />
-          </Link>
-        </article>
-        <article className="panel-metric">
-          <span>Tryb testowy</span>
-          <strong>Logowanie bez MFA</strong>
-          <p>Na czas odbioru dyrektor używa e-maila i hasła bez kodu z telefonu.</p>
-          <div className="metric-safe">
-            <ShieldCheck aria-hidden="true" /> MFA przed prawdziwymi danymi
+      <section className="command-schedule" id="grafik">
+        <header>
+          <div>
+            <span className="section-kicker">Cała szkoła · ten tydzień</span>
+            <h2>Grafik w jednym spojrzeniu</h2>
+            <p>{slots.length} zaplanowanych lekcji. Kliknij grafik, aby edytować lub uruchomić Asystenta.</p>
           </div>
-        </article>
-        <article className="panel-metric">
-          <span>Dane szkoły</span>
-          <strong>Kartoteki</strong>
-          <p>Wyszukuj osoby i otwieraj kompletne karty kontaktowe.</p>
-          <Link href="/panel/szkola/kartoteki">
-            Otwórz kartoteki <Database aria-hidden="true" />
+          <Link className="button button-secondary" href="/panel/plan">
+            Otwórz grafik <ArrowRight aria-hidden="true" />
           </Link>
-        </article>
+        </header>
+        <div className="command-week" aria-label="Lekcje całej szkoły">
+          {daySlots.map((items, index) => (
+            <section key={index}>
+              <h3>{["Pon.", "Wt.", "Śr.", "Czw.", "Pt.", "Sob."][index]}</h3>
+              <div>
+                {items.length ? items.slice(0, 4).map((slot) => (
+                  <article key={slot.id}>
+                    <time>{formatTime(slot.startAt)}</time>
+                    <strong>{slot.group.name}</strong>
+                    <small>{slot.group.location.name} · {slot.room.name}</small>
+                  </article>
+                )) : <span className="command-empty-day">Brak zajęć</span>}
+                {items.length > 4 ? <small className="command-more">+{items.length - 4} kolejnych</small> : null}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+
+      <div className="command-grid">
+        <section className="command-matters" id="sprawy">
+          <header>
+            <div>
+              <span className="section-kicker">Do sprawdzenia</span>
+              <h2>Sprawy wymagające decyzji</h2>
+            </div>
+            <strong>{matters}</strong>
+          </header>
+          <div>
+            <CommandMatter icon={<BellRing />} label="Zmiany w kartotekach" value={pendingChanges} href="/panel/szkola/powiadomienia" />
+            <CommandMatter icon={<MailPlus />} label="Aktywne zaproszenia" value={activeInvitations} href="/panel/szkola/zaproszenia" />
+            <CommandMatter icon={<AlertTriangle />} label="Zgłoszenia użytkowników" value={openReports} href="/panel/szkola/statystyki" />
+          </div>
+        </section>
+
+        <section className="command-school">
+          <header><span className="section-kicker">Stan szkoły</span><h2>Organizacja</h2></header>
+          <div>
+            <span><MapPin /><strong>{locations}</strong><small>Lokalizacje</small></span>
+            <span><Users /><strong>{groups}</strong><small>Grupy</small></span>
+            <span><DoorOpen /><strong>{rooms}</strong><small>Sale</small></span>
+            <span><GraduationCap /><strong>{students}</strong><small>Uczniowie</small></span>
+          </div>
+          <Link href="/panel/szkola/kartoteki">Otwórz kartoteki <ArrowRight /></Link>
+        </section>
       </div>
-
-      <section className="schedule-priority-card" id="grafik">
-        <div className="schedule-priority-copy">
-          <span className="section-kicker">Najważniejszy moduł projektu</span>
-          <h2>Grafik sala + wykładowca + grupa</h2>
-          <p>
-            Układaj ręcznie albo poproś Asystenta o bezpieczną propozycję.
-            System sprawdza też uczniów zapisanych do kilku grup.
-          </p>
-          <div className="schedule-resource-pills">
-            <span>
-              <MapPin aria-hidden="true" /> Sala
-            </span>
-            <span>
-              <Users aria-hidden="true" /> Grupa
-            </span>
-            <span>
-              <CalendarClock aria-hidden="true" /> Wykładowca
-            </span>
-          </div>
-          <Link className="button button-primary" href="/panel/plan">
-            Otwórz działający grafik <ArrowRight aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="schedule-preview" aria-label="Podgląd przyszłego grafiku">
-          <div className="schedule-preview-head">
-            <span>Pon.</span>
-            <span>Wt.</span>
-            <span>Śr.</span>
-          </div>
-          <div className="schedule-preview-grid">
-            <span className="lesson-block lesson-blue">
-              <small>14:20</small> Toronto
-            </span>
-            <span className="lesson-block lesson-red">
-              <small>15:45</small> Oxford
-            </span>
-            <span className="lesson-block lesson-gold">
-              <small>17:10</small> Monaco
-            </span>
-          </div>
-          <div className="schedule-coming">
-            <AlertTriangle aria-hidden="true" />
-            4 rodzaje kolizji + szkic do zatwierdzenia
-          </div>
-        </div>
-      </section>
 
       <section className="locked-module-row">
         <article>
@@ -190,6 +234,25 @@ function DirectorDashboard({ name }: { name: string }) {
       </section>
     </>
   );
+}
+
+function CommandMatter({ icon, label, value, href }: { icon: ReactNode; label: string; value: number; href: string }) {
+  return <Link href={href}>{icon}<span><strong>{label}</strong><small>{value ? `${value} oczekuje` : "Brak nowych spraw"}</small></span><b>{value}</b><ArrowRight /></Link>;
+}
+
+function startOfWeek(date: Date) {
+  const copy = new Date(date);
+  const day = copy.getDay();
+  copy.setDate(copy.getDate() - (day === 0 ? 6 : day - 1));
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+function dayIndex(date: Date) {
+  const day = date.getDay();
+  return day === 0 ? 6 : day - 1;
+}
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }).format(date);
 }
 
 function TeacherDashboard({ name }: { name: string }) {

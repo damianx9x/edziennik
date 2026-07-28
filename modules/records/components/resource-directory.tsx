@@ -64,7 +64,15 @@ export function ResourceDirectory({
   historyById: Record<string, RecordHistoryEntry[]>;
 }) {
   const [selected, setSelected] = useState<ResourceRecord | null>(null);
-  const [locationFilter, setLocationFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState(
+    () =>
+      locations.find((location) =>
+        groups.some((group) => group.locationId === location.id) ||
+        rooms.some((room) => room.locationId === location.id),
+      )?.id ??
+      locations[0]?.id ??
+      "",
+  );
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);

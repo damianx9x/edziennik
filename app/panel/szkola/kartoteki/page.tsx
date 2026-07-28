@@ -296,6 +296,15 @@ export default async function RecordsPage() {
         ) : null}
       </header>
 
+      <nav className="records-section-tabs" aria-label="Dział Kartoteki">
+        <Link className="active" href="/panel/szkola/kartoteki">
+          Osoby i zasoby
+        </Link>
+        {isDirector ? (
+          <Link href="/panel/szkola/zaproszenia">Zaproszenia i dostęp</Link>
+        ) : null}
+      </nav>
+
       <section className="records-summary-strip" aria-label="Stan kartotek">
         <a href="#lokalizacje">
           <MapPin aria-hidden="true" />
@@ -331,9 +340,21 @@ export default async function RecordsPage() {
         </span>
       </section>
 
-      {isDirector ? <QuickRecordForms locations={locations} /> : null}
+      {isDirector ? (
+        <section className="records-action-zone" id="dodaj">
+          <div>
+            <span className="section-kicker">Jedno miejsce do dodawania</span>
+            <h2>Co chcesz utworzyć?</h2>
+            <p>Wybierz osobę lub zasób. Formularz pokaże tylko potrzebne pola.</p>
+          </div>
+          <QuickRecordForms locations={locations} />
+        </section>
+      ) : null}
 
-      <div id="osoby">
+      <div id="osoby" className="records-directory-zone">
+        <span className="section-kicker">Osoby</span>
+        <h2>Uczniowie, rodzice i wykładowcy</h2>
+        <p>Najpierw wybierz rolę lub wyszukaj nazwisko, potem otwórz pełną kartę.</p>
         <PersonDirectory
           people={directoryPeople}
           actorRole={actorRole}
@@ -341,28 +362,33 @@ export default async function RecordsPage() {
         />
       </div>
 
-      <ResourceDirectory
-        actorRole={actorRole}
-        historyById={historyById}
-        locations={locations}
-        groups={groups.map((group) => ({
-          id: group.id,
-          name: group.name,
-          cefrLevel: group.cefrLevel,
-          locationId: group.locationId,
-          locationName: group.location.name,
-          studentCount: group._count.enrollments,
-          teacherCount: group._count.teachers,
-        }))}
-        rooms={rooms.map((room) => ({
-          id: room.id,
-          name: room.name,
-          capacity: room.capacity,
-          locationId: room.locationId,
-          locationName: room.location.name,
-          scheduleCount: room._count.scheduleSlots,
-        }))}
-      />
+      <div className="records-directory-zone" id="zasoby">
+        <span className="section-kicker">Organizacja zajęć</span>
+        <h2>Lokalizacje, grupy i sale</h2>
+        <p>Zasoby są pogrupowane według lokalizacji, żeby łatwiej układać grafik.</p>
+        <ResourceDirectory
+          actorRole={actorRole}
+          historyById={historyById}
+          locations={locations}
+          groups={groups.map((group) => ({
+            id: group.id,
+            name: group.name,
+            cefrLevel: group.cefrLevel,
+            locationId: group.locationId,
+            locationName: group.location.name,
+            studentCount: group._count.enrollments,
+            teacherCount: group._count.teachers,
+          }))}
+          rooms={rooms.map((room) => ({
+            id: room.id,
+            name: room.name,
+            capacity: room.capacity,
+            locationId: room.locationId,
+            locationName: room.location.name,
+            scheduleCount: room._count.scheduleSlots,
+          }))}
+        />
+      </div>
     </AuthenticatedPanelShell>
   );
 }

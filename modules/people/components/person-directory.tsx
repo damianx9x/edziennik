@@ -66,6 +66,7 @@ export function PersonDirectory({
 }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<(typeof filters)[number]["value"]>("ALL");
+  const [visibleCount, setVisibleCount] = useState(12);
   const [selected, setSelected] = useState<PersonDirectoryRecord | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
@@ -136,7 +137,10 @@ export function PersonDirectory({
               key={filter.value}
               type="button"
               aria-pressed={role === filter.value}
-              onClick={() => setRole(filter.value)}
+              onClick={() => {
+                setRole(filter.value);
+                setVisibleCount(12);
+              }}
             >
               {filter.label}
             </button>
@@ -151,7 +155,7 @@ export function PersonDirectory({
         </div>
       ) : (
         <div className="person-card-grid">
-          {filteredPeople.map((person) => (
+          {filteredPeople.slice(0, visibleCount).map((person) => (
             <button
               className="person-card"
               type="button"
@@ -173,6 +177,15 @@ export function PersonDirectory({
           ))}
         </div>
       )}
+      {filteredPeople.length > visibleCount ? (
+        <button
+          className="person-show-more"
+          type="button"
+          onClick={() => setVisibleCount((count) => count + 12)}
+        >
+          Pokaż kolejne osoby ({filteredPeople.length - visibleCount})
+        </button>
+      ) : null}
 
       <dialog
         className="person-dialog"

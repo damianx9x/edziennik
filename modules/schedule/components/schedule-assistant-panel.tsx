@@ -215,10 +215,33 @@ export function ScheduleAssistantPanel({
         </div>
       </section>
 
+      <section className="assistant-generate-card">
+        <div>
+          <span className="assistant-step">1</span>
+          <div>
+            <span className="section-kicker">Zacznij tutaj</span>
+            <h2>Wygeneruj i obejrzyj propozycję</h2>
+            <p>
+              Wybierz zakres, a podgląd otworzy się w osobnym oknie. Nic nie
+              zostanie opublikowane bez Twojej decyzji.
+            </p>
+          </div>
+        </div>
+        <GenerationControls
+          weekStart={weekStart}
+          groups={groups}
+          locations={locations}
+          rooms={rooms}
+          teachers={teachers}
+          requirements={requirements}
+          ready={ready}
+        />
+      </section>
+
       <div className="assistant-setup-grid">
         <section className="assistant-setup-card">
           <header>
-            <span className="assistant-step">1</span>
+            <span className="assistant-step">2</span>
             <div>
               <h2>Ustaw potrzeby grup</h2>
               <p>Każdą grupę konfigurujesz raz, potem tylko poprawiasz.</p>
@@ -247,7 +270,7 @@ export function ScheduleAssistantPanel({
 
         <section className="assistant-setup-card">
           <header>
-            <span className="assistant-step">2</span>
+            <span className="assistant-step">3</span>
             <div>
               <h2>Dostępność wykładowców</h2>
               <p>Opcjonalnie zawęź dni i godziny każdej osoby.</p>
@@ -267,29 +290,6 @@ export function ScheduleAssistantPanel({
           </div>
         </section>
       </div>
-
-      <section className="assistant-generate-card">
-        <div>
-          <span className="assistant-step">3</span>
-          <div>
-            <span className="section-kicker">Bez ryzyka</span>
-            <h2>Wygeneruj propozycję</h2>
-            <p>
-              Istniejące lekcje pozostaną na miejscu. Asystent dołoży tylko
-              brakujące i nigdy nie zapisze kolizji.
-            </p>
-          </div>
-        </div>
-        <GenerationControls
-          weekStart={weekStart}
-          groups={groups}
-          locations={locations}
-          rooms={rooms}
-          teachers={teachers}
-          requirements={requirements}
-          ready={ready}
-        />
-      </section>
 
       {generation ? (
         <GenerationPreview key={generation.id} generation={generation} />

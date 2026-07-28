@@ -144,17 +144,18 @@ model School {
   storedFiles            StoredFile[]
   importBatches          ImportBatch[]
   recordChanges          RecordChangeRequest[]
+  pageVisits             PageVisit[]
 }
 
 model Location {
-  id         String   @id @default(uuid()) @db.Uuid
-  schoolId   String   @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  schoolId   String    @db.Uuid
   name       String
   address    String?
-  isOnline   Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isOnline   Boolean   @default(false)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
   school       School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
@@ -166,23 +167,24 @@ model Location {
 }
 
 model User {
-  id               String     @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
-  schoolId         String     @db.Uuid
-  email            String     @unique
+  id               String      @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  schoolId         String      @db.Uuid
+  email            String      @unique
   name             String
-  role             String     @default("PARENT")
-  status           UserStatus @default(INVITED)
-  emailVerified    Boolean    @default(false)
+  role             String      @default("PARENT")
+  status           UserStatus  @default(INVITED)
+  emailVerified    Boolean     @default(false)
   image            String?
   phone            String?
   externalId       String?
-  banned           Boolean?   @default(false)
+  banned           Boolean?    @default(false)
   banReason        String?
   banExpires       DateTime?
-  twoFactorEnabled Boolean?   @default(false)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  twoFactorEnabled Boolean?    @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
   archivedAt       DateTime?
+  pageVisits       PageVisit[]
 
   school                     School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   sessions                   Session[]
@@ -612,6 +614,21 @@ model AuditLog {
   @@index([schoolId, createdAt])
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
+}
+
+model PageVisit {
+  id        String   @id @default(uuid()) @db.Uuid
+  schoolId  String   @db.Uuid
+  userId    String?  @db.Uuid
+  path      String
+  visitedAt DateTime @default(now())
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([schoolId, visitedAt])
+  @@index([schoolId, path, visitedAt])
+  @@index([userId, visitedAt])
 }
 
 model FeedbackReport {

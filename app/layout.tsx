@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 
 import { FeedbackWidget } from "./components/feedback-widget";
+import { PageVisitTracker } from "./components/page-visit-tracker";
 import { SiteContentProvider } from "../modules/site-content/site-content-provider";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className={nunitoSans.variable}>
         <SiteContentProvider>
           {children}
+          <PageVisitTracker />
           <FeedbackWidget />
         </SiteContentProvider>
       </body>

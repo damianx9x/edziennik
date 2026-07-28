@@ -6,6 +6,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
@@ -41,7 +42,7 @@ export default async function InvitationsPage() {
   });
 
   return (
-    <AuthenticatedPanelShell session={session} active="invitations">
+    <AuthenticatedPanelShell session={session} active="records">
       <header className="role-panel-heading">
         <div>
           <span className="section-kicker">Dostęp do eDziennika</span>
@@ -56,6 +57,13 @@ export default async function InvitationsPage() {
           Tylko dyrektor
         </span>
       </header>
+
+      <nav className="records-section-tabs" aria-label="Dział Kartoteki">
+        <Link href="/panel/szkola/kartoteki">Osoby i zasoby</Link>
+        <Link className="active" href="/panel/szkola/zaproszenia">
+          Zaproszenia i dostęp
+        </Link>
+      </nav>
 
       <div className="invitation-workspace">
         <InvitationManager />
