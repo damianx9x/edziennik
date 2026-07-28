@@ -6,8 +6,9 @@ import {
 } from "./solver";
 
 const rooms = [
-  { id: "room-a", name: "Sala A", capacity: 8 },
-  { id: "room-b", name: "Sala B", capacity: 4 },
+  { id: "room-a", name: "Sala A", capacity: 8, locationId: "location-a" },
+  { id: "room-b", name: "Sala B", capacity: 4, locationId: "location-a" },
+  { id: "room-c", name: "Sala C", capacity: 8, locationId: "location-b" },
 ];
 const teachers = [
   { id: "teacher-a", name: "Anna English" },
@@ -17,6 +18,7 @@ const baseRequirement: SolverRequirement = {
   id: "requirement-a",
   groupId: "group-a",
   groupName: "Oxford",
+  locationId: "location-a",
   studentIds: ["student-a", "student-b"],
   teacherId: "teacher-a",
   preferredRoomId: "room-a",
@@ -135,5 +137,22 @@ describe("deterministic schedule solver", () => {
         return key >= "2026-07-29" && key <= "2026-07-31";
       }),
     ).toBe(true);
+  });
+
+  it("never assigns a room from another location", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      requirements: [{ ...baseRequirement, lessonsPerWeek: 1 }],
+      rooms: [
+        { id: "wrong-room", name: "Inny oddział", capacity: 20, locationId: "location-b" },
+        { id: "right-room", name: "Ten oddział", capacity: 8, locationId: "location-a" },
+      ],
+      teachers,
+      availability: [],
+      fixedSlots: [],
+    });
+
+    expect(result.proposals).toHaveLength(1);
+    expect(result.proposals[0]?.roomId).toBe("right-room");
   });
 });

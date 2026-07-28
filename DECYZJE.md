@@ -391,3 +391,25 @@ potwierdzenia.
 układania całej szkoły, a podgląd nie miesza się z długimi formularzami
 konfiguracji. Limit chroni synchroniczny pilot przed zbyt długim obliczeniem;
 większe okresy można układać partiami, a później przenieść do kolejki zadań.
+
+## ADR-043 — lokalizacja jako nadrzędny zasób operacyjny
+
+**Data:** 2026-07-28
+**Decyzja:** każdy aktywny pokój i każda grupa należą dokładnie do jednej
+lokalizacji szkoły. Grafik może łączyć grupę wyłącznie z salą z tej samej
+lokalizacji. Dyrektor może przełączać kartoteki i plan między widokiem
+„Wszystkie lokalizacje” a jednym oddziałem, a Asystent może generować zakres
+całej szkoły lub pojedynczej lokalizacji. Zajęcia online są reprezentowane
+lokalizacją z flagą `isOnline`, a nie wyjątkiem w nazwie sali. Import może
+utworzyć brakującą lokalizację z kolumny `lokalizacja`; starszy plik bez tej
+kolumny trafia do pierwszej aktywnej lokalizacji i wymaga późniejszego
+sprawdzenia.
+
+Lista lokalizacji na stronie marketingowej pozostaje treścią redakcyjną,
+natomiast `Location` w bazie jest źródłem prawdy dla kartotek i grafiku.
+Automatyczna synchronizacja obu list zostanie rozważona przy docelowym CMS.
+
+**Dlaczego:** oddziały nie mogą być luźną etykietą, bo wtedy automat mógłby
+przydzielić grupie fizycznie niedostępną salę. Osobny zasób daje spójne filtry,
+bezpieczne reguły serwerowe oraz możliwość późniejszego dodania adresów,
+koordynatorów i godzin pracy bez przebudowy grup i sal.

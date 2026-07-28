@@ -7793,7 +7793,7 @@ body:has(.content-editor-shell) .feedback-trigger {
   margin-top: 18px;
   padding: 12px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: end;
   gap: 10px;
   border: 1px solid rgb(23 38 80 / 9%);
@@ -9126,7 +9126,7 @@ body:has(.content-editor-shell) .feedback-trigger {
 .records-summary-strip {
   margin: 26px 0 14px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -9765,6 +9765,89 @@ body:has(.content-editor-shell) .feedback-trigger {
 
 .resource-directory {
   margin-top: 28px;
+}
+
+.location-view-select {
+  max-width: 420px;
+  margin-top: 16px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.location-view-select > span,
+.resource-location-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-view-select svg,
+.resource-location-label svg {
+  width: 16px;
+}
+
+.location-view-select select {
+  min-height: 48px;
+}
+
+.location-container-list {
+  margin-top: 16px;
+  display: grid;
+  gap: 18px;
+}
+
+.location-resource-container {
+  padding: 18px;
+  border: 1px solid rgb(23 38 80 / 10%);
+  border-radius: 20px;
+  background: rgb(255 253 250 / 72%);
+  box-shadow: var(--shadow-sm);
+}
+
+.location-resource-container > header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.location-resource-container > header h3,
+.location-resource-container > header p {
+  margin: 0;
+}
+
+.location-resource-container > header h3 {
+  color: var(--navy-950);
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.location-resource-container > header p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.resource-location-label {
+  margin-top: 6px;
+  color: var(--blue-700);
+  font-weight: 850;
+}
+
+.record-checkbox {
+  min-height: 44px;
+  display: flex !important;
+  align-items: center;
+  gap: 9px !important;
+}
+
+.record-checkbox input {
+  width: 20px;
+  height: 20px;
 }
 
 .resource-directory-grid {

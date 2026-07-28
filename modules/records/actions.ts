@@ -25,11 +25,13 @@ const userPayloadSchema = z.object({
 });
 
 const roomPayloadSchema = z.object({
+  locationId: z.uuid("Wybierz lokalizację."),
   name: z.string().trim().min(2, "Wpisz nazwę sali.").max(80),
   capacity: z.number().int().min(1).max(100).nullable(),
 });
 
 const groupPayloadSchema = z.object({
+  locationId: z.uuid("Wybierz lokalizację."),
   name: z.string().trim().min(2, "Wpisz nazwę grupy.").max(100),
   cefrLevel: cefrSchema,
 });
@@ -148,12 +150,12 @@ async function currentRecord(
   if (entityType === "ROOM") {
     return db.room.findFirst({
       where: { id: entityId, schoolId, archivedAt: null },
-      select: { name: true, capacity: true },
+      select: { name: true, capacity: true, locationId: true },
     });
   }
   return db.courseGroup.findFirst({
     where: { id: entityId, schoolId, archivedAt: null },
-    select: { name: true, cefrLevel: true },
+    select: { name: true, cefrLevel: true, locationId: true },
   });
 }
 
@@ -176,11 +178,13 @@ function parsePayload(entityType: EntityType, formData: FormData) {
   if (entityType === "ROOM") {
     const rawCapacity = nullableValue(formData.get("capacity"));
     return roomPayloadSchema.safeParse({
+      locationId: formData.get("locationId"),
       name: formData.get("name"),
       capacity: rawCapacity ? Number(rawCapacity) : null,
     });
   }
   return groupPayloadSchema.safeParse({
+    locationId: formData.get("locationId"),
     name: formData.get("name"),
     cefrLevel: formData.get("cefrLevel"),
   });
@@ -249,6 +253,16 @@ export async function updateRecordAction(
     return { status: "error", message: "Ta kartoteka już nie jest aktywna." };
   }
   const payload = { ...parsed.data } as Record<string, unknown>;
+  if (
+    entityType !== "USER" &&
+    !(await activeLocationExists(
+      db,
+      session.user.schoolId,
+      String(payload.locationId),
+    ))
+  ) {
+    return { status: "error", message: "Ta lokalizacja nie jest już aktywna." };
+  }
   if (
     entityType === "USER" &&
     payload.email === null &&
@@ -359,11 +373,22 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
     if (!request) return;
 
     if (decision === "approve") {
+      const payload = request.payload as Record<string, unknown>;
+      if (
+        request.entityType !== "USER" &&
+        !(await activeLocationExists(
+          transaction,
+          session.user.schoolId,
+          String(payload.locationId),
+        ))
+      ) {
+        throw new Error("Location no longer active.");
+      }
       const result = await applyUpdate(
         session.user.schoolId,
         request.entityType,
         request.entityId,
-        request.payload as Record<string, unknown>,
+        payload,
         transaction,
       );
       if (result.count !== 1) {
@@ -397,4 +422,20 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
   });
   revalidatePath("/panel/szkola/kartoteki");
   revalidatePath("/panel/szkola/powiadomienia");
+}
+
+function activeLocationExists(
+  client: Pick<Prisma.TransactionClient, "location">,
+  schoolId: string,
+  locationId: string,
+) {
+  return client.location.findFirst({
+    where: {
+      id: locationId,
+      schoolId,
+      isActive: true,
+      archivedAt: null,
+    },
+    select: { id: true },
+  });
 }

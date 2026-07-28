@@ -1,6 +1,7 @@
 import {
   DoorOpen,
   GraduationCap,
+  MapPin,
   Plus,
   ShieldCheck,
   UserRoundCheck,
@@ -69,7 +70,12 @@ export default async function RecordsPage() {
         ],
       };
 
-  const [rooms, groups, people] = await Promise.all([
+  const [locations, rooms, groups, people] = await Promise.all([
+    db.location.findMany({
+      where: { schoolId, isActive: true, archivedAt: null },
+      orderBy: [{ isOnline: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, address: true, isOnline: true },
+    }),
     db.room.findMany({
       where: { schoolId, archivedAt: null },
       orderBy: { name: "asc" },
@@ -77,6 +83,8 @@ export default async function RecordsPage() {
         id: true,
         name: true,
         capacity: true,
+        locationId: true,
+        location: { select: { name: true } },
         _count: { select: { scheduleSlots: true } },
       },
     }),
@@ -91,6 +99,8 @@ export default async function RecordsPage() {
         id: true,
         name: true,
         cefrLevel: true,
+        locationId: true,
+        location: { select: { name: true } },
         _count: {
           select: {
             enrollments: { where: { status: "ACTIVE" } },
@@ -287,6 +297,10 @@ export default async function RecordsPage() {
       </header>
 
       <section className="records-summary-strip" aria-label="Stan kartotek">
+        <a href="#lokalizacje">
+          <MapPin aria-hidden="true" />
+          <span><strong>{locations.length}</strong>Lokalizacje</span>
+        </a>
         <a href="#osoby">
           <Users aria-hidden="true" />
           <span><strong>{personCounts.students}</strong>Uczniowie</span>
@@ -295,11 +309,11 @@ export default async function RecordsPage() {
           <UserRoundCheck aria-hidden="true" />
           <span><strong>{personCounts.teachers}</strong>Wykładowcy</span>
         </a>
-        <a href="#grupy">
+        <a href="#lokalizacje">
           <GraduationCap aria-hidden="true" />
           <span><strong>{groups.length}</strong>Grupy</span>
         </a>
-        <a href="#sale">
+        <a href="#lokalizacje">
           <DoorOpen aria-hidden="true" />
           <span><strong>{rooms.length}</strong>Sale</span>
         </a>
@@ -317,7 +331,7 @@ export default async function RecordsPage() {
         </span>
       </section>
 
-      {isDirector ? <QuickRecordForms /> : null}
+      {isDirector ? <QuickRecordForms locations={locations} /> : null}
 
       <div id="osoby">
         <PersonDirectory
@@ -330,10 +344,13 @@ export default async function RecordsPage() {
       <ResourceDirectory
         actorRole={actorRole}
         historyById={historyById}
+        locations={locations}
         groups={groups.map((group) => ({
           id: group.id,
           name: group.name,
           cefrLevel: group.cefrLevel,
+          locationId: group.locationId,
+          locationName: group.location.name,
           studentCount: group._count.enrollments,
           teacherCount: group._count.teachers,
         }))}
@@ -341,6 +358,8 @@ export default async function RecordsPage() {
           id: room.id,
           name: room.name,
           capacity: room.capacity,
+          locationId: room.locationId,
+          locationName: room.location.name,
           scheduleCount: room._count.scheduleSlots,
         }))}
       />

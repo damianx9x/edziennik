@@ -67,7 +67,7 @@ export async function saveSchedulingRequirementAction(
         isActive: true,
         archivedAt: null,
       },
-      select: { id: true },
+      select: { id: true, locationId: true },
     }),
     db.user.findFirst({
       where: {
@@ -86,13 +86,20 @@ export async function saveSchedulingRequirementAction(
         isActive: true,
         archivedAt: null,
       },
-      select: { id: true },
+      select: { id: true, locationId: true },
     }),
   ]);
   if (!group || !teacher || !room) {
     return {
       status: "error",
       message: "Grupa, wykładowca lub sala nie są już aktywne.",
+    };
+  }
+  if (group.locationId !== room.locationId) {
+    return {
+      status: "error",
+      message:
+        "Preferowana sala musi należeć do tej samej lokalizacji co grupa.",
     };
   }
 
@@ -260,7 +267,7 @@ export async function generateScheduleAction(formData: FormData) {
     1,
   );
 
-  const [requirements, rooms, teachers, availability, fixedSlots] =
+  const [requirements, rooms, teachers, availability, fixedSlots, locations] =
     await Promise.all([
       db.schedulingRequirement.findMany({
         where: {
@@ -272,6 +279,8 @@ export async function generateScheduleAction(formData: FormData) {
           group: {
             select: {
               name: true,
+              locationId: true,
+              location: { select: { name: true } },
               enrollments: {
                 where: { status: "ACTIVE" },
                 select: { studentId: true },
@@ -286,7 +295,7 @@ export async function generateScheduleAction(formData: FormData) {
           isActive: true,
           archivedAt: null,
         },
-        select: { id: true, name: true, capacity: true },
+        select: { id: true, name: true, capacity: true, locationId: true },
       }),
       db.user.findMany({
         where: {
@@ -329,12 +338,28 @@ export async function generateScheduleAction(formData: FormData) {
           },
         },
       }),
+      db.location.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          isActive: true,
+          archivedAt: null,
+        },
+        select: { id: true, name: true },
+      }),
     ]);
 
   let scopedRequirements = requirements;
   let scopedRooms = rooms;
   let scopeLabel = "Cała szkoła";
-  if (scope === "GROUP") {
+  if (scope === "LOCATION") {
+    scopedRequirements = requirements.filter(
+      (requirement) => requirement.group.locationId === targetId,
+    );
+    scopedRooms = rooms.filter((room) => room.locationId === targetId);
+    scopeLabel =
+      locations.find((location) => location.id === targetId)?.name ??
+      "Wybrana lokalizacja";
+  } else if (scope === "GROUP") {
     scopedRequirements = requirements.filter(
       (requirement) => requirement.groupId === targetId,
     );
@@ -397,6 +422,7 @@ export async function generateScheduleAction(formData: FormData) {
           id: requirement.id,
           groupId: requirement.groupId,
           groupName: requirement.group.name,
+          locationId: requirement.group.locationId,
           studentIds: requirement.group.enrollments.map(
             (enrollment) => enrollment.studentId,
           ),

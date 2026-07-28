@@ -1,15 +1,25 @@
 export type ScheduleResource = {
   id: string;
   name: string;
+  locationId?: string;
+  locationName?: string;
   capacity?: number | null;
   studentIds?: string[];
   teacherIds?: string[];
+};
+
+export type ScheduleLocation = {
+  id: string;
+  name: string;
+  isOnline: boolean;
 };
 
 export type ScheduleSlotView = {
   id: string;
   groupId: string;
   groupName: string;
+  locationId: string;
+  locationName: string;
   roomId: string;
   roomName: string;
   teacherId: string;
@@ -36,6 +46,8 @@ export type ScheduleActionState = {
 export type ScheduleRequirementView = {
   groupId: string;
   groupName: string;
+  locationId: string;
+  locationName: string;
   studentCount: number;
   teacherId: string | null;
   preferredRoomId: string | null;

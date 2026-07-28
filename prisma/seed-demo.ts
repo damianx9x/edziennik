@@ -104,6 +104,34 @@ async function main() {
     name: "Uczeń Panel Demo",
     role: "STUDENT",
   });
+  const locationDefinitions = [
+    "Przodkowo",
+    "Czeczewo",
+    "Wilanowo",
+    "Gdańsk Nowatorów",
+    "Gdańsk Morena",
+    "Gdańsk Niedźwiednik",
+    "Gdynia Pogórze",
+    "Online",
+  ];
+  const demoLocations = await Promise.all(
+    locationDefinitions.map((name) =>
+      prisma.location.upsert({
+        where: { schoolId_name: { schoolId: school.id, name } },
+        update: {
+          isOnline: name === "Online",
+          isActive: true,
+          archivedAt: null,
+        },
+        create: {
+          schoolId: school.id,
+          name,
+          isOnline: name === "Online",
+        },
+      }),
+    ),
+  );
+  const primaryLocation = demoLocations[0];
 
   let studentSequence = 1;
   let firstGroupId: string | null = null;
@@ -120,6 +148,7 @@ async function main() {
       update: { isActive: true },
       create: {
         schoolId: school.id,
+        locationId: primaryLocation.id,
         name: `KLA ${groupDefinition.name} ${groupDefinition.classLabel} ${groupDefinition.schoolYear}`,
         cefrLevel: CefrLevel.MIXED,
       },
@@ -222,9 +251,9 @@ async function main() {
 
   const demoRooms = await Promise.all(
     [
-      { name: "Cambridge", capacity: 8 },
-      { name: "Oxford", capacity: 8 },
-      { name: "Online", capacity: 8 },
+      { name: "Cambridge", capacity: 8, locationId: demoLocations[0].id },
+      { name: "Oxford", capacity: 8, locationId: demoLocations[4].id },
+      { name: "Online", capacity: 8, locationId: demoLocations[7].id },
     ].map((room) =>
       prisma.room.upsert({
         where: {
@@ -233,9 +262,15 @@ async function main() {
             name: room.name,
           },
         },
-        update: { capacity: room.capacity, isActive: true, archivedAt: null },
+        update: {
+          capacity: room.capacity,
+          locationId: room.locationId,
+          isActive: true,
+          archivedAt: null,
+        },
         create: {
           schoolId: school.id,
+          locationId: room.locationId,
           name: room.name,
           capacity: room.capacity,
         },
@@ -245,6 +280,10 @@ async function main() {
 
   for (const [index, groupId] of demoGroupIds.entries()) {
     const preferredRoom = demoRooms[index % demoRooms.length];
+    await prisma.courseGroup.update({
+      where: { id: groupId },
+      data: { locationId: preferredRoom.locationId },
+    });
     await prisma.groupTeacher.upsert({
       where: {
         groupId_teacherId: {

@@ -25,6 +25,7 @@ import {
 } from "@/modules/schedule/schema";
 import type {
   ScheduleGenerationView,
+  ScheduleLocation,
   ScheduleRequirementView,
   ScheduleResource,
   ScheduleSlotView,
@@ -166,7 +167,7 @@ export default async function SchedulePage({
   });
   const groupIds = groupsRaw.map((group) => group.id);
 
-  const [slotsRaw, roomsRaw, teachersRaw, availabilityRaw] = await Promise.all([
+  const [slotsRaw, roomsRaw, teachersRaw, availabilityRaw, locationsRaw] = await Promise.all([
     db.scheduleSlot.findMany({
       where: {
         schoolId: session.user.schoolId,
@@ -180,6 +181,8 @@ export default async function SchedulePage({
         group: {
           select: {
             name: true,
+            locationId: true,
+            location: { select: { name: true } },
             enrollments: {
               where: { status: "ACTIVE" },
               select: { studentId: true },
@@ -197,7 +200,7 @@ export default async function SchedulePage({
         isActive: true,
         archivedAt: null,
       },
-      select: { id: true, name: true, capacity: true },
+      select: { id: true, name: true, capacity: true, locationId: true },
       orderBy: { name: "asc" },
     }),
     db.user.findMany({
@@ -226,11 +229,28 @@ export default async function SchedulePage({
           orderBy: [{ teacherId: "asc" }, { weekday: "asc" }],
         })
       : Promise.resolve([]),
+    db.location.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        isActive: true,
+        archivedAt: null,
+      },
+      orderBy: [{ isOnline: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, isOnline: true },
+    }),
   ]);
 
+  const visibleLocationIds = new Set(groupsRaw.map((group) => group.locationId));
+  const locations: ScheduleLocation[] = locationsRaw.filter(
+    (location) => isManagement || visibleLocationIds.has(location.id),
+  );
   const groups: ScheduleResource[] = groupsRaw.map((group) => ({
     id: group.id,
     name: group.name,
+    locationId: group.locationId,
+    locationName:
+      locationsRaw.find((location) => location.id === group.locationId)?.name ??
+      "Lokalizacja",
     studentIds: group.enrollments.map((enrollment) => enrollment.studentId),
     teacherIds: group.teachers.map((teacher) => teacher.teacherId),
   }));
@@ -241,6 +261,10 @@ export default async function SchedulePage({
     .map((room) => ({
     id: room.id,
     name: room.name,
+    locationId: room.locationId,
+    locationName:
+      locationsRaw.find((location) => location.id === room.locationId)?.name ??
+      "Lokalizacja",
     capacity: room.capacity,
     }));
   const teachers: ScheduleResource[] = teachersRaw.filter(
@@ -253,6 +277,8 @@ export default async function SchedulePage({
       id: slot.id,
       groupId: slot.groupId,
       groupName: slot.group.name,
+      locationId: slot.group.locationId,
+      locationName: slot.group.location.name,
       roomId: slot.roomId,
       roomName: slot.room.name,
       teacherId: slot.teacherId,
@@ -286,6 +312,10 @@ export default async function SchedulePage({
   const requirements: ScheduleRequirementView[] = groupsRaw.map((group) => ({
     groupId: group.id,
     groupName: group.name,
+    locationId: group.locationId,
+    locationName:
+      locationsRaw.find((location) => location.id === group.locationId)?.name ??
+      "Lokalizacja",
     studentCount: group.enrollments.length,
     teacherId: group.schedulingRequirement?.teacherId ?? null,
     preferredRoomId:
@@ -445,6 +475,7 @@ export default async function SchedulePage({
           weekStart={weekStartKey}
           weekLabel={weekLabel}
           groups={groups}
+          locations={locations}
           rooms={rooms}
           teachers={teachers}
           requirements={requirements}
@@ -458,6 +489,7 @@ export default async function SchedulePage({
           canManage={isManagement}
           days={days}
           groups={groups}
+          locations={locations}
           rooms={rooms}
           teachers={teachers}
           slots={slots}

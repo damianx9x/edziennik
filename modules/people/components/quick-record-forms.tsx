@@ -5,6 +5,7 @@ import {
   DoorOpen,
   GraduationCap,
   LoaderCircle,
+  MapPin,
   Plus,
   Users,
 } from "lucide-react";
@@ -12,6 +13,7 @@ import { useActionState } from "react";
 
 import {
   createGroupAction,
+  createLocationAction,
   createRoomAction,
 } from "@/modules/groups/actions";
 import { cefrLabels, cefrValues } from "@/modules/groups/schema";
@@ -22,7 +24,17 @@ import {
   recordRoleValues,
 } from "@/modules/people/schema";
 
-export function QuickRecordForms() {
+type LocationOption = {
+  id: string;
+  name: string;
+  isOnline: boolean;
+};
+
+export function QuickRecordForms({
+  locations,
+}: {
+  locations: LocationOption[];
+}) {
   const [roomState, roomAction, roomPending] = useActionState(
     createRoomAction,
     initialRecordActionState,
@@ -35,6 +47,10 @@ export function QuickRecordForms() {
     createPersonAction,
     initialRecordActionState,
   );
+  const [locationState, locationAction, locationPending] = useActionState(
+    createLocationAction,
+    initialRecordActionState,
+  );
 
   return (
     <details className="records-create-panel" id="dodaj">
@@ -45,7 +61,7 @@ export function QuickRecordForms() {
         <div>
           <span className="section-kicker">Pojedyncze pozycje</span>
           <strong>Dodaj nową kartotekę</strong>
-          <small>Osoba, grupa albo sala — bez używania arkusza</small>
+          <small>Osoba, lokalizacja, grupa albo sala — bez używania arkusza</small>
         </div>
       </summary>
 
@@ -62,6 +78,7 @@ export function QuickRecordForms() {
             </span>
           </summary>
           <form action={roomAction}>
+            <LocationSelect locations={locations} />
             <label>
               Nazwa sali
               <input name="name" required maxLength={80} placeholder="Cambridge" />
@@ -96,6 +113,7 @@ export function QuickRecordForms() {
             </span>
           </summary>
           <form action={groupAction}>
+            <LocationSelect locations={locations} />
             <label>
               Nazwa grupy
               <input name="name" required maxLength={100} placeholder="MONACO" />
@@ -114,6 +132,46 @@ export function QuickRecordForms() {
               pending={groupPending}
               label="Dodaj grupę"
               state={groupState}
+            />
+          </form>
+          </details>
+
+          <details className="quick-record-card">
+          <summary>
+            <span className="record-icon record-icon-blue">
+              <MapPin aria-hidden="true" />
+            </span>
+            <span>
+              <strong>Nowa lokalizacja</strong>
+              <small>Oddział stacjonarny albo zajęcia online</small>
+            </span>
+          </summary>
+          <form action={locationAction}>
+            <label>
+              Nazwa lokalizacji
+              <input
+                name="name"
+                required
+                maxLength={100}
+                placeholder="Gdańsk Morena"
+              />
+            </label>
+            <label>
+              Adres <small>(opcjonalnie)</small>
+              <input
+                name="address"
+                maxLength={200}
+                placeholder="Ulica i numer"
+              />
+            </label>
+            <label className="record-checkbox">
+              <input name="isOnline" type="checkbox" />
+              To lokalizacja online
+            </label>
+            <RecordSubmit
+              pending={locationPending}
+              label="Dodaj lokalizację"
+              state={locationState}
             />
           </form>
           </details>
@@ -182,6 +240,24 @@ export function QuickRecordForms() {
         </div>
       </div>
     </details>
+  );
+}
+
+function LocationSelect({ locations }: { locations: LocationOption[] }) {
+  return (
+    <label>
+      Lokalizacja
+      <select name="locationId" required defaultValue="">
+        <option value="" disabled>
+          Wybierz lokalizację
+        </option>
+        {locations.map((location) => (
+          <option key={location.id} value={location.id}>
+            {location.name}{location.isOnline ? " · online" : ""}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

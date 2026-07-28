@@ -7,6 +7,7 @@ export const importExportHeaders = [
   "telefon",
   "nazwa",
   "pojemnosc",
+  "lokalizacja",
   "poziom",
   "grupa",
   "rodzic_email",

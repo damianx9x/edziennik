@@ -11,6 +11,7 @@ import {
   DoorOpen,
   GraduationCap,
   Lock,
+  MapPin,
   Sparkles,
   School,
   UserRoundCheck,
@@ -30,6 +31,7 @@ import {
 import type {
   ScheduleActionState,
   ScheduleGenerationView,
+  ScheduleLocation,
   ScheduleRequirementView,
   ScheduleResource,
   TeacherAvailabilityView,
@@ -96,6 +98,7 @@ export function ScheduleAssistantPanel({
   weekStart,
   weekLabel,
   groups,
+  locations,
   rooms,
   teachers,
   requirements,
@@ -107,6 +110,7 @@ export function ScheduleAssistantPanel({
   weekStart: string;
   weekLabel: string;
   groups: ScheduleResource[];
+  locations: ScheduleLocation[];
   rooms: ScheduleResource[];
   teachers: ScheduleResource[];
   requirements: ScheduleRequirementView[];
@@ -279,6 +283,7 @@ export function ScheduleAssistantPanel({
         <GenerationControls
           weekStart={weekStart}
           groups={groups}
+          locations={locations}
           rooms={rooms}
           teachers={teachers}
           requirements={requirements}
@@ -303,7 +308,7 @@ export function ScheduleAssistantPanel({
   );
 }
 
-type GenerationScope = "SCHOOL" | "GROUP" | "TEACHER" | "ROOM";
+type GenerationScope = "SCHOOL" | "LOCATION" | "GROUP" | "TEACHER" | "ROOM";
 
 function shiftDateKey(value: string, days: number) {
   const date = new Date(`${value}T12:00:00.000Z`);
@@ -314,6 +319,7 @@ function shiftDateKey(value: string, days: number) {
 function GenerationControls({
   weekStart,
   groups,
+  locations,
   rooms,
   teachers,
   requirements,
@@ -321,6 +327,7 @@ function GenerationControls({
 }: {
   weekStart: string;
   groups: ScheduleResource[];
+  locations: ScheduleLocation[];
   rooms: ScheduleResource[];
   teachers: ScheduleResource[];
   requirements: ScheduleRequirementView[];
@@ -329,7 +336,13 @@ function GenerationControls({
   const [scope, setScope] = useState<GenerationScope>("SCHOOL");
   const [targetId, setTargetId] = useState("");
   const resources =
-    scope === "GROUP" ? groups : scope === "TEACHER" ? teachers : rooms;
+    scope === "LOCATION"
+      ? locations
+      : scope === "GROUP"
+        ? groups
+        : scope === "TEACHER"
+          ? teachers
+          : rooms;
   const scopedReady =
     scope === "SCHOOL"
       ? ready
@@ -337,7 +350,9 @@ function GenerationControls({
         requirements.some(
           (requirement) =>
             requirement.configured &&
-            (scope === "GROUP"
+            (scope === "LOCATION"
+              ? requirement.locationId === targetId
+              : scope === "GROUP"
               ? requirement.groupId === targetId
               : scope === "TEACHER"
                 ? requirement.teacherId === targetId
@@ -354,6 +369,12 @@ function GenerationControls({
       label: "Cała szkoła",
       copy: "Wszystkie skonfigurowane grupy",
       icon: School,
+    },
+    {
+      value: "LOCATION",
+      label: "Lokalizacja",
+      copy: "Wszystkie grupy w jednym oddziale",
+      icon: MapPin,
     },
     {
       value: "GROUP",
@@ -410,7 +431,9 @@ function GenerationControls({
 
       {scope !== "SCHOOL" ? (
         <label className="assistant-target-field">
-          {scope === "GROUP"
+          {scope === "LOCATION"
+            ? "Wybierz lokalizację"
+            : scope === "GROUP"
             ? "Wybierz grupę"
             : scope === "TEACHER"
               ? "Wybierz wykładowcę"
@@ -434,6 +457,12 @@ function GenerationControls({
             <small>
               Asystent ułoży w niej grupy, które mają tę salę ustawioną jako
               preferowaną.
+            </small>
+          ) : null}
+          {scope === "LOCATION" ? (
+            <small>
+              Asystent użyje tylko grup i sal należących do wybranej
+              lokalizacji.
             </small>
           ) : null}
         </label>
@@ -550,7 +579,9 @@ function RequirementForm({
               <option value="" disabled>
                 Wybierz salę
               </option>
-              {rooms.map((room) => (
+              {rooms
+                .filter((room) => room.locationId === requirement.locationId)
+                .map((room) => (
                 <option
                   key={room.id}
                   value={room.id}
@@ -565,7 +596,7 @@ function RequirementForm({
                     ? ` · ${room.capacity} miejsc`
                     : " · bez limitu"}
                 </option>
-              ))}
+                ))}
             </select>
           </label>
           <label>

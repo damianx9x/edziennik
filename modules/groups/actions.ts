@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import {
   archiveRecordSchema,
   createGroupSchema,
+  createLocationSchema,
   createRoomSchema,
 } from "./schema";
 import type { RecordActionState } from "./state";
@@ -18,6 +19,7 @@ export async function createRoomAction(
 ): Promise<RecordActionState> {
   const session = await requireDirector();
   const parsed = createRoomSchema.safeParse({
+    locationId: formData.get("locationId"),
     name: formData.get("name"),
     capacity: formData.get("capacity"),
   });
@@ -26,9 +28,15 @@ export async function createRoomAction(
   }
 
   try {
+    const location = await findLocation(
+      session.user.schoolId,
+      parsed.data.locationId,
+    );
+    if (!location) return actionError("Ta lokalizacja nie jest już dostępna.");
     const room = await db.room.create({
       data: {
         schoolId: session.user.schoolId,
+        locationId: location.id,
         name: parsed.data.name,
         capacity: parsed.data.capacity,
       },
@@ -58,6 +66,7 @@ export async function createGroupAction(
 ): Promise<RecordActionState> {
   const session = await requireDirector();
   const parsed = createGroupSchema.safeParse({
+    locationId: formData.get("locationId"),
     name: formData.get("name"),
     level: formData.get("level"),
   });
@@ -66,9 +75,15 @@ export async function createGroupAction(
   }
 
   try {
+    const location = await findLocation(
+      session.user.schoolId,
+      parsed.data.locationId,
+    );
+    if (!location) return actionError("Ta lokalizacja nie jest już dostępna.");
     const group = await db.courseGroup.create({
       data: {
         schoolId: session.user.schoolId,
+        locationId: location.id,
         name: parsed.data.name,
         cefrLevel: parsed.data.level,
       },
@@ -89,6 +104,49 @@ export async function createGroupAction(
       return actionError("Grupa o tej nazwie już istnieje.");
     }
     return actionError("Nie udało się dodać grupy. Spróbuj ponownie.");
+  }
+}
+
+export async function createLocationAction(
+  _previousState: RecordActionState,
+  formData: FormData,
+): Promise<RecordActionState> {
+  const session = await requireDirector();
+  const parsed = createLocationSchema.safeParse({
+    name: formData.get("name"),
+    address: formData.get("address"),
+    isOnline: formData.get("isOnline") === "on",
+  });
+  if (!parsed.success) {
+    return actionError(parsed.error.issues[0]?.message);
+  }
+
+  try {
+    const location = await db.location.create({
+      data: {
+        schoolId: session.user.schoolId,
+        name: parsed.data.name,
+        address: parsed.data.address,
+        isOnline: parsed.data.isOnline,
+      },
+      select: { id: true },
+    });
+    await writeAudit(session.user.schoolId, session.user.id, {
+      action: "records.location.created",
+      entityType: "Location",
+      entityId: location.id,
+    });
+    revalidateRecords();
+    revalidatePath("/panel/plan");
+    return {
+      status: "success",
+      message: `Lokalizacja „${parsed.data.name}” jest gotowa.`,
+    };
+  } catch (error) {
+    if (isUniqueConstraint(error)) {
+      return actionError("Lokalizacja o tej nazwie już istnieje.");
+    }
+    return actionError("Nie udało się dodać lokalizacji. Spróbuj ponownie.");
   }
 }
 
@@ -161,6 +219,18 @@ function isUniqueConstraint(error: unknown): boolean {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   );
+}
+
+function findLocation(schoolId: string, locationId: string) {
+  return db.location.findFirst({
+    where: {
+      id: locationId,
+      schoolId,
+      isActive: true,
+      archivedAt: null,
+    },
+    select: { id: true },
+  });
 }
 
 async function writeAudit(

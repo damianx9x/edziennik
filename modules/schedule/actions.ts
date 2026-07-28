@@ -60,7 +60,7 @@ async function assertResources(
         isActive: true,
         archivedAt: null,
       },
-      select: { id: true },
+      select: { id: true, locationId: true },
     }),
     tx.room.findFirst({
       where: {
@@ -69,7 +69,7 @@ async function assertResources(
         isActive: true,
         archivedAt: null,
       },
-      select: { id: true },
+      select: { id: true, locationId: true },
     }),
     tx.user.findFirst({
       where: {
@@ -86,6 +86,11 @@ async function assertResources(
   if (!group || !room || !teacher) {
     throw new Error(
       "Wybrana sala, grupa lub wykładowca nie jest już dostępny. Odśwież stronę.",
+    );
+  }
+  if (group.locationId !== room.locationId) {
+    throw new Error(
+      "Grupa i sala należą do różnych lokalizacji. Wybierz salę z oddziału grupy.",
     );
   }
 }

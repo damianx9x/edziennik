@@ -26,6 +26,7 @@ const fieldLabels: Record<string, string> = {
   externalId: "identyfikator",
   capacity: "liczba miejsc",
   cefrLevel: "poziom CEFR",
+  locationId: "lokalizacja",
   groupAssignment: "przypisanie do grupy",
   studentAssignment: "lista uczniów",
   childLink: "powiązanie z dzieckiem",

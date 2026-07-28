@@ -40,6 +40,8 @@ const headerAliases = {
   capacity: "capacity",
   poziom: "level",
   level: "level",
+  lokalizacja: "locationName",
+  location: "locationName",
   grupa: "groupName",
   group_name: "groupName",
   rodzic_email: "parentEmail",
@@ -80,6 +82,7 @@ export type ImportRow = {
   name?: string;
   capacity?: number;
   level?: (typeof cefrLevels)[number];
+  locationName?: string;
   groupName?: string;
   parentEmail?: string;
   childExternalId?: string;
@@ -211,6 +214,7 @@ export function createImportPreview(table: unknown[][]): ImportPreview {
       "email",
       "phone",
       "name",
+      "locationName",
       "groupName",
       "parentEmail",
       "childExternalId",

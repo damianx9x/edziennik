@@ -103,6 +103,8 @@ dostępu. Domyślne `can(...)` zwraca `false`.
 
 ## Grafik
 
+Każda grupa i sala należą do jednej lokalizacji. Lekcja może użyć wyłącznie
+sali z lokalizacji grupy; ta reguła jest sprawdzana na serwerze i przez solver.
 Konflikt istnieje, gdy nakładają się przedziały i wspólny jest zasób: sala,
 wykładowca, grupa albo uczeń zapisany do więcej niż jednej grupy. UI pokazuje
 błąd szybko, ale autorytatywna kontrola działa w transakcji z blokadą doradczą

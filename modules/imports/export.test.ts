@@ -10,6 +10,7 @@ describe("records export", () => {
         typ: "sala",
         nazwa: 'Cambridge; "parter"',
         pojemnosc: 8,
+        lokalizacja: "Przodkowo",
       },
     ]);
 
@@ -20,8 +21,18 @@ describe("records export", () => {
 
   it("round-trips exported rows through the import parser", async () => {
     const csv = createRecordsCsv([
-      { typ: "sala", nazwa: "Cambridge", pojemnosc: 8 },
-      { typ: "grupa", nazwa: "MONACO", poziom: "A2" },
+      {
+        typ: "sala",
+        nazwa: "Cambridge",
+        pojemnosc: 8,
+        lokalizacja: "Przodkowo",
+      },
+      {
+        typ: "grupa",
+        nazwa: "MONACO",
+        poziom: "A2",
+        lokalizacja: "Przodkowo",
+      },
     ]);
     const preview = await parseImportFile({
       fileName: "kartoteki.csv",
@@ -33,6 +44,10 @@ describe("records export", () => {
       validRows: 2,
       errorRows: 0,
     });
+    expect(preview.rows.map((row) => row.locationName)).toEqual([
+      "Przodkowo",
+      "Przodkowo",
+    ]);
   });
 
   it("keeps the first word as a first name and the remainder as surname", () => {

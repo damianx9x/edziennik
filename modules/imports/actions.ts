@@ -228,6 +228,51 @@ async function applyImportRows(
   actorId: string,
   rows: ImportRow[],
 ) {
+  const requestedLocationNames = [
+    ...new Set(
+      rows
+        .filter((item) => item.entity === "ROOM" || item.entity === "GROUP")
+        .map((item) => item.locationName?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+  for (const name of requestedLocationNames) {
+    await transaction.location.upsert({
+      where: { schoolId_name: { schoolId, name } },
+      update: { isActive: true, archivedAt: null },
+      create: {
+        schoolId,
+        name,
+        isOnline: normalizeLookup(name) === "online",
+      },
+    });
+  }
+  let fallbackLocation = await transaction.location.findFirst({
+    where: { schoolId, isActive: true, archivedAt: null },
+    orderBy: [{ isOnline: "asc" }, { name: "asc" }],
+    select: { id: true, name: true },
+  });
+  if (!fallbackLocation) {
+    fallbackLocation = await transaction.location.create({
+      data: { schoolId, name: "Główna lokalizacja" },
+      select: { id: true, name: true },
+    });
+  }
+  const activeLocations = await transaction.location.findMany({
+    where: { schoolId, isActive: true, archivedAt: null },
+    select: { id: true, name: true },
+  });
+  const locationByName = new Map(
+    activeLocations.map((location) => [
+      normalizeLookup(location.name),
+      location.id,
+    ]),
+  );
+  const locationIdFor = (row: ImportRow) =>
+    (row.locationName
+      ? locationByName.get(normalizeLookup(row.locationName))
+      : undefined) ?? fallbackLocation.id;
+
   for (const row of rows.filter((item) => item.entity === "ROOM")) {
     await transaction.room.upsert({
       where: {
@@ -235,11 +280,13 @@ async function applyImportRows(
       },
       update: {
         capacity: row.capacity,
+        locationId: locationIdFor(row),
         isActive: true,
         archivedAt: null,
       },
       create: {
         schoolId,
+        locationId: locationIdFor(row),
         name: row.name!,
         capacity: row.capacity,
       },
@@ -253,11 +300,13 @@ async function applyImportRows(
       },
       update: {
         cefrLevel: row.level ?? "MIXED",
+        locationId: locationIdFor(row),
         isActive: true,
         archivedAt: null,
       },
       create: {
         schoolId,
+        locationId: locationIdFor(row),
         name: row.name!,
         cefrLevel: row.level ?? "MIXED",
       },

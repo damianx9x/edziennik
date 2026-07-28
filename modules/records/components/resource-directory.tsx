@@ -7,6 +7,7 @@ import {
   GraduationCap,
   GripHorizontal,
   History,
+  MapPin,
   Pencil,
   X,
 } from "lucide-react";
@@ -28,6 +29,8 @@ type GroupRecord = {
   cefrLevel: keyof typeof cefrLabels;
   studentCount: number;
   teacherCount: number;
+  locationId: string;
+  locationName: string;
 };
 
 type RoomRecord = {
@@ -36,6 +39,8 @@ type RoomRecord = {
   name: string;
   capacity: number | null;
   scheduleCount: number;
+  locationId: string;
+  locationName: string;
 };
 
 type ResourceRecord = GroupRecord | RoomRecord;
@@ -43,15 +48,23 @@ type ResourceRecord = GroupRecord | RoomRecord;
 export function ResourceDirectory({
   groups,
   rooms,
+  locations,
   actorRole,
   historyById,
 }: {
   groups: Omit<GroupRecord, "kind">[];
   rooms: Omit<RoomRecord, "kind">[];
+  locations: Array<{
+    id: string;
+    name: string;
+    address: string | null;
+    isOnline: boolean;
+  }>;
   actorRole: "DIRECTOR" | "TEACHER";
   historyById: Record<string, RecordHistoryEntry[]>;
 }) {
   const [selected, setSelected] = useState<ResourceRecord | null>(null);
+  const [locationFilter, setLocationFilter] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
@@ -80,24 +93,69 @@ export function ResourceDirectory({
           <div>
             <span className="section-kicker">Zasoby do grafiku</span>
             <h2 id="resources-title">Grupy i sale</h2>
-            <p>Otwórz kartę, aby zobaczyć dane, edytować i sprawdzić historię.</p>
+            <p>
+              Wybierz oddział albo zobacz wszystkie. W każdej lokalizacji grupy
+              i sale są rozdzielone tak samo.
+            </p>
           </div>
         </div>
-        <div className="resource-directory-grid">
-          <ResourceList
-            id="grupy"
-            icon={<GraduationCap aria-hidden="true" />}
-            title="Grupy"
-            resources={groups.map((group) => ({ ...group, kind: "GROUP" }))}
-            onOpen={openResource}
-          />
-          <ResourceList
-            id="sale"
-            icon={<DoorOpen aria-hidden="true" />}
-            title="Sale"
-            resources={rooms.map((room) => ({ ...room, kind: "ROOM" }))}
-            onOpen={openResource}
-          />
+        <label className="location-view-select" id="lokalizacje">
+          <span><MapPin aria-hidden="true" /> Widok lokalizacji</span>
+          <select
+            value={locationFilter}
+            onChange={(event) => setLocationFilter(event.target.value)}
+          >
+            <option value="">Wszystkie lokalizacje</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="location-container-list">
+          {locations
+            .filter(
+              (location) =>
+                !locationFilter || location.id === locationFilter,
+            )
+            .map((location) => (
+              <section className="location-resource-container" key={location.id}>
+                <header>
+                  <span className="record-icon record-icon-blue">
+                    <MapPin aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h3>{location.name}</h3>
+                    <p>
+                      {location.isOnline
+                        ? "Zajęcia online"
+                        : location.address || "Adres nie został jeszcze podany"}
+                    </p>
+                  </div>
+                </header>
+                <div className="resource-directory-grid">
+                  <ResourceList
+                    id={`grupy-${location.id}`}
+                    icon={<GraduationCap aria-hidden="true" />}
+                    title="Grupy"
+                    resources={groups
+                      .filter((group) => group.locationId === location.id)
+                      .map((group) => ({ ...group, kind: "GROUP" }))}
+                    onOpen={openResource}
+                  />
+                  <ResourceList
+                    id={`sale-${location.id}`}
+                    icon={<DoorOpen aria-hidden="true" />}
+                    title="Sale"
+                    resources={rooms
+                      .filter((room) => room.locationId === location.id)
+                      .map((room) => ({ ...room, kind: "ROOM" }))}
+                    onOpen={openResource}
+                  />
+                </div>
+              </section>
+            ))}
         </div>
       </section>
 
@@ -136,6 +194,9 @@ export function ResourceDirectory({
                     ? `${selected.scheduleCount} zapisanych zajęć`
                     : `${selected.studentCount} uczniów · ${selected.teacherCount} wykładowców`}
                 </p>
+                <small className="resource-location-label">
+                  <MapPin aria-hidden="true" /> {selected.locationName}
+                </small>
               </div>
               <button
                 className="person-dialog-close"
@@ -165,6 +226,20 @@ export function ResourceDirectory({
                   isDirector={actorRole === "DIRECTOR"}
                 >
                   <div className="record-edit-grid">
+                    <label>
+                      <span>Lokalizacja</span>
+                      <select
+                        name="locationId"
+                        defaultValue={selected.locationId}
+                        required
+                      >
+                        {locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <label>
                       <span>Nazwa</span>
                       <input

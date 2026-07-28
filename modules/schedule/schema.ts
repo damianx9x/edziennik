@@ -85,7 +85,7 @@ export const teacherAvailabilitySchema = z.object({
 
 export const scheduleGenerationSchema = z
   .object({
-    scope: z.enum(["SCHOOL", "GROUP", "TEACHER", "ROOM"]),
+    scope: z.enum(["SCHOOL", "LOCATION", "GROUP", "TEACHER", "ROOM"]),
     targetId: z.string().optional(),
     rangeStart: z.string().regex(datePattern, "Wybierz datę początkową."),
     rangeEnd: z.string().regex(datePattern, "Wybierz datę końcową."),
@@ -123,7 +123,7 @@ export const scheduleGenerationSchema = z
       context.addIssue({
         code: "custom",
         path: ["targetId"],
-        message: "Wybierz grupę, wykładowcę albo salę.",
+        message: "Wybierz lokalizację, grupę, wykładowcę albo salę.",
       });
     }
   });

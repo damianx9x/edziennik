@@ -23,6 +23,7 @@ export const cefrLabels: Record<(typeof cefrValues)[number], string> = {
 };
 
 export const createRoomSchema = z.object({
+  locationId: z.uuid("Wybierz lokalizację sali."),
   name: z
     .string()
     .trim()
@@ -43,12 +44,27 @@ export const createRoomSchema = z.object({
 });
 
 export const createGroupSchema = z.object({
+  locationId: z.uuid("Wybierz lokalizację grupy."),
   name: z
     .string()
     .trim()
     .min(2, "Nazwa grupy musi mieć co najmniej 2 znaki.")
     .max(100, "Nazwa grupy może mieć maksymalnie 100 znaków."),
   level: z.enum(cefrValues),
+});
+
+export const createLocationSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Nazwa lokalizacji musi mieć co najmniej 2 znaki.")
+    .max(100, "Nazwa lokalizacji może mieć maksymalnie 100 znaków."),
+  address: z
+    .string()
+    .trim()
+    .max(200, "Adres może mieć maksymalnie 200 znaków.")
+    .transform((value) => value || undefined),
+  isOnline: z.boolean(),
 });
 
 export const archiveRecordSchema = z.object({

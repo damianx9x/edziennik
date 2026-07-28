@@ -43,6 +43,7 @@ import {
 } from "../schema";
 import type {
   ScheduleActionState,
+  ScheduleLocation,
   ScheduleResource,
   ScheduleSlotView,
 } from "../types";
@@ -65,6 +66,7 @@ type Props = {
   canManage: boolean;
   days: ScheduleDay[];
   groups: ScheduleResource[];
+  locations: ScheduleLocation[];
   rooms: ScheduleResource[];
   teachers: ScheduleResource[];
   slots: ScheduleSlotView[];
@@ -95,6 +97,7 @@ export function ScheduleWorkspace({
   canManage,
   days,
   groups,
+  locations,
   rooms,
   teachers,
   slots,
@@ -105,6 +108,7 @@ export function ScheduleWorkspace({
   const [selectedDay, setSelectedDay] = useState(
     days.find((day) => day.isToday)?.key ?? days[0]?.key ?? "",
   );
+  const [locationFilter, setLocationFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
   const [roomFilter, setRoomFilter] = useState("");
   const [teacherFilter, setTeacherFilter] = useState("");
@@ -148,10 +152,11 @@ export function ScheduleWorkspace({
       slots.filter(
         (slot) =>
           (!groupFilter || slot.groupId === groupFilter) &&
+          (!locationFilter || slot.locationId === locationFilter) &&
           (!roomFilter || slot.roomId === roomFilter) &&
           (!teacherFilter || slot.teacherId === teacherFilter),
       ),
-    [groupFilter, roomFilter, slots, teacherFilter],
+    [groupFilter, locationFilter, roomFilter, slots, teacherFilter],
   );
 
   function handleDragEnd(event: DragEndEvent) {
@@ -177,6 +182,14 @@ export function ScheduleWorkspace({
   const activeDay = days.find((day) => day.key === selectedDay) ?? days[0];
   const hasResources = groups.length > 0 && rooms.length > 0 && teachers.length > 0;
   const selectedGroup = groups.find((group) => group.id === newGroupId);
+  const groupsInLocation = groups.filter(
+    (group) => !locationFilter || group.locationId === locationFilter,
+  );
+  const roomsInSelectedLocation = rooms.filter(
+    (room) =>
+      !selectedGroup?.locationId ||
+      room.locationId === selectedGroup.locationId,
+  );
   const [newHour, newMinute] = newStartTime.split(":").map(Number);
   const newStartMinute = newHour * 60 + newMinute;
   const newEndMinute = newStartMinute + newDuration;
@@ -299,9 +312,10 @@ export function ScheduleWorkspace({
                     <option value="" disabled>
                       Wybierz grupę
                     </option>
-                    {groups.map((group) => (
+                    {groupsInLocation.map((group) => (
                       <option key={group.id} value={group.id}>
-                        {group.name} · {group.studentIds?.length ?? 0} uczniów
+                        {group.name} · {group.locationName} ·{" "}
+                        {group.studentIds?.length ?? 0} uczniów
                       </option>
                     ))}
                   </select>
@@ -394,7 +408,7 @@ export function ScheduleWorkspace({
                     <option value="" disabled>
                       {newGroupId ? "Wybierz salę" : "Najpierw wybierz grupę"}
                     </option>
-                    {rooms.map((room) => {
+                    {roomsInSelectedLocation.map((room) => {
                       const busyReason = busyRooms.get(room.id);
                       const tooSmall =
                         room.capacity !== null &&
@@ -460,6 +474,45 @@ export function ScheduleWorkspace({
       </section>
 
       <section className="schedule-filters" aria-label="Filtry grafiku">
+        <label className="schedule-location-filter">
+          Lokalizacja
+          <select
+            value={locationFilter}
+            onChange={(event) => {
+              const value = event.target.value;
+              setLocationFilter(value);
+              if (
+                value &&
+                groups.find((group) => group.id === groupFilter)?.locationId !==
+                  value
+              ) {
+                setGroupFilter("");
+              }
+              if (
+                value &&
+                rooms.find((room) => room.id === roomFilter)?.locationId !==
+                  value
+              ) {
+                setRoomFilter("");
+              }
+              if (
+                value &&
+                groups.find((group) => group.id === newGroupId)?.locationId !==
+                  value
+              ) {
+                setNewGroupId("");
+                setNewRoomId("");
+              }
+            }}
+          >
+            <option value="">Wszystkie lokalizacje</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           Grupa
           <select
@@ -467,7 +520,7 @@ export function ScheduleWorkspace({
             onChange={(event) => setGroupFilter(event.target.value)}
           >
             <option value="">Wszystkie grupy</option>
-            {groups.map((group) => (
+            {groupsInLocation.map((group) => (
               <option key={group.id} value={group.id}>
                 {group.name}
               </option>
@@ -495,11 +548,15 @@ export function ScheduleWorkspace({
             onChange={(event) => setRoomFilter(event.target.value)}
           >
             <option value="">Wszystkie sale</option>
-            {rooms.map((room) => (
+            {rooms
+              .filter(
+                (room) => !locationFilter || room.locationId === locationFilter,
+              )
+              .map((room) => (
               <option key={room.id} value={room.id}>
                 {room.name}
               </option>
-            ))}
+              ))}
           </select>
         </label>
         <button
@@ -507,6 +564,7 @@ export function ScheduleWorkspace({
           type="button"
           onClick={() => {
             setGroupFilter("");
+            setLocationFilter("");
             setRoomFilter("");
             setTeacherFilter("");
           }}
@@ -742,7 +800,7 @@ function LessonCard({
           </span>
           <strong>{slot.groupName}</strong>
           <small>
-            <MapPin aria-hidden="true" /> {slot.roomName}
+            <MapPin aria-hidden="true" /> {slot.locationName} · {slot.roomName}
           </small>
           <small>
             <Users aria-hidden="true" /> {slot.teacherName}

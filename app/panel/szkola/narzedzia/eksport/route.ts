@@ -15,12 +15,20 @@ export async function GET() {
     db.room.findMany({
       where: { schoolId, archivedAt: null },
       orderBy: { name: "asc" },
-      select: { name: true, capacity: true },
+      select: {
+        name: true,
+        capacity: true,
+        location: { select: { name: true } },
+      },
     }),
     db.courseGroup.findMany({
       where: { schoolId, archivedAt: null },
       orderBy: { name: "asc" },
-      select: { name: true, cefrLevel: true },
+      select: {
+        name: true,
+        cefrLevel: true,
+        location: { select: { name: true } },
+      },
     }),
     db.user.findMany({
       where: {
@@ -57,11 +65,13 @@ export async function GET() {
       typ: "sala",
       nazwa: room.name,
       pojemnosc: room.capacity,
+      lokalizacja: room.location.name,
     })),
     ...groups.map((group) => ({
       typ: "grupa",
       nazwa: group.name,
       poziom: group.cefrLevel,
+      lokalizacja: group.location.name,
     })),
     ...people.map((person) => {
       const { firstName, lastName } = splitPersonName(person.name);

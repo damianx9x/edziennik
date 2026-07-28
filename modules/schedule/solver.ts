@@ -10,12 +10,14 @@ export type SolverResource = {
 
 export type SolverRoom = SolverResource & {
   capacity: number | null;
+  locationId: string;
 };
 
 export type SolverRequirement = {
   id: string;
   groupId: string;
   groupName: string;
+  locationId: string;
   studentIds: string[];
   teacherId: string | null;
   preferredRoomId: string | null;
@@ -211,11 +213,13 @@ function buildCandidates(input: {
     return [];
   }
   const candidates: Candidate[] = [];
-  const orderedRooms = [...rooms].sort((first, second) => {
+  const orderedRooms = rooms
+    .filter((room) => room.locationId === requirement.locationId)
+    .sort((first, second) => {
     if (first.id === requirement.preferredRoomId) return -1;
     if (second.id === requirement.preferredRoomId) return 1;
     return first.name.localeCompare(second.name, "pl");
-  });
+    });
 
   for (const weekday of requirement.allowedWeekdays) {
     if (weekday < 1 || weekday > 7) continue;

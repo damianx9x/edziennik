@@ -126,6 +126,35 @@ try {
     ],
   );
   const schoolId = schoolResult.rows[0].id;
+  const locationNames = [
+    "Przodkowo",
+    "Czeczewo",
+    "Wilanowo",
+    "Gdańsk Nowatorów",
+    "Gdańsk Morena",
+    "Gdańsk Niedźwiednik",
+    "Gdynia Pogórze",
+    "Online",
+  ];
+  const locationIds = new Map();
+  for (const name of locationNames) {
+    const locationResult = await client.query(
+      `INSERT INTO "Location" (
+         "id", "schoolId", "name", "isOnline", "isActive",
+         "createdAt", "updatedAt"
+       )
+       VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+       ON CONFLICT ("schoolId", "name")
+       DO UPDATE SET
+         "isOnline" = EXCLUDED."isOnline",
+         "isActive" = true,
+         "archivedAt" = NULL,
+         "updatedAt" = NOW()
+       RETURNING "id"`,
+      [randomUUID(), schoolId, name, name === "Online"],
+    );
+    locationIds.set(name, locationResult.rows[0].id);
+  }
 
   const directorId = await ensureCredentialUser({
     schoolId,
@@ -154,28 +183,30 @@ try {
     withProfile: "student",
   });
 
-  const roomIds = [];
-  for (const [name, capacity] of [
-    ["Cambridge", 8],
-    ["Oxford", 8],
-    ["Online", 8],
+  const rooms = [];
+  for (const [name, capacity, locationName] of [
+    ["Cambridge", 8, "Przodkowo"],
+    ["Oxford", 8, "Gdańsk Morena"],
+    ["Online", 8, "Online"],
   ]) {
+    const locationId = locationIds.get(locationName);
     const roomResult = await client.query(
       `INSERT INTO "Room" (
-         "id", "schoolId", "name", "capacity", "isActive",
+         "id", "schoolId", "locationId", "name", "capacity", "isActive",
          "createdAt", "updatedAt"
        )
-       VALUES ($1, $2, $3, $4, true, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
        ON CONFLICT ("schoolId", "name")
        DO UPDATE SET
+         "locationId" = EXCLUDED."locationId",
          "capacity" = EXCLUDED."capacity",
          "isActive" = true,
          "archivedAt" = NULL,
          "updatedAt" = NOW()
        RETURNING "id"`,
-      [randomUUID(), schoolId, name, capacity],
+      [randomUUID(), schoolId, locationId, name, capacity],
     );
-    roomIds.push(roomResult.rows[0].id);
+    rooms.push({ id: roomResult.rows[0].id, locationId });
   }
 
   let firstGroupId;
@@ -186,17 +217,23 @@ try {
     const groupName = `KLA ${city} ${classLabel} 2025/26`;
     const groupResult = await client.query(
       `INSERT INTO "CourseGroup" (
-         "id", "schoolId", "name", "cefrLevel", "isActive",
+         "id", "schoolId", "locationId", "name", "cefrLevel", "isActive",
          "createdAt", "updatedAt"
        )
-       VALUES ($1, $2, $3, 'MIXED', true, NOW(), NOW())
+       VALUES ($1, $2, $3, $4, 'MIXED', true, NOW(), NOW())
        ON CONFLICT ("schoolId", "name")
        DO UPDATE SET
+         "locationId" = EXCLUDED."locationId",
          "isActive" = true,
          "archivedAt" = NULL,
          "updatedAt" = NOW()
        RETURNING "id"`,
-      [randomUUID(), schoolId, groupName],
+      [
+        randomUUID(),
+        schoolId,
+        rooms[groupIds.length % rooms.length].locationId,
+        groupName,
+      ],
     );
     const groupId = groupResult.rows[0].id;
     firstGroupId ??= groupId;
@@ -248,7 +285,7 @@ try {
   }
 
   for (const [index, groupId] of groupIds.entries()) {
-    const preferredRoomId = roomIds[index % roomIds.length];
+    const preferredRoomId = rooms[index % rooms.length].id;
     await client.query(
       `INSERT INTO "GroupTeacher" (
          "groupId", "teacherId", "isPrimary", "assignedAt"

@@ -64,4 +64,22 @@ describe("schedule interval", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("requires a concrete location when generating one branch", () => {
+    expect(
+      scheduleGenerationSchema.safeParse({
+        scope: "LOCATION",
+        targetId: "57c9a10e-73af-4edc-bc1f-17706a3ee0b9",
+        rangeStart: "2026-07-27",
+        rangeEnd: "2026-08-01",
+      }).success,
+    ).toBe(true);
+    expect(
+      scheduleGenerationSchema.safeParse({
+        scope: "LOCATION",
+        rangeStart: "2026-07-27",
+        rangeEnd: "2026-08-01",
+      }).success,
+    ).toBe(false);
+  });
 });
