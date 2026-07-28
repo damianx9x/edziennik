@@ -8824,8 +8824,8 @@ body:has(.content-editor-shell) .feedback-trigger {
 
 @media (max-width: 560px) {
   .app-panel-notifications {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
   }
 
   .record-history-list li {
