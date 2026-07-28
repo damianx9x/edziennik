@@ -7,14 +7,17 @@ state_dir="$project_dir/.data/mac-test-host"
 runtime_dir="$state_dir/runtime"
 logs_dir="$state_dir/logs"
 build_log="$logs_dir/build.log"
-app_log="$logs_dir/app.log"
+service_log="$logs_dir/service.log"
+service_error_log="$logs_dir/service-error.log"
 public_url_file="$state_dir/public-url.txt"
 handoff_file="$state_dir/PRZEKAZ_KLIENTCE.txt"
-app_pid_file="$state_dir/app.pid"
-caffeinate_pid_file="$state_dir/caffeinate.pid"
 commit_file="$state_dir/commit.txt"
+server_dir_file="$state_dir/server-dir.txt"
 app_port="${KLA_MAC_TEST_PORT:-3100}"
 public_url="${KLA_MAC_TEST_PUBLIC_URL:-https://demo.kingslanguageacademy.pl}"
+app_label="pl.kingslanguageacademy.edziennik-demo"
+launch_agent_file="$HOME/Library/LaunchAgents/${app_label}.plist"
+launch_domain="gui/$(id -u)/${app_label}"
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
   echo "Ten instalator jest przygotowany dla Maca Apple Silicon."
@@ -40,16 +43,6 @@ fi
 hosted_commit="$(git -C "$project_dir" rev-parse --verify HEAD)"
 hosted_commit_short="$(git -C "$project_dir" rev-parse --short=12 HEAD)"
 
-for pid_file in "$app_pid_file"; do
-  if [[ -f "$pid_file" ]]; then
-    old_pid="$(tr -cd '0-9' <"$pid_file")"
-    if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
-      echo "Środowisko testowe już działa. Użyj: npm run host:mac:status"
-      exit 1
-    fi
-  fi
-done
-
 node --env-file="$project_dir/.env" \
   "$project_dir/scripts/apply-director-mfa-policy.mjs"
 
@@ -62,19 +55,6 @@ if ! launchctl print "gui/$(id -u)/com.cloudflare.cloudflared" 2>/dev/null \
   echo "Uruchom usługę kla-demo i spróbuj ponownie."
   exit 1
 fi
-
-cleanup_host() {
-  for pid_file in "$app_pid_file" "$caffeinate_pid_file"; do
-    if [[ -f "$pid_file" ]]; then
-      cleanup_pid="$(tr -cd '0-9' <"$pid_file")"
-      if [[ -n "$cleanup_pid" ]] && kill -0 "$cleanup_pid" 2>/dev/null; then
-        kill "$cleanup_pid" 2>/dev/null || true
-      fi
-      rm -f -- "$pid_file"
-    fi
-  done
-}
-trap cleanup_host EXIT INT TERM
 
 if [[ ! "$public_url" =~ ^https://demo\.kingslanguageacademy\.pl$ ]]; then
   echo "Nieprawidłowy stały adres testowy: $public_url"
@@ -166,16 +146,81 @@ rm -rf -- "$standalone_dir/.next/static" "$standalone_dir/public"
 cp -R "$runtime_dir/.next/static" "$standalone_dir/.next/static"
 cp -R "$runtime_dir/public" "$standalone_dir/public"
 
-: >"$app_log"
-(
-  cd "$standalone_dir"
-  exec env \
-    HOSTNAME=127.0.0.1 \
-    PORT="$app_port" \
-    node server.js
-) >"$app_log" 2>&1 &
-app_pid=$!
-printf '%s\n' "$app_pid" >"$app_pid_file"
+printf '%s\n' "$standalone_dir" >"$server_dir_file"
+chmod 600 "$server_dir_file"
+
+node_path="$(command -v node)"
+mkdir -p "$HOME/Library/LaunchAgents"
+node --input-type=module - \
+  "$launch_agent_file" \
+  "$app_label" \
+  "$project_dir/scripts/mac-test-host-app-service.sh" \
+  "$project_dir" \
+  "$node_path" \
+  "$app_port" \
+  "$service_log" \
+  "$service_error_log" <<'NODE'
+import { chmodSync, writeFileSync } from "node:fs";
+
+const [
+  ,
+  ,
+  targetPath,
+  label,
+  serviceScript,
+  projectDir,
+  nodePath,
+  port,
+  stdoutPath,
+  stderrPath,
+] = process.argv;
+const xml = (value) =>
+  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+const contents = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${xml(label)}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>${xml(serviceScript)}</string>
+    <string>${xml(projectDir)}</string>
+    <string>${xml(nodePath)}</string>
+    <string>${xml(port)}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOSTNAME</key>
+    <string>127.0.0.1</string>
+    <key>PORT</key>
+    <string>${xml(port)}</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>${xml(stdoutPath)}</string>
+  <key>StandardErrorPath</key>
+  <string>${xml(stderrPath)}</string>
+</dict>
+</plist>
+`;
+
+writeFileSync(targetPath, contents, { mode: 0o600 });
+chmodSync(targetPath, 0o600);
+NODE
+
+launchctl bootout "$launch_domain" >/dev/null 2>&1 || true
+launchctl bootstrap "gui/$(id -u)" "$launch_agent_file"
+launchctl kickstart -k "$launch_domain"
 
 for attempt in {1..45}; do
   if curl --fail --silent --show-error --max-time 5 \
@@ -183,9 +228,10 @@ for attempt in {1..45}; do
     >/dev/null 2>&1; then
     break
   fi
-  if ! kill -0 "$app_pid" 2>/dev/null; then
+  if ! launchctl print "$launch_domain" 2>/dev/null \
+    | grep -q 'state = running'; then
     echo "Aplikacja zakończyła się podczas uruchamiania. Log:"
-    tail -100 "$app_log"
+    tail -100 "$service_error_log" "$service_log" 2>/dev/null || true
     exit 1
   fi
   if [[ "$attempt" -eq 45 ]]; then
@@ -199,7 +245,8 @@ done
 public_status=""
 for attempt in {1..30}; do
   public_status="$(
-    curl --silent \
+    curl --insecure \
+      --silent \
       --output /dev/null \
       --write-out '%{http_code}' \
       --max-time 10 \
@@ -210,15 +257,20 @@ for attempt in {1..30}; do
     break
   fi
   if [[ "$attempt" -eq 30 ]]; then
-    echo "Publiczny adres nie zwrócił HTTP 200. Ostatni kod: ${public_status:-brak}"
+    echo "Tunel nie przekazał żądania do aplikacji. Ostatni kod: ${public_status:-brak}"
     exit 1
   fi
   sleep 1
 done
 
-caffeinate -i -s -w "$app_pid" >/dev/null 2>&1 &
-caffeinate_pid=$!
-printf '%s\n' "$caffeinate_pid" >"$caffeinate_pid_file"
+tls_status="$(
+  curl --silent \
+    --output /dev/null \
+    --write-out '%{http_code}' \
+    --max-time 10 \
+    "$public_url/panel/logowanie" \
+    || true
+)"
 
 node --env-file="$project_dir/.env" --input-type=module - \
   "$handoff_file" \
@@ -257,22 +309,15 @@ chmodSync(targetPath, 0o600);
 NODE
 
 echo
-echo "Tymczasowy host działa:"
+echo "Tymczasowy host i tunel działają:"
 echo "${public_url}/panel/logowanie"
+if [[ "$tls_status" != "200" ]]; then
+  echo
+  echo "Cloudflare przygotowuje jeszcze certyfikat HTTPS dla nowej subdomeny."
+  echo "Aplikacja pozostaje uruchomiona. Sprawdź później: npm run host:mac:status"
+fi
 echo
 echo "Dane do przekazania: $handoff_file"
 echo "Status: npm run host:mac:status"
 echo "Zatrzymanie: npm run host:mac:stop"
-echo "Stały tunel Cloudflare działa niezależnie od aplikacji."
-echo "Proces nadzorujący aplikację pozostaje aktywny do zatrzymania hosta."
-
-host_exit_status=0
-while kill -0 "$app_pid" 2>/dev/null; do
-  sleep 5
-done
-if ! kill -0 "$app_pid" 2>/dev/null; then
-  host_exit_status=1
-fi
-
-echo "Aplikacja zakończyła działanie. Zamykam środowisko testowe."
-exit "$host_exit_status"
+echo "macOS pilnuje aplikacji i tunelu oraz uruchomi je ponownie po awarii."

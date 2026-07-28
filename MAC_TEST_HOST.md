@@ -40,9 +40,15 @@ Skrypt:
 5. usuwa z jej środowiska hasło właściciela i hasło danych demo,
 6. buduje aplikację z publicznym adresem logowania,
 7. uruchamia produkcyjny serwer Next.js,
-8. sprawdza odpowiedź lokalną i publiczną,
-9. zapobiega uśpieniu Maca podczas działania aplikacji,
-10. tworzy prywatny plik z adresem i kontami testowymi.
+8. sprawdza odpowiedź lokalną i trasę tunelu,
+9. instaluje aplikację jako usługę użytkownika macOS,
+10. automatycznie uruchamia ją ponownie po awarii lub ponownym logowaniu,
+11. zapobiega uśpieniu Maca podczas działania aplikacji,
+12. tworzy prywatny plik z adresem i kontami testowymi.
+
+Przy pierwszym dodaniu subdomeny Cloudflare może jeszcze przygotowywać jej
+certyfikat HTTPS. Skrypt nie wyłącza wtedy aplikacji. `npm run host:mac:status`
+osobno pokazuje stan trasy tunelu i gotowość poprawnego HTTPS.
 
 Plik przekazania i polecenie statusu pokazują skrót commita udostępnionego
 klientce.
@@ -65,11 +71,12 @@ nie jest przekazywane klientce.
 - Mac musi pozostać włączony,
 - zasilacz powinien być podłączony,
 - internet Play musi działać,
-- nie wyłączaj procesu Terminal/Codex odpowiedzialnego za test,
-- nie restartuj Maca,
+- użytkownik macOS musi pozostać zalogowany,
 - nie uruchamiaj testów na prawdziwych danych dzieci.
 
-Ekran może się wygasić. Skrypt blokuje tylko uśpienie systemu.
+Terminal ani Codex nie muszą pozostać otwarte. Ekran może się wygasić. Usługa
+blokuje uśpienie systemu i automatycznie wstaje po awarii. Po restarcie Maca
+aplikacja oraz tunel uruchomią się po zalogowaniu użytkownika.
 
 ## Status i logi
 
@@ -79,7 +86,8 @@ npm run host:mac:status
 
 Logi:
 
-- `.data/mac-test-host/logs/app.log`,
+- `.data/mac-test-host/logs/service.log`,
+- `.data/mac-test-host/logs/service-error.log`,
 - `~/Library/Logs/com.cloudflare.cloudflared.out.log`,
 - `.data/mac-test-host/logs/build.log`.
 
