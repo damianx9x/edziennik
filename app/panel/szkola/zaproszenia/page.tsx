@@ -12,7 +12,7 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { InvitationManager } from "@/modules/identity/components/invitation-manager";
-import { revokeInvitationAction } from "@/modules/identity/invitations/actions";
+import { RevokeInvitationForm } from "@/modules/identity/components/revoke-invitation-form";
 import {
   getInvitationAvailability,
   invitationRoleLabels,
@@ -120,20 +120,10 @@ export default async function InvitationsPage() {
                       expiresAt={invitation.expiresAt}
                     />
                     {availability === "ready" ? (
-                      <form action={revokeInvitationAction}>
-                        <input
-                          type="hidden"
-                          name="invitationId"
-                          value={invitation.id}
-                        />
-                        <button
-                          className="invitation-revoke"
-                          type="submit"
-                          aria-label={`Cofnij zaproszenie: ${displayName}`}
-                        >
-                          <Ban aria-hidden="true" /> Cofnij
-                        </button>
-                      </form>
+                      <RevokeInvitationForm
+                        invitationId={invitation.id}
+                        displayName={displayName}
+                      />
                     ) : (
                       <span />
                     )}

@@ -1,6 +1,7 @@
 import { addDays, addMinutes, differenceInMinutes, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
+import { evaluateConfiguredAvailability } from "./hard-constraints";
 import { GRID_STEP_MINUTES, SCHOOL_TIME_ZONE } from "./schema";
 
 export type SolverResource = {
@@ -137,35 +138,15 @@ function fitsAvailability(
 ) {
   const relevant = windows.filter(
     (window) =>
-      window.weekday === weekday &&
       ((resource.teacherId && window.teacherId === resource.teacherId) ||
         (resource.roomId && window.roomId === resource.roomId) ||
         (resource.groupId && window.groupId === resource.groupId)),
   );
-  const blocked = relevant.some(
-    (window) =>
-      !window.isAvailable &&
-      window.startMinute < endMinute &&
-      window.endMinute > startMinute,
-  );
-  if (blocked) {
-    return { allowed: false, preference: 0 };
-  }
-  const available = relevant.filter((window) => window.isAvailable);
-  if (available.length === 0) {
-    return { allowed: true, preference: 0 };
-  }
-  const containing = available.filter(
-    (window) =>
-      window.startMinute <= startMinute && window.endMinute >= endMinute,
-  );
-  return {
-    allowed: containing.length > 0,
-    preference: containing.reduce(
-      (total, window) => total + window.preference,
-      0,
-    ),
-  };
+  return evaluateConfiguredAvailability(relevant, {
+    weekday,
+    startMinute,
+    endMinute,
+  });
 }
 
 function dynamicScore(candidate: Candidate, chosen: SolverProposal[]) {

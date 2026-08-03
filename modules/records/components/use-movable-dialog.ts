@@ -2,6 +2,38 @@
 
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 
+type DialogPositionInput = {
+  startLeft: number;
+  startTop: number;
+  deltaX: number;
+  deltaY: number;
+  dialogWidth: number;
+  dialogHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  padding?: number;
+};
+
+export function constrainDialogPosition({
+  startLeft,
+  startTop,
+  deltaX,
+  deltaY,
+  dialogWidth,
+  dialogHeight,
+  viewportWidth,
+  viewportHeight,
+  padding = 8,
+}: DialogPositionInput) {
+  const maxLeft = Math.max(padding, viewportWidth - dialogWidth - padding);
+  const maxTop = Math.max(padding, viewportHeight - dialogHeight - padding);
+
+  return {
+    left: Math.min(Math.max(padding, startLeft + deltaX), maxLeft),
+    top: Math.min(Math.max(padding, startTop + deltaY), maxTop),
+  };
+}
+
 export function useMovableDialog(dialogRef: RefObject<HTMLDialogElement | null>) {
   function startDrag(event: ReactPointerEvent<HTMLElement>) {
     if (!window.matchMedia("(min-width: 761px)").matches) return;
@@ -14,29 +46,40 @@ export function useMovableDialog(dialogRef: RefObject<HTMLDialogElement | null>)
     const startY = event.clientY;
     const startLeft = rect.left;
     const startTop = rect.top;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const dragHandle = event.currentTarget;
+    const pointerId = event.pointerId;
+    dragHandle.setPointerCapture(pointerId);
     dialog.style.margin = "0";
     dialog.style.left = `${startLeft}px`;
     dialog.style.top = `${startTop}px`;
 
     function move(pointerEvent: PointerEvent) {
-      const nextLeft = Math.min(
-        Math.max(8, startLeft + pointerEvent.clientX - startX),
-        Math.max(8, window.innerWidth - dialog!.offsetWidth - 8),
-      );
-      const nextTop = Math.min(
-        Math.max(8, startTop + pointerEvent.clientY - startY),
-        Math.max(8, window.innerHeight - 72),
-      );
-      dialog!.style.left = `${nextLeft}px`;
-      dialog!.style.top = `${nextTop}px`;
+      const position = constrainDialogPosition({
+        startLeft,
+        startTop,
+        deltaX: pointerEvent.clientX - startX,
+        deltaY: pointerEvent.clientY - startY,
+        dialogWidth: dialog!.offsetWidth,
+        dialogHeight: dialog!.offsetHeight,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      });
+      dialog!.style.left = `${position.left}px`;
+      dialog!.style.top = `${position.top}px`;
     }
+
     function stop() {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      if (dragHandle.hasPointerCapture(pointerId)) {
+        dragHandle.releasePointerCapture(pointerId);
+      }
     }
+
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop, { once: true });
+    window.addEventListener("pointercancel", stop, { once: true });
   }
 
   function resetDialogPosition() {

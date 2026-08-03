@@ -492,6 +492,7 @@ export default async function SchedulePage({
           locations={locations}
           rooms={rooms}
           teachers={teachers}
+          availability={availability}
           slots={slots}
           previousWeek={format(addWeeks(weekStart, -1), "yyyy-MM-dd")}
           nextWeek={format(addWeeks(weekStart, 1), "yyyy-MM-dd")}

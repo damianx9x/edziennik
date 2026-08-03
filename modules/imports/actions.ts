@@ -8,6 +8,10 @@ import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { createRecordOnlyEmail } from "@/modules/people/record-email";
+import {
+  discardReadyScheduleGenerations,
+  lockScheduleResources,
+} from "@/modules/schedule/resource-lock";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -180,6 +184,7 @@ export async function commitImportAction(
 
   try {
     await db.$transaction(async (transaction) => {
+      await lockScheduleResources(transaction, session.user.schoolId);
       await applyImportRows(
         transaction,
         session.user.schoolId,
@@ -190,6 +195,11 @@ export async function commitImportAction(
         where: { id: batch.id },
         data: { status: "COMMITTED", committedAt: new Date() },
       });
+      const discardedGenerationCount =
+        await discardReadyScheduleGenerations(
+          transaction,
+          session.user.schoolId,
+        );
       await transaction.auditLog.create({
         data: {
           schoolId: session.user.schoolId,
@@ -200,6 +210,7 @@ export async function commitImportAction(
           metadata: {
             totalRows: preview.totalRows,
             entityCounts: countEntities(preview.rows),
+            discardedGenerationCount,
           },
         },
       });

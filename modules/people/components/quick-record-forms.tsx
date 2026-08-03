@@ -9,7 +9,7 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import {
   createGroupAction,
@@ -51,23 +51,124 @@ export function QuickRecordForms({
     createLocationAction,
     initialRecordActionState,
   );
+  const roomFormRef = useRef<HTMLFormElement>(null);
+  const roomDetailsRef = useRef<HTMLDetailsElement>(null);
+  const groupFormRef = useRef<HTMLFormElement>(null);
+  const groupDetailsRef = useRef<HTMLDetailsElement>(null);
+  const personFormRef = useRef<HTMLFormElement>(null);
+  const personDetailsRef = useRef<HTMLDetailsElement>(null);
+  const locationFormRef = useRef<HTMLFormElement>(null);
+  const locationDetailsRef = useRef<HTMLDetailsElement>(null);
+  const successRegionRef = useRef<HTMLParagraphElement>(null);
+  const successMessageRef = useRef<HTMLSpanElement>(null);
+
+  function hidePreviousSuccess(event: React.SyntheticEvent<HTMLDetailsElement>) {
+    if (event.currentTarget.open && successRegionRef.current) {
+      successRegionRef.current.hidden = true;
+    }
+  }
+
+  useEffect(() => {
+    if (roomState.status === "success") {
+      roomFormRef.current?.reset();
+      if (roomDetailsRef.current) {
+        roomDetailsRef.current.open = false;
+        roomDetailsRef.current.querySelector("summary")?.focus();
+      }
+      if (successMessageRef.current) {
+        successMessageRef.current.textContent = `${
+          roomState.message ?? "Sala została dodana."
+        } Formularz został wyczyszczony.`;
+      }
+      if (successRegionRef.current) successRegionRef.current.hidden = false;
+    } else if (roomState.status === "error") {
+      if (successRegionRef.current) successRegionRef.current.hidden = true;
+    }
+  }, [roomState]);
+
+  useEffect(() => {
+    if (groupState.status === "success") {
+      groupFormRef.current?.reset();
+      if (groupDetailsRef.current) {
+        groupDetailsRef.current.open = false;
+        groupDetailsRef.current.querySelector("summary")?.focus();
+      }
+      if (successMessageRef.current) {
+        successMessageRef.current.textContent = `${
+          groupState.message ?? "Grupa została dodana."
+        } Formularz został wyczyszczony.`;
+      }
+      if (successRegionRef.current) successRegionRef.current.hidden = false;
+    } else if (groupState.status === "error") {
+      if (successRegionRef.current) successRegionRef.current.hidden = true;
+    }
+  }, [groupState]);
+
+  useEffect(() => {
+    if (personState.status === "success") {
+      personFormRef.current?.reset();
+      if (personDetailsRef.current) {
+        personDetailsRef.current.open = false;
+        personDetailsRef.current.querySelector("summary")?.focus();
+      }
+      if (successMessageRef.current) {
+        successMessageRef.current.textContent = `${
+          personState.message ?? "Osoba została dodana."
+        } Formularz został wyczyszczony.`;
+      }
+      if (successRegionRef.current) successRegionRef.current.hidden = false;
+    } else if (personState.status === "error") {
+      if (successRegionRef.current) successRegionRef.current.hidden = true;
+    }
+  }, [personState]);
+
+  useEffect(() => {
+    if (locationState.status === "success") {
+      locationFormRef.current?.reset();
+      if (locationDetailsRef.current) {
+        locationDetailsRef.current.open = false;
+        locationDetailsRef.current.querySelector("summary")?.focus();
+      }
+      if (successMessageRef.current) {
+        successMessageRef.current.textContent = `${
+          locationState.message ?? "Lokalizacja została dodana."
+        } Formularz został wyczyszczony.`;
+      }
+      if (successRegionRef.current) successRegionRef.current.hidden = false;
+    } else if (locationState.status === "error") {
+      if (successRegionRef.current) successRegionRef.current.hidden = true;
+    }
+  }, [locationState]);
 
   return (
-    <details className="records-create-panel" id="dodaj">
-      <summary>
+    <div className="records-create-panel records-create-panel-static">
+      <div className="records-create-panel-heading">
         <span className="record-icon record-icon-yellow">
           <Plus aria-hidden="true" />
         </span>
         <div>
           <span className="section-kicker">Pojedyncze pozycje</span>
           <strong>Dodaj nową kartotekę</strong>
-          <small>Osoba, lokalizacja, grupa albo sala — bez używania arkusza</small>
+          <small>Wybierz osobę, lokalizację, grupę albo salę</small>
         </div>
-      </summary>
+      </div>
 
       <div className="records-create-panel-body">
+        <p
+          ref={successRegionRef}
+          className="form-status success quick-record-success"
+          role="status"
+          hidden
+        >
+          <CheckCircle2 aria-hidden="true" />
+          <span ref={successMessageRef} />
+        </p>
         <div className="quick-record-grid">
-          <details className="quick-record-card">
+          <details
+            ref={roomDetailsRef}
+            className="quick-record-card"
+            onToggle={hidePreviousSuccess}
+          >
           <summary>
             <span className="record-icon record-icon-yellow">
               <DoorOpen aria-hidden="true" />
@@ -77,7 +178,7 @@ export function QuickRecordForms({
               <small>Nazwa i opcjonalna liczba miejsc</small>
             </span>
           </summary>
-          <form action={roomAction}>
+          <form ref={roomFormRef} action={roomAction}>
             <LocationSelect locations={locations} />
             <label>
               Nazwa sali
@@ -102,7 +203,11 @@ export function QuickRecordForms({
           </form>
           </details>
 
-          <details className="quick-record-card">
+          <details
+            ref={groupDetailsRef}
+            className="quick-record-card"
+            onToggle={hidePreviousSuccess}
+          >
           <summary>
             <span className="record-icon record-icon-blue">
               <GraduationCap aria-hidden="true" />
@@ -112,7 +217,7 @@ export function QuickRecordForms({
               <small>Nazwa i orientacyjny poziom</small>
             </span>
           </summary>
-          <form action={groupAction}>
+          <form ref={groupFormRef} action={groupAction}>
             <LocationSelect locations={locations} />
             <label>
               Nazwa grupy
@@ -136,7 +241,11 @@ export function QuickRecordForms({
           </form>
           </details>
 
-          <details className="quick-record-card">
+          <details
+            ref={locationDetailsRef}
+            className="quick-record-card"
+            onToggle={hidePreviousSuccess}
+          >
           <summary>
             <span className="record-icon record-icon-blue">
               <MapPin aria-hidden="true" />
@@ -146,7 +255,7 @@ export function QuickRecordForms({
               <small>Oddział stacjonarny albo zajęcia online</small>
             </span>
           </summary>
-          <form action={locationAction}>
+          <form ref={locationFormRef} action={locationAction}>
             <label>
               Nazwa lokalizacji
               <input
@@ -176,7 +285,11 @@ export function QuickRecordForms({
           </form>
           </details>
 
-          <details className="quick-record-card">
+          <details
+            ref={personDetailsRef}
+            className="quick-record-card"
+            onToggle={hidePreviousSuccess}
+          >
           <summary>
             <span className="record-icon record-icon-red">
               <Users aria-hidden="true" />
@@ -186,7 +299,7 @@ export function QuickRecordForms({
               <small>Wykładowca, rodzic albo uczeń</small>
             </span>
           </summary>
-          <form action={personAction}>
+          <form ref={personFormRef} action={personAction}>
             <label>
               Rola
               <select name="role" defaultValue="STUDENT">
@@ -239,7 +352,7 @@ export function QuickRecordForms({
           </details>
         </div>
       </div>
-    </details>
+    </div>
   );
 }
 
@@ -282,14 +395,11 @@ function RecordSubmit({
           label
         )}
       </button>
-      {state.message ? (
+      {state.status === "error" && state.message ? (
         <p
-          className={`form-status ${state.status === "success" ? "success" : "error"}`}
-          role="status"
+          className="form-status error"
+          role="alert"
         >
-          {state.status === "success" ? (
-            <CheckCircle2 aria-hidden="true" />
-          ) : null}
           {state.message}
         </p>
       ) : null}

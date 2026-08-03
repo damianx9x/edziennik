@@ -3,6 +3,10 @@
 import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
+import {
+  discardReadyScheduleGenerations,
+  lockScheduleResources,
+} from "@/modules/schedule/resource-lock";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -159,50 +163,69 @@ export async function archiveRecordAction(formData: FormData): Promise<void> {
   if (!parsed.success) return;
 
   const now = new Date();
-  let changed: number;
-  let entityType: string;
-  if (parsed.data.recordType === "room") {
-    const result = await db.room.updateMany({
-      where: {
-        id: parsed.data.recordId,
-        schoolId: session.user.schoolId,
-        archivedAt: null,
-      },
-      data: { archivedAt: now, isActive: false },
-    });
-    changed = result.count;
-    entityType = "Room";
-  } else if (parsed.data.recordType === "group") {
-    const result = await db.courseGroup.updateMany({
-      where: {
-        id: parsed.data.recordId,
-        schoolId: session.user.schoolId,
-        archivedAt: null,
-      },
-      data: { archivedAt: now, isActive: false },
-    });
-    changed = result.count;
-    entityType = "CourseGroup";
-  } else {
-    const result = await db.user.updateMany({
-      where: {
-        id: parsed.data.recordId,
-        schoolId: session.user.schoolId,
-        role: { in: ["TEACHER", "PARENT", "STUDENT"] },
-        archivedAt: null,
-      },
-      data: { archivedAt: now, status: "ARCHIVED" },
-    });
-    changed = result.count;
-    entityType = "User";
-  }
+  const changed = await db.$transaction(
+    async (transaction) => {
+      await lockScheduleResources(transaction, session.user.schoolId);
+      let changedCount: number;
+      let changedEntityType: string;
+      if (parsed.data.recordType === "room") {
+        const result = await transaction.room.updateMany({
+          where: {
+            id: parsed.data.recordId,
+            schoolId: session.user.schoolId,
+            archivedAt: null,
+          },
+          data: { archivedAt: now, isActive: false },
+        });
+        changedCount = result.count;
+        changedEntityType = "Room";
+      } else if (parsed.data.recordType === "group") {
+        const result = await transaction.courseGroup.updateMany({
+          where: {
+            id: parsed.data.recordId,
+            schoolId: session.user.schoolId,
+            archivedAt: null,
+          },
+          data: { archivedAt: now, isActive: false },
+        });
+        changedCount = result.count;
+        changedEntityType = "CourseGroup";
+      } else {
+        const result = await transaction.user.updateMany({
+          where: {
+            id: parsed.data.recordId,
+            schoolId: session.user.schoolId,
+            role: { in: ["TEACHER", "PARENT", "STUDENT"] },
+            archivedAt: null,
+          },
+          data: { archivedAt: now, status: "ARCHIVED" },
+        });
+        changedCount = result.count;
+        changedEntityType = "User";
+      }
+
+      if (changedCount === 1) {
+        const discardedGenerationCount =
+          await discardReadyScheduleGenerations(
+            transaction,
+            session.user.schoolId,
+          );
+        await transaction.auditLog.create({
+          data: {
+            schoolId: session.user.schoolId,
+            actorId: session.user.id,
+            action: "records.record.archived",
+            entityType: changedEntityType,
+            entityId: parsed.data.recordId,
+            metadata: { discardedGenerationCount },
+          },
+        });
+      }
+      return changedCount;
+    },
+  );
 
   if (changed === 1) {
-    await writeAudit(session.user.schoolId, session.user.id, {
-      action: "records.record.archived",
-      entityType,
-      entityId: parsed.data.recordId,
-    });
     revalidateRecords();
   }
 }

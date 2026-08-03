@@ -76,17 +76,62 @@ export const invitationValidityLabels = {
   "7d": "7 dni",
 } as const;
 
-export function canReuseArchivedAccount(
+type ExistingInvitationAccount = {
+  schoolId: string;
+  role: string;
+  status: string;
+  archivedAt: Date | null;
+  accounts: readonly unknown[];
+};
+
+type InvitationAccountTarget = {
+  schoolId: string;
+  role: string;
+  kind: "EMAIL" | "ROLE_QR";
+};
+
+export type ExistingInvitationAccountReuse =
+  | "INVITED_RECORD"
+  | "ARCHIVED_ACCOUNT";
+
+export function getExistingInvitationAccountReuse(
   existing:
-    | { schoolId: string; status: string; archivedAt: Date | null }
+    | ExistingInvitationAccount
     | null,
-  schoolId: string,
+  invitation: InvitationAccountTarget,
+): ExistingInvitationAccountReuse | null {
+  if (
+    !existing ||
+    invitation.kind !== "EMAIL" ||
+    existing.schoolId !== invitation.schoolId ||
+    existing.role !== invitation.role
+  ) {
+    return null;
+  }
+
+  if (existing.status === "ARCHIVED" || existing.archivedAt) {
+    return "ARCHIVED_ACCOUNT";
+  }
+
+  if (
+    existing.status === "INVITED" &&
+    !existing.archivedAt &&
+    existing.accounts.length === 0
+  ) {
+    return "INVITED_RECORD";
+  }
+
+  return null;
+}
+
+export function doesInvitationVerifyEmail(
+  kind: InvitationAccountTarget["kind"],
 ): boolean {
-  return Boolean(
-    existing &&
-      existing.schoolId === schoolId &&
-      (existing.status === "ARCHIVED" || existing.archivedAt),
-  );
+  return kind === "EMAIL";
+}
+
+export function isSyntheticDemoEmail(email: string): boolean {
+  return email.toLowerCase().endsWith("@invalid.example");
 }
 
 export type InvitationAvailability =

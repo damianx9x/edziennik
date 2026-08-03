@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --font-nunito:
+    "Avenir Next", "Nunito Sans", "Segoe UI", ui-rounded, system-ui,
+    sans-serif;
   --navy-950: #101c3d;
   --navy-900: #172650;
   --navy-800: #223a78;
@@ -2361,20 +2364,16 @@ footer > a:last-child {
   color: var(--red-700);
 }
 
-body:has(.content-editor-shell) .feedback-trigger {
-  bottom: 102px;
-}
-
 /* Feedback and diagnostics */
 
 .feedback-trigger {
+  width: fit-content;
   min-height: 50px;
-  position: fixed;
-  z-index: 80;
-  right: 22px;
-  bottom: 22px;
+  position: relative;
+  z-index: 1;
+  margin: 20px 28px 28px auto;
   padding: 0 16px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 9px;
   color: var(--white);
@@ -2393,6 +2392,15 @@ body:has(.content-editor-shell) .feedback-trigger {
 
 .feedback-trigger svg {
   width: 19px;
+}
+
+body:has(.auth-page) .feedback-trigger,
+body:has(.invitation-page) .feedback-trigger {
+  width: min(540px, calc(100% - 32px));
+  position: relative;
+  margin: 18px auto 28px;
+  display: flex;
+  justify-content: center;
 }
 
 .feedback-layer {
@@ -3493,14 +3501,20 @@ body:has(.content-editor-shell) .feedback-trigger {
   }
 
   .feedback-trigger {
-    width: 50px;
-    padding: 0;
+    width: calc(100% - 28px);
+    min-height: 50px;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    margin: 18px auto 28px;
+    padding: 0 16px;
+    display: flex;
     justify-content: center;
     border-radius: 15px;
   }
 
   .feedback-trigger span {
-    display: none;
+    display: inline;
   }
 
   .feedback-layer {
@@ -5252,6 +5266,85 @@ body:has(.content-editor-shell) .feedback-trigger {
   width: 13px;
 }
 
+.invitation-revoke-dialog {
+  width: min(470px, calc(100% - 32px));
+  max-width: none;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  border-radius: 22px;
+  background: var(--paper);
+  box-shadow: 0 28px 90px rgb(12 23 51 / 28%);
+}
+
+.invitation-revoke-dialog[open] {
+  animation: person-dialog-enter var(--motion-base) var(--ease-enter);
+}
+
+.invitation-revoke-dialog::backdrop {
+  background: rgb(10 20 44 / 58%);
+  backdrop-filter: blur(3px);
+  animation: person-backdrop-enter var(--motion-fast) var(--ease-enter);
+}
+
+.invitation-revoke-dialog-shell {
+  padding: 24px;
+}
+
+.invitation-revoke-dialog header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.invitation-revoke-dialog header > div {
+  min-width: 0;
+  margin-right: auto;
+}
+
+.invitation-revoke-dialog h2 {
+  margin-top: 4px;
+  color: var(--navy-950);
+  font-size: 23px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.invitation-revoke-dialog p {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.invitation-revoke-dialog p strong {
+  color: var(--navy-900);
+}
+
+.invitation-revoke-dialog form {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.button-danger {
+  color: var(--white);
+  background: var(--red-700);
+}
+
+.button-danger:hover {
+  background: #9f1429;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-revoke-dialog[open],
+  .invitation-revoke-dialog::backdrop {
+    animation: none;
+  }
+}
+
 .sr-only {
   width: 1px;
   height: 1px;
@@ -6295,9 +6388,28 @@ body:has(.content-editor-shell) .feedback-trigger {
     width: 20px;
   }
 
+  .feedback-trigger {
+    width: calc(100% - 28px);
+    min-height: 50px;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    margin: 18px auto 28px;
+    padding: 0 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .feedback-trigger span {
+    display: inline;
+  }
+
   body:has(.app-panel) .feedback-trigger {
-    right: 16px;
-    bottom: 96px;
+    margin: 18px auto 112px;
+  }
+
+  body:has(.content-editor-shell) .feedback-trigger {
+    margin-bottom: 28px;
   }
 
   .role-panel-heading {
@@ -7329,6 +7441,35 @@ body:has(.content-editor-shell) .feedback-trigger {
   opacity: 0.52;
 }
 
+.assistant-generate-submit {
+  display: grid;
+  gap: 8px;
+}
+
+.assistant-generate-help {
+  margin: 0;
+  padding: 9px 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #8d1f30;
+  border-radius: 10px;
+  background: var(--red-100);
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.assistant-generate-help.is-pending {
+  color: var(--blue-700);
+  background: var(--blue-100);
+}
+
+.assistant-generate-help svg {
+  width: 15px;
+  flex: 0 0 15px;
+}
+
 .assistant-no-preview {
   min-height: 96px;
   padding: 20px 24px;
@@ -8024,9 +8165,9 @@ body:has(.content-editor-shell) .feedback-trigger {
 
 .schedule-drag-handle,
 .schedule-lesson-actions > summary {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   display: grid;
   place-items: center;
   cursor: grab;
@@ -8416,7 +8557,7 @@ body:has(.content-editor-shell) .feedback-trigger {
   }
 
   .schedule-drag-handle {
-    width: 36px;
+    width: 44px;
     height: 44px;
   }
 
@@ -9748,7 +9889,8 @@ body:has(.content-editor-shell) .feedback-trigger {
   box-shadow: var(--shadow-sm);
 }
 
-.records-create-panel > summary {
+.records-create-panel > summary,
+.records-create-panel-heading {
   min-height: 80px;
   padding: 14px 18px;
   display: flex;
@@ -9762,19 +9904,22 @@ body:has(.content-editor-shell) .feedback-trigger {
   display: none;
 }
 
-.records-create-panel > summary > div {
+.records-create-panel > summary > div,
+.records-create-panel-heading > div {
   min-width: 0;
   display: grid;
   gap: 2px;
 }
 
-.records-create-panel > summary strong {
+.records-create-panel > summary strong,
+.records-create-panel-heading strong {
   color: var(--navy-950);
   font-size: 17px;
   font-weight: 950;
 }
 
-.records-create-panel > summary small {
+.records-create-panel > summary small,
+.records-create-panel-heading small {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
@@ -9805,6 +9950,14 @@ body:has(.content-editor-shell) .feedback-trigger {
 
 .records-create-panel .quick-record-grid {
   margin-top: 18px;
+}
+
+.quick-record-success {
+  margin-top: 16px;
+}
+
+.quick-record-success[hidden] {
+  display: none;
 }
 
 .person-directory {

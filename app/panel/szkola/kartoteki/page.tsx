@@ -289,8 +289,8 @@ export default async function RecordsPage() {
             >
               <Wrench aria-hidden="true" /> Narzędzia danych
             </Link>
-            <a className="button button-primary" href="#dodaj">
-              <Plus aria-hidden="true" /> Dodaj
+            <a className="button button-primary" href="#dodaj-kartoteke">
+              <Plus aria-hidden="true" /> Dodaj kartotekę
             </a>
           </div>
         ) : null}
@@ -341,7 +341,7 @@ export default async function RecordsPage() {
       </section>
 
       {isDirector ? (
-        <section className="records-action-zone" id="dodaj">
+        <section className="records-action-zone" id="dodaj-kartoteke">
           <div>
             <span className="section-kicker">Jedno miejsce do dodawania</span>
             <h2>Co chcesz utworzyć?</h2>

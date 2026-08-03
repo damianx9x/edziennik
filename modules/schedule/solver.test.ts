@@ -155,4 +155,36 @@ describe("deterministic schedule solver", () => {
     expect(result.proposals).toHaveLength(1);
     expect(result.proposals[0]?.roomId).toBe("right-room");
   });
+
+  it("does not use a weekday omitted from configured teacher availability", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      requirements: [
+        {
+          ...baseRequirement,
+          lessonsPerWeek: 1,
+          allowedWeekdays: [1],
+          preferredWeekdays: [1],
+        },
+      ],
+      rooms,
+      teachers,
+      availability: [
+        {
+          teacherId: "teacher-a",
+          roomId: null,
+          groupId: null,
+          weekday: 3,
+          startMinute: 13 * 60,
+          endMinute: 19 * 60,
+          isAvailable: true,
+          preference: 0,
+        },
+      ],
+      fixedSlots: [],
+    });
+
+    expect(result.proposals).toHaveLength(0);
+    expect(result.hardViolations[0]).toContain("brak terminu");
+  });
 });

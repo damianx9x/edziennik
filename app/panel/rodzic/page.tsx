@@ -69,7 +69,7 @@ export default async function ParentPanelPage() {
         <article>
           <CreditCard aria-hidden="true" />
           <span className="module-status module-status-ready">
-            <CheckCircle2 aria-hidden="true" /> Gotowe w planie
+            <CheckCircle2 aria-hidden="true" /> W przygotowaniu · Etap 4
           </span>
           <h2>Status płatności</h2>
           <p>Bez płatności online — szkoła oznaczy status ręcznie.</p>

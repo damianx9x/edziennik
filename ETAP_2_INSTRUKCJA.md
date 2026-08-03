@@ -8,17 +8,18 @@ Dyrektor ma jedno miejsce do obsługi:
 - grup,
 - wykładowców, rodziców i uczniów,
 - dużej, przesuwanej i skalowalnej karty osoby z edycją i historią,
-- relacji rodzic–dziecko i przypisania ucznia do grupy,
+- podglądu relacji rodzic–dziecko i przypisań,
+- transakcyjnego importu relacji i przypisań,
 - importu CSV/XLSX z podglądem błędów,
 - eksportu aktywnych kartotek do zgodnego pliku CSV,
 - archiwizacji zamiast trwałego kasowania,
 - prywatnych plików poza katalogiem publicznym strony.
 
 Import, eksport, status bazy oraz edycja publicznej strony są w pozycji
-`Narzędzia`, dostępnej wyłącznie dyrektorowi.
+`Ustawienia`, dostępnej wyłącznie dyrektorowi.
 
-Wykładowca widzi tylko kartoteki wynikające z przypisanych grup. Może wysłać
-propozycję korekty; dyrektor zatwierdza ją w `Powiadomieniach`.
+Wykładowca widzi kartoteki wynikające z przypisanych grup. Może wysłać
+propozycję korekty; dyrektor zatwierdza ją w sprawach na ekranie `Start`.
 
 Autor projektu ma dodatkowe, stałe konto `Bóg`. Nie można go utworzyć przez
 zaproszenie ani kod QR. Dziedziczy panel dyrektora i ma osobne, audytowane
@@ -48,7 +49,7 @@ filtru roli. Dotknięcie osoby otwiera duże okno z:
 
 - imieniem i nazwiskiem, e-mailem, telefonem i identyfikatorem,
 - dziećmi, grupami albo przypisaniami,
-- przygotowanymi skrótami do wiadomości, płatności i postępów,
+- oznaczonymi jako przyszłe skrótami do wiadomości, płatności i postępów,
 - formularzem edycji,
 - historią zmian i decyzji,
 - świadomą archiwizacją.
@@ -56,6 +57,10 @@ filtru roli. Dotknięcie osoby otwiera duże okno z:
 Na komputerze okno można przeciągać za nagłówek i skalować za prawy dolny róg.
 Na telefonie działa jako pełna karta dolna. Zamyka się przyciskiem, `Escape`
 albo akcją `Gotowe`, a fokus wraca do wcześniej otwartego elementu.
+
+Ręczne tworzenie relacji rodzic–dziecko oraz przypisywanie ucznia i wykładowcy
+do grupy nie jest jeszcze dostępne w karcie. Obecnie robi to import albo
+konfiguracja grafiku. Ten przepływ pozostaje korektą Etapu 2 przed pilotem.
 
 ## Pojedyncza zmiana
 
@@ -70,7 +75,7 @@ potwierdzenia. Element znika z aktywnej listy, ale historia pozostaje w bazie.
 
 ## Import większej listy
 
-1. W menu wybierz `Narzędzia`, a następnie `Import i eksport`.
+1. W menu wybierz `Ustawienia`, a następnie `Import i eksport`.
 2. Kliknij `Pobierz szablon CSV`.
 3. Otwórz plik w Excelu, Numbers albo LibreOffice.
 4. Nie zmieniaj nazw kolumn.

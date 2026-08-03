@@ -134,7 +134,7 @@ export default async function StatisticsPage() {
         <Stat icon={<Eye />} label="Odsłony dzisiaj" value={today} />
         <Stat icon={<BarChart3 />} label="Ostatnie 7 dni" value={lastSevenDays} />
         <Stat icon={<Activity />} label="Ostatnie 30 dni" value={lastThirtyDays} />
-        <Stat icon={<Clock3 />} label="Aktywność w 15 min" value={activeNow} />
+        <Stat icon={<Clock3 />} label="Odsłony w 15 min" value={activeNow} />
       </section>
 
       <div className="statistics-grid">

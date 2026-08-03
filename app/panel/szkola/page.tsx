@@ -285,8 +285,8 @@ function TeacherDashboard({ name }: { name: string }) {
           <span className="section-kicker">Dzisiaj</span>
           <h2>Plan pojawi się po przypisaniu grup</h2>
           <p>
-            Dyrektor doda sale, grupy i wykładowców w Etapie 2. Potem zobaczysz
-            tutaj tylko swoje zajęcia.
+            Po przypisaniu Ci grup i opublikowaniu grafiku zobaczysz tutaj
+            wyłącznie swoje zajęcia.
           </p>
           <div className="empty-state-action">
             <CalendarClock aria-hidden="true" />
@@ -299,8 +299,8 @@ function TeacherDashboard({ name }: { name: string }) {
         <aside className="role-side-card" id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <h2>Kontakt z grupą</h2>
-          <p>Wiadomości i materiały zostaną włączone po przygotowaniu grup.</p>
-          <span className="stage-one-badge">Etap 5</span>
+          <p>Wiadomości pojawią się w Etapie 5, a materiały w Etapie 6.</p>
+          <span className="stage-one-badge">W przygotowaniu</span>
         </aside>
       </div>
     </>

@@ -46,6 +46,7 @@ import type {
   ScheduleLocation,
   ScheduleResource,
   ScheduleSlotView,
+  TeacherAvailabilityView,
 } from "../types";
 
 const initialActionState: ScheduleActionState = {
@@ -69,6 +70,7 @@ type Props = {
   locations: ScheduleLocation[];
   rooms: ScheduleResource[];
   teachers: ScheduleResource[];
+  availability: TeacherAvailabilityView[];
   slots: ScheduleSlotView[];
   previousWeek: string;
   nextWeek: string;
@@ -100,6 +102,7 @@ export function ScheduleWorkspace({
   locations,
   rooms,
   teachers,
+  availability,
   slots,
   previousWeek,
   nextWeek,
@@ -160,7 +163,7 @@ export function ScheduleWorkspace({
   );
 
   function handleDragEnd(event: DragEndEvent) {
-    if (!canManage || !event.over) {
+    if (!canManage || isMoving || !event.over) {
       return;
     }
     const [date, startTime] = String(event.over.id).split("|");
@@ -169,13 +172,22 @@ export function ScheduleWorkspace({
     }
     setIsMoving(true);
     startTransition(async () => {
-      const result = await moveScheduleSlotAction({
-        slotId: String(event.active.id),
-        date,
-        startTime,
-      });
-      setFeedback(result);
-      setIsMoving(false);
+      try {
+        const result = await moveScheduleSlotAction({
+          slotId: String(event.active.id),
+          date,
+          startTime,
+        });
+        setFeedback(result);
+      } catch {
+        setFeedback({
+          status: "error",
+          message:
+            "Nie udało się przenieść zajęć. Sprawdź połączenie i spróbuj ponownie albo użyj opcji „Zmień termin”.",
+        });
+      } finally {
+        setIsMoving(false);
+      }
     });
   }
 
@@ -193,6 +205,7 @@ export function ScheduleWorkspace({
   const [newHour, newMinute] = newStartTime.split(":").map(Number);
   const newStartMinute = newHour * 60 + newMinute;
   const newEndMinute = newStartMinute + newDuration;
+  const newWeekday = weekdayFromDateKey(newDate);
   const overlappingSlots = slots.filter((slot) => {
     if (slot.dateKey !== newDate) return false;
     const [slotStartHour, slotStartMinute] = slot.startTime
@@ -215,6 +228,23 @@ export function ScheduleWorkspace({
       `prowadzi wtedy grupę ${slot.groupName}`,
     ]),
   );
+  const unavailableTeachers = new Map(
+    availability.flatMap((item) => {
+      if (!item.configured) return [];
+      const fits =
+        item.weekdays.includes(newWeekday) &&
+        item.startMinute <= newStartMinute &&
+        item.endMinute >= newEndMinute;
+      return fits
+        ? []
+        : [
+            [
+              item.teacherId,
+              "poza ustawioną dostępnością",
+            ] as const,
+          ];
+    }),
+  );
   const busyRooms = new Map(
     overlappingSlots.map((slot) => [
       slot.roomId,
@@ -228,7 +258,8 @@ export function ScheduleWorkspace({
     return Number(secondAssigned) - Number(firstAssigned);
   });
   const selectedTeacherUnavailable = newTeacherId
-    ? busyTeachers.has(newTeacherId)
+    ? busyTeachers.has(newTeacherId) ||
+      unavailableTeachers.has(newTeacherId)
     : false;
   const selectedRoom = rooms.find((room) => room.id === newRoomId);
   const selectedRoomUnavailable = newRoomId
@@ -379,7 +410,9 @@ export function ScheduleWorkspace({
                       {newGroupId ? "Wybierz wykładowcę" : "Najpierw wybierz grupę"}
                     </option>
                     {orderedTeachers.map((teacher) => {
-                      const reason = busyTeachers.get(teacher.id);
+                      const reason =
+                        busyTeachers.get(teacher.id) ??
+                        unavailableTeachers.get(teacher.id);
                       const assigned =
                         selectedGroup?.teacherIds?.includes(teacher.id) ?? false;
                       return (
@@ -643,13 +676,19 @@ export function ScheduleWorkspace({
             day={day}
             menuAlign={dayIndex < 3 ? "start" : "end"}
             hiddenOnMobile={day.key !== activeDay?.key}
-            canManage={canManage}
+            canManage={canManage && !isMoving}
             slots={filteredSlots.filter((slot) => slot.dateKey === day.key)}
           />
         ))}
       </section>
     </DndContext>
   );
+}
+
+function weekdayFromDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return weekday === 0 ? 7 : weekday;
 }
 
 function ScheduleDayColumn({
@@ -740,10 +779,21 @@ function LessonCard({
 }) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [moveState, moveAction, movePending] = useActionState(
-    async (previousState: ScheduleActionState, formData: FormData) => {
-      const result = await moveScheduleSlotFormAction(previousState, formData);
-      if (result.status === "success") setActionsOpen(false);
-      return result;
+    async (
+      previousState: ScheduleActionState,
+      formData: FormData,
+    ): Promise<ScheduleActionState> => {
+      try {
+        const result = await moveScheduleSlotFormAction(previousState, formData);
+        if (result.status === "success") setActionsOpen(false);
+        return result;
+      } catch {
+        return {
+          status: "error",
+          message:
+            "Nie udało się sprawdzić nowego terminu. Sprawdź połączenie i spróbuj ponownie.",
+        };
+      }
     },
     initialActionState,
   );

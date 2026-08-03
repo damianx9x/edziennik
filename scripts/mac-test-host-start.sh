@@ -14,11 +14,15 @@ handoff_file="$state_dir/PRZEKAZ_KLIENTCE.txt"
 commit_file="$state_dir/commit.txt"
 server_dir_file="$state_dir/server-dir.txt"
 installed_service_script="$state_dir/mac-test-host-app-service.sh"
+installed_watchdog_script="$state_dir/mac-test-host-watchdog.sh"
 app_port="${KLA_MAC_TEST_PORT:-3100}"
 public_url="${KLA_MAC_TEST_PUBLIC_URL:-https://demo.kingslanguageacademy.pl}"
 app_label="pl.kingslanguageacademy.edziennik-demo"
+watchdog_label="pl.kingslanguageacademy.edziennik-demo-watchdog"
 launch_agent_file="$HOME/Library/LaunchAgents/${app_label}.plist"
+watchdog_agent_file="$HOME/Library/LaunchAgents/${watchdog_label}.plist"
 launch_domain="gui/$(id -u)/${app_label}"
+watchdog_domain="gui/$(id -u)/${watchdog_label}"
 
 if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "arm64" ]]; then
   echo "Ten instalator jest przygotowany dla Maca Apple Silicon."
@@ -41,14 +45,27 @@ if [[ -n "$(git -C "$project_dir" status --porcelain --untracked-files=normal)" 
   exit 1
 fi
 
+mkdir -p "$state_dir" "$logs_dir"
+chmod 700 "$state_dir" "$logs_dir"
+
 hosted_commit="$(git -C "$project_dir" rev-parse --verify HEAD)"
 hosted_commit_short="$(git -C "$project_dir" rev-parse --short=12 HEAD)"
+node_path="$(command -v node)"
+
+"$project_dir/scripts/mac-test-host-database.sh" "$project_dir" "$node_path"
+
+echo "Sprawdzam i stosuję migracje bazy..."
+if ! (
+  cd "$project_dir"
+  npm run db:migrate:deploy
+) >"$logs_dir/migrate.log" 2>&1; then
+  echo "Migracje nie powiodły się. Ostatnie linie:"
+  tail -100 "$logs_dir/migrate.log"
+  exit 1
+fi
 
 node --env-file="$project_dir/.env" \
   "$project_dir/scripts/apply-director-mfa-policy.mjs"
-
-mkdir -p "$state_dir" "$logs_dir"
-chmod 700 "$state_dir" "$logs_dir"
 
 if ! launchctl print "gui/$(id -u)/com.cloudflare.cloudflared" 2>/dev/null \
   | grep -q 'state = running'; then
@@ -151,8 +168,9 @@ printf '%s\n' "$standalone_dir" >"$server_dir_file"
 chmod 600 "$server_dir_file"
 cp "$project_dir/scripts/mac-test-host-app-service.sh" "$installed_service_script"
 chmod 700 "$installed_service_script"
+cp "$project_dir/scripts/mac-test-host-watchdog.sh" "$installed_watchdog_script"
+chmod 700 "$installed_watchdog_script"
 
-node_path="$(command -v node)"
 mkdir -p "$HOME/Library/LaunchAgents"
 node --input-type=module - \
   "$launch_agent_file" \
@@ -221,13 +239,70 @@ writeFileSync(targetPath, contents, { mode: 0o600 });
 chmodSync(targetPath, 0o600);
 NODE
 
+node --input-type=module - \
+  "$watchdog_agent_file" \
+  "$watchdog_label" \
+  "$installed_watchdog_script" \
+  "$state_dir" \
+  "$app_port" \
+  "$logs_dir/watchdog-service.log" \
+  "$logs_dir/watchdog-service-error.log" <<'NODE'
+import { chmodSync, writeFileSync } from "node:fs";
+
+const [
+  ,
+  ,
+  targetPath,
+  label,
+  watchdogScript,
+  stateDir,
+  port,
+  stdoutPath,
+  stderrPath,
+] = process.argv;
+const xml = (value) =>
+  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+const contents = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${xml(label)}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>${xml(watchdogScript)}</string>
+    <string>${xml(stateDir)}</string>
+    <string>${xml(port)}</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>${xml(stdoutPath)}</string>
+  <key>StandardErrorPath</key>
+  <string>${xml(stderrPath)}</string>
+</dict>
+</plist>
+`;
+
+writeFileSync(targetPath, contents, { mode: 0o600 });
+chmodSync(targetPath, 0o600);
+NODE
+
+launchctl bootout "$watchdog_domain" >/dev/null 2>&1 || true
 launchctl bootout "$launch_domain" >/dev/null 2>&1 || true
 launchctl bootstrap "gui/$(id -u)" "$launch_agent_file"
 launchctl kickstart -k "$launch_domain"
+launchctl bootstrap "gui/$(id -u)" "$watchdog_agent_file"
 
 for attempt in {1..45}; do
   if curl --fail --silent --show-error --max-time 5 \
-    "http://127.0.0.1:${app_port}/panel/logowanie" \
+    "http://127.0.0.1:${app_port}/api/health" \
     >/dev/null 2>&1; then
     break
   fi
@@ -239,7 +314,7 @@ for attempt in {1..45}; do
   fi
   if [[ "$attempt" -eq 45 ]]; then
     echo "Aplikacja nie odpowiedziała lokalnie. Log:"
-    tail -100 "$app_log"
+    tail -100 "$service_error_log" "$service_log" 2>/dev/null || true
     exit 1
   fi
   sleep 1
@@ -253,7 +328,7 @@ for attempt in {1..30}; do
       --output /dev/null \
       --write-out '%{http_code}' \
       --max-time 10 \
-      "$public_url/panel/logowanie" \
+      "$public_url/api/health" \
       || true
   )"
   if [[ "$public_status" == "200" ]]; then
@@ -271,7 +346,7 @@ tls_status="$(
     --output /dev/null \
     --write-out '%{http_code}' \
     --max-time 10 \
-    "$public_url/panel/logowanie" \
+    "$public_url/api/health" \
     || true
 )"
 

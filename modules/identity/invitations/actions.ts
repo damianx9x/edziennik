@@ -10,10 +10,12 @@ import { sendAuthEmail } from "@/modules/identity/email/email-provider";
 
 import {
   acceptInvitationSchema,
-  canReuseArchivedAccount,
   createInvitationSchema,
   createRoleQrInvitationSchema,
+  doesInvitationVerifyEmail,
+  getExistingInvitationAccountReuse,
   invitationRoleLabels,
+  isSyntheticDemoEmail,
   revokeInvitationSchema,
 } from "./schema";
 import {
@@ -83,18 +85,34 @@ export async function createInvitationAction(
 
   const existingUser = await db.user.findUnique({
     where: { email: parsed.data.email },
-    select: { schoolId: true, archivedAt: true, status: true },
+    select: {
+      schoolId: true,
+      role: true,
+      archivedAt: true,
+      status: true,
+      accounts: { select: { id: true } },
+    },
   });
 
-  if (
-    existingUser &&
-    (existingUser.schoolId !== session.user.schoolId ||
-      (existingUser.status !== "ARCHIVED" && !existingUser.archivedAt))
-  ) {
+  const existingAccountReuse = getExistingInvitationAccountReuse(
+    existingUser,
+    {
+      schoolId: session.user.schoolId,
+      role: parsed.data.role,
+      kind: "EMAIL",
+    },
+  );
+
+  if (existingUser && !existingAccountReuse) {
     return {
       status: "error",
       message:
-        "Ten adres ma już aktywne konto. Użyj resetu hasła albo sprawdź kartotekę.",
+        existingUser.schoolId === session.user.schoolId &&
+        existingUser.role !== parsed.data.role
+          ? "Ten adres jest już przypisany do innej roli w kartotece. Sprawdź rolę osoby przed wysłaniem zaproszenia."
+          : existingUser.schoolId !== session.user.schoolId
+            ? "Ten adres jest już używany przez inne konto."
+            : "Ten adres ma już konto z danymi logowania. Użyj resetu hasła albo sprawdź kartotekę.",
     };
   }
 
@@ -265,14 +283,20 @@ export async function createRoleQrInvitationAction(
 }
 
 export async function revokeInvitationAction(
+  _previousState: InvitationActionState,
   formData: FormData,
-): Promise<void> {
+): Promise<InvitationActionState> {
   const session = await requireDirector();
   const parsed = revokeInvitationSchema.safeParse({
     invitationId: formData.get("invitationId"),
   });
 
-  if (!parsed.success) return;
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "Nie rozpoznano zaproszenia. Odśwież stronę i spróbuj ponownie.",
+    };
+  }
 
   const revoked = await db.invitation.updateMany({
     where: {
@@ -295,7 +319,17 @@ export async function revokeInvitationAction(
       },
     });
     revalidatePath("/panel/szkola/zaproszenia");
+    return {
+      status: "success",
+      message: "Zaproszenie zostało cofnięte.",
+    };
   }
+
+  return {
+    status: "error",
+    message:
+      "Tego zaproszenia nie można już cofnąć. Mogło zostać użyte lub cofnięte w innej karcie. Odśwież stronę.",
+  };
 }
 
 export async function acceptInvitationAction(
@@ -364,28 +398,51 @@ export async function acceptInvitationAction(
       schoolId: true,
       archivedAt: true,
       status: true,
+      role: true,
       accounts: {
-        where: { providerId: "credential" },
-        select: { id: true },
-        take: 1,
+        select: { id: true, providerId: true },
       },
     },
   });
 
-  const canReactivate = canReuseArchivedAccount(
+  const existingAccountReuse = getExistingInvitationAccountReuse(
     existingUser,
-    invitation.schoolId,
+    {
+      schoolId: invitation.schoolId,
+      role: invitation.role,
+      kind: invitation.kind,
+    },
   );
-  if (existingUser && !canReactivate) {
+  if (existingUser && !existingAccountReuse) {
     return {
       status: "error",
       message:
-        "Konto dla tego adresu już istnieje. Przejdź do logowania lub ustaw nowe hasło.",
+        existingUser.schoolId === invitation.schoolId &&
+        existingUser.role !== invitation.role
+          ? "Ten adres jest przypisany do innej roli. Poproś szkołę o sprawdzenie kartoteki."
+          : "Konto dla tego adresu już istnieje. Przejdź do logowania lub ustaw nowe hasło.",
     };
   }
 
   const fullName =
     `${parsed.data.firstName.trim()} ${parsed.data.lastName.trim()}`.trim();
+  const isSyntheticTestEnvironment =
+    process.env.KLA_MAC_TEST_HOST === "1" ||
+    process.env.NODE_ENV === "development";
+  if (
+    invitation.kind === "ROLE_QR" &&
+    isSyntheticTestEnvironment &&
+    !isSyntheticDemoEmail(email)
+  ) {
+    return {
+      status: "error",
+      message:
+        "To środowisko testowe nie przyjmuje prawdziwych danych. Użyj fikcyjnego adresu kończącego się na @invalid.example.",
+    };
+  }
+  const emailVerified =
+    doesInvitationVerifyEmail(invitation.kind) ||
+    (isSyntheticTestEnvironment && isSyntheticDemoEmail(email));
   const claimedAt = new Date();
   const claimed = await db.invitation.updateMany({
     where: {
@@ -406,7 +463,7 @@ export async function acceptInvitationAction(
   }
 
   try {
-    if (existingUser && canReactivate) {
+    if (existingUser && existingAccountReuse) {
       const passwordHash = await hashPassword(parsed.data.password);
       await db.$transaction(async (transaction) => {
         await transaction.session.deleteMany({
@@ -415,22 +472,42 @@ export async function acceptInvitationAction(
         await transaction.twoFactor.deleteMany({
           where: { userId: existingUser.id },
         });
-        await transaction.user.update({
-          where: { id: existingUser.id },
+        const activated = await transaction.user.updateMany({
+          where: {
+            id: existingUser.id,
+            schoolId: invitation.schoolId,
+            role: invitation.role,
+            ...(existingAccountReuse === "INVITED_RECORD"
+              ? {
+                  status: "INVITED",
+                  archivedAt: null,
+                  accounts: { none: {} },
+                }
+              : {
+                  OR: [
+                    { status: "ARCHIVED" },
+                    { archivedAt: { not: null } },
+                  ],
+                }),
+          },
           data: {
             name: fullName,
-            role: invitation.role,
             phone: parsed.data.phone || null,
             status: "ACTIVE",
             archivedAt: null,
             banned: false,
             banReason: null,
             banExpires: null,
-            emailVerified: true,
+            emailVerified,
             twoFactorEnabled: false,
           },
         });
-        const credentialAccount = existingUser.accounts[0];
+        if (activated.count !== 1) {
+          throw new Error("Stan konta zmienił się podczas aktywacji.");
+        }
+        const credentialAccount = existingUser.accounts.find(
+          (account) => account.providerId === "credential",
+        );
         if (credentialAccount) {
           await transaction.account.update({
             where: { id: credentialAccount.id },
@@ -454,17 +531,28 @@ export async function acceptInvitationAction(
           data: {
             schoolId: invitation.schoolId,
             actorId: existingUser.id,
-            action: "identity.user.reactivated",
-            entityType: "User",
-            entityId: existingUser.id,
-            metadata: { role: invitation.role },
+            action:
+              existingAccountReuse === "ARCHIVED_ACCOUNT"
+                ? "identity.user.reactivated"
+                : "identity.invitation.accepted",
+            entityType:
+              existingAccountReuse === "ARCHIVED_ACCOUNT"
+                ? "User"
+                : "Invitation",
+            entityId:
+              existingAccountReuse === "ARCHIVED_ACCOUNT"
+                ? existingUser.id
+                : invitation.id,
+            metadata: { role: existingUser.role },
           },
         });
       });
       return {
         status: "success",
         message:
-          "Konto zostało ponownie aktywowane. Możesz się teraz bezpiecznie zalogować.",
+          existingAccountReuse === "ARCHIVED_ACCOUNT"
+            ? "Konto zostało ponownie aktywowane. Możesz się teraz bezpiecznie zalogować."
+            : "Konto jest gotowe. Możesz się teraz bezpiecznie zalogować.",
       };
     }
 
@@ -487,7 +575,7 @@ export async function acceptInvitationAction(
         data: {
           schoolId: invitation.schoolId,
           status: "ACTIVE",
-          emailVerified: true,
+          emailVerified,
           phone: parsed.data.phone || null,
         },
       }),
@@ -520,6 +608,31 @@ export async function acceptInvitationAction(
       status: "error",
       message:
         "Nie udało się utworzyć konta. Spróbuj ponownie, a jeśli problem wróci — zgłoś go szkole.",
+    };
+  }
+
+  if (!emailVerified) {
+    const emailProviderConfigured = Boolean(
+      process.env.RESEND_API_KEY && process.env.EMAIL_FROM,
+    );
+    if (emailProviderConfigured) {
+      try {
+        await auth.api.sendVerificationEmail({
+          body: { email, callbackURL: "/panel" },
+        });
+      } catch {
+        return {
+          status: "success",
+          message:
+            "Konto zostało zapisane, ale wiadomość potwierdzająca nie wyszła. Poproś szkołę o ponowienie wysyłki przed logowaniem.",
+        };
+      }
+    }
+    return {
+      status: "success",
+      message: emailProviderConfigured
+        ? "Konto zostało zapisane. Otwórz wiadomość e-mail i potwierdź adres przed logowaniem."
+        : "Konto zostało zapisane, ale wysyłka e-mail nie jest jeszcze skonfigurowana. Poproś szkołę o dokończenie aktywacji.",
     };
   }
 

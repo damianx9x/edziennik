@@ -9,6 +9,14 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 
 import {
+  assertScheduleSlotCanBeSaved,
+  ScheduleConstraintError,
+} from "./hard-constraints";
+import {
+  discardReadyScheduleGenerations,
+  lockScheduleResources,
+} from "./resource-lock";
+import {
   getWeekStartKey,
   SCHOOL_TIME_ZONE,
   scheduleGenerationSchema,
@@ -19,6 +27,25 @@ import { deterministicScheduleSolver } from "./solver";
 import type { ScheduleActionState } from "./types";
 
 const schedulePath = "/panel/plan";
+
+class ScheduleGenerationNotReadyError extends Error {
+  constructor() {
+    super("Schedule generation is no longer ready.");
+    this.name = "ScheduleGenerationNotReadyError";
+  }
+}
+
+function publicationFailureCode(error: unknown) {
+  if (error instanceof ScheduleGenerationNotReadyError) {
+    return "propozycja-niedostepna";
+  }
+  if (error instanceof ScheduleConstraintError) {
+    return error.code === "SCHEDULE_CONFLICT"
+      ? "kolizja"
+      : "ograniczenia";
+  }
+  return "publikacja";
+}
 
 function minuteValue(value: FormDataEntryValue | null) {
   const text = String(value ?? "");
@@ -103,13 +130,56 @@ export async function saveSchedulingRequirementAction(
     };
   }
 
-  await db.$transaction(async (tx) => {
+  const transactionResult = await db.$transaction(async (tx) => {
+    await lockScheduleResources(tx, session.user.schoolId);
+    const [currentGroup, currentTeacher, currentRoom] = await Promise.all([
+      tx.courseGroup.findFirst({
+        where: {
+          id: group.id,
+          schoolId: session.user.schoolId,
+          isActive: true,
+          archivedAt: null,
+        },
+        select: { id: true, locationId: true },
+      }),
+      tx.user.findFirst({
+        where: {
+          id: teacher.id,
+          schoolId: session.user.schoolId,
+          role: "TEACHER",
+          status: "ACTIVE",
+          archivedAt: null,
+        },
+        select: { id: true },
+      }),
+      tx.room.findFirst({
+        where: {
+          id: room.id,
+          schoolId: session.user.schoolId,
+          isActive: true,
+          archivedAt: null,
+        },
+        select: { id: true, locationId: true },
+      }),
+    ]);
+    if (!currentGroup || !currentTeacher || !currentRoom) {
+      return {
+        error: "Grupa, wykładowca lub sala nie są już aktywne.",
+      };
+    }
+    if (currentGroup.locationId !== currentRoom.locationId) {
+      return {
+        error:
+          "Preferowana sala musi należeć do tej samej lokalizacji co grupa.",
+      };
+    }
+
     await tx.schedulingRequirement.upsert({
-      where: { groupId: group.id },
+      where: { groupId: currentGroup.id },
       update: {
         schoolId: session.user.schoolId,
-        teacherId: teacher.id,
-        preferredRoomId: room.id,
+        teacherId: currentTeacher.id,
+        preferredRoomId: currentRoom.id,
         lessonsPerWeek: parsed.data.lessonsPerWeek,
         durationMinutes: parsed.data.durationMinutes,
         allowedWeekdays: parsed.data.allowedWeekdays,
@@ -121,9 +191,9 @@ export async function saveSchedulingRequirementAction(
       },
       create: {
         schoolId: session.user.schoolId,
-        groupId: group.id,
-        teacherId: teacher.id,
-        preferredRoomId: room.id,
+        groupId: currentGroup.id,
+        teacherId: currentTeacher.id,
+        preferredRoomId: currentRoom.id,
         lessonsPerWeek: parsed.data.lessonsPerWeek,
         durationMinutes: parsed.data.durationMinutes,
         allowedWeekdays: parsed.data.allowedWeekdays,
@@ -136,32 +206,39 @@ export async function saveSchedulingRequirementAction(
     await tx.groupTeacher.upsert({
       where: {
         groupId_teacherId: {
-          groupId: group.id,
-          teacherId: teacher.id,
+          groupId: currentGroup.id,
+          teacherId: currentTeacher.id,
         },
       },
       update: { archivedAt: null, isPrimary: true },
       create: {
-        groupId: group.id,
-        teacherId: teacher.id,
+        groupId: currentGroup.id,
+        teacherId: currentTeacher.id,
         isPrimary: true,
       },
     });
+    const discardedGenerationCount =
+      await discardReadyScheduleGenerations(tx, session.user.schoolId);
     await tx.auditLog.create({
       data: {
         schoolId: session.user.schoolId,
         actorId: session.user.id,
         action: "schedule.requirement.saved",
         entityType: "CourseGroup",
-        entityId: group.id,
+        entityId: currentGroup.id,
         metadata: {
           lessonsPerWeek: parsed.data.lessonsPerWeek,
           durationMinutes: parsed.data.durationMinutes,
           allowedWeekdays: parsed.data.allowedWeekdays,
+          discardedGenerationCount,
         },
       },
     });
+    return { error: null };
   });
+  if (transactionResult.error) {
+    return { status: "error", message: transactionResult.error };
+  }
 
   revalidatePath(schedulePath);
   return {
@@ -206,38 +283,59 @@ export async function saveTeacherAvailabilityAction(
     };
   }
 
-  await db.$transaction(async (tx) => {
+  const transactionResult = await db.$transaction(async (tx) => {
+    await lockScheduleResources(tx, session.user.schoolId);
+    const currentTeacher = await tx.user.findFirst({
+      where: {
+        id: teacher.id,
+        schoolId: session.user.schoolId,
+        role: "TEACHER",
+        status: "ACTIVE",
+        archivedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!currentTeacher) {
+      return { error: "Ten wykładowca nie jest już aktywny." };
+    }
     await tx.availabilityWindow.deleteMany({
       where: {
         schoolId: session.user.schoolId,
-        teacherId: teacher.id,
+        teacherId: currentTeacher.id,
       },
     });
     await tx.availabilityWindow.createMany({
       data: parsed.data.weekdays.map((weekday) => ({
         schoolId: session.user.schoolId,
-        teacherId: teacher.id,
+        teacherId: currentTeacher.id,
         weekday,
         startMinute: parsed.data.startMinute,
         endMinute: parsed.data.endMinute,
         isAvailable: true,
       })),
     });
+    const discardedGenerationCount =
+      await discardReadyScheduleGenerations(tx, session.user.schoolId);
     await tx.auditLog.create({
       data: {
         schoolId: session.user.schoolId,
         actorId: session.user.id,
         action: "schedule.teacher-availability.saved",
         entityType: "User",
-        entityId: teacher.id,
+        entityId: currentTeacher.id,
         metadata: {
           weekdays: parsed.data.weekdays,
           startMinute: parsed.data.startMinute,
           endMinute: parsed.data.endMinute,
+          discardedGenerationCount,
         },
       },
     });
+    return { error: null };
   });
+  if (transactionResult.error) {
+    return { status: "error", message: transactionResult.error };
+  }
   revalidatePath(schedulePath);
   return {
     status: "success",
@@ -536,16 +634,6 @@ export async function applyScheduleGenerationAction(formData: FormData) {
     },
     include: {
       proposals: {
-        include: {
-          group: {
-            select: {
-              enrollments: {
-                where: { status: "ACTIVE" },
-                select: { studentId: true },
-              },
-            },
-          },
-        },
         orderBy: { startAt: "asc" },
       },
     },
@@ -563,43 +651,28 @@ export async function applyScheduleGenerationAction(formData: FormData) {
 
   try {
     await db.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${session.user.schoolId}))`;
+      await lockScheduleResources(tx, session.user.schoolId);
+      const readyGeneration = await tx.scheduleGeneration.findFirst({
+        where: {
+          id: generation.id,
+          schoolId: session.user.schoolId,
+          status: "READY",
+        },
+        select: { id: true },
+      });
+      if (!readyGeneration) {
+        throw new ScheduleGenerationNotReadyError();
+      }
       for (const proposal of generation.proposals) {
-        const studentIds = proposal.group.enrollments.map(
-          (enrollment) => enrollment.studentId,
-        );
-        const conflict = await tx.scheduleSlot.findFirst({
-          where: {
-            schoolId: session.user.schoolId,
-            archivedAt: null,
-            status: { not: "CANCELLED" },
-            startAt: { lt: proposal.endAt },
-            endAt: { gt: proposal.startAt },
-            OR: [
-              { groupId: proposal.groupId },
-              { roomId: proposal.roomId },
-              { teacherId: proposal.teacherId },
-              ...(studentIds.length
-                ? [
-                    {
-                      group: {
-                        enrollments: {
-                          some: {
-                            status: "ACTIVE" as const,
-                            studentId: { in: studentIds },
-                          },
-                        },
-                      },
-                    },
-                  ]
-                : []),
-            ],
-          },
-          select: { id: true },
+        await assertScheduleSlotCanBeSaved(tx, {
+          schoolId: session.user.schoolId,
+          groupId: proposal.groupId,
+          roomId: proposal.roomId,
+          teacherId: proposal.teacherId,
+          startAt: proposal.startAt,
+          endAt: proposal.endAt,
+          timeZone: SCHOOL_TIME_ZONE,
         });
-        if (conflict) {
-          throw new Error("schedule-conflict");
-        }
         await tx.scheduleSlot.create({
           data: {
             schoolId: session.user.schoolId,
@@ -629,12 +702,19 @@ export async function applyScheduleGenerationAction(formData: FormData) {
         },
       });
     });
-  } catch {
+  } catch (error) {
+    const failureCode = publicationFailureCode(error);
+    if (failureCode === "publikacja") {
+      console.error("Schedule generation publication failed.", {
+        generationId: generation.id,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
     redirect(
       `${schedulePath}?tydzien=${
         summary.rangeStart ??
         generation.weekStart.toISOString().slice(0, 10)
-      }&propozycja=${generation.id}&blad=kolizja`,
+      }&propozycja=${generation.id}&blad=${failureCode}`,
     );
   }
 

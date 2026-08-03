@@ -3,6 +3,20 @@
 Wyślij w jednym mailu. Odpowiedź przy każdym numerze. Nie importuj prawdziwych
 danych, dopóki brakuje punktów **BLOKUJE**.
 
+## Potwierdzone w rozmowie z właścicielem projektu
+
+- KLA jest prywatną szkołą wyłącznie języka angielskiego.
+- Grupy mają zwykle od 2 do 8 dzieci.
+- Grafik musi uwzględniać lokalizację, salę, wykładowcę i grupę.
+- Lokalizacja ma być filtrem i nadrzędnym podziałem kartotek oraz grafiku.
+- W pilocie płatności są odznaczane ręcznie; bez płatności online i KSeF.
+- Najpierw testujemy syntetyczne dane lokalnie, potem jeden konkretny commit
+  przez stały adres HTTPS, a docelowo przez VPS.
+- Domena główna to `kingslanguageacademy.pl`, a `kingsedu.pl` ma przekierowywać
+  do niej.
+
+Poniższe punkty nadal wymagają odpowiedzi osoby decyzyjnej po stronie szkoły.
+
 1. **BLOKUJE — zakres.** Czy 1 września odbieramy Etapy 0–6, a umowy,
    komunikator, SMS, zadania, analityka i Skarbiec są osobnym rozwojem?
 2. **BLOKUJE — konta.** Kto zakłada hosting, domenę, e-mail i SMS? Rekomendacja:

@@ -1,15 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito_Sans } from "next/font/google";
 
 import { FeedbackWidget } from "./components/feedback-widget";
 import { PageVisitTracker } from "./components/page-visit-tracker";
 import { SiteContentProvider } from "../modules/site-content/site-content-provider";
 import "./globals.css";
-
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito",
-  subsets: ["latin", "latin-ext"],
-});
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -53,7 +47,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pl" data-scroll-behavior="smooth">
-      <body className={nunitoSans.variable}>
+      <body>
         <SiteContentProvider>
           {children}
           <PageVisitTracker />

@@ -6,7 +6,14 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
-import { requireActiveSession } from "@/modules/identity/auth/session";
+import {
+  requireDirector,
+  requireSchoolStaff,
+} from "@/modules/identity/auth/session";
+import {
+  discardReadyScheduleGenerations,
+  lockScheduleResources,
+} from "@/modules/schedule/resource-lock";
 
 import type { RecordUpdateState } from "./state";
 
@@ -222,7 +229,7 @@ export async function updateRecordAction(
   _previousState: RecordUpdateState,
   formData: FormData,
 ): Promise<RecordUpdateState> {
-  const session = await requireActiveSession("/panel/szkola/kartoteki");
+  const session = await requireSchoolStaff("/panel/szkola/kartoteki");
   if (
     !["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(
       session.user.role,
@@ -319,25 +326,41 @@ export async function updateRecordAction(
   }
 
   try {
-    const updated = await applyUpdate(
-      session.user.schoolId,
-      entityType,
-      entityId,
-      payload,
-    );
+    const updated = await db.$transaction(async (transaction) => {
+      const affectsSchedule = entityType !== "USER";
+      if (affectsSchedule) {
+        await lockScheduleResources(transaction, session.user.schoolId);
+      }
+      const result = await applyUpdate(
+        session.user.schoolId,
+        entityType,
+        entityId,
+        payload,
+        transaction,
+      );
+      if (result.count === 1) {
+        const discardedGenerationCount = affectsSchedule
+          ? await discardReadyScheduleGenerations(
+              transaction,
+              session.user.schoolId,
+            )
+          : 0;
+        await transaction.auditLog.create({
+          data: {
+            schoolId: session.user.schoolId,
+            actorId: session.user.id,
+            action: "records.change.approved_directly",
+            entityType,
+            entityId,
+            metadata: { changedFields: fields, discardedGenerationCount },
+          },
+        });
+      }
+      return result;
+    });
     if (updated.count !== 1) {
       return { status: "error", message: "Nie udało się zapisać zmiany." };
     }
-    await db.auditLog.create({
-      data: {
-        schoolId: session.user.schoolId,
-        actorId: session.user.id,
-        action: "records.change.approved_directly",
-        entityType,
-        entityId,
-        metadata: { changedFields: fields },
-      },
-    });
     revalidatePath("/panel/szkola/kartoteki");
     return { status: "success", message: "Zmiany zostały zapisane." };
   } catch {
@@ -350,19 +373,14 @@ export async function updateRecordAction(
 }
 
 export async function reviewRecordChangeAction(formData: FormData): Promise<void> {
-  const session = await requireActiveSession("/panel/szkola/powiadomienia");
-  if (
-    session.user.role !== "SYSTEM_OWNER" &&
-    session.user.role !== "DIRECTOR"
-  ) {
-    return;
-  }
+  const session = await requireDirector("/panel/szkola/powiadomienia");
   const requestId = String(formData.get("requestId") ?? "");
   const decision = formData.get("decision");
   if (!z.uuid().safeParse(requestId).success) return;
   if (decision !== "approve" && decision !== "reject") return;
 
   await db.$transaction(async (transaction) => {
+    await lockScheduleResources(transaction, session.user.schoolId);
     const request = await transaction.recordChangeRequest.findFirst({
       where: {
         id: requestId,
@@ -372,6 +390,7 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
     });
     if (!request) return;
 
+    let discardedGenerationCount = 0;
     if (decision === "approve") {
       const payload = request.payload as Record<string, unknown>;
       if (
@@ -393,6 +412,13 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
       );
       if (result.count !== 1) {
         throw new Error("Record no longer active.");
+      }
+      if (request.entityType !== "USER") {
+        discardedGenerationCount =
+          await discardReadyScheduleGenerations(
+            transaction,
+            session.user.schoolId,
+          );
       }
     }
     await transaction.recordChangeRequest.update({
@@ -416,6 +442,7 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
         metadata: {
           requestId: request.id,
           changedFields: request.changedFields,
+          discardedGenerationCount,
         },
       },
     });

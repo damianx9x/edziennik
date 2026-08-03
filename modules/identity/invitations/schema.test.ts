@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   acceptInvitationSchema,
-  canReuseArchivedAccount,
   createInvitationSchema,
   createRoleQrInvitationSchema,
+  doesInvitationVerifyEmail,
+  getExistingInvitationAccountReuse,
   getInvitationAvailability,
+  isSyntheticDemoEmail,
 } from "./schema";
 
 describe("invitation validation", () => {
@@ -74,20 +76,92 @@ describe("invitation validation", () => {
     ).toBe(false);
   });
 
-  it("reuses only an archived account from the same school", () => {
+  it("reuses an archived account only for a matching e-mail invitation", () => {
     const archived = {
       schoolId: "school-kla",
+      role: "PARENT",
       status: "ARCHIVED",
       archivedAt: new Date(),
+      accounts: [{ id: "credential-account" }],
     };
-    expect(canReuseArchivedAccount(archived, "school-kla")).toBe(true);
-    expect(canReuseArchivedAccount(archived, "school-other")).toBe(false);
     expect(
-      canReuseArchivedAccount(
-        { ...archived, status: "ACTIVE", archivedAt: null },
-        "school-kla",
+      getExistingInvitationAccountReuse(archived, {
+        schoolId: "school-kla",
+        role: "PARENT",
+        kind: "EMAIL",
+      }),
+    ).toBe("ARCHIVED_ACCOUNT");
+    expect(
+      getExistingInvitationAccountReuse(archived, {
+        schoolId: "school-other",
+        role: "PARENT",
+        kind: "EMAIL",
+      }),
+    ).toBeNull();
+    expect(
+      getExistingInvitationAccountReuse(archived, {
+        schoolId: "school-kla",
+        role: "TEACHER",
+        kind: "EMAIL",
+      }),
+    ).toBeNull();
+    expect(
+      getExistingInvitationAccountReuse(archived, {
+        schoolId: "school-kla",
+        role: "PARENT",
+        kind: "ROLE_QR",
+      }),
+    ).toBeNull();
+  });
+
+  it("activates only an account-free invited record with the same role", () => {
+    const invited = {
+      schoolId: "school-kla",
+      role: "STUDENT",
+      status: "INVITED",
+      archivedAt: null,
+      accounts: [],
+    };
+
+    expect(
+      getExistingInvitationAccountReuse(invited, {
+        schoolId: "school-kla",
+        role: "STUDENT",
+        kind: "EMAIL",
+      }),
+    ).toBe("INVITED_RECORD");
+    expect(
+      getExistingInvitationAccountReuse(
+        { ...invited, accounts: [{ id: "credential-account" }] },
+        {
+          schoolId: "school-kla",
+          role: "STUDENT",
+          kind: "EMAIL",
+        },
       ),
-    ).toBe(false);
+    ).toBeNull();
+    expect(
+      getExistingInvitationAccountReuse(
+        { ...invited, status: "ACTIVE" },
+        {
+          schoolId: "school-kla",
+          role: "STUDENT",
+          kind: "EMAIL",
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it("treats only a link sent to the mailbox as e-mail verification", () => {
+    expect(doesInvitationVerifyEmail("EMAIL")).toBe(true);
+    expect(doesInvitationVerifyEmail("ROLE_QR")).toBe(false);
+  });
+
+  it("recognizes only reserved synthetic demo addresses", () => {
+    expect(isSyntheticDemoEmail("nowy.rodzic@invalid.example")).toBe(true);
+    expect(isSyntheticDemoEmail("NOWY@INVALID.EXAMPLE")).toBe(true);
+    expect(isSyntheticDemoEmail("rodzic@example.com")).toBe(false);
+    expect(isSyntheticDemoEmail("invalid.example@attacker.test")).toBe(false);
   });
 
   it("classifies one-use invitation states", () => {

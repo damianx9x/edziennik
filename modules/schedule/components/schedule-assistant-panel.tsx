@@ -11,6 +11,7 @@ import {
   DoorOpen,
   GraduationCap,
   Lock,
+  LoaderCircle,
   MapPin,
   Sparkles,
   School,
@@ -358,6 +359,20 @@ function GenerationControls({
                 ? requirement.teacherId === targetId
                 : requirement.preferredRoomId === targetId),
         );
+  const selectedTargetName = resources.find(
+    (resource) => resource.id === targetId,
+  )?.name;
+  const unavailableMessage = getGenerationUnavailableMessage({
+    scope,
+    targetId,
+    availableTargetCount: resources.length,
+    selectedTargetName,
+    groups,
+    rooms,
+    teachers,
+    requirements,
+    ready,
+  });
   const scopeOptions: Array<{
     value: GenerationScope;
     label: string;
@@ -493,26 +508,116 @@ function GenerationControls({
         <small>Maksymalnie 8 tygodni w jednym podglądzie.</small>
       </fieldset>
 
-      <GenerateButton ready={scopedReady} />
+      <GenerateButton
+        ready={scopedReady}
+        unavailableMessage={unavailableMessage}
+      />
     </form>
   );
 }
 
-function GenerateButton({ ready }: { ready: boolean }) {
+function getGenerationUnavailableMessage({
+  scope,
+  targetId,
+  availableTargetCount,
+  selectedTargetName,
+  groups,
+  rooms,
+  teachers,
+  requirements,
+  ready,
+}: {
+  scope: GenerationScope;
+  targetId: string;
+  availableTargetCount: number;
+  selectedTargetName?: string;
+  groups: ScheduleResource[];
+  rooms: ScheduleResource[];
+  teachers: ScheduleResource[];
+  requirements: ScheduleRequirementView[];
+  ready: boolean;
+}) {
+  if (scope === "SCHOOL") {
+    if (groups.length === 0) {
+      return "Najpierw dodaj przynajmniej jedną grupę w Kartotekach.";
+    }
+    if (rooms.length === 0) {
+      return "Najpierw dodaj przynajmniej jedną salę w Kartotekach.";
+    }
+    if (teachers.length === 0) {
+      return "Najpierw dodaj przynajmniej jednego wykładowcę w Kartotekach.";
+    }
+    if (!ready) {
+      const configured = requirements.filter(
+        (requirement) => requirement.configured,
+      ).length;
+      return `Uzupełnij potrzeby grup poniżej (${configured}/${groups.length} gotowych).`;
+    }
+    return null;
+  }
+
+  const scopeLabels: Record<Exclude<GenerationScope, "SCHOOL">, string> = {
+    LOCATION: "lokalizację",
+    GROUP: "grupę",
+    TEACHER: "wykładowcę",
+    ROOM: "salę",
+  };
+  const missingTargetMessages: Record<
+    Exclude<GenerationScope, "SCHOOL">,
+    string
+  > = {
+    LOCATION: "Najpierw dodaj lokalizację w Kartotekach.",
+    GROUP: "Najpierw dodaj grupę w Kartotekach.",
+    TEACHER: "Najpierw dodaj wykładowcę w Kartotekach.",
+    ROOM: "Najpierw dodaj salę w Kartotekach.",
+  };
+  if (availableTargetCount === 0) {
+    return missingTargetMessages[scope];
+  }
+  if (!targetId) {
+    return `Wybierz ${scopeLabels[scope]}, aby określić zakres grafiku.`;
+  }
+
+  return `Dla wyboru „${selectedTargetName ?? "wybrany zakres"}” nie ma gotowych potrzeb grup. Uzupełnij je poniżej albo wybierz inny zakres.`;
+}
+
+function GenerateButton({
+  ready,
+  unavailableMessage,
+}: {
+  ready: boolean;
+  unavailableMessage: string | null;
+}) {
   const { pending } = useFormStatus();
   return (
-    <button
-      className="button button-primary assistant-generate-button"
-      type="submit"
-      disabled={!ready || pending}
-    >
-      <Sparkles aria-hidden="true" />
-      {pending
-        ? "Układam bez kolizji…"
-        : ready
-          ? "Ułóż i pokaż podgląd"
-          : "Najpierw uzupełnij grupy"}
-    </button>
+    <div className="assistant-generate-submit">
+      <button
+        className="button button-primary assistant-generate-button"
+        type="submit"
+        disabled={!ready || pending}
+      >
+        {pending ? (
+          <LoaderCircle className="spin" aria-hidden="true" />
+        ) : (
+          <Sparkles aria-hidden="true" />
+        )}
+        {pending
+          ? "Układam bez kolizji…"
+          : ready
+            ? "Ułóż i pokaż podgląd"
+            : "Uzupełnij dane powyżej"}
+      </button>
+      {!ready && unavailableMessage ? (
+        <p className="assistant-generate-help" role="status">
+          <AlertCircle aria-hidden="true" />
+          {unavailableMessage}
+        </p>
+      ) : pending ? (
+        <p className="assistant-generate-help is-pending" role="status">
+          Sprawdzam wszystkie sale, grupy i wykładowców. To może chwilę potrwać.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -932,9 +1037,7 @@ function GenerationPreview({
                     Sprawdziłem propozycję. Chcę opublikować te lekcje w planie.
                   </span>
                 </label>
-                <button className="button button-primary" type="submit">
-                  <CheckCircle2 aria-hidden="true" /> Zatwierdź i opublikuj
-                </button>
+                <ApplyGenerationButton />
               </form>
             ) : generation.status === "APPLIED" ? (
               <div className="assistant-already-applied">
@@ -946,5 +1049,24 @@ function GenerationPreview({
         </div>
       </dialog>
     </>
+  );
+}
+
+function ApplyGenerationButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button className="button button-primary" type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <LoaderCircle className="spin" aria-hidden="true" />
+          Publikuję grafik…
+        </>
+      ) : (
+        <>
+          <CheckCircle2 aria-hidden="true" /> Zatwierdź i opublikuj
+        </>
+      )}
+    </button>
   );
 }

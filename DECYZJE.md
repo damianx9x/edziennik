@@ -413,6 +413,38 @@ Automatyczna synchronizacja obu list zostanie rozważona przy docelowym CMS.
 przydzielić grupie fizycznie niedostępną salę. Osobny zasób daje spójne filtry,
 bezpieczne reguły serwerowe oraz możliwość późniejszego dodania adresów,
 koordynatorów i godzin pracy bez przebudowy grup i sal.
+
+## ADR-044 — testowy host sprawdza aplikację razem z bazą
+
+**Data:** 2026-07-28
+**Decyzja:** testowy host na Macu udostępnia minimalny endpoint
+`/api/health`, który zwraca sukces dopiero po odpowiedzi PostgreSQL. Przed
+każdym pokazem stosuje migracje. Osobna usługa macOS sprawdza zdrowie co
+30 sekund zarówno lokalnie, jak i przez publiczny tunel. Po trzech kolejnych
+błędach restartuje właściwy element: aplikację albo tunel. Start usługi
+podnosi również nazwaną lokalną bazę Prisma Dev, jeśli rzeczywiste zapytanie
+`SELECT 1` nie przechodzi (samo otwarcie portu nie wystarcza).
+Endpoint nie ujawnia wersji, błędu ani danych połączenia.
+
+**Dlaczego:** sam `KeepAlive` wykrywa wyłącznie zakończony proces. Żywy proces
+z błędem bazy albo stałym HTTP 500 mógł wcześniej pozostać formalnie
+„uruchomiony”. Migracje i kontrola całego toru zapobiegają pokazowi nowego
+commita na starej strukturze bazy.
+
+## ADR-045 — wspólna blokada integralności grafiku
+
+**Data:** 2026-08-03
+**Decyzja:** wszystkie operacje, które mogą zmienić poprawność grafiku — zapis
+i publikacja zajęć, import, archiwizacja zasobów, edycja grup i sal,
+dostępność wykładowcy oraz wymagania Asystenta — używają tej samej blokady
+transakcyjnej na szkołę. Zmiana danych wejściowych odrzuca gotowe, ale jeszcze
+nieopublikowane propozycje Asystenta. Publikacja ponownie sprawdza aktywność,
+lokalizację, pojemność, dostępność oraz kolizje każdego wpisu.
+
+**Dlaczego:** sprawdzenie konfliktu tylko tuż przed zapisem lekcji nie chroni
+przed równoległą zmianą sali, składu grupy albo dostępności. Jedna krótka
+blokada na szkołę zamyka ten wyścig bez wprowadzania dodatkowego serwisu.
+
 # 2026-07-28 — wspólny model nawigacji, Command Center i statystyki
 
 - Start panelu dyrektora jest Command Center: zawiera plan całej szkoły,

@@ -39,15 +39,16 @@ Termin pilota: 1 września 2026.
 - gotowy mechanizm MFA; czasowo wyłączony dla dyrektora w pilocie,
 - syntetyczne konta testowe.
 
-### Etap 2 — wykonana część kartotek i narzędzi
+### Etap 2 — wykonana część kartotek i ustawień
 
 - uczniowie, rodzice, wykładowcy, grupy i sale,
-- relacje rodzic–dziecko, zapisy do grup i przydziały nauczycieli,
+- model relacji rodzic–dziecko, zapisów do grup i przydziałów nauczycieli,
+- transakcyjny import relacji i przypisań,
 - duże karty szczegółów zamiast ciasnych tabel,
 - archiwizacja i reaktywacja kont,
 - import CSV/XLSX z podglądem i transakcyjnym zatwierdzeniem,
 - eksport zgodny z importem,
-- osobna sekcja `Narzędzia`,
+- osobna sekcja `Ustawienia`,
 - propozycje zmian wykładowcy zatwierdzane przez dyrektora,
 - historia i audyt ważnych operacji,
 - szeroki układ desktopowy oraz układ mobile-first.
@@ -64,6 +65,8 @@ Termin pilota: 1 września 2026.
 - podgląd propozycji w dużym oknie przed publikacją,
 - deterministyczny szkic do sprawdzenia i osobnej publikacji,
 - istniejące lekcje zachowane podczas kolejnego generowania,
+- wspólny serwerowy walidator aktywności, lokalizacji, pojemności,
+  dostępności i kolizji używany przy dodaniu, przesunięciu i publikacji,
 - audyt utworzenia, przesunięcia, odwołania i publikacji grafiku.
 
 ### Właściciel techniczny
@@ -84,12 +87,13 @@ Termin pilota: 1 września 2026.
   3 sale i 4 konta ról,
 - osobny instalator konta właściciela,
 - kopia bazy i aktualizacja z migracjami,
-- tymczasowe hostowanie testów z Maca przez tunel HTTPS.
+- tymczasowe hostowanie testów z Maca przez tunel HTTPS,
+- migracje przed każdym pokazem oraz automatyczny test aplikacji razem z bazą.
 
 ## Zweryfikowane
 
 - `npm run check`,
-- 65 testów automatycznych,
+- 88 testów automatycznych przechodzących po drugiej rundzie audytu,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
@@ -112,10 +116,12 @@ Termin pilota: 1 września 2026.
 ## Czego jeszcze nie ma w pilocie
 
 - cyklicznych serii, wyjątków, tematu i szybkiej obecności — dalsza część Etapu 3,
+- ręcznego przypisywania rodzica do dziecka, ucznia do grupy i wykładowcy do
+  grupy z poziomu karty — korekta interfejsu Etapu 2,
 - umów i wersjonowania akceptacji — Etap 4,
-- komunikatora i masowych ogłoszeń — Etap 4,
 - statusów płatności — Etap 4,
-- materiałów i zadań domowych — Etap 4,
+- komunikatora i masowych ogłoszeń — Etap 5,
+- materiałów i zadań domowych — Etap 6,
 - produkcyjnej wysyłki e-mail i SMS,
 - produkcyjnego prywatnego magazynu plików,
 - zewnętrznych backupów, retencji i pełnego monitoringu,
@@ -131,8 +137,10 @@ Termin pilota: 1 września 2026.
 
 ## Najbliższa kolejność
 
-1. Odbiór Asystenta i ręcznego grafiku na syntetycznych danych.
-2. Dokończenie Etapu 3: serie, wyjątki, temat i obecność.
-3. Etap 4: umowy, komunikator, płatności, materiały i zadania.
-4. Etap 5: PWA, powiadomienia, raporty, instrukcje i odbiór pilota.
-5. Zakup VPS, staging, testy klientki, poprawki i dopiero produkcja.
+1. Odbiór poprawionego Asystenta i ręcznego grafiku na syntetycznych danych.
+2. Domknięcie ręcznych relacji w kartotekach.
+3. Dokończenie Etapu 3: serie, wyjątki, temat i obecność.
+4. Etap 4: umowy i ręczne statusy płatności.
+5. Etap 5: komunikator i masowe ogłoszenia.
+6. Etap 6: materiały, zadania i panele klienta.
+7. Etap 7: VPS, staging, instrukcje, odbiór i dopiero produkcja.

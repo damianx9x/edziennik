@@ -38,14 +38,17 @@ Skrypt:
 2. używa stałego adresu HTTPS prowadzącego do portu 3100,
 3. eksportuje bieżący commit do prywatnego katalogu
    `~/Library/Application Support/KLA Demo Host/runtime`,
-5. usuwa z jej środowiska hasło właściciela i hasło danych demo,
-6. buduje aplikację z publicznym adresem logowania,
-7. uruchamia produkcyjny serwer Next.js,
-8. sprawdza odpowiedź lokalną i trasę tunelu,
-9. instaluje aplikację jako usługę użytkownika macOS,
-10. automatycznie uruchamia ją ponownie po awarii lub ponownym logowaniu,
-11. zapobiega uśpieniu Maca podczas działania aplikacji,
-12. tworzy prywatny plik z adresem i kontami testowymi.
+4. uruchamia lokalną bazę, jeśli po restarcie Maca jeszcze nie działa,
+5. stosuje wszystkie migracje przed uruchomieniem nowego commita,
+6. usuwa z runtime hasło właściciela i hasło danych demo,
+7. buduje aplikację z publicznym adresem logowania,
+8. uruchamia produkcyjny serwer Next.js,
+9. sprawdza aplikację razem z połączeniem do bazy,
+10. instaluje aplikację jako usługę użytkownika macOS,
+11. co 30 sekund sprawdza endpoint zdrowia i po trzech błędach restartuje
+    usługę,
+12. zapobiega uśpieniu Maca podczas działania aplikacji,
+13. tworzy prywatny plik z adresem i kontami testowymi.
 
 Przy pierwszym dodaniu subdomeny Cloudflare może jeszcze przygotowywać jej
 certyfikat HTTPS. Skrypt nie wyłącza wtedy aplikacji. `npm run host:mac:status`
@@ -76,8 +79,13 @@ nie jest przekazywane klientce.
 - nie uruchamiaj testów na prawdziwych danych dzieci.
 
 Terminal ani Codex nie muszą pozostać otwarte. Ekran może się wygasić. Usługa
-blokuje uśpienie systemu i automatycznie wstaje po awarii. Po restarcie Maca
-aplikacja oraz tunel uruchomią się po zalogowaniu użytkownika.
+blokuje uśpienie systemu, pilnuje procesu, aplikacji i połączenia z bazą oraz
+automatycznie wstaje po awarii. Po restarcie Maca aplikacja, lokalna baza i
+tunel uruchomią się po zalogowaniu użytkownika.
+
+To nadal nie jest gwarancja dostępności 24/7: wyłączenie Maca, brak prądu,
+awaria łącza Play lub wylogowanie użytkownika zatrzyma pokaz. Taką gwarancję
+może dać dopiero staging na VPS z zewnętrznym monitoringiem.
 
 ## Status i logi
 
@@ -89,6 +97,8 @@ Logi:
 
 - `~/Library/Application Support/KLA Demo Host/logs/service.log`,
 - `~/Library/Application Support/KLA Demo Host/logs/service-error.log`,
+- `~/Library/Application Support/KLA Demo Host/logs/watchdog.log`,
+- `~/Library/Application Support/KLA Demo Host/logs/migrate.log`,
 - `~/Library/Logs/com.cloudflare.cloudflared.out.log`,
 - `~/Library/Application Support/KLA Demo Host/logs/build.log`.
 
