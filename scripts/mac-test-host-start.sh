@@ -235,8 +235,8 @@ const contents = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `;
 
-writeFileSync(targetPath, contents, { mode: 0o600 });
-chmodSync(targetPath, 0o600);
+writeFileSync(targetPath, contents, { mode: 0o644 });
+chmodSync(targetPath, 0o644);
 NODE
 
 node --input-type=module - \
@@ -290,8 +290,8 @@ const contents = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `;
 
-writeFileSync(targetPath, contents, { mode: 0o600 });
-chmodSync(targetPath, 0o600);
+writeFileSync(targetPath, contents, { mode: 0o644 });
+chmodSync(targetPath, 0o644);
 NODE
 
 launchctl bootout "$watchdog_domain" >/dev/null 2>&1 || true

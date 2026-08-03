@@ -79,6 +79,11 @@ pozostały jednak zasadne i zostały wdrożone:
 - cofnięcie zaproszenia zwraca czytelny sukces albo błąd wyścigu;
 - plansza blokuje przeciąganie do końca trwającego zapisu.
 
+Próba wdrożenia wykryła jeszcze błąd operacyjny: nowe pliki usług macOS miały
+zbyt restrykcyjne uprawnienia dla `launchd`. Pliki konfiguracyjne usług są
+teraz zapisywane jako tylko do odczytu dla grupy i pozostałych (`0644`), a
+sekrety oraz dane przekazania nadal pozostają prywatne (`0600`).
+
 ## Rzeczy świadomie pozostawione na później
 
 - ręczne zarządzanie relacjami rodzic–dziecko i składami grup w pełnym UI;
