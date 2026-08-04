@@ -470,7 +470,15 @@ oczekiwany publiczny origin z pierwszych wartości `X-Forwarded-Host` i
 `X-Forwarded-Proto`, ustawianych przez zaufaną warstwę Cloudflare. Obcy origin
 oraz brak nagłówka pozostają odrzucane.
 
+Proces Next.js współdzieli jednego klienta Prisma także między serwerowymi
+chunkami produkcyjnego buildu. Pula ma domyślnie maksymalnie pięć połączeń;
+wartość można zmienić przez `KLA_DATABASE_POOL_MAX`, ale jest ograniczona do
+20. Dzięki temu wiele równoległych fragmentów strony czeka w jednej kolejce
+zamiast tworzyć konkurencyjne pule i przekraczać limit bazy.
+
 **Dlaczego:** sam otwarty port nie gwarantował gotowości PostgreSQL, a stara
-pula mogła zwrócić pojedynczy błąd po restarcie bazy. Jednocześnie porównanie
+pula mogła zwrócić pojedynczy błąd po restarcie bazy. Produkcyjny podział
+Next.js na chunki tworzył też więcej niż jedną pulę, podczas gdy lokalna baza
+demo przyjmuje najwyżej dziesięć równoległych połączeń. Jednocześnie porównanie
 origin z wewnętrznym adresem `127.0.0.1` błędnie blokowało prawidłowe zdarzenia
 statystyczne przesłane przez publiczny HTTPS.

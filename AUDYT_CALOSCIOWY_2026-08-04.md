@@ -12,8 +12,10 @@ należą do Etapów 4–6, a cykliczność i obecność do dalszej części Etap
 ## Znalezione i poprawione
 
 1. Długo działająca lokalna baza testowa mogła zamknąć połączenie używane przez
-   aplikację. Host sprawdza teraz kilka niezależnych zapytań SQL, czeka na
-   pełną gotowość bazy i korzysta z odporniejszej konfiguracji puli.
+   aplikację. Produkcyjne chunki Next.js tworzyły przy tym konkurencyjne pule
+   i przekraczały limit dziesięciu połączeń bazy demo. Host sprawdza teraz
+   kilka niezależnych zapytań SQL, czeka na pełną gotowość, a cały proces
+   współdzieli jedną ograniczoną pulę.
 2. macOS sporadycznie odrzucał pierwszą próbę instalacji procesu usługi.
    Uruchomienie jest ponawiane do pięciu razy.
 3. Rejestr odwiedzin zwracał 403 za tunelem, ponieważ porównywał publiczny

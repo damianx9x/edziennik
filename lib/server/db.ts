@@ -13,6 +13,14 @@ if (!connectionString) {
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
+const configuredPoolMax = Number.parseInt(
+  process.env.KLA_DATABASE_POOL_MAX ?? "5",
+  10,
+);
+const poolMax =
+  Number.isFinite(configuredPoolMax) && configuredPoolMax > 0
+    ? Math.min(configuredPoolMax, 20)
+    : 5;
 
 export const db =
   globalForPrisma.prisma ??
@@ -23,10 +31,11 @@ export const db =
       idleTimeoutMillis: 5_000,
       keepAlive: true,
       keepAliveInitialDelayMillis: 5_000,
+      max: poolMax,
       maxLifetimeSeconds: 60,
     }),
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-}
+// Next.js może załadować ten moduł z kilku chunków serwerowych. Jedna pula na
+// proces zapobiega przekroczeniu limitu połączeń małej bazy testowej.
+globalForPrisma.prisma ??= db;
