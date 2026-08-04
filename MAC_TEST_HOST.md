@@ -45,8 +45,8 @@ Skrypt:
 8. uruchamia produkcyjny serwer Next.js,
 9. sprawdza aplikację razem z połączeniem do bazy,
 10. instaluje aplikację jako usługę użytkownika macOS,
-11. co 30 sekund sprawdza endpoint zdrowia i po trzech błędach restartuje
-    usługę,
+11. co 30 sekund sprawdza aplikację i bazę; błąd lokalny naprawia od razu,
+    a tunel restartuje po trzech kolejnych błędach publicznego HTTPS,
 12. zapobiega uśpieniu Maca podczas działania aplikacji,
 13. tworzy prywatny plik z adresem i kontami testowymi.
 

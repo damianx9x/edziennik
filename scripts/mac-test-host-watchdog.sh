@@ -39,6 +39,19 @@ if [[ "$local_status" == "200" && "$public_status" == "200" ]]; then
   exit 0
 fi
 
+# Błąd lokalny obejmuje także niedostępną bazę, ponieważ /api/health wykonuje
+# prawdziwe SELECT 1. Restart usługi aplikacji uruchamia najpierw nadzór bazy,
+# więc nie czekamy z naprawą na trzy kolejne kontrole.
+if [[ "$local_status" != "200" ]]; then
+  printf '0\n' >"$failure_file"
+  printf '%s local HTTP %s, public HTTP %s, natychmiastowy restart aplikacji\n' \
+    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    "${local_status:-brak}" \
+    "${public_status:-brak}" >>"$watchdog_log"
+  launchctl kickstart -k "$launch_domain"
+  exit 0
+fi
+
 failures=0
 if [[ -f "$failure_file" ]]; then
   read -r failures <"$failure_file" || failures=0
@@ -59,12 +72,6 @@ if [[ "$failures" -lt 3 ]]; then
 fi
 
 printf '0\n' >"$failure_file"
-if [[ "$local_status" != "200" ]]; then
-  printf '%s restart aplikacji po trzech błędach zdrowia\n' \
-    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >>"$watchdog_log"
-  launchctl kickstart -k "$launch_domain"
-else
-  printf '%s restart tunelu po trzech błędach publicznego HTTPS\n' \
-    "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >>"$watchdog_log"
-  launchctl kickstart -k "$cloudflared_domain"
-fi
+printf '%s restart tunelu po trzech błędach publicznego HTTPS\n' \
+  "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >>"$watchdog_log"
+launchctl kickstart -k "$cloudflared_domain"
