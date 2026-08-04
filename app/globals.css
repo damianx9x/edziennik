@@ -7833,9 +7833,37 @@ body:has(.invitation-page) .feedback-trigger {
 }
 
 .schedule-form-heading {
+  padding-right: 48px;
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 18px;
+}
+
+.schedule-create-close {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--navy-700);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.schedule-create-close:hover {
+  color: var(--navy-950);
+  background: var(--blue-050);
+}
+
+.schedule-create-close svg {
+  width: 19px;
+  height: 19px;
 }
 
 .schedule-form-heading h2 {

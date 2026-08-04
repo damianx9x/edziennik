@@ -455,3 +455,22 @@ blokada na szkołę zamyka ten wyścig bez wprowadzania dodatkowego serwisu.
   opcjonalnie konto, ale nie zapisują IP, urządzenia, treści ani parametrów URL.
 - Zdarzenia statystyczne są przechowywane przez 90 dni.
 - Wspólne reguły przyszłych modułów opisuje `PRZEWODNIK_MODULOW_UI.md`.
+
+## ADR-046 — gotowość bazy i origin za zaufanym tunelem
+
+**Data:** 2026-08-04
+**Decyzja:** host testowy uznaje lokalną bazę za gotową dopiero po kilku
+niezależnych zapytaniach SQL. Po uruchomieniu bazy aplikacja czeka na gotowość
+SQL, a nie tylko na otwarty port. Pula połączeń aplikacji ma krótki czas
+bezczynności, limit życia połączenia i TCP keepalive. Instalacja usług macOS
+ponawia chwilowo odrzucone wywołanie `launchctl`.
+
+Endpoint statystyk nadal wymaga żądania same-origin. Za tunelem wylicza
+oczekiwany publiczny origin z pierwszych wartości `X-Forwarded-Host` i
+`X-Forwarded-Proto`, ustawianych przez zaufaną warstwę Cloudflare. Obcy origin
+oraz brak nagłówka pozostają odrzucane.
+
+**Dlaczego:** sam otwarty port nie gwarantował gotowości PostgreSQL, a stara
+pula mogła zwrócić pojedynczy błąd po restarcie bazy. Jednocześnie porównanie
+origin z wewnętrznym adresem `127.0.0.1` błędnie blokowało prawidłowe zdarzenia
+statystyczne przesłane przez publiczny HTTPS.

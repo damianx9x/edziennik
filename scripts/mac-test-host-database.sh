@@ -31,26 +31,34 @@ fi
 database_host="${database_target%:*}"
 database_port="${database_target##*:}"
 
-if nc -z "$database_host" "$database_port" >/dev/null 2>&1; then
-  if (
+database_is_ready() {
+  (
     cd "$runtime_dir"
     "$node_path" --env-file="$env_file" --input-type=module - <<'NODE'
 import pg from "pg";
 
-const client = new pg.Client({
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 3_000,
-  query_timeout: 3_000,
-});
+const probes = Number.parseInt(process.env.KLA_DB_HEALTH_PROBES ?? "3", 10);
 
-try {
-  await client.connect();
-  await client.query("SELECT 1");
-} finally {
-  await client.end().catch(() => undefined);
+for (let probe = 0; probe < probes; probe += 1) {
+  const client = new pg.Client({
+    connectionString: process.env.DATABASE_URL,
+    connectionTimeoutMillis: 3_000,
+    query_timeout: 3_000,
+  });
+
+  try {
+    await client.connect();
+    await client.query("SELECT 1");
+  } finally {
+    await client.end().catch(() => undefined);
+  }
 }
 NODE
-  ); then
+  )
+}
+
+if nc -z "$database_host" "$database_port" >/dev/null 2>&1; then
+  if database_is_ready; then
     exit 0
   fi
 
@@ -90,11 +98,11 @@ echo "Lokalna baza nie odpowiada. Uruchamiam instancję ${database_name}..."
 )
 
 for attempt in {1..30}; do
-  if nc -z "$database_host" "$database_port" >/dev/null 2>&1; then
+  if database_is_ready >/dev/null 2>&1; then
     exit 0
   fi
   if [[ "$attempt" -eq 30 ]]; then
-    echo "Lokalna baza nie uruchomiła się na porcie ${database_port}."
+    echo "Lokalna baza uruchomiła port ${database_port}, ale nie osiągnęła gotowości SQL."
     exit 1
   fi
   sleep 1

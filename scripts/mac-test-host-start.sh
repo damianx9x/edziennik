@@ -296,9 +296,29 @@ NODE
 
 launchctl bootout "$watchdog_domain" >/dev/null 2>&1 || true
 launchctl bootout "$launch_domain" >/dev/null 2>&1 || true
-launchctl bootstrap "gui/$(id -u)" "$launch_agent_file"
+
+bootstrap_launch_agent() {
+  local domain="$1"
+  local plist="$2"
+
+  for attempt in {1..5}; do
+    if launchctl bootstrap "gui/$(id -u)" "$plist"; then
+      return 0
+    fi
+
+    launchctl bootout "$domain" >/dev/null 2>&1 || true
+    if [[ "$attempt" -lt 5 ]]; then
+      sleep 1
+    fi
+  done
+
+  echo "macOS nie uruchomił usługi ${domain} po pięciu próbach."
+  return 1
+}
+
+bootstrap_launch_agent "$launch_domain" "$launch_agent_file"
 launchctl kickstart -k "$launch_domain"
-launchctl bootstrap "gui/$(id -u)" "$watchdog_agent_file"
+bootstrap_launch_agent "$watchdog_domain" "$watchdog_agent_file"
 
 for attempt in {1..45}; do
   if curl --fail --silent --show-error --max-time 5 \
@@ -378,7 +398,7 @@ const contents = [
   "",
   "Nie przekazuj klientce konta bog.",
   "Mac musi być włączony, podłączony do internetu i zasilania.",
-  "Adres przestanie działać po zatrzymaniu tunelu lub restarcie.",
+  "Po restarcie Maca adres wraca po zalogowaniu użytkownika macOS.",
   "",
 ].join("\n");
 

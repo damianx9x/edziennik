@@ -20,12 +20,16 @@ import {
   MapPin,
   Move,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import {
   startTransition,
   useActionState,
+  useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
 } from "react";
@@ -124,6 +128,7 @@ export function ScheduleWorkspace({
   const [newTeacherId, setNewTeacherId] = useState("");
   const [newRoomId, setNewRoomId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const createDetailsRef = useRef<HTMLDetailsElement>(null);
   const [feedback, setFeedback] = useState<ScheduleActionState>(
     initialActionState,
   );
@@ -146,6 +151,26 @@ export function ScheduleWorkspace({
     createAndClose,
     initialActionState,
   );
+
+  const closeCreateForm = useCallback(() => {
+    setCreateOpen(false);
+    window.requestAnimationFrame(() => {
+      createDetailsRef.current?.querySelector("summary")?.focus();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!createOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeCreateForm();
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [createOpen, closeCreateForm]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor),
@@ -308,6 +333,7 @@ export function ScheduleWorkspace({
             className="schedule-create"
             open={createOpen}
             onToggle={(event) => setCreateOpen(event.currentTarget.open)}
+            ref={createDetailsRef}
           >
             <summary>
               <CalendarPlus aria-hidden="true" />
@@ -320,6 +346,14 @@ export function ScheduleWorkspace({
                   <h2>Dodaj lekcję w czterech prostych krokach</h2>
                 </div>
                 <p>Niedostępne osoby i sale są wyszarzone razem z powodem.</p>
+                <button
+                  className="schedule-create-close"
+                  type="button"
+                  aria-label="Zamknij dodawanie lekcji"
+                  onClick={closeCreateForm}
+                >
+                  <X aria-hidden="true" />
+                </button>
               </div>
               {!hasResources ? (
                 <div className="schedule-message schedule-message-error">

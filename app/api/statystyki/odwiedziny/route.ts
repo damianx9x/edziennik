@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/server/db";
 import { getServerSession } from "@/modules/identity/auth/session";
 import {
+  isSameOriginPageVisit,
   isTrackedPagePath,
   pageVisitHourlyLimit,
 } from "@/modules/observability/page-visits";
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin) {
+  if (!isSameOriginPageVisit(request)) {
     return new NextResponse(null, { status: 403 });
   }
 

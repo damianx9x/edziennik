@@ -1,6 +1,6 @@
 # Stan projektu eDziennika KLA
 
-Aktualizacja: 2026-07-28
+Aktualizacja: 2026-08-04
 
 ## Cel
 
@@ -93,7 +93,7 @@ Termin pilota: 1 września 2026.
 ## Zweryfikowane
 
 - `npm run check`,
-- 88 testów automatycznych przechodzących po drugiej rundzie audytu,
+- 90 testów automatycznych przechodzących po audycie całościowym,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
@@ -102,7 +102,11 @@ Termin pilota: 1 września 2026.
 - paczki nie zawierają `.env`, lokalnej bazy ani haseł.
 - Asystent ułożył i opublikował 18 lekcji bez powtórzenia grupy tego samego dnia,
 - rodzic i uczeń widzą tylko powiązane grupy, a wykładowca nie ma edycji planu,
-- kontrola konsoli na nowej karcie nie wykazała ostrzeżeń ani błędów.
+- statystyki odwiedzin działają poprawnie także za tunelem Cloudflare,
+- formularz nowej lekcji zamyka się przyciskiem, klawiszem `Escape` i po
+  poprawnym zapisie,
+- panel ma czytelny ekran ponowienia po chwilowej awarii połączenia,
+- kontrola konsoli na poprawionym buildzie nie wykazała błędów aplikacji.
 
 ## Aktualne paczki
 

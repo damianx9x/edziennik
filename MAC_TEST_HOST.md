@@ -45,10 +45,14 @@ Skrypt:
 8. uruchamia produkcyjny serwer Next.js,
 9. sprawdza aplikację razem z połączeniem do bazy,
 10. instaluje aplikację jako usługę użytkownika macOS,
-11. co 30 sekund sprawdza aplikację i bazę; błąd lokalny naprawia od razu,
+11. czeka na kilka poprawnych zapytań SQL, a potem co 30 sekund sprawdza
+    aplikację i bazę; błąd lokalny naprawia od razu,
     a tunel restartuje po trzech kolejnych błędach publicznego HTTPS,
 12. zapobiega uśpieniu Maca podczas działania aplikacji,
 13. tworzy prywatny plik z adresem i kontami testowymi.
+
+Uruchamianie usług macOS jest ponawiane automatycznie, jeśli system chwilowo
+odrzuci pierwszą próbę instalacji procesu.
 
 Przy pierwszym dodaniu subdomeny Cloudflare może jeszcze przygotowywać jej
 certyfikat HTTPS. Skrypt nie wyłącza wtedy aplikacji. `npm run host:mac:status`
