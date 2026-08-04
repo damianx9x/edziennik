@@ -154,7 +154,12 @@ export function LoginForm() {
             loginu technicznego. System sam rozpozna Twoją rolę.
           </p>
 
-          <form className="auth-form" onSubmit={submit} aria-busy={isPending}>
+          <form
+            className="auth-form"
+            method="post"
+            onSubmit={submit}
+            aria-busy={isPending}
+          >
             <label>
               <span>Adres e-mail lub login</span>
               <input

@@ -106,6 +106,7 @@ export default async function SchedulePage({
   const isManagement =
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR";
+  const isSchoolStaff = isManagement || session.user.role === "TEACHER";
   const mode = isManagement && params.tryb !== "reczny" ? "assistant" : "manual";
 
   const groupWhere =
@@ -241,6 +242,51 @@ export default async function SchedulePage({
   ]);
 
   const visibleLocationIds = new Set(groupsRaw.map((group) => group.locationId));
+
+  const [journalEnrollments, attendanceRaw] = isSchoolStaff
+    ? await Promise.all([
+        db.enrollment.findMany({
+          where: {
+            groupId: { in: groupIds },
+            status: "ACTIVE",
+          },
+          select: {
+            groupId: true,
+            studentId: true,
+            student: { select: { name: true } },
+          },
+        }),
+        db.attendanceRecord.findMany({
+          where: {
+            schoolId: session.user.schoolId,
+            scheduleSlotId: { in: slotsRaw.map((slot) => slot.id) },
+          },
+          select: {
+            scheduleSlotId: true,
+            studentId: true,
+            status: true,
+          },
+        }),
+      ])
+    : [[], []];
+  const attendanceBySlotAndStudent = new Map(
+    attendanceRaw.map((record) => [
+      `${record.scheduleSlotId}:${record.studentId}`,
+      record.status,
+    ]),
+  );
+  const studentsByGroup = new Map<string, typeof journalEnrollments>();
+  for (const enrollment of journalEnrollments) {
+    const current = studentsByGroup.get(enrollment.groupId) ?? [];
+    current.push(enrollment);
+    studentsByGroup.set(enrollment.groupId, current);
+  }
+  for (const students of studentsByGroup.values()) {
+    students.sort((first, second) =>
+      first.student.name.localeCompare(second.student.name, "pl"),
+    );
+  }
+
   const locations: ScheduleLocation[] = locationsRaw.filter(
     (location) => isManagement || visibleLocationIds.has(location.id),
   );
@@ -251,7 +297,9 @@ export default async function SchedulePage({
     locationName:
       locationsRaw.find((location) => location.id === group.locationId)?.name ??
       "Lokalizacja",
-    studentIds: group.enrollments.map((enrollment) => enrollment.studentId),
+    studentIds: isManagement
+      ? group.enrollments.map((enrollment) => enrollment.studentId)
+      : [],
     teacherIds: group.teachers.map((teacher) => teacher.teacherId),
   }));
   const visibleRoomIds = new Set(slotsRaw.map((slot) => slot.roomId));
@@ -273,6 +321,13 @@ export default async function SchedulePage({
   const slots: ScheduleSlotView[] = slotsRaw.map((slot) => {
     const localStart = toZonedTime(slot.startAt, SCHOOL_TIME_ZONE);
     const localEnd = toZonedTime(slot.endAt, SCHOOL_TIME_ZONE);
+    const group = groupsRaw.find((candidate) => candidate.id === slot.groupId);
+    const canEditLesson =
+      isManagement ||
+      (session.user.role === "TEACHER" &&
+        group?.teachers.some(
+          (teacher) => teacher.teacherId === session.user.id,
+        ) === true);
     return {
       id: slot.id,
       groupId: slot.groupId,
@@ -283,9 +338,9 @@ export default async function SchedulePage({
       roomName: slot.room.name,
       teacherId: slot.teacherId,
       teacherName: slot.teacher.name,
-      studentIds: slot.group.enrollments.map(
-        (enrollment) => enrollment.studentId,
-      ),
+      studentIds: isManagement
+        ? slot.group.enrollments.map((enrollment) => enrollment.studentId)
+        : [],
       startAt: slot.startAt.toISOString(),
       endAt: slot.endAt.toISOString(),
       dateKey: format(localStart, "yyyy-MM-dd"),
@@ -296,6 +351,17 @@ export default async function SchedulePage({
       topic: slot.topic,
       version: slot.version,
       isLocked: slot.isLocked,
+      canEditLesson,
+      students: canEditLesson
+        ? (studentsByGroup.get(slot.groupId) ?? []).map((enrollment) => ({
+            id: enrollment.studentId,
+            name: enrollment.student.name,
+            attendanceStatus:
+              attendanceBySlotAndStudent.get(
+                `${slot.id}:${enrollment.studentId}`,
+              ) ?? null,
+          }))
+        : [],
     };
   });
   const days = Array.from({ length: 6 }, (_, index) => {

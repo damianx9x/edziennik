@@ -8291,6 +8291,211 @@ body:has(.invitation-page) .feedback-trigger {
   width: 11px;
 }
 
+.schedule-journal-trigger {
+  min-height: 44px;
+  margin-top: 7px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  color: var(--navy-900);
+  border: 1px solid rgb(23 38 80 / 14%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  font-size: 9px;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.schedule-journal-trigger:hover {
+  border-color: rgb(23 38 80 / 28%);
+  background: var(--white);
+}
+
+.schedule-journal-trigger:focus-visible {
+  outline: 3px solid rgb(38 92 176 / 28%);
+  outline-offset: 2px;
+}
+
+.schedule-journal-trigger svg {
+  width: 17px;
+  flex: 0 0 17px;
+}
+
+.lesson-journal-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(820px, calc(100dvh - 32px));
+  margin: auto;
+  padding: 0;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--navy-950);
+  border: 1px solid rgb(23 38 80 / 13%);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 28px 90px rgb(10 17 38 / 35%);
+}
+
+.lesson-journal-dialog::backdrop {
+  background: rgb(10 17 38 / 68%);
+  backdrop-filter: blur(5px);
+}
+
+.lesson-journal-shell {
+  max-height: min(820px, calc(100dvh - 32px));
+  overflow: auto;
+  display: grid;
+  gap: 20px;
+}
+
+.lesson-journal-heading {
+  padding: 24px 72px 20px 24px;
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.lesson-journal-heading .schedule-create-close {
+  top: 18px;
+  right: 20px;
+}
+
+.lesson-journal-heading h2 {
+  margin: 4px 0 3px;
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.lesson-journal-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.lesson-topic-field,
+.lesson-attendance {
+  margin: 0 24px;
+}
+
+.lesson-topic-field {
+  display: grid;
+  gap: 8px;
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.lesson-topic-field textarea {
+  width: 100%;
+  min-height: 94px;
+  padding: 14px;
+  resize: vertical;
+  color: var(--navy-950);
+  border: 1px solid #c9cbd2;
+  border-radius: 14px;
+  background: var(--white);
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.lesson-topic-field textarea:focus {
+  border-color: var(--blue-700);
+  outline: 3px solid rgb(38 92 176 / 16%);
+}
+
+.lesson-topic-field small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lesson-attendance {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fbfaf7;
+}
+
+.lesson-attendance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lesson-attendance-heading h3 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: -0.025em;
+}
+
+.lesson-attendance-heading .button {
+  flex: 0 0 auto;
+}
+
+.lesson-attendance-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.lesson-attendance-list label {
+  min-height: 58px;
+  padding: 7px 8px 7px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.42fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgb(23 38 80 / 9%);
+  border-radius: 13px;
+  background: var(--white);
+}
+
+.lesson-attendance-list label > span {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-attendance-list select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 36px 0 11px;
+  color: var(--navy-900);
+  border: 1px solid #c9cbd2;
+  border-radius: 10px;
+  background: var(--white);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.lesson-journal-shell > .assistant-form-message {
+  margin: 0 24px;
+}
+
+.lesson-journal-footer {
+  padding: 18px 24px 24px;
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+
 @media (max-width: 1040px) {
   .assistant-setup-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -8598,6 +8803,73 @@ body:has(.invitation-page) .feedback-trigger {
     width: min(290px, calc(100vw - 90px));
     right: 0;
     left: auto;
+  }
+
+  .lesson-journal-dialog {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: none;
+    border-radius: 18px;
+  }
+
+  .lesson-journal-shell {
+    height: 100%;
+    max-height: none;
+    align-content: start;
+  }
+
+  .lesson-journal-heading {
+    padding: 18px 68px 16px 18px;
+  }
+
+  .lesson-journal-heading .schedule-create-close {
+    top: 12px;
+    right: 14px;
+  }
+
+  .lesson-topic-field,
+  .lesson-attendance {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .lesson-attendance {
+    padding: 14px;
+  }
+
+  .lesson-attendance-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lesson-attendance-heading .button {
+    width: 100%;
+  }
+
+  .lesson-attendance-list label {
+    padding: 11px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .lesson-attendance-list label > span {
+    white-space: normal;
+  }
+
+  .lesson-journal-shell > .assistant-form-message {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .lesson-journal-footer {
+    margin-top: auto;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .lesson-journal-footer .button {
+    width: 100%;
   }
 }
 

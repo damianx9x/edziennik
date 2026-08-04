@@ -13,8 +13,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   AlertTriangle,
+  BookOpenCheck,
   CalendarPlus,
   CheckCircle2,
+  CheckCheck,
   Clock3,
   GripVertical,
   MapPin,
@@ -28,6 +30,7 @@ import {
   useActionState,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -39,7 +42,9 @@ import {
   createScheduleSlotAction,
   moveScheduleSlotAction,
   moveScheduleSlotFormAction,
+  saveLessonJournalAction,
 } from "../actions";
+import type { LessonAttendanceStatus } from "../lesson-journal";
 import {
   DAY_END_HOUR,
   DAY_START_HOUR,
@@ -959,11 +964,198 @@ function LessonCard({
           </div>
         </details>
       ) : null}
+      {slot.canEditLesson ? <LessonJournalDialog slot={slot} /> : null}
       {slot.topic ? (
         <p className="schedule-topic">
           <Clock3 aria-hidden="true" /> {slot.topic}
         </p>
       ) : null}
     </article>
+  );
+}
+
+const attendanceLabels: Record<LessonAttendanceStatus, string> = {
+  PRESENT: "Obecny/a",
+  ABSENT: "Nieobecny/a",
+  LATE: "Spóźniony/a",
+  EXCUSED: "Usprawiedliwiona",
+};
+
+function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const [attendance, setAttendance] = useState<
+    Record<string, LessonAttendanceStatus | "">
+  >(
+    Object.fromEntries(
+      slot.students.map((student) => [
+        student.id,
+        student.attendanceStatus ?? "",
+      ]),
+    ),
+  );
+  const [state, action, pending] = useActionState(
+    async (previousState: ScheduleActionState, formData: FormData) => {
+      try {
+        const result = await saveLessonJournalAction(previousState, formData);
+        if (result.status === "success") setIsOpen(false);
+        return result;
+      } catch {
+        return {
+          status: "error" as const,
+          message:
+            "Nie udało się zapisać lekcji. Sprawdź połączenie i spróbuj ponownie.",
+        };
+      }
+    },
+    initialActionState,
+  );
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog.open) dialog.close();
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        className="schedule-journal-trigger"
+        type="button"
+        onClick={() => {
+          setAttendance(
+            Object.fromEntries(
+              slot.students.map((student) => [
+                student.id,
+                student.attendanceStatus ?? "",
+              ]),
+            ),
+          );
+          setIsOpen(true);
+        }}
+      >
+        <BookOpenCheck aria-hidden="true" />
+        {slot.topic ? "Dziennik lekcji" : "Uzupełnij lekcję"}
+      </button>
+      <dialog
+        ref={dialogRef}
+        className="lesson-journal-dialog"
+        aria-labelledby={titleId}
+        onClose={() => setIsOpen(false)}
+      >
+        <form action={action} className="lesson-journal-shell">
+          <input type="hidden" name="slotId" value={slot.id} />
+          <input type="hidden" name="version" value={slot.version} />
+          <header className="lesson-journal-heading">
+            <div>
+              <span className="section-kicker">Dziennik lekcji</span>
+              <h2 id={titleId}>{slot.groupName}</h2>
+              <p>
+                {slot.dateKey} · {slot.startTime}–{slot.endTime}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="schedule-create-close"
+              aria-label="Zamknij dziennik lekcji"
+              onClick={() => setIsOpen(false)}
+            >
+              <X aria-hidden="true" />
+            </button>
+          </header>
+
+          <label className="lesson-topic-field">
+            <span>Temat lekcji</span>
+            <textarea
+              name="topic"
+              maxLength={240}
+              rows={2}
+              defaultValue={slot.topic ?? ""}
+              placeholder="Np. Past Simple — pytania i krótkie odpowiedzi"
+            />
+            <small>Krótko i konkretnie. Temat zobaczą rodzic i uczeń.</small>
+          </label>
+
+          <section className="lesson-attendance" aria-labelledby={`${titleId}-attendance`}>
+            <div className="lesson-attendance-heading">
+              <div>
+                <span className="section-kicker">Szybka obecność</span>
+                <h3 id={`${titleId}-attendance`}>Kto jest na zajęciach?</h3>
+              </div>
+              {slot.students.length > 0 ? (
+                <button
+                  className="button button-secondary button-small"
+                  type="button"
+                  onClick={() =>
+                    setAttendance(
+                      Object.fromEntries(
+                        slot.students.map((student) => [student.id, "PRESENT"]),
+                      ),
+                    )
+                  }
+                >
+                  <CheckCheck aria-hidden="true" /> Wszyscy obecni
+                </button>
+              ) : null}
+            </div>
+
+            {slot.students.length === 0 ? (
+              <div className="schedule-message">
+                Ta grupa nie ma jeszcze aktywnych uczniów.
+              </div>
+            ) : (
+              <div className="lesson-attendance-list">
+                {slot.students.map((student) => (
+                  <label key={student.id}>
+                    <span>{student.name}</span>
+                    <select
+                      name={`attendance:${student.id}`}
+                      value={attendance[student.id] ?? ""}
+                      onChange={(event) =>
+                        setAttendance((current) => ({
+                          ...current,
+                          [student.id]: event.target.value as
+                            | LessonAttendanceStatus
+                            | "",
+                        }))
+                      }
+                    >
+                      <option value="">Nieoznaczona</option>
+                      {Object.entries(attendanceLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {state.message ? (
+            <p className={`assistant-form-message ${state.status}`} role="status">
+              {state.message}
+            </p>
+          ) : null}
+
+          <footer className="lesson-journal-footer">
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => setIsOpen(false)}
+            >
+              Anuluj
+            </button>
+            <button className="button button-primary" type="submit" disabled={pending}>
+              <CheckCircle2 aria-hidden="true" />
+              {pending ? "Zapisuję…" : "Zapisz lekcję"}
+            </button>
+          </footer>
+        </form>
+      </dialog>
+    </>
   );
 }

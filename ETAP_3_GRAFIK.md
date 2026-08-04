@@ -19,7 +19,10 @@
 - wybór okresu od–do, maksymalnie osiem tygodni,
 - duży modalny podgląd przed publikacją,
 - publikacja rejestrowana w audycie,
-- odwołanie lekcji dopiero po jawnym potwierdzeniu.
+- odwołanie lekcji dopiero po jawnym potwierdzeniu,
+- temat lekcji i szybka obecność w dużym oknie dziennika,
+- dyrektor edytuje każdą lekcję, a wykładowca tylko przypisane grupy,
+- rodzic i uczeń nie otrzymują listy innych uczniów ani danych obecności.
 
 ## Jak działa Asystent
 
@@ -46,6 +49,9 @@
 7. Otwórz **Dodaj zajęcia**, wybierz grupę i wolny termin.
 8. Sprawdź, czy po zapisie formularz się zamyka i pokazuje potwierdzenie.
 9. Otwórz menu `•••` i sprawdź, czy jest nad sąsiednimi lekcjami.
+10. Kliknij **Uzupełnij lekcję**, wpisz temat i wybierz
+    **Wszyscy obecni**.
+11. Zapisz i sprawdź, czy okno się zamyka, a temat pojawia się na lekcji.
 
 ### Telefon 375 × 812
 
@@ -54,6 +60,8 @@
 3. Sprawdź komunikat dnia bez zajęć.
 4. Otwórz dzień z lekcją i kartę „•••”.
 5. Upewnij się, że można zmienić termin bez przeciągania.
+6. Otwórz **Dziennik lekcji** i sprawdź, czy temat, obecność oraz dolne
+   przyciski mieszczą się bez przewijania w bok.
 
 ## Źródła wzorców
 
@@ -70,7 +78,6 @@
 ## Pozostało w Etapie 3
 
 - cykliczne serie i wyjątki,
-- temat lekcji i szybka obecność,
 - jawne blokowanie/odblokowanie pojedynczej opublikowanej lekcji,
 - test dwóch równoległych żądań HTTP w pełnym przepływie,
 - odbiór klientki na serwerze testowym z konkretnego commita.

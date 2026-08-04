@@ -35,6 +35,12 @@ export type ScheduleSlotView = {
   topic: string | null;
   version: number;
   isLocked: boolean;
+  canEditLesson: boolean;
+  students: Array<{
+    id: string;
+    name: string;
+    attendanceStatus: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" | null;
+  }>;
 };
 
 export type ScheduleActionState = {

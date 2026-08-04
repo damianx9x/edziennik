@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "@/app/generated/prisma/client";
+import { resolveDatabasePoolMax } from "@/lib/server/database-pool";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -13,14 +14,10 @@ if (!connectionString) {
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
-const configuredPoolMax = Number.parseInt(
-  process.env.KLA_DATABASE_POOL_MAX ?? "5",
-  10,
+const poolMax = resolveDatabasePoolMax(
+  connectionString,
+  process.env.KLA_DATABASE_POOL_MAX,
 );
-const poolMax =
-  Number.isFinite(configuredPoolMax) && configuredPoolMax > 0
-    ? Math.min(configuredPoolMax, 20)
-    : 5;
 
 export const db =
   globalForPrisma.prisma ??

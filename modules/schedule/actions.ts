@@ -4,9 +4,14 @@ import { differenceInMinutes } from "date-fns";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/server/db";
-import { requireDirector } from "@/modules/identity/auth/session";
+import { can, type Actor } from "@/modules/access-control/can";
+import {
+  requireDirector,
+  requireSchoolStaff,
+} from "@/modules/identity/auth/session";
 
 import { assertScheduleSlotCanBeSaved } from "./hard-constraints";
+import { parseLessonJournalFormData } from "./lesson-journal";
 import { lockScheduleResources } from "./resource-lock";
 import {
   createScheduleSlotSchema,
@@ -17,6 +22,166 @@ import {
 import type { ScheduleActionState } from "./types";
 
 const schedulePath = "/panel/plan";
+
+export async function saveLessonJournalAction(
+  _previous: ScheduleActionState,
+  formData: FormData,
+): Promise<ScheduleActionState> {
+  const session = await requireSchoolStaff(schedulePath);
+  const parsed = parseLessonJournalFormData(formData);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.message };
+  }
+
+  try {
+    const result = await db.$transaction(async (transaction) => {
+      await lockScheduleResources(transaction, session.user.schoolId);
+      const slot = await transaction.scheduleSlot.findFirst({
+        where: {
+          id: parsed.data.slotId,
+          schoolId: session.user.schoolId,
+          archivedAt: null,
+          status: { not: "CANCELLED" },
+        },
+        select: {
+          id: true,
+          version: true,
+          topic: true,
+          teacherId: true,
+          group: {
+            select: {
+              teachers: {
+                where: { archivedAt: null },
+                select: { teacherId: true },
+              },
+              enrollments: {
+                where: { status: "ACTIVE" },
+                select: { studentId: true },
+              },
+            },
+          },
+        },
+      });
+      if (!slot) {
+        throw new Error("Ta lekcja nie jest już dostępna. Odśwież plan.");
+      }
+
+      const actor: Actor = {
+        id: session.user.id,
+        schoolId: session.user.schoolId,
+        role: session.user.role,
+      };
+      const resource = {
+        schoolId: session.user.schoolId,
+        teacherIds: Array.from(
+          new Set([
+            slot.teacherId,
+            ...slot.group.teachers.map((teacher) => teacher.teacherId),
+          ]),
+        ),
+      };
+      if (
+        !can(actor, "edit:lesson", resource) ||
+        !can(actor, "edit:attendance", resource)
+      ) {
+        throw new Error("Możesz uzupełniać tylko lekcje przypisanych grup.");
+      }
+
+      const enrolledStudentIds = new Set(
+        slot.group.enrollments.map((enrollment) => enrollment.studentId),
+      );
+      if (
+        parsed.data.attendance.some(
+          (record) => !enrolledStudentIds.has(record.studentId),
+        )
+      ) {
+        throw new Error("Skład grupy zmienił się. Odśwież lekcję.");
+      }
+
+      const updated = await transaction.scheduleSlot.updateMany({
+        where: { id: slot.id, version: parsed.data.version },
+        data: {
+          topic: parsed.data.topic,
+          version: { increment: 1 },
+        },
+      });
+      if (updated.count !== 1) {
+        throw new Error(
+          "Ktoś właśnie zmienił tę lekcję. Odśwież plan przed ponownym zapisem.",
+        );
+      }
+
+      for (const record of parsed.data.attendance) {
+        if (record.status === null) {
+          await transaction.attendanceRecord.deleteMany({
+            where: {
+              scheduleSlotId: slot.id,
+              studentId: record.studentId,
+            },
+          });
+          continue;
+        }
+        await transaction.attendanceRecord.upsert({
+          where: {
+            scheduleSlotId_studentId: {
+              scheduleSlotId: slot.id,
+              studentId: record.studentId,
+            },
+          },
+          update: {
+            status: record.status,
+            recordedById: session.user.id,
+          },
+          create: {
+            schoolId: session.user.schoolId,
+            scheduleSlotId: slot.id,
+            studentId: record.studentId,
+            recordedById: session.user.id,
+            status: record.status,
+          },
+        });
+      }
+
+      const attendanceCounts = parsed.data.attendance.reduce<
+        Record<string, number>
+      >((counts, record) => {
+        const key = record.status ?? "UNMARKED";
+        counts[key] = (counts[key] ?? 0) + 1;
+        return counts;
+      }, {});
+      await transaction.auditLog.create({
+        data: {
+          schoolId: session.user.schoolId,
+          actorId: session.user.id,
+          action: "schedule.lesson-journal.updated",
+          entityType: "ScheduleSlot",
+          entityId: slot.id,
+          metadata: {
+            topicChanged: slot.topic !== parsed.data.topic,
+            attendanceCounts,
+          },
+        },
+      });
+
+      return slot.id;
+    });
+
+    revalidatePath(schedulePath);
+    return {
+      status: "success",
+      message: "Temat i obecność zostały zapisane.",
+      slotId: result,
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Nie udało się zapisać dziennika lekcji. Spróbuj ponownie.",
+    };
+  }
+}
 
 export async function createScheduleSlotAction(
   _previous: ScheduleActionState,

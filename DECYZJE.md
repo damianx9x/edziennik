@@ -473,12 +473,35 @@ oraz brak nagłówka pozostają odrzucane.
 Proces Next.js współdzieli jednego klienta Prisma także między serwerowymi
 chunkami produkcyjnego buildu. Pula ma domyślnie maksymalnie pięć połączeń;
 wartość można zmienić przez `KLA_DATABASE_POOL_MAX`, ale jest ograniczona do
-20. Dzięki temu wiele równoległych fragmentów strony czeka w jednej kolejce
-zamiast tworzyć konkurencyjne pule i przekraczać limit bazy.
+20. Lokalny serwer `prisma dev` na domyślnym porcie 51214 jest automatycznie
+ograniczany do jednego połączenia, zgodnie z jego kontraktem. Dzięki temu wiele
+równoległych fragmentów strony czeka w jednej kolejce zamiast mieszać odpowiedzi
+protokołu albo przekraczać limit bazy.
 
 **Dlaczego:** sam otwarty port nie gwarantował gotowości PostgreSQL, a stara
 pula mogła zwrócić pojedynczy błąd po restarcie bazy. Produkcyjny podział
-Next.js na chunki tworzył też więcej niż jedną pulę, podczas gdy lokalna baza
-demo przyjmuje najwyżej dziesięć równoległych połączeń. Jednocześnie porównanie
+Next.js na chunki tworzył też więcej niż jedną pulę, podczas gdy lokalny
+Prisma Postgres przyjmuje jedno połączenie naraz. Jednocześnie porównanie
 origin z wewnętrznym adresem `127.0.0.1` błędnie blokowało prawidłowe zdarzenia
 statystyczne przesłane przez publiczny HTTPS.
+
+## ADR-047 — dziennik lekcji bez ujawniania składu grupy
+
+**Data:** 2026-08-05
+**Decyzja:** temat i obecność są edytowane z karty lekcji w jednym modalnym
+oknie. Dyrektor może edytować każdą lekcję szkoły, a wykładowca tylko lekcję
+grupy, do której jest przypisany. Ta sama centralna reguła uprawnień jest
+sprawdzana na serwerze przed zapisem. Lista uczniów i statusy obecności są
+dołączane do danych strony wyłącznie dla uprawnionego pracownika; rodzic i
+uczeń nie dostają ich nawet jako ukryte dane klienta. Zapis tematu i obecności
+jest atomowy, używa wersji lekcji i tworzy wpis audytu bez treści tematu oraz
+bez nazwisk.
+
+Formularz logowania deklaruje `method="post"`, mimo że właściwe logowanie
+obsługuje JavaScript. Dzięki temu kliknięcie przed hydratacją albo awaria
+skryptu nie umieszcza identyfikatora i hasła w adresie strony.
+
+**Dlaczego:** wykładowca potrzebuje codziennej czynności w jednym dotknięciu,
+ale wygoda nie może rozszerzać dostępu do innych grup. Awaryjne zachowanie
+formularza także musi pozostać bezpieczne, nawet gdy kod klienta jeszcze nie
+działa.
