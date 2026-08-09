@@ -1,6 +1,6 @@
 # Stan projektu eDziennika KLA
 
-Aktualizacja: 2026-08-04
+Aktualizacja: 2026-08-09
 
 ## Cel
 
@@ -69,6 +69,24 @@ Termin pilota: 1 września 2026.
   dostępności i kolizji używany przy dodaniu, przesunięciu i publikacji,
 - audyt utworzenia, przesunięcia, odwołania i publikacji grafiku.
 
+### Etap 4 — umowy i płatności
+
+- niezmienne, wersjonowane dokumenty PDF,
+- dwie jawne ścieżki: akceptacja dokumentowa albo podpis poza systemem,
+- dowód czasu, treści oświadczenia, wersji i skrótu dokumentu,
+- płatność wynikająca z zaakceptowanej wersji umowy,
+- ręczny status rozliczenia i pełna historia zmian.
+
+### Etap 5 — komunikator i ogłoszenia
+
+- jeden służbowy kanał na grupę i dostęp wynikający z kartotek,
+- wiadomości wykładowcy, rodzica i ucznia wyłącznie w ich grupach,
+- ogłoszenie dyrektora do jednej lub wielu grup,
+- potwierdzenia odczytu oraz kontrolowane odświeżanie co 15 sekund,
+- trwała kolejka e-mail z idempotencją, ponowieniami i kodem błędu,
+- jawny dostęp dyrektora do treści na 15 minut po podaniu uzasadnienia,
+- brak dostępu właściciela technicznego do treści rozmów.
+
 ### Właściciel techniczny
 
 - rola `SYSTEM_OWNER`, widoczna jako `Obsługa techniczna`,
@@ -93,7 +111,7 @@ Termin pilota: 1 września 2026.
 ## Zweryfikowane
 
 - `npm run check`,
-- 90 testów automatycznych przechodzących po audycie całościowym,
+- 116 testów automatycznych przechodzących po audycie całościowym,
 - `npm run build`,
 - migracje odtworzone na pustym schemacie,
 - seed uruchomiony dwukrotnie bez duplikowania danych,
@@ -112,19 +130,14 @@ Termin pilota: 1 września 2026.
 
 - statyczny FTP:
   `outputs/kla-szkielet-etap-0-5-home-pl.zip`,
-- serwer Node:
-  `outputs/edziennik-kla-stage-3.zip`,
-- pełny instalator VPS:
-  `outputs/edziennik-kla-home-vps-stage-3.zip`.
+- serwer Node: `outputs/edziennik-kla-stage-5.zip`,
+- pełny instalator VPS: `outputs/edziennik-kla-home-vps-stage-5.zip`.
 
 ## Czego jeszcze nie ma w pilocie
 
 - cyklicznych serii, wyjątków, tematu i szybkiej obecności — dalsza część Etapu 3,
 - ręcznego przypisywania rodzica do dziecka, ucznia do grupy i wykładowcy do
   grupy z poziomu karty — korekta interfejsu Etapu 2,
-- umów i wersjonowania akceptacji — Etap 4,
-- statusów płatności — Etap 4,
-- komunikatora i masowych ogłoszeń — Etap 5,
 - materiałów i zadań domowych — Etap 6,
 - produkcyjnej wysyłki e-mail i SMS,
 - produkcyjnego prywatnego magazynu plików,
@@ -141,10 +154,6 @@ Termin pilota: 1 września 2026.
 
 ## Najbliższa kolejność
 
-1. Odbiór poprawionego Asystenta i ręcznego grafiku na syntetycznych danych.
-2. Domknięcie ręcznych relacji w kartotekach.
-3. Dokończenie Etapu 3: serie, wyjątki, temat i obecność.
-4. Etap 4: umowy i ręczne statusy płatności.
-5. Etap 5: komunikator i masowe ogłoszenia.
-6. Etap 6: materiały, zadania i panele klienta.
-7. Etap 7: VPS, staging, instrukcje, odbiór i dopiero produkcja.
+1. Odbiór Etapu 5 na syntetycznych danych i podłączenie konta e-mail klientki.
+2. Etap 6: materiały, zadania i panele klienta.
+3. Etap 7: VPS, staging, instrukcje, odbiór i dopiero produkcja.

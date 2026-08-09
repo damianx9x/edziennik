@@ -594,3 +594,24 @@ ekran i nie wymagają precyzyjnego chwytania krawędzi.
 **Dlaczego:** warunków zaakceptowanej umowy nie wolno nadpisywać późniejszą
 edycją statusu. Rozdzielenie źródła zobowiązania od operacyjnego rozliczenia
 zapewnia czytelny audyt i nie sugeruje zaległości przed zawarciem umowy.
+
+## ADR-053 — komunikator grupowy z audytowanym dostępem dyrektora
+
+**Data:** 2026-08-09
+**Decyzja:** jedna grupa ma jeden służbowy kanał. Wykładowca widzi tylko
+przypisane grupy, rodzic grupy powiązanych dzieci, a uczeń własne grupy.
+Dyrektor widzi metadane kanałów i wysyła ogłoszenia, lecz treść rozmowy otwiera
+na 15 minut dopiero po wskazaniu celu oraz konkretnego uzasadnienia. Otwarcie
+tworzy wpis audytu bez treści wiadomości. Właściciel techniczny nie ma dostępu
+do treści. Wiadomości są append-only w pilocie.
+
+Powiadomienia e-mail używają trwałego outboxu w PostgreSQL, osobnego rekordu na
+odbiorcę, klucza idempotencji i maksymalnie pięciu prób z ograniczonym
+wykładniczym odstępem. Brak skonfigurowanego dostawcy jest widocznym błędem
+kolejki, a nie fałszywym sukcesem. Widok odświeża się co 15 sekund tylko przy
+widocznej karcie; późniejszy realtime zachowa ten sam kontrakt modułu.
+
+**Dlaczego:** komunikacja grupowa musi być prosta, ale nie może tworzyć
+ukrytego nadzoru ani rozszerzać dostępu technicznego do rozmów rodzin. Outbox
+oddziela zapis wiadomości od zawodnej usługi zewnętrznej i umożliwia bezpieczne
+ponowienie bez podwójnej wysyłki.

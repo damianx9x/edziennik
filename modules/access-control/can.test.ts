@@ -124,6 +124,61 @@ describe("can", () => {
     ).toBe(false);
   });
 
+  it("keeps group conversations inside active relationships", () => {
+    const ownConversation: Resource = {
+      schoolId,
+      teacherIds: [teacher.id],
+      parentIds: [parent.id],
+      studentIds: [student.id],
+    };
+    const foreignConversation: Resource = {
+      schoolId,
+      teacherIds: ["teacher-2"],
+      parentIds: ["parent-2"],
+      studentIds: ["student-2"],
+    };
+
+    for (const actor of [teacher, parent, student]) {
+      expect(can(actor, "view:conversation", ownConversation)).toBe(true);
+      expect(can(actor, "send:group-message", ownConversation)).toBe(true);
+      expect(can(actor, "view:conversation", foreignConversation)).toBe(false);
+      expect(can(actor, "send:group-message", foreignConversation)).toBe(false);
+    }
+  });
+
+  it("requires a short audited grant before a director reads a conversation", () => {
+    expect(
+      can(director, "view:conversation", {
+        schoolId,
+        directorAccessGranted: false,
+      }),
+    ).toBe(false);
+    expect(
+      can(director, "view:conversation", {
+        schoolId,
+        directorAccessGranted: true,
+      }),
+    ).toBe(true);
+    expect(can(director, "audit:view-conversation", { schoolId })).toBe(true);
+    expect(can(director, "send:announcement", { schoolId })).toBe(true);
+    expect(can(director, "send:group-message", { schoolId })).toBe(false);
+  });
+
+  it("keeps technical diagnostics away from message content", () => {
+    const conversation: Resource = {
+      schoolId,
+      teacherIds: [teacher.id],
+      parentIds: [parent.id],
+      studentIds: [student.id],
+      directorAccessGranted: true,
+    };
+
+    expect(can(systemOwner, "view:conversation", conversation)).toBe(false);
+    expect(can(systemOwner, "send:group-message", conversation)).toBe(false);
+    expect(can(systemOwner, "send:announcement", conversation)).toBe(false);
+    expect(can(systemOwner, "audit:view-conversation", conversation)).toBe(false);
+  });
+
   it.each([
     [teacher, "view:teacher-dashboard"],
     [parent, "view:parent-dashboard"],

@@ -140,6 +140,26 @@ enum PaymentStatus {
   OVERDUE
 }
 
+enum MessageKind {
+  CHAT
+  ANNOUNCEMENT
+}
+
+enum EmailDeliveryStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+enum ConversationAccessPurpose {
+  SAFETY
+  COMPLAINT
+  LEGAL
+  SUPPORT
+  OTHER
+}
+
 model School {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -168,6 +188,12 @@ model School {
   contracts              Contract[]
   contractAssignments    ContractAssignment[]
   paymentRecords         PaymentRecord[]
+  conversations          Conversation[]
+  messages               Message[]
+  announcements          Announcement[]
+  messageReads           MessageRead[]
+  emailDeliveries        EmailDelivery[]
+  conversationAccesses   DirectorConversationAccess[]
 }
 
 model Location {
@@ -209,38 +235,43 @@ model User {
   archivedAt       DateTime?
   pageVisits       PageVisit[]
 
-  school                     School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  school                     School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   sessions                   Session[]
   accounts                   Account[]
   twoFactors                 TwoFactor[]
   teacherProfile             TeacherProfile?
   studentProfile             StudentProfile?
-  parentLinks                ParentChild[]           @relation("ParentLinks")
-  childLinks                 ParentChild[]           @relation("ChildLinks")
+  parentLinks                ParentChild[]                @relation("ParentLinks")
+  childLinks                 ParentChild[]                @relation("ChildLinks")
   groupTeaching              GroupTeacher[]
   enrollments                Enrollment[]
-  teachingSlots              ScheduleSlot[]          @relation("ScheduleTeacher")
-  createdSlots               ScheduleSlot[]          @relation("ScheduleCreator")
-  attendanceAsStudent        AttendanceRecord[]      @relation("AttendanceStudent")
-  attendanceRecorded         AttendanceRecord[]      @relation("AttendanceRecorder")
-  availabilityWindows        AvailabilityWindow[]    @relation("AvailabilityTeacher")
-  schedulingRequirements     SchedulingRequirement[] @relation("RequirementTeacher")
-  createdScheduleGenerations ScheduleGeneration[]    @relation("ScheduleGenerationCreator")
-  proposedScheduleSlots      ScheduleProposalSlot[]  @relation("ProposalTeacher")
-  auditEvents                AuditLog[]              @relation("AuditActor")
-  feedbackReports            FeedbackReport[]        @relation("FeedbackReporter")
-  sentInvitations            Invitation[]            @relation("InvitationSender")
-  usedInvitations            Invitation[]            @relation("InvitationRecipient")
-  uploadedFiles              StoredFile[]            @relation("FileUploader")
-  importBatches              ImportBatch[]           @relation("ImportCreator")
-  requestedRecordChanges     RecordChangeRequest[]   @relation("RecordChangeRequester")
-  reviewedRecordChanges      RecordChangeRequest[]   @relation("RecordChangeReviewer")
-  createdContractVersions    ContractVersion[]       @relation("ContractVersionCreator")
-  contractAssignmentsParent  ContractAssignment[]    @relation("ContractParent")
-  contractAssignmentsChild   ContractAssignment[]    @relation("ContractStudent")
-  contractAcceptances        ContractAcceptance[]    @relation("ContractAcceptor")
-  paymentRecordsAsStudent    PaymentRecord[]         @relation("PaymentStudent")
-  changedPaymentRecords      PaymentRecord[]         @relation("PaymentChangedBy")
+  teachingSlots              ScheduleSlot[]               @relation("ScheduleTeacher")
+  createdSlots               ScheduleSlot[]               @relation("ScheduleCreator")
+  attendanceAsStudent        AttendanceRecord[]           @relation("AttendanceStudent")
+  attendanceRecorded         AttendanceRecord[]           @relation("AttendanceRecorder")
+  availabilityWindows        AvailabilityWindow[]         @relation("AvailabilityTeacher")
+  schedulingRequirements     SchedulingRequirement[]      @relation("RequirementTeacher")
+  createdScheduleGenerations ScheduleGeneration[]         @relation("ScheduleGenerationCreator")
+  proposedScheduleSlots      ScheduleProposalSlot[]       @relation("ProposalTeacher")
+  auditEvents                AuditLog[]                   @relation("AuditActor")
+  feedbackReports            FeedbackReport[]             @relation("FeedbackReporter")
+  sentInvitations            Invitation[]                 @relation("InvitationSender")
+  usedInvitations            Invitation[]                 @relation("InvitationRecipient")
+  uploadedFiles              StoredFile[]                 @relation("FileUploader")
+  importBatches              ImportBatch[]                @relation("ImportCreator")
+  requestedRecordChanges     RecordChangeRequest[]        @relation("RecordChangeRequester")
+  reviewedRecordChanges      RecordChangeRequest[]        @relation("RecordChangeReviewer")
+  createdContractVersions    ContractVersion[]            @relation("ContractVersionCreator")
+  contractAssignmentsParent  ContractAssignment[]         @relation("ContractParent")
+  contractAssignmentsChild   ContractAssignment[]         @relation("ContractStudent")
+  contractAcceptances        ContractAcceptance[]         @relation("ContractAcceptor")
+  paymentRecordsAsStudent    PaymentRecord[]              @relation("PaymentStudent")
+  changedPaymentRecords      PaymentRecord[]              @relation("PaymentChangedBy")
+  authoredMessages           Message[]                    @relation("MessageAuthor")
+  authoredAnnouncements      Announcement[]               @relation("AnnouncementAuthor")
+  messageReads               MessageRead[]
+  emailDeliveries            EmailDelivery[]              @relation("EmailRecipient")
+  directorConversationAccess DirectorConversationAccess[] @relation("ConversationAccessDirector")
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -439,6 +470,7 @@ model CourseGroup {
   availabilityWindows   AvailabilityWindow[]
   schedulingRequirement SchedulingRequirement?
   proposedScheduleSlots ScheduleProposalSlot[]
+  conversation          Conversation?
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -643,6 +675,121 @@ model AuditLog {
   @@index([schoolId, createdAt])
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
+}
+
+model Conversation {
+  id         String    @id @default(uuid()) @db.Uuid
+  schoolId   String    @db.Uuid
+  groupId    String    @unique @db.Uuid
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  school   School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group    CourseGroup                  @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  messages Message[]
+  accesses DirectorConversationAccess[]
+
+  @@index([schoolId, updatedAt])
+  @@index([schoolId, archivedAt])
+}
+
+model Announcement {
+  id              String   @id @default(uuid()) @db.Uuid
+  schoolId        String   @db.Uuid
+  authorId        String   @db.Uuid
+  subject         String
+  body            String
+  clientRequestId String
+  createdAt       DateTime @default(now())
+
+  school   School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  author   User      @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  messages Message[]
+
+  @@unique([authorId, clientRequestId])
+  @@index([schoolId, createdAt])
+}
+
+model Message {
+  id              String      @id @default(uuid()) @db.Uuid
+  schoolId        String      @db.Uuid
+  conversationId  String      @db.Uuid
+  authorId        String      @db.Uuid
+  announcementId  String?     @db.Uuid
+  kind            MessageKind @default(CHAT)
+  subject         String?
+  body            String
+  clientRequestId String
+  createdAt       DateTime    @default(now())
+
+  school       School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  conversation Conversation    @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  author       User            @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  announcement Announcement?   @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+  reads        MessageRead[]
+  deliveries   EmailDelivery[]
+
+  @@unique([authorId, clientRequestId])
+  @@index([schoolId, createdAt])
+  @@index([conversationId, createdAt])
+  @@index([announcementId])
+}
+
+model MessageRead {
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  schoolId  String   @db.Uuid
+  readAt    DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@id([messageId, userId])
+  @@index([schoolId, readAt])
+  @@index([userId, readAt])
+}
+
+model EmailDelivery {
+  id             String              @id @default(uuid()) @db.Uuid
+  schoolId       String              @db.Uuid
+  messageId      String              @db.Uuid
+  recipientId    String              @db.Uuid
+  status         EmailDeliveryStatus @default(QUEUED)
+  attempts       Int                 @default(0)
+  idempotencyKey String              @unique
+  nextAttemptAt  DateTime            @default(now())
+  lastErrorCode  String?
+  sentAt         DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  recipient User    @relation("EmailRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, recipientId])
+  @@index([schoolId, status, nextAttemptAt])
+  @@index([recipientId, createdAt])
+}
+
+model DirectorConversationAccess {
+  id             String                    @id @default(uuid()) @db.Uuid
+  schoolId       String                    @db.Uuid
+  conversationId String                    @db.Uuid
+  directorId     String                    @db.Uuid
+  purpose        ConversationAccessPurpose
+  reason         String
+  expiresAt      DateTime
+  createdAt      DateTime                  @default(now())
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  director     User         @relation("ConversationAccessDirector", fields: [directorId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, createdAt])
+  @@index([conversationId, directorId, expiresAt])
 }
 
 model PageVisit {

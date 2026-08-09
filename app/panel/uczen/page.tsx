@@ -4,10 +4,12 @@ import {
   CheckCircle2,
   Clock3,
   GraduationCap,
+  MessageCircleMore,
   Sparkles,
   Trophy,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { requirePanelAccess } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
@@ -52,6 +54,14 @@ export default async function StudentPanelPage() {
       </section>
 
       <div className="student-action-grid" id="zadania">
+        <article>
+          <div className="student-action-icon student-action-blue">
+            <MessageCircleMore aria-hidden="true" />
+          </div>
+          <h2>Wiadomości grupy</h2>
+          <p>Informacje od szkoły i wykładowcy w jednym miejscu.</p>
+          <Link href="/panel/wiadomosci">Otwórz rozmowę</Link>
+        </article>
         <article>
           <div className="student-action-icon student-action-blue">
             <BookOpen aria-hidden="true" />

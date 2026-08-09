@@ -210,13 +210,13 @@ async function DirectorDashboard({
             <small>Otwórz moduł</small>
           </span>
         </Link>
-        <article id="wiadomosci">
+        <Link href="/panel/wiadomosci" className="module-ready" id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <span>
             <strong>Wiadomości</strong>
-            <small>Etap 5</small>
+            <small>Rozmowy i ogłoszenia</small>
           </span>
-        </article>
+        </Link>
         <Link href="/panel/platnosci" className="module-ready" id="platnosci">
           <CalendarClock aria-hidden="true" />
           <span>
@@ -299,8 +299,8 @@ function TeacherDashboard({ name }: { name: string }) {
         <aside className="role-side-card" id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <h2>Kontakt z grupą</h2>
-          <p>Wiadomości pojawią się w Etapie 5, a materiały w Etapie 6.</p>
-          <span className="stage-one-badge">W przygotowaniu</span>
+          <p>Napisz do przypisanej grupy lub sprawdź ogłoszenia szkoły.</p>
+          <Link className="stage-one-badge" href="/panel/wiadomosci">Otwórz wiadomości</Link>
         </aside>
       </div>
     </>

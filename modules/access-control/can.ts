@@ -23,7 +23,11 @@ export type Action =
   | "view:contract"
   | "accept:contract"
   | "manage:payments"
-  | "view:payment";
+  | "view:payment"
+  | "view:conversation"
+  | "send:group-message"
+  | "send:announcement"
+  | "audit:view-conversation";
 
 export type Actor = {
   id: string;
@@ -36,6 +40,8 @@ export type Resource = {
   ownerId?: string;
   teacherIds?: readonly string[];
   parentIds?: readonly string[];
+  studentIds?: readonly string[];
+  directorAccessGranted?: boolean;
 };
 
 /**
@@ -55,6 +61,10 @@ export function can(
     "accept:contract",
     "manage:payments",
     "view:payment",
+    "view:conversation",
+    "send:group-message",
+    "send:announcement",
+    "audit:view-conversation",
   ];
 
   // Diagnostyka nie uzasadnia stałego dostępu do treści umów i rozliczeń.
@@ -79,6 +89,12 @@ export function can(
   }
 
   if (actor.role === "DIRECTOR") {
+    if (action === "view:conversation") {
+      return resource.directorAccessGranted === true;
+    }
+    if (action === "send:group-message") {
+      return false;
+    }
     return true;
   }
 
@@ -134,6 +150,20 @@ export function can(
 
     if (actor.role === "TEACHER") {
       return resource.teacherIds?.includes(actor.id) === true;
+    }
+  }
+
+  if (action === "view:conversation" || action === "send:group-message") {
+    if (actor.role === "TEACHER") {
+      return resource.teacherIds?.includes(actor.id) === true;
+    }
+
+    if (actor.role === "PARENT") {
+      return resource.parentIds?.includes(actor.id) === true;
+    }
+
+    if (actor.role === "STUDENT") {
+      return resource.studentIds?.includes(actor.id) === true;
     }
   }
 

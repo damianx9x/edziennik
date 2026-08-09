@@ -8,6 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { requirePanelAccess } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
@@ -56,9 +57,10 @@ export default async function ParentPanelPage() {
       <div className="parent-module-grid">
         <article id="wiadomosci">
           <Bell aria-hidden="true" />
-          <span className="module-status module-status-empty">0 nowych</span>
+          <span className="module-status module-status-ready">Gotowe</span>
           <h2>Wiadomości</h2>
-          <p>Ogłoszenia od szkoły i wykładowcy pojawią się tutaj.</p>
+          <p>Ogłoszenia szkoły i rozmowy Twoich grup.</p>
+          <Link href="/panel/wiadomosci">Otwórz wiadomości</Link>
         </article>
         <article>
           <BookOpenCheck aria-hidden="true" />
@@ -69,7 +71,7 @@ export default async function ParentPanelPage() {
         <article>
           <CreditCard aria-hidden="true" />
           <span className="module-status module-status-ready">
-            <CheckCircle2 aria-hidden="true" /> W przygotowaniu · Etap 4
+            <CheckCircle2 aria-hidden="true" /> Gotowe
           </span>
           <h2>Status płatności</h2>
           <p>Bez płatności online — szkoła oznaczy status ręcznie.</p>

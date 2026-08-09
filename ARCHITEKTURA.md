@@ -148,10 +148,13 @@ nie publiczny URL.
 
 ### Kolejka i wysyłka
 
-Tabela `Outbox` powstaje w tej samej transakcji co operacja biznesowa. Worker
-pg-boss na PostgreSQL odbiera rekord, uruchamia odpowiedni provider i zapisuje
-wynik, liczbę prób oraz bezpieczny kod błędu. Dzięki temu nie potrzebujemy
-Redis w pilocie, a e-mail nie ginie po restarcie procesu.
+W Etapie 5 rolę wyspecjalizowanego outboxu pełni `EmailDelivery`, tworzony w tej
+samej transakcji co wiadomość. Procesor atomowo przejmuje rekord, uruchamia
+`EmailProvider` i zapisuje wynik, liczbę prób oraz bezpieczny kod błędu. Stare
+zadanie pozostawione w stanie `SENDING` wraca do pracy po dziesięciu minutach.
+Dzięki temu nie potrzebujemy Redis w pilocie, a e-mail nie ginie po restarcie
+procesu. Produkcyjny harmonogram może uruchamiać ten sam procesor przez worker
+pg-boss bez zmiany modeli biznesowych ani interfejsu dostawcy.
 
 ### Umowy
 
@@ -162,10 +165,12 @@ granicę dla przyszłej integracji z dostawcą podpisu.
 
 ### Komunikator
 
-PostgreSQL przechowuje wątki, uczestników, wiadomości i odczyty. Pilot pobiera
-zmiany kontrolowanym odświeżaniem. Interfejs `RealtimeProvider` pozwala później
-dodać WebSocket bez zmiany reguł uprawnień. Ogłoszenie masowe tworzy osobny
-rekord odbiorcy i osobne zadanie wysyłki, więc ma mierzalny status.
+PostgreSQL przechowuje kanał grupy, wiadomości, ogłoszenia, odczyty i czasowe
+dostępy dyrektora. Uczestnictwo zawsze wynika z aktywnego przypisania do grupy,
+nie z osobnej listy możliwej do rozjechania z kartotekami. Pilot pobiera zmiany
+kontrolowanym odświeżaniem. Interfejs `RealtimeProvider` pozwala później dodać
+WebSocket bez zmiany reguł uprawnień. Ogłoszenie masowe tworzy osobną wiadomość
+w każdym kanale i osobne zadanie na odbiorcę, więc ma mierzalny status.
 
 ### Płatności i zadania
 

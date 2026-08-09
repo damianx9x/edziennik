@@ -33,6 +33,7 @@ type PanelSection =
   | "schedule"
   | "contracts"
   | "payments"
+  | "messages"
   | "logs";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
@@ -97,6 +98,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: CalendarDays,
         key: "schedule",
       },
+      { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
@@ -129,7 +131,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "records",
       },
       {
-        href: "/panel/szkola#wiadomosci",
+        href: "/panel/wiadomosci",
         label: "Wiadomości",
         icon: MessageCircleMore,
         key: "messages",
@@ -148,7 +150,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
-        href: "/panel/rodzic#wiadomosci",
+        href: "/panel/wiadomosci",
         label: "Wiadomości",
         icon: Bell,
         key: "messages",
@@ -169,6 +171,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       icon: GraduationCap,
       key: "tasks",
     },
+    { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
   ] as const;
 }
 
@@ -189,7 +192,7 @@ export async function AuthenticatedPanelShell({
         )
       : session.user.role === "DIRECTOR"
         ? navigation.filter((item) =>
-            ["home", "records", "schedule", "contracts", "payments"].includes(item.key),
+            ["home", "records", "schedule", "messages", "payments"].includes(item.key),
           )
         : navigation;
   const pendingChangeCount =
@@ -266,7 +269,7 @@ export async function AuthenticatedPanelShell({
             <span className="status-dot" />
             <div>
               <strong>Bezpieczna sesja</strong>
-              <small>Etap 4 · dostęp wg roli</small>
+              <small>Etap 5 · dostęp wg roli</small>
             </div>
           </div>
         </aside>

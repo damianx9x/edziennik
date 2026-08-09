@@ -108,7 +108,7 @@ async function main() {
     },
   });
 
-  await ensureDemoAccount({
+  const director = await ensureDemoAccount({
     schoolId: school.id,
     email: "dyrektor.demo@invalid.example",
     name: "Dyrektor Demo",
@@ -244,6 +244,57 @@ async function main() {
         groupId: firstGroupId,
         studentId: panelStudent.id,
       },
+    });
+
+    const conversation = await prisma.conversation.upsert({
+      where: { groupId: firstGroupId },
+      update: {},
+      create: { schoolId: school.id, groupId: firstGroupId },
+    });
+    const welcome = await prisma.message.upsert({
+      where: { authorId_clientRequestId: { authorId: director.id, clientRequestId: "00000000-0000-4000-8000-000000000501:first" } },
+      update: {},
+      create: {
+        schoolId: school.id,
+        conversationId: conversation.id,
+        authorId: director.id,
+        kind: "ANNOUNCEMENT",
+        subject: "Witamy w rozmowie grupy",
+        body: "Tutaj szkoła przekazuje najważniejsze informacje organizacyjne. Rozmowa służy całej grupie — prywatne sprawy zgłaszaj bezpośrednio do sekretariatu.",
+        clientRequestId: "00000000-0000-4000-8000-000000000501:first",
+      },
+    });
+    const teacherMessage = await prisma.message.upsert({
+      where: { authorId_clientRequestId: { authorId: teacher.id, clientRequestId: "00000000-0000-4000-8000-000000000502" } },
+      update: {},
+      create: {
+        schoolId: school.id,
+        conversationId: conversation.id,
+        authorId: teacher.id,
+        body: "Dzień dobry! Na kolejne zajęcia proszę przynieść zeszyt i powtórzyć słownictwo z ostatniej lekcji.",
+        clientRequestId: "00000000-0000-4000-8000-000000000502",
+      },
+    });
+    await prisma.messageRead.createMany({
+      data: [
+        { schoolId: school.id, messageId: welcome.id, userId: director.id },
+        { schoolId: school.id, messageId: welcome.id, userId: teacher.id },
+        { schoolId: school.id, messageId: teacherMessage.id, userId: teacher.id },
+        { schoolId: school.id, messageId: teacherMessage.id, userId: parent.id },
+      ],
+      skipDuplicates: true,
+    });
+    await prisma.emailDelivery.createMany({
+      data: [parent.id, panelStudent.id].flatMap((recipientId) => [welcome.id, teacherMessage.id].map((messageId) => ({
+        schoolId: school.id,
+        messageId,
+        recipientId,
+        idempotencyKey: `demo:${messageId}:${recipientId}`,
+        status: "SENT" as const,
+        attempts: 1,
+        sentAt: new Date(),
+      }))),
+      skipDuplicates: true,
     });
   }
 
