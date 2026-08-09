@@ -6,13 +6,25 @@ export function getContractAcceptanceStatement(input: {
   version: number;
   serviceSummary: string;
   paymentSummary: string | null;
+  paymentAmountCents?: number | null;
+  paymentLabel?: string | null;
+  paymentDueDate?: string | null;
   requiresPayment: boolean;
 }): string {
   const base = `Potwierdzam, że przed złożeniem oświadczenia otrzymałem/am i przeczytałem/am umowę „${input.title}”, wersja ${input.version}, dotyczącą: ${input.serviceSummary}. Akceptuję dokładnie tę wersję dokumentu.`;
 
   if (!input.requiresPayment) return base;
 
-  return `${base} Wiem, że zawarcie umowy wiąże się z obowiązkiem zapłaty na zasadach: ${input.paymentSummary ?? "opisanych w umowie"}.`;
+  const structuredTerms = [
+    input.paymentLabel,
+    typeof input.paymentAmountCents === "number"
+      ? `${(input.paymentAmountCents / 100).toFixed(2).replace(".", ",")} zł brutto`
+      : null,
+    input.paymentDueDate ? `termin ${input.paymentDueDate}` : null,
+  ].filter(Boolean).join(", ");
+  const terms = [structuredTerms, input.paymentSummary].filter(Boolean).join("; ");
+
+  return `${base} Wiem, że zawarcie umowy wiąże się z obowiązkiem zapłaty na zasadach: ${terms || "opisanych w umowie"}.`;
 }
 
 export function getContractActionLabel(requiresPayment: boolean): string {

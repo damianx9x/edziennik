@@ -23,6 +23,9 @@ fi
 mkdir -p "$release_root" "$release_output_dir"
 
 while IFS= read -r -d "" source_file; do
+  # `git ls-files --cached` zwraca również pliki usunięte w bieżącym etapie,
+  # dopóki zmiana nie zostanie zacommitowana. Nie mogą blokować paczki QA.
+  [[ -f "$source_file" ]] || continue
   target_file="$release_root/$source_file"
   mkdir -p "$(dirname "$target_file")"
   cp -p "$source_file" "$target_file"

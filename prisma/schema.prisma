@@ -732,13 +732,21 @@ model Contract {
 }
 
 model ContractVersion {
-  id           String   @id @default(uuid()) @db.Uuid
-  contractId   String   @db.Uuid
-  storedFileId String   @db.Uuid
-  createdById  String   @db.Uuid
-  version      Int
-  sha256       String   @db.Char(64)
-  createdAt    DateTime @default(now())
+  id                 String                 @id @default(uuid()) @db.Uuid
+  contractId         String                 @db.Uuid
+  storedFileId       String                 @db.Uuid
+  createdById        String                 @db.Uuid
+  version            Int
+  sha256             String                 @db.Char(64)
+  title              String                 @default("")
+  acceptanceMode     ContractAcceptanceMode @default(DOCUMENTARY)
+  serviceSummary     String                 @default("")
+  requiresPayment    Boolean                @default(true)
+  paymentSummary     String?
+  paymentAmountCents Int?
+  paymentLabel       String?
+  paymentDueDate     DateTime?              @db.Date
+  createdAt          DateTime               @default(now())
 
   contract    Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
   storedFile  StoredFile           @relation("ContractFile", fields: [storedFileId], references: [id], onDelete: Restrict)
@@ -748,6 +756,7 @@ model ContractVersion {
   @@unique([contractId, version])
   @@index([storedFileId])
   @@index([createdById, createdAt])
+  @@index([requiresPayment, paymentDueDate])
 }
 
 model ContractAssignment {
@@ -763,12 +772,13 @@ model ContractAssignment {
   expiresAt  DateTime?
   createdAt  DateTime       @default(now())
 
-  school     School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  contract   Contract            @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  version    ContractVersion     @relation(fields: [versionId], references: [id], onDelete: Restrict)
-  parent     User                @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
-  student    User                @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
-  acceptance ContractAcceptance?
+  school        School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  contract      Contract            @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  version       ContractVersion     @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  parent        User                @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
+  student       User                @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  acceptance    ContractAcceptance?
+  paymentRecord PaymentRecord?
 
   @@unique([versionId, parentId, studentId])
   @@index([schoolId, status, createdAt])
@@ -791,24 +801,26 @@ model ContractAcceptance {
 }
 
 model PaymentRecord {
-  id          String        @id @default(uuid()) @db.Uuid
-  schoolId    String        @db.Uuid
-  studentId   String        @db.Uuid
-  changedById String        @db.Uuid
-  period      String
-  status      PaymentStatus @default(UNSET)
-  dueDate     DateTime?     @db.Date
-  note        String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                   String        @id @default(uuid()) @db.Uuid
+  schoolId             String        @db.Uuid
+  studentId            String        @db.Uuid
+  changedById          String        @db.Uuid
+  contractAssignmentId String?       @unique @db.Uuid
+  period               String
+  status               PaymentStatus @default(UNSET)
+  dueDate              DateTime?     @db.Date
+  note                 String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  school    School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  student   User   @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Restrict)
-  changedBy User   @relation("PaymentChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  school             School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student            User                @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  changedBy          User                @relation("PaymentChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  contractAssignment ContractAssignment? @relation(fields: [contractAssignmentId], references: [id], onDelete: Restrict)
 
-  @@unique([schoolId, studentId, period])
   @@index([schoolId, status, dueDate])
   @@index([studentId, period])
+  @@index([schoolId, contractAssignmentId])
 }
 
 model ImportBatch {

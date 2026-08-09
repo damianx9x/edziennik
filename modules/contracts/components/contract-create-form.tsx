@@ -70,19 +70,51 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
         <small>Rodzic zobaczy tę informację bezpośrednio przed decyzją.</small>
       </label>
       {requiresPayment ? (
-        <label>
-          Cena i najważniejsze zasady płatności
-          <textarea
-            name="paymentSummary"
-            required
-            maxLength={500}
-            rows={3}
-            placeholder="np. 320 zł miesięcznie, płatne do 10. dnia miesiąca"
-          />
-          <small>Nie ukrywaj ceny wyłącznie w załączniku PDF.</small>
-        </label>
+        <fieldset className="stage4-payment-terms">
+          <legend>Warunki płatności zapisane z tą wersją</legend>
+          <div className="stage4-form-row stage4-payment-fields">
+            <label>
+              Kwota brutto (PLN)
+              <input
+                name="paymentAmount"
+                required
+                inputMode="decimal"
+                placeholder="np. 320,00"
+              />
+            </label>
+            <label>
+              Nazwa płatności
+              <input
+                name="paymentLabel"
+                required
+                maxLength={80}
+                placeholder="np. Czesne za wrzesień 2026"
+              />
+            </label>
+            <label>
+              Termin płatności
+              <input name="paymentDueDate" type="date" required />
+            </label>
+          </div>
+          <label>
+            Pozostałe zasady płatności
+            <textarea
+              name="paymentSummary"
+              required
+              maxLength={500}
+              rows={3}
+              placeholder="np. przelewem na rachunek szkoły; dane do przelewu rodzic otrzyma osobno"
+            />
+            <small>Kwota i termin będą widoczne bezpośrednio przed akceptacją.</small>
+          </label>
+        </fieldset>
       ) : (
-        <input type="hidden" name="paymentSummary" value="" />
+        <>
+          <input type="hidden" name="paymentSummary" value="" />
+          <input type="hidden" name="paymentAmount" value="" />
+          <input type="hidden" name="paymentLabel" value="" />
+          <input type="hidden" name="paymentDueDate" value="" />
+        </>
       )}
       <div className="stage4-form-row">
         <label>

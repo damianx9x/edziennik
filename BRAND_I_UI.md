@@ -73,6 +73,12 @@ produkcyjna dołączy wersjonowanie, bezpieczny magazyn i uprawnienie dyrektora.
 - Karta osoby jest dużym dialogiem: kontakt, powiązania i sprawy w jednym
   miejscu; na telefonie zachowuje się jak czytelny arkusz od dołu.
 - Dialog obsługuje przycisk zamknięcia, `Escape` i przywracanie fokusu.
+- Duży dialog roboczy na komputerze ma uchwyt przesuwania i natywne skalowanie;
+  po zamknięciu wraca do położenia domyślnego. Na telefonie jest pełnoekranowy,
+  bez skalowania i bez konieczności precyzyjnego przeciągania.
+- Edycja w popupie zachowuje reguły domeny: zwykłe dane mogą trafić do akceptacji
+  dyrektora, ale zaakceptowana umowa nigdy nie jest nadpisywana — korekta tworzy
+  kolejną wersję dokumentu.
 - Zaproszenie pokazuje link i QR razem; QR nie zmienia zasad bezpieczeństwa.
 - Przy 1280 px i szerzej panel wykorzystuje dużą przestrzeń roboczą dyrektora:
   do 1720 px całego panelu i 1420 px treści.

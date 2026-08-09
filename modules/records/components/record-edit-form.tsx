@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Info, LoaderCircle, Send, Save, X } from "lucide-react";
+import { Check, GripHorizontal, Info, LoaderCircle, Send, Save, X } from "lucide-react";
 import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -8,6 +8,7 @@ import { updateRecordAction } from "@/modules/records/actions";
 import {
   initialRecordUpdateState,
 } from "@/modules/records/state";
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 export type RecordHistoryEntry = {
   id: string;
@@ -103,6 +104,7 @@ export function RecordEditForm({
 export function RecordHistory({ entries }: { entries: RecordHistoryEntry[] }) {
   const [selected, setSelected] = useState<RecordHistoryEntry | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   if (entries.length === 0) {
     return (
       <p className="person-dialog-empty">
@@ -148,12 +150,16 @@ export function RecordHistory({ entries }: { entries: RecordHistoryEntry[] }) {
       <dialog
         ref={dialogRef}
         className="record-history-dialog"
-        onClose={() => setSelected(null)}
+        onClose={() => {
+          resetDialogPosition();
+          setSelected(null);
+        }}
         aria-labelledby="record-history-dialog-title"
       >
         {selected ? (
           <div>
-            <header>
+            <header className="stage4-dialog-drag-handle" onPointerDown={startDrag}>
+              <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
               <div>
                 <span className="section-kicker">Pełna historia operacji</span>
                 <h3 id="record-history-dialog-title">{selected.label}</h3>

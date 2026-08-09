@@ -15,22 +15,40 @@ export const paymentStatusLabels = {
 } as const;
 
 export const paymentRecordSchema = z.object({
-  studentId: z.uuid("Wybierz ucznia."),
-  period: z
-    .string()
-    .trim()
-    .min(3, "Wpisz okres, np. wrzesień 2026.")
-    .max(40),
+  contractAssignmentId: z.uuid("Nie udało się rozpoznać umowy."),
   status: z.enum(paymentStatusValues),
-  dueDate: z
-    .string()
-    .trim()
-    .refine(
-      (value) => value === "" || !Number.isNaN(Date.parse(`${value}T12:00:00`)),
-      "Wpisz poprawny termin.",
-    ),
   note: z.string().trim().max(240, "Notatka może mieć do 240 znaków."),
 });
+
+export type PaymentDisplayStatus =
+  | (typeof paymentStatusValues)[number]
+  | "WAITING_SIGNATURE"
+  | "CONTRACT_EXPIRED";
+
+export const paymentDisplayStatusLabels: Record<PaymentDisplayStatus, string> = {
+  ...paymentStatusLabels,
+  WAITING_SIGNATURE: "Czeka na akceptację umowy",
+  CONTRACT_EXPIRED: "Umowa wygasła",
+};
+
+export function getEffectivePaymentStatus(input: {
+  contractStatus: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "EXPIRED";
+  storedStatus: (typeof paymentStatusValues)[number] | null;
+  dueDate: Date | null;
+  now?: Date;
+}): PaymentDisplayStatus {
+  if (input.contractStatus !== "ACCEPTED") {
+    return input.contractStatus === "EXPIRED"
+      ? "CONTRACT_EXPIRED"
+      : "WAITING_SIGNATURE";
+  }
+  if (input.storedStatus === "PAID") return "PAID";
+  const today = input.now ?? new Date();
+  if (input.dueDate && input.dueDate.getTime() < today.getTime()) return "OVERDUE";
+  return input.storedStatus && input.storedStatus !== "UNSET"
+    ? input.storedStatus
+    : "PENDING";
+}
 
 export type PaymentActionState = {
   status: "idle" | "success" | "error";

@@ -7,10 +7,13 @@ import {
   Eye,
   FileCheck2,
   FileText,
+  GripHorizontal,
   ShieldCheck,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { type MouseEvent, useMemo, useRef, useState } from "react";
+
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 import { ContractAcceptForm } from "./contract-accept-form";
 import { ContractVersionForm } from "./contract-version-form";
@@ -25,6 +28,7 @@ type ContractItem = {
   fileName: string;
   sizeLabel: string;
   parentName: string;
+  parentId: string;
   studentName: string;
   sentAt: string;
   viewedAt: string | null;
@@ -34,6 +38,9 @@ type ContractItem = {
   serviceSummary: string;
   requiresPayment: boolean;
   paymentSummary: string | null;
+  paymentAmountCents: number | null;
+  paymentLabel: string | null;
+  paymentDueDate: string | null;
   acceptanceStatement: string;
   actionLabel: string;
 };
@@ -54,6 +61,14 @@ function formatDate(value: string | null, includeTime = false): string {
   }).format(new Date(value));
 }
 
+function formatAmount(value: number | null): string {
+  if (value === null) return "Kwota nie została ustrukturyzowana";
+  return new Intl.NumberFormat("pl-PL", {
+    style: "currency",
+    currency: "PLN",
+  }).format(value / 100);
+}
+
 export function ContractList({
   items,
   isManagement,
@@ -62,11 +77,29 @@ export function ContractList({
   isManagement: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const [selected, setSelected] = useState<ContractItem | null>(null);
   const [showDocument, setShowDocument] = useState(false);
   const [documentLoaded, setDocumentLoaded] = useState(false);
 
-  function open(item: ContractItem) {
+  const groups = useMemo(() => {
+    if (!isManagement) return [{ id: "mine", name: "", items }];
+    const grouped = new Map<string, { id: string; name: string; items: ContractItem[] }>();
+    for (const item of items) {
+      const group = grouped.get(item.parentId) ?? {
+        id: item.parentId,
+        name: item.parentName,
+        items: [],
+      };
+      group.items.push(item);
+      grouped.set(item.parentId, group);
+    }
+    return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
+  }, [isManagement, items]);
+
+  function open(item: ContractItem, event: MouseEvent<HTMLButtonElement>) {
+    lastTriggerRef.current = event.currentTarget;
     setSelected(item);
     setShowDocument(false);
     setDocumentLoaded(false);
@@ -79,15 +112,38 @@ export function ContractList({
     setDocumentLoaded(false);
   }
 
+  function restoreFocus() {
+    resetDialogPosition();
+    setShowDocument(false);
+    setDocumentLoaded(false);
+    setSelected(null);
+    lastTriggerRef.current?.focus();
+  }
+
   return (
     <>
-      <div className="stage4-card-list">
-        {items.map((item) => (
-          <article className="contract-card" key={item.id}>
+      <div className="contract-parent-groups">
+        {groups.map((group) => (
+          <section className="contract-parent-group" key={group.id}>
+            {isManagement ? (
+              <header>
+                <div className="contract-parent-avatar" aria-hidden="true">
+                  {group.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
+                </div>
+                <div>
+                  <span className="section-kicker">Rodzic</span>
+                  <h3>{group.name}</h3>
+                </div>
+                <strong>{group.items.length} {group.items.length === 1 ? "umowa" : "umów"}</strong>
+              </header>
+            ) : null}
+            <div className="stage4-card-list">
+              {group.items.map((item) => (
+                <article className="contract-card" key={item.id}>
             <button
               type="button"
               className="contract-card-open"
-              onClick={() => open(item)}
+              onClick={(event) => open(item, event)}
               aria-label={`Pokaż szczegóły umowy ${item.title}`}
             >
               <span className="stage4-icon"><FileCheck2 aria-hidden="true" /></span>
@@ -98,20 +154,22 @@ export function ContractList({
                 <strong>{item.title}</strong>
                 <span>
                   Wersja {item.version} · {item.studentName}
-                  {isManagement ? ` · rodzic: ${item.parentName}` : ""}
                 </span>
                 <small>Wybierz, aby zobaczyć pełne szczegóły i dokument</small>
               </span>
               <Eye aria-hidden="true" className="contract-card-eye" />
             </button>
-          </article>
+                </article>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
       <dialog
         ref={dialogRef}
         className="stage4-preview-dialog"
-        onClose={() => setShowDocument(false)}
+        onClose={restoreFocus}
         onClick={(event) => {
           if (event.target === dialogRef.current) close();
         }}
@@ -119,7 +177,8 @@ export function ContractList({
       >
         {selected ? (
           <div className="stage4-preview-shell">
-            <header className="stage4-preview-header">
+            <header className="stage4-preview-header stage4-dialog-drag-handle" onPointerDown={startDrag}>
+              <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
               <div>
                 <span className="section-kicker">Umowa · wersja {selected.version}</span>
                 <h2 id="contract-preview-title">{selected.title}</h2>
@@ -146,11 +205,14 @@ export function ContractList({
                 <h3>Co obejmuje umowa</h3>
                 <p>{selected.serviceSummary}</p>
                 <h3>{selected.requiresPayment ? "Cena i płatność" : "Bez obowiązku zapłaty"}</h3>
-                <p>
-                  {selected.requiresPayment
-                    ? selected.paymentSummary
-                    : "Ta umowa nie tworzy obowiązku zapłaty."}
-                </p>
+                {selected.requiresPayment ? (
+                  <div className="contract-payment-summary">
+                    <strong>{formatAmount(selected.paymentAmountCents)}</strong>
+                    <span>{selected.paymentLabel ?? "Płatność wynikająca z umowy"}</span>
+                    <small>Termin: {formatDate(selected.paymentDueDate)}</small>
+                    {selected.paymentSummary ? <p>{selected.paymentSummary}</p> : null}
+                  </div>
+                ) : <p>Ta umowa nie tworzy obowiązku zapłaty.</p>}
                 <dl className="stage4-preview-facts">
                   <div><dt>Wysłano</dt><dd>{formatDate(selected.sentAt, true)}</dd></div>
                   <div><dt>Otwarto</dt><dd>{formatDate(selected.viewedAt, true)}</dd></div>
@@ -212,7 +274,20 @@ export function ContractList({
               ) : null}
 
               {isManagement ? (
-                <ContractVersionForm contractId={selected.contractId} assignmentId={selected.id} />
+                <ContractVersionForm
+                  contractId={selected.contractId}
+                  assignmentId={selected.id}
+                  initial={{
+                    title: selected.title,
+                    acceptanceMode: selected.acceptanceMode,
+                    serviceSummary: selected.serviceSummary,
+                    requiresPayment: selected.requiresPayment,
+                    paymentSummary: selected.paymentSummary,
+                    paymentAmountCents: selected.paymentAmountCents,
+                    paymentLabel: selected.paymentLabel,
+                    paymentDueDate: selected.paymentDueDate,
+                  }}
+                />
               ) : null}
             </footer>
           </div>

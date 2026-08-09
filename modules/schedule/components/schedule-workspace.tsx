@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   CheckCheck,
   Clock3,
+  GripHorizontal,
   GripVertical,
   MapPin,
   Move,
@@ -37,6 +38,8 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 import {
   cancelScheduleSlotAction,
@@ -987,6 +990,7 @@ const attendanceLabels: Record<LessonAttendanceStatus, string> = {
 
 function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const titleId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const [attendance, setAttendance] = useState<
@@ -1047,12 +1051,16 @@ function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
         ref={dialogRef}
         className="lesson-journal-dialog"
         aria-labelledby={titleId}
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          resetDialogPosition();
+          setIsOpen(false);
+        }}
       >
         <form action={action} className="lesson-journal-shell">
           <input type="hidden" name="slotId" value={slot.id} />
           <input type="hidden" name="version" value={slot.version} />
-          <header className="lesson-journal-heading">
+          <header className="lesson-journal-heading stage4-dialog-drag-handle" onPointerDown={startDrag}>
+            <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
             <div>
               <span className="section-kicker">Dziennik lekcji</span>
               <h2 id={titleId}>{slot.groupName}</h2>

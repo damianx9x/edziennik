@@ -29,8 +29,7 @@ export async function GET(
     select: {
       id: true,
       parentId: true,
-      contract: { select: { title: true } },
-      version: { select: { version: true, sha256: true } },
+      version: { select: { title: true, version: true, sha256: true } },
       student: { select: { name: true } },
       parent: { select: { name: true } },
       acceptance: {
@@ -57,7 +56,7 @@ export async function GET(
   const lines = [
     "POTWIERDZENIE AKCEPTACJI UMOWY W EDZIENNIKU KLA",
     "",
-    `Umowa: ${assignment.contract.title}`,
+    `Umowa: ${assignment.version.title}`,
     `Wersja: ${assignment.version.version}`,
     `Uczeń: ${assignment.student.name}`,
     `Rodzic: ${assignment.parent.name}`,

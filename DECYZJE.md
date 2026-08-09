@@ -574,3 +574,23 @@ danych rodzin. Forma dokumentowa pozwala utrwalić oświadczenie i ustalić
 osobę, ale nie zastępuje formy pisemnej, gdy wymaga jej prawo lub umowa.
 Rozdzielenie trybów zapobiega obiecywaniu skutku prawnego, którego system nie
 zapewnia.
+
+## ADR-052 — płatność wynika z niezmiennej wersji umowy
+
+**Data:** 2026-08-09
+**Decyzja:** nazwa umowy, zakres usługi, kwota, tytuł i termin płatności są
+zapisywane w `ContractVersion`, czyli dokładnie w wersji PDF przekazanej
+rodzicowi. `PaymentRecord` jest połączony z konkretnym przypisaniem umowy i
+przechowuje wyłącznie administracyjny status oraz krótką notatkę. Dyrektor może
+zmienić status bezpośrednio; zmiana ceny, terminu albo zakresu zawsze tworzy
+nową wersję umowy i wymaga ponownego przekazania jej rodzicowi. Przed akceptacją
+system pokazuje „Czeka na akceptację”, a nie zaległość. Po terminie używa
+określenia „Po terminie”, nie prawnego pojęcia „przedawniona”.
+
+Lista umów i rozliczeń dyrektora jest grupowana według rodziców. Duże okna
+robocze można przeciągać i skalować na komputerze; na telefonie zajmują cały
+ekran i nie wymagają precyzyjnego chwytania krawędzi.
+
+**Dlaczego:** warunków zaakceptowanej umowy nie wolno nadpisywać późniejszą
+edycją statusu. Rozdzielenie źródła zobowiązania od operacyjnego rozliczenia
+zapewnia czytelny audyt i nie sugeruje zaległości przed zawarciem umowy.

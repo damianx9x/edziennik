@@ -13,6 +13,7 @@ import {
 import {
   contractAcceptanceSchema,
   contractAssignmentSchema,
+  contractVersionSchema,
   type ContractActionState,
 } from "./schema";
 import {
@@ -23,6 +24,11 @@ import {
 
 const contractsPath = "/panel/umowy";
 const MAX_CONTRACT_BYTES = 10 * 1024 * 1024;
+
+function amountToCents(value: string): number | null {
+  if (!value) return null;
+  return Math.round(Number(value.replace(",", ".")) * 100);
+}
 
 function isPdf(bytes: Uint8Array): boolean {
   return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
@@ -42,6 +48,9 @@ export async function createContractAssignmentAction(
     serviceSummary: formData.get("serviceSummary"),
     requiresPayment: formData.get("requiresPayment"),
     paymentSummary: formData.get("paymentSummary"),
+    paymentAmount: formData.get("paymentAmount"),
+    paymentLabel: formData.get("paymentLabel"),
+    paymentDueDate: formData.get("paymentDueDate"),
     parentId: formData.get("parentId"),
     studentId: formData.get("studentId"),
     expiresAt: formData.get("expiresAt"),
@@ -125,6 +134,26 @@ export async function createContractAssignmentAction(
           createdById: session.user.id,
           version: 1,
           sha256: uploaded.sha256,
+          title: parsed.data.title,
+          acceptanceMode: parsed.data.acceptanceMode,
+          serviceSummary: parsed.data.serviceSummary,
+          requiresPayment: parsed.data.requiresPayment === "yes",
+          paymentSummary:
+            parsed.data.requiresPayment === "yes"
+              ? parsed.data.paymentSummary
+              : null,
+          paymentAmountCents:
+            parsed.data.requiresPayment === "yes"
+              ? amountToCents(parsed.data.paymentAmount)
+              : null,
+          paymentLabel:
+            parsed.data.requiresPayment === "yes"
+              ? parsed.data.paymentLabel
+              : null,
+          paymentDueDate:
+            parsed.data.requiresPayment === "yes"
+              ? new Date(`${parsed.data.paymentDueDate}T12:00:00`)
+              : null,
         },
       });
       const assignment = await tx.contractAssignment.create({
@@ -174,6 +203,23 @@ export async function createContractVersionAction(
   }
   const contractId = String(formData.get("contractId") ?? "");
   const sourceAssignmentId = String(formData.get("sourceAssignmentId") ?? "");
+  const parsed = contractVersionSchema.safeParse({
+    title: formData.get("title"),
+    acceptanceMode: formData.get("acceptanceMode"),
+    serviceSummary: formData.get("serviceSummary"),
+    requiresPayment: formData.get("requiresPayment"),
+    paymentSummary: formData.get("paymentSummary"),
+    paymentAmount: formData.get("paymentAmount"),
+    paymentLabel: formData.get("paymentLabel"),
+    paymentDueDate: formData.get("paymentDueDate"),
+    legalReadiness: formData.get("legalReadiness"),
+  });
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Sprawdź dane nowej wersji.",
+    };
+  }
   const file = formData.get("document");
   if (!(file instanceof File) || file.size === 0) {
     return { status: "error", message: "Wybierz poprawiony dokument PDF." };
@@ -228,6 +274,26 @@ export async function createContractVersionAction(
           createdById: session.user.id,
           version: latest.version + 1,
           sha256: uploaded.sha256,
+          title: parsed.data.title,
+          acceptanceMode: parsed.data.acceptanceMode,
+          serviceSummary: parsed.data.serviceSummary,
+          requiresPayment: parsed.data.requiresPayment === "yes",
+          paymentSummary:
+            parsed.data.requiresPayment === "yes"
+              ? parsed.data.paymentSummary
+              : null,
+          paymentAmountCents:
+            parsed.data.requiresPayment === "yes"
+              ? amountToCents(parsed.data.paymentAmount)
+              : null,
+          paymentLabel:
+            parsed.data.requiresPayment === "yes"
+              ? parsed.data.paymentLabel
+              : null,
+          paymentDueDate:
+            parsed.data.requiresPayment === "yes"
+              ? new Date(`${parsed.data.paymentDueDate}T12:00:00`)
+              : null,
         },
       });
       await tx.contractAssignment.updateMany({
@@ -290,16 +356,20 @@ export async function acceptContractAction(
       status: true,
       expiresAt: true,
       parentId: true,
-      contract: {
+      version: {
         select: {
+          sha256: true,
+          version: true,
           title: true,
           acceptanceMode: true,
           serviceSummary: true,
           requiresPayment: true,
           paymentSummary: true,
+          paymentAmountCents: true,
+          paymentLabel: true,
+          paymentDueDate: true,
         },
       },
-      version: { select: { sha256: true, version: true } },
     },
   });
   if (
@@ -315,7 +385,7 @@ export async function acceptContractAction(
   if (assignment.status === "ACCEPTED") {
     return { status: "success", message: "Ta wersja umowy jest już zaakceptowana." };
   }
-  if (assignment.contract.acceptanceMode !== "DOCUMENTARY") {
+  if (assignment.version.acceptanceMode !== "DOCUMENTARY") {
     return {
       status: "error",
       message: "Ta umowa wymaga podpisu poza eDziennikiem.",
@@ -333,11 +403,14 @@ export async function acceptContractAction(
 
   try {
     const statementText = getContractAcceptanceStatement({
-      title: assignment.contract.title,
+      title: assignment.version.title,
       version: assignment.version.version,
-      serviceSummary: assignment.contract.serviceSummary,
-      requiresPayment: assignment.contract.requiresPayment,
-      paymentSummary: assignment.contract.paymentSummary,
+      serviceSummary: assignment.version.serviceSummary,
+      requiresPayment: assignment.version.requiresPayment,
+      paymentSummary: assignment.version.paymentSummary,
+      paymentAmountCents: assignment.version.paymentAmountCents,
+      paymentLabel: assignment.version.paymentLabel,
+      paymentDueDate: assignment.version.paymentDueDate?.toLocaleDateString("pl-PL") ?? null,
     });
     await db.$transaction(async (tx) => {
       const updated = await tx.contractAssignment.updateMany({

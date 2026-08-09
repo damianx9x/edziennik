@@ -18,10 +18,8 @@ export async function savePaymentStatusAction(
     return { status: "error", message: "Tylko dyrektor może zmieniać statusy płatności." };
   }
   const parsed = paymentRecordSchema.safeParse({
-    studentId: formData.get("studentId"),
-    period: formData.get("period"),
+    contractAssignmentId: formData.get("contractAssignmentId"),
     status: formData.get("status"),
-    dueDate: formData.get("dueDate"),
     note: formData.get("note"),
   });
   if (!parsed.success) {
@@ -31,57 +29,53 @@ export async function savePaymentStatusAction(
     };
   }
 
-  const student = await db.user.findFirst({
+  const assignment = await db.contractAssignment.findFirst({
     where: {
-      id: parsed.data.studentId,
+      id: parsed.data.contractAssignmentId,
       schoolId: session.user.schoolId,
-      role: "STUDENT",
-      status: "ACTIVE",
-      archivedAt: null,
+      status: "ACCEPTED",
+      version: { requiresPayment: true },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      studentId: true,
+      version: {
+        select: {
+          title: true,
+          paymentLabel: true,
+          paymentDueDate: true,
+        },
+      },
+    },
   });
-  if (!student) {
-    return { status: "error", message: "Wybrany uczeń nie jest aktywny." };
+  if (!assignment) {
+    return {
+      status: "error",
+      message: "Status można ustawić dopiero po zaakceptowaniu umowy przez rodzica.",
+    };
   }
 
   try {
     await db.$transaction(async (tx) => {
       const previous = await tx.paymentRecord.findUnique({
-        where: {
-          schoolId_studentId_period: {
-            schoolId: session.user.schoolId,
-            studentId: parsed.data.studentId,
-            period: parsed.data.period,
-          },
-        },
+        where: { contractAssignmentId: assignment.id },
         select: { status: true },
       });
       const record = await tx.paymentRecord.upsert({
-        where: {
-          schoolId_studentId_period: {
-            schoolId: session.user.schoolId,
-            studentId: parsed.data.studentId,
-            period: parsed.data.period,
-          },
-        },
+        where: { contractAssignmentId: assignment.id },
         create: {
           schoolId: session.user.schoolId,
-          studentId: parsed.data.studentId,
+          studentId: assignment.studentId,
           changedById: session.user.id,
-          period: parsed.data.period,
+          contractAssignmentId: assignment.id,
+          period: assignment.version.paymentLabel ?? assignment.version.title,
           status: parsed.data.status,
-          dueDate: parsed.data.dueDate
-            ? new Date(`${parsed.data.dueDate}T12:00:00`)
-            : null,
+          dueDate: assignment.version.paymentDueDate,
           note: parsed.data.note || null,
         },
         update: {
           changedById: session.user.id,
           status: parsed.data.status,
-          dueDate: parsed.data.dueDate
-            ? new Date(`${parsed.data.dueDate}T12:00:00`)
-            : null,
           note: parsed.data.note || null,
         },
       });
@@ -95,7 +89,7 @@ export async function savePaymentStatusAction(
           metadata: {
             previousStatus: previous?.status ?? null,
             newStatus: parsed.data.status,
-            period: parsed.data.period,
+            contractAssignmentId: assignment.id,
           },
         },
       });

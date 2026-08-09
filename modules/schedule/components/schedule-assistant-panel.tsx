@@ -10,6 +10,7 @@ import {
   Clock3,
   DoorOpen,
   GraduationCap,
+  GripHorizontal,
   Lock,
   LoaderCircle,
   MapPin,
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 import {
   applyScheduleGenerationAction,
@@ -903,6 +906,7 @@ function GenerationPreview({
   const complete = generation.hardViolations.length === 0;
   const nothingToAdd = complete && generation.proposals.length === 0;
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
@@ -937,7 +941,10 @@ function GenerationPreview({
         ref={dialogRef}
         className="assistant-preview-dialog"
         aria-labelledby="schedule-preview-title"
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          resetDialogPosition();
+          setIsOpen(false);
+        }}
         onClick={(event) => {
           if (event.target === event.currentTarget) {
             event.currentTarget.close();
@@ -945,7 +952,8 @@ function GenerationPreview({
         }}
       >
         <div className="assistant-preview-dialog-shell">
-          <header className="assistant-preview-dialog-header">
+          <header className="assistant-preview-dialog-header stage4-dialog-drag-handle" onPointerDown={startDrag}>
+            <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
             <div>
               <span className="section-kicker">Podgląd przed publikacją</span>
               <h2 id="schedule-preview-title">Sprawdź propozycję grafiku</h2>

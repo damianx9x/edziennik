@@ -1,7 +1,9 @@
 "use client";
 
-import { ArrowUpRight, X } from "lucide-react";
+import { ArrowUpRight, GripHorizontal, X } from "lucide-react";
 import { useRef, useState } from "react";
+
+import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
 export type PageStatisticDetail = {
   path: string;
@@ -22,6 +24,7 @@ export function PageStatisticsList({
 }) {
   const [selected, setSelected] = useState<PageStatisticDetail | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const max = Math.max(1, ...pages.map((item) => item.visits));
 
   return (
@@ -48,12 +51,16 @@ export function PageStatisticsList({
       <dialog
         ref={dialogRef}
         className="statistics-detail-dialog"
-        onClose={() => setSelected(null)}
+        onClose={() => {
+          resetDialogPosition();
+          setSelected(null);
+        }}
         aria-labelledby="statistics-detail-title"
       >
         {selected ? (
           <div>
-            <header>
+            <header className="stage4-dialog-drag-handle" onPointerDown={startDrag}>
+              <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
               <div>
                 <span className="section-kicker">Szczegóły ostatnich 30 dni</span>
                 <h2 id="statistics-detail-title">{selected.label}</h2>
