@@ -159,7 +159,9 @@ export default async function RecordsPage() {
         status: true,
         changedFields: true,
         createdAt: true,
+        reviewedAt: true,
         requestedBy: { select: { name: true } },
+        reviewedBy: { select: { name: true } },
       },
     }),
     db.auditLog.findMany({
@@ -199,7 +201,11 @@ export default async function RecordsPage() {
             ? "Zmiana zatwierdzona"
             : "Zmiana odrzucona",
       actorName: request.requestedBy.name,
+      reviewerName: request.reviewedBy?.name ?? null,
       createdAt: formatHistoryDate(request.createdAt),
+      reviewedAt: request.reviewedAt
+        ? formatHistoryDate(request.reviewedAt)
+        : null,
       sortKey: request.createdAt.toISOString(),
       fields: request.changedFields,
     };

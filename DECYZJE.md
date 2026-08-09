@@ -505,3 +505,30 @@ skryptu nie umieszcza identyfikatora i hasła w adresie strony.
 ale wygoda nie może rozszerzać dostępu do innych grup. Awaryjne zachowanie
 formularza także musi pozostać bezpieczne, nawet gdy kod klienta jeszcze nie
 działa.
+
+## ADR-048 — aliasy demo i jawny wyjątek wyłącznie dla danych syntetycznych
+
+**Data:** 2026-08-05
+**Decyzja:** konta demo mają krótkie aliasy `dyrektor`, `wykladowca`, `rodzic`,
+`uczen` i `bog`. Na wyraźne żądanie właściciela łatwe hasła dopuszcza tylko
+prywatna flaga `KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=1`; wartość domyślna to
+`0`, hasła nie trafiają do repozytorium, a właściciel nadal wymaga MFA.
+**Dlaczego:** upraszcza bieżący odbiór na syntetycznych danych, nie zmieniając
+bezpiecznej wartości domyślnej ani wymagań produkcyjnych.
+
+## ADR-049 — szczegółowa analityka bez pełnego IP
+
+**Data:** 2026-08-05
+**Decyzja:** szczegóły strony pokazują liczbę odsłon, role, godziny i zakres
+czasu. Nie zapisujemy pełnego IP, dokładnej lokalizacji ani surowego
+User-Agent. Anonimowa odsłona wymaga jednoznacznego sluga szkoły.
+**Dlaczego:** daje dyrektorowi użyteczną diagnostykę bez nieproporcjonalnego
+profilowania dzieci i rodziców.
+
+## ADR-050 — import uzupełniający i przyszła bezpieczna synchronizacja
+
+**Data:** 2026-08-05
+**Decyzja:** obecny import oznacza „uzupełnij i zaktualizuj”. Przyszły tryb
+„synchronizuj z plikiem” najpierw pokaże różnice, a brakujące rekordy wyłącznie
+zarchiwizuje po dodatkowym potwierdzeniu.
+**Dlaczego:** słowo „zastąp” sugerowałoby niebezpieczne usuwanie historii.

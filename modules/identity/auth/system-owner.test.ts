@@ -15,4 +15,13 @@ describe("system owner login", () => {
       "parent@example.com",
     );
   });
+
+  it.each([
+    ["dyrektor", "dyrektor.demo@invalid.example"],
+    ["wykladowca", "wykladowca.demo@invalid.example"],
+    ["rodzic", "rodzic.demo@invalid.example"],
+    ["uczen", "uczen.panel.demo@invalid.example"],
+  ])("maps the demo alias %s", (alias, email) => {
+    expect(normalizeLoginIdentifier(alias)).toBe(email);
+  });
 });

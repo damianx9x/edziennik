@@ -12,12 +12,15 @@ const schoolSlug =
   process.env.KLA_SYSTEM_OWNER_SCHOOL_SLUG ??
   "kings-language-academy-demo";
 const resetMfa = process.env.KLA_SYSTEM_OWNER_RESET_MFA === "1";
+const allowInsecureDemoCredentials =
+  process.env.KLA_ALLOW_INSECURE_DEMO_CREDENTIALS === "1" &&
+  schoolSlug === "kings-language-academy-demo";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("Brak DATABASE_URL. Uzupełnij prywatny plik .env.");
 }
 
-if (!password || password.length < 12) {
+if (!password || (!allowInsecureDemoCredentials && password.length < 12)) {
   throw new Error(
     "Ustaw KLA_SYSTEM_OWNER_PASSWORD w prywatnym .env (minimum 12 znaków).",
   );

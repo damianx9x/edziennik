@@ -20,6 +20,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "export:demo-school": "tsx scripts/export-demo-school.ts",
     "security:rotate-demo-password": "node --env-file=.env scripts/rotate-demo-password.mjs",
     "account:owner": "node --env-file=.env scripts/setup-system-owner.mjs",
     "pilot:mfa:sync": "node --env-file=.env scripts/apply-director-mfa-policy.mjs",

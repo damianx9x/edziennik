@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hashPassword } from "better-auth/crypto";
 
 import {
   CefrLevel,
@@ -12,7 +13,16 @@ import type { IdentityRole } from "../modules/identity/auth/access";
 import { demoGroups } from "../modules/demo-data/groups";
 
 const connectionString = process.env.DATABASE_URL;
-const demoPassword = process.env.KLA_DEMO_PASSWORD;
+const allowInsecureDemoCredentials =
+  process.env.KLA_ALLOW_INSECURE_DEMO_CREDENTIALS === "1";
+const fallbackDemoPassword = process.env.KLA_DEMO_PASSWORD;
+const demoPasswords: Record<IdentityRole, string | undefined> = {
+  DIRECTOR: process.env.KLA_DEMO_DIRECTOR_PASSWORD ?? fallbackDemoPassword,
+  TEACHER: process.env.KLA_DEMO_TEACHER_PASSWORD ?? fallbackDemoPassword,
+  PARENT: process.env.KLA_DEMO_PARENT_PASSWORD ?? fallbackDemoPassword,
+  STUDENT: process.env.KLA_DEMO_STUDENT_PASSWORD ?? fallbackDemoPassword,
+  SYSTEM_OWNER: process.env.KLA_SYSTEM_OWNER_PASSWORD,
+};
 
 if (!connectionString) {
   throw new Error(
@@ -20,9 +30,14 @@ if (!connectionString) {
   );
 }
 
-if (!demoPassword || demoPassword.length < 12) {
+if (
+  ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"].some((role) => {
+    const password = demoPasswords[role as IdentityRole];
+    return !password || (!allowInsecureDemoCredentials && password.length < 12);
+  })
+) {
   throw new Error(
-    "Brak KLA_DEMO_PASSWORD (minimum 12 znaków). Uzupełnij lokalny .env.",
+    "Brak haseł kont demo (minimum 12 znaków poza jawnym trybem demonstracyjnym). Uzupełnij lokalny .env.",
   );
 }
 
@@ -36,6 +51,8 @@ async function ensureDemoAccount(input: {
   name: string;
   role: IdentityRole;
 }) {
+  const password = demoPasswords[input.role];
+  if (!password) throw new Error(`Brak hasła demo dla roli ${input.role}.`);
   const existing = await prisma.user.findUnique({
     where: { email: input.email },
     select: { id: true },
@@ -46,7 +63,7 @@ async function ensureDemoAccount(input: {
     const created = await auth.api.createUser({
       body: {
         email: input.email,
-        password: demoPassword,
+        password,
         name: input.name,
         role: input.role,
         data: {
@@ -58,7 +75,7 @@ async function ensureDemoAccount(input: {
     userId = created.user.id;
   }
 
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId },
     data: {
       schoolId: input.schoolId,
@@ -68,6 +85,17 @@ async function ensureDemoAccount(input: {
       emailVerified: true,
     },
   });
+  const credential = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: "credential" },
+    select: { id: true },
+  });
+  if (credential) {
+    await prisma.account.update({
+      where: { id: credential.id },
+      data: { password: await hashPassword(password) },
+    });
+  }
+  return user;
 }
 
 async function main() {

@@ -3,7 +3,8 @@
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -177,7 +178,10 @@ export function ScheduleWorkspace({
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [createOpen, closeCreateForm]);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 10 },
+    }),
     useSensor(KeyboardSensor),
   );
   const filteredSlots = useMemo(

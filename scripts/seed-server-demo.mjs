@@ -6,15 +6,28 @@ import pg from "pg";
 const { Pool } = pg;
 
 const connectionString = process.env.DATABASE_URL;
-const demoPassword = process.env.KLA_DEMO_PASSWORD;
+const allowInsecureDemoCredentials =
+  process.env.KLA_ALLOW_INSECURE_DEMO_CREDENTIALS === "1";
+const fallbackDemoPassword = process.env.KLA_DEMO_PASSWORD;
+const demoPasswords = {
+  DIRECTOR: process.env.KLA_DEMO_DIRECTOR_PASSWORD ?? fallbackDemoPassword,
+  TEACHER: process.env.KLA_DEMO_TEACHER_PASSWORD ?? fallbackDemoPassword,
+  PARENT: process.env.KLA_DEMO_PARENT_PASSWORD ?? fallbackDemoPassword,
+  STUDENT: process.env.KLA_DEMO_STUDENT_PASSWORD ?? fallbackDemoPassword,
+};
 
 if (!connectionString) {
   throw new Error("Brak DATABASE_URL. Uzupełnij prywatny plik .env.");
 }
 
-if (!demoPassword || demoPassword.length < 12) {
+if (
+  Object.values(demoPasswords).some(
+    (password) =>
+      !password || (!allowInsecureDemoCredentials && password.length < 12),
+  )
+) {
   throw new Error(
-    "Brak KLA_DEMO_PASSWORD (minimum 12 znaków). Uzupełnij prywatny plik .env.",
+    "Brak haseł kont demo (minimum 12 znaków, chyba że jawnie włączono tryb wyłącznie demonstracyjny). Uzupełnij prywatny plik .env.",
   );
 }
 
@@ -58,7 +71,7 @@ async function ensureCredentialUser({
     [randomUUID(), schoolId, email, name, role],
   );
   const userId = userResult.rows[0].id;
-  const passwordHash = await hashPassword(demoPassword);
+  const passwordHash = await hashPassword(demoPasswords[role]);
   const accountResult = await client.query(
     `SELECT "id"
      FROM "Account"

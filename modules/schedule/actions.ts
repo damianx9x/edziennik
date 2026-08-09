@@ -12,7 +12,10 @@ import {
 
 import { assertScheduleSlotCanBeSaved } from "./hard-constraints";
 import { parseLessonJournalFormData } from "./lesson-journal";
-import { lockScheduleResources } from "./resource-lock";
+import {
+  discardReadyScheduleGenerations,
+  lockScheduleResources,
+} from "./resource-lock";
 import {
   createScheduleSlotSchema,
   moveScheduleSlotSchema,
@@ -243,6 +246,8 @@ export async function createScheduleSlotAction(
           teacherId: resources.teacherId,
         },
       });
+      const discardedGenerationCount =
+        await discardReadyScheduleGenerations(tx, session.user.schoolId);
       await tx.auditLog.create({
         data: {
           schoolId: session.user.schoolId,
@@ -254,6 +259,7 @@ export async function createScheduleSlotAction(
             startAt: interval.startAt.toISOString(),
             endAt: interval.endAt.toISOString(),
             ...resources,
+            discardedGenerationCount,
           },
         },
       });
@@ -332,6 +338,8 @@ export async function moveScheduleSlotAction(input: {
         },
         select: { id: true },
       });
+      const discardedGenerationCount =
+        await discardReadyScheduleGenerations(tx, session.user.schoolId);
       await tx.auditLog.create({
         data: {
           schoolId: session.user.schoolId,
@@ -342,6 +350,7 @@ export async function moveScheduleSlotAction(input: {
           metadata: {
             from: existing.startAt.toISOString(),
             to: interval.startAt.toISOString(),
+            discardedGenerationCount,
           },
         },
       });
@@ -400,6 +409,11 @@ export async function cancelScheduleSlotAction(
       where: { id: existing.id },
       data: { status: "CANCELLED", version: { increment: 1 } },
     });
+    const discardedGenerationCount =
+      await discardReadyScheduleGenerations(
+        transaction,
+        session.user.schoolId,
+      );
     await transaction.auditLog.create({
       data: {
         schoolId: session.user.schoolId,
@@ -407,6 +421,7 @@ export async function cancelScheduleSlotAction(
         action: "schedule.slot.cancelled",
         entityType: "ScheduleSlot",
         entityId: existing.id,
+        metadata: { discardedGenerationCount },
       },
     });
     return true;

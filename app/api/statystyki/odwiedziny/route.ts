@@ -22,13 +22,16 @@ export async function POST(request: Request) {
   }
 
   const session = await getServerSession();
+  const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;
   const school =
     session?.user.schoolId
       ? { id: session.user.schoolId }
-      : await db.school.findFirst({
-          orderBy: { createdAt: "asc" },
+      : publicSchoolSlug
+        ? await db.school.findUnique({
+          where: { slug: publicSchoolSlug },
           select: { id: true },
-        });
+        })
+        : null;
   if (!school) return new NextResponse(null, { status: 204 });
 
   const userId = session?.user.id ?? null;

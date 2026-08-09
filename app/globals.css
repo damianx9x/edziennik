@@ -6039,6 +6039,62 @@ body:has(.invitation-page) .feedback-trigger {
   display: grid;
 }
 
+.import-help {
+  position: relative;
+  justify-self: end;
+}
+
+.import-help > summary {
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--blue-700);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 850;
+  list-style: none;
+}
+
+.import-help > summary::-webkit-details-marker {
+  display: none;
+}
+
+.import-help > summary svg {
+  width: 18px;
+}
+
+.import-help > div {
+  width: min(520px, calc(100vw - 40px));
+  padding: 20px;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: var(--shadow-lg);
+}
+
+.import-help ol {
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.import-help p {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--cream);
+}
+
 .import-history article {
   min-height: 64px;
   padding: 10px 0;
@@ -8204,8 +8260,25 @@ body:has(.invitation-page) .feedback-trigger {
   background: rgb(255 255 255 / 70%);
 }
 
+.schedule-drag-handle {
+  touch-action: none;
+}
+
 .schedule-drag-handle svg {
   width: 16px;
+}
+
+@media (pointer: coarse) {
+  .schedule-workspace .schedule-drag-handle {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+  }
+
+  .schedule-drag-handle svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 .schedule-lesson-actions {
@@ -8343,6 +8416,10 @@ body:has(.invitation-page) .feedback-trigger {
 .lesson-journal-dialog::backdrop {
   background: rgb(10 17 38 / 68%);
   backdrop-filter: blur(5px);
+}
+
+html:has(dialog[open]) {
+  overflow: hidden;
 }
 
 .lesson-journal-shell {
@@ -8546,7 +8623,7 @@ body:has(.invitation-page) .feedback-trigger {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .schedule-page-heading {
     align-items: flex-start;
     flex-direction: column;
@@ -8790,8 +8867,9 @@ body:has(.invitation-page) .feedback-trigger {
   }
 
   .schedule-drag-handle {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
   }
 
   .schedule-lesson-actions > summary {
@@ -8815,7 +8893,8 @@ body:has(.invitation-page) .feedback-trigger {
   .lesson-journal-shell {
     height: 100%;
     max-height: none;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
   }
 
   .lesson-journal-heading {
@@ -9936,9 +10015,32 @@ body:has(.invitation-page) .feedback-trigger {
   gap: 13px;
 }
 
-.statistics-bars > div {
+.statistics-bars > div,
+.statistics-bars > button {
   display: grid;
   gap: 5px;
+}
+
+.statistics-bars > button {
+  min-height: 58px;
+  padding: 8px 44px 8px 8px;
+  position: relative;
+  text-align: left;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.statistics-bars > button:hover,
+.statistics-bars > button:focus-visible {
+  background: var(--cream);
+}
+
+.statistics-bars > button > svg {
+  width: 18px;
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  color: var(--blue-700);
 }
 
 .statistics-bars span {
@@ -9966,6 +10068,124 @@ body:has(.invitation-page) .feedback-trigger {
   max-width: 100%;
   border-radius: 999px;
   background: var(--blue-700);
+}
+
+.statistics-detail-dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  color: var(--navy-900);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--shadow-lg);
+}
+
+.statistics-detail-dialog::backdrop {
+  background: rgb(10 22 54 / 48%);
+  backdrop-filter: blur(3px);
+}
+
+.statistics-detail-dialog > div {
+  padding: clamp(20px, 4vw, 32px);
+  display: grid;
+  gap: 20px;
+}
+
+.statistics-detail-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.statistics-detail-dialog header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.statistics-detail-dialog header button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.statistics-detail-metrics,
+.statistics-detail-grid,
+.statistics-detail-dialog dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statistics-detail-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statistics-detail-metrics article,
+.statistics-detail-dialog dl > div,
+.statistics-detail-grid > section {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--cream);
+}
+
+.statistics-detail-metrics article {
+  display: grid;
+  gap: 3px;
+}
+
+.statistics-detail-metrics strong {
+  font-size: 25px;
+}
+
+.statistics-detail-dialog dt,
+.statistics-detail-metrics small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.statistics-detail-dialog dd {
+  margin: 4px 0 0;
+  font-weight: 850;
+}
+
+.statistics-detail-grid h3 {
+  margin: 0 0 10px;
+}
+
+.statistics-detail-grid ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  list-style: none;
+}
+
+.statistics-detail-grid li {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+}
+
+.statistics-privacy-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 620px) {
+  .statistics-detail-metrics,
+  .statistics-detail-grid,
+  .statistics-detail-dialog dl {
+    grid-template-columns: 1fr;
+  }
 }
 
 .statistics-users {
@@ -11536,6 +11756,94 @@ body:has(.invitation-page) .feedback-trigger {
   border: 1px solid var(--line);
   border-radius: 13px;
   background: #faf9f6;
+}
+
+.record-history-open {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 64px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+}
+
+.record-history-open > svg {
+  width: 18px;
+  color: var(--blue-700);
+}
+
+.record-history-dialog {
+  width: min(620px, calc(100vw - 24px));
+  max-height: min(720px, calc(100dvh - 24px));
+  padding: 0;
+  color: var(--navy-900);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--white);
+  box-shadow: var(--shadow-lg);
+}
+
+.record-history-dialog::backdrop {
+  background: rgb(10 22 54 / 48%);
+  backdrop-filter: blur(3px);
+}
+
+.record-history-dialog > div {
+  padding: clamp(20px, 4vw, 32px);
+  display: grid;
+  gap: 22px;
+}
+
+.record-history-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.record-history-dialog header button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.record-history-dialog dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.record-history-dialog dl > div {
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+  border-radius: 14px;
+  background: var(--cream);
+}
+
+.record-history-dialog dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.record-history-dialog dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .record-history-dialog dl {
+    grid-template-columns: 1fr;
+  }
 }
 
 .record-history-status {

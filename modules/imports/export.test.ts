@@ -60,4 +60,33 @@ describe("records export", () => {
       lastName: "KLA",
     });
   });
+
+  it("neutralizes spreadsheet formulas and restores the literal value on import", async () => {
+    const csv = createRecordsCsv([
+      {
+        typ: "grupa",
+        nazwa: "=HYPERLINK(\"https://invalid.example\")",
+        poziom: "A2",
+        lokalizacja: "Przodkowo",
+      },
+    ]);
+    expect(csv).toContain("'=HYPERLINK");
+    const preview = await parseImportFile({
+      fileName: "bezpieczny.csv",
+      bytes: new TextEncoder().encode(csv),
+    });
+    expect(preview.rows[0]?.name).toBe('=HYPERLINK("https://invalid.example")');
+  });
+
+  it("accepts one student assigned to two different groups", async () => {
+    const csv = createRecordsCsv([
+      { typ: "uczen", identyfikator: "KLA-001", imie: "Anna", nazwisko: "Testowa", grupa: "MONACO" },
+      { typ: "uczen", identyfikator: "KLA-001", imie: "Anna", nazwisko: "Testowa", grupa: "OXFORD" },
+    ]);
+    const preview = await parseImportFile({
+      fileName: "dwie-grupy.csv",
+      bytes: new TextEncoder().encode(csv),
+    });
+    expect(preview).toMatchObject({ totalRows: 2, validRows: 2, duplicateRows: 0 });
+  });
 });

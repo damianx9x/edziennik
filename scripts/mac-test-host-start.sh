@@ -51,6 +51,8 @@ chmod 700 "$state_dir" "$logs_dir"
 hosted_commit="$(git -C "$project_dir" rev-parse --verify HEAD)"
 hosted_commit_short="$(git -C "$project_dir" rev-parse --short=12 HEAD)"
 node_path="$(command -v node)"
+node_bin_dir="$(dirname "$node_path")"
+service_path="${node_bin_dir}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 "$project_dir/scripts/mac-test-host-database.sh" "$project_dir" "$node_path"
 
@@ -179,6 +181,7 @@ node --input-type=module - \
   "$state_dir" \
   "$node_path" \
   "$app_port" \
+  "$service_path" \
   "$service_log" \
   "$service_error_log" <<'NODE'
 import { chmodSync, writeFileSync } from "node:fs";
@@ -192,6 +195,7 @@ const [
   projectDir,
   nodePath,
   port,
+  servicePath,
   stdoutPath,
   stderrPath,
 ] = process.argv;
@@ -218,6 +222,8 @@ const contents = `<?xml version="1.0" encoding="UTF-8"?>
     <string>127.0.0.1</string>
     <key>PORT</key>
     <string>${xml(port)}</string>
+    <key>PATH</key>
+    <string>${xml(servicePath)}</string>
   </dict>
   <key>RunAtLoad</key>
   <true/>
@@ -294,6 +300,8 @@ writeFileSync(targetPath, contents, { mode: 0o644 });
 chmodSync(targetPath, 0o644);
 NODE
 
+: >"$service_log"
+: >"$service_error_log"
 launchctl bootout "$watchdog_domain" >/dev/null 2>&1 || true
 launchctl bootout "$launch_domain" >/dev/null 2>&1 || true
 
@@ -325,12 +333,6 @@ for attempt in {1..45}; do
     "http://127.0.0.1:${app_port}/api/health" \
     >/dev/null 2>&1; then
     break
-  fi
-  if ! launchctl print "$launch_domain" 2>/dev/null \
-    | grep -q 'state = running'; then
-    echo "Aplikacja zakończyła się podczas uruchamiania. Log:"
-    tail -100 "$service_error_log" "$service_log" 2>/dev/null || true
-    exit 1
   fi
   if [[ "$attempt" -eq 45 ]]; then
     echo "Aplikacja nie odpowiedziała lokalnie. Log:"
@@ -377,9 +379,14 @@ node --env-file="$project_dir/.env" --input-type=module - \
 import { chmodSync, writeFileSync } from "node:fs";
 
 const [, , targetPath, publicUrl, hostedCommit] = process.argv;
-const demoPassword = process.env.KLA_DEMO_PASSWORD;
-if (!demoPassword) {
-  throw new Error("Brak KLA_DEMO_PASSWORD w prywatnym .env.");
+const demoCredentials = [
+  ["Dyrektor", "dyrektor", process.env.KLA_DEMO_DIRECTOR_PASSWORD ?? process.env.KLA_DEMO_PASSWORD],
+  ["Wykładowca", "wykladowca", process.env.KLA_DEMO_TEACHER_PASSWORD ?? process.env.KLA_DEMO_PASSWORD],
+  ["Rodzic", "rodzic", process.env.KLA_DEMO_PARENT_PASSWORD ?? process.env.KLA_DEMO_PASSWORD],
+  ["Uczeń", "uczen", process.env.KLA_DEMO_STUDENT_PASSWORD ?? process.env.KLA_DEMO_PASSWORD],
+];
+if (demoCredentials.some(([, , password]) => !password)) {
+  throw new Error("Brak haseł kont demo w prywatnym .env.");
 }
 
 const contents = [
@@ -388,11 +395,7 @@ const contents = [
   `Adres: ${publicUrl}/panel/logowanie`,
   `Wersja testowa: commit ${hostedCommit}`,
   "",
-  "Dyrektor: dyrektor.demo@invalid.example",
-  "Wykładowca: wykladowca.demo@invalid.example",
-  "Rodzic: rodzic.demo@invalid.example",
-  "Uczeń: uczen.panel.demo@invalid.example",
-  `Wspólne hasło kont demo: ${demoPassword}`,
+  ...demoCredentials.map(([role, login, password]) => `${role}: ${login} / ${password}`),
   "",
   "Dyrektor w bieżącym pilocie loguje się bez kodu MFA.",
   "",

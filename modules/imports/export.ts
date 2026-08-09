@@ -43,7 +43,8 @@ export function splitPersonName(name: string): {
 }
 
 function escapeCsvCell(value: string | number): string {
-  const text = String(value);
+  const raw = String(value);
+  const text = /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
   if (!/[;"\r\n]/.test(text)) return text;
   return `"${text.replaceAll('"', '""')}"`;
 }

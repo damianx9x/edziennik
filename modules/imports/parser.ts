@@ -366,7 +366,7 @@ function getDuplicateKey(row: ImportRow): string | undefined {
     return `${row.entity}:${normalizeKey(row.name ?? "")}`;
   }
   if (row.entity === "STUDENT") {
-    return `${row.entity}:${normalizeKey(row.externalId ?? "")}`;
+    return `${row.entity}:${normalizeKey(row.externalId ?? "")}:${normalizeKey(row.groupName ?? "")}`;
   }
   if (row.entity === "RELATION") {
     return `${row.entity}:${row.parentEmail}:${normalizeKey(row.childExternalId ?? "")}`;
@@ -418,7 +418,8 @@ function normalizeKey(value: string): string {
 function toCellString(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (value instanceof Date) return value.toISOString();
-  return String(value).trim();
+  const text = String(value).trim();
+  return /^'[\t\r ]*[=+\-@]/.test(text) ? text.slice(1) : text;
 }
 
 export function parseDelimitedText(input: string): string[][] {

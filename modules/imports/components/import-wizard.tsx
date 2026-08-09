@@ -4,6 +4,7 @@ import {
   AlertCircle,
   CheckCircle2,
   FileSpreadsheet,
+  HelpCircle,
   LoaderCircle,
   Upload,
 } from "lucide-react";
@@ -49,6 +50,22 @@ export function ImportWizard() {
             potwierdzenia.
           </p>
         </div>
+        <details className="import-help">
+          <summary aria-label="Pokaż instrukcję przygotowania pliku CSV">
+            <HelpCircle aria-hidden="true" /> Jak przygotować plik?
+          </summary>
+          <div>
+            <h3>CSV krok po kroku</h3>
+            <ol>
+              <li>Pobierz szablon i otwórz go w Excelu, Numbers albo Arkuszach Google.</li>
+              <li>Nie zmieniaj nazw kolumn. Każdy rekord wpisz w osobnym wierszu.</li>
+              <li>W kolumnie „typ” użyj: sala, wykladowca, grupa, uczen, rodzic albo relacja.</li>
+              <li>W Excelu wybierz „Zapisz jako” → „CSV UTF-8 (rozdzielany przecinkami)”. System rozpozna też średnik.</li>
+              <li>Wczytaj plik i sprawdź podgląd. Zapis nastąpi dopiero po potwierdzeniu.</li>
+            </ol>
+            <p><strong>Obecny tryb:</strong> uzupełnia i aktualizuje istniejące kartoteki. Niczego nie usuwa. Bezpieczna synchronizacja z archiwizacją brakujących rekordów powstanie jako osobny, dodatkowo potwierdzany tryb.</p>
+          </div>
+        </details>
       </div>
 
       <ol className="import-steps" aria-label="Etapy importu">

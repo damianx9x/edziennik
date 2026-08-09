@@ -13,6 +13,7 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
+import { PageStatisticsList } from "@/modules/observability/components/page-statistics-list";
 
 export const metadata: Metadata = { title: "Statystyki" };
 export const dynamic = "force-dynamic";
@@ -53,6 +54,7 @@ export default async function StatisticsPage() {
     activeNow,
     recentVisits,
     pageGroups,
+    pageDetailVisits,
     userGroups,
     openReports,
     failedImports,
@@ -78,6 +80,16 @@ export default async function StatisticsPage() {
       _count: { _all: true },
       orderBy: { _count: { path: "desc" } },
       take: 8,
+    }),
+    db.pageVisit.findMany({
+      where: { schoolId, visitedAt: { gte: thirtyDaysAgo } },
+      orderBy: { visitedAt: "asc" },
+      take: 5000,
+      select: {
+        path: true,
+        visitedAt: true,
+        user: { select: { role: true } },
+      },
     }),
     db.pageVisit.groupBy({
       by: ["userId"],
@@ -112,7 +124,29 @@ export default async function StatisticsPage() {
     })
     .sort((a, b) => b.visits - a.visits)
     .slice(0, 8);
-  const maxPageCount = Math.max(1, ...pageGroups.map((item) => item._count._all));
+  const pageDetails = pageGroups.map((group) => {
+    const visits = pageDetailVisits.filter((visit) => visit.path === group.path);
+    const roleCounts = new Map<string, number>();
+    const hourCounts = new Map<string, number>();
+    for (const visit of visits) {
+      const role = visit.user ? roleLabel(visit.user.role) : "Gość strony";
+      roleCounts.set(role, (roleCounts.get(role) ?? 0) + 1);
+      const hour = new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", timeZone: "Europe/Warsaw" }).format(visit.visitedAt);
+      hourCounts.set(`${hour}:00`, (hourCounts.get(`${hour}:00`) ?? 0) + 1);
+    }
+    const sorted = <T extends [string, number]>(entries: T[]) => entries.sort((a, b) => b[1] - a[1]).slice(0, 6).map(([label, value]) => ({ label, value }));
+    return {
+      path: group.path,
+      label: pageLabel(group.path),
+      visits: group._count._all,
+      authenticated: visits.filter((visit) => Boolean(visit.user)).length,
+      anonymous: visits.filter((visit) => !visit.user).length,
+      firstVisit: visits[0] ? formatDate(visits[0].visitedAt) : null,
+      lastVisit: visits.at(-1) ? formatDate(visits.at(-1)!.visitedAt) : null,
+      roles: sorted([...roleCounts.entries()]),
+      hours: sorted([...hourCounts.entries()]),
+    };
+  });
 
   return (
     <AuthenticatedPanelShell session={session} active="statistics">
@@ -145,19 +179,7 @@ export default async function StatisticsPage() {
               <h2>Najczęściej używane miejsca</h2>
             </div>
           </header>
-          <div className="statistics-bars">
-            {pageGroups.map((item) => (
-              <div key={item.path}>
-                <span>
-                  <strong>{pageLabel(item.path)}</strong>
-                  <small>{item._count._all} odsłon</small>
-                </span>
-                <i
-                  style={{ width: `${(item._count._all / maxPageCount) * 100}%` }}
-                />
-              </div>
-            ))}
-          </div>
+          <PageStatisticsList pages={pageDetails} />
         </section>
 
         <section className="statistics-card">
