@@ -95,6 +95,17 @@ opóźnia działania użytkownika i zawsze zapewnia spokojny wariant
 CSS. Drag-and-drop dostanie ruch dopiero razem z pełną obsługą klawiatury i
 czytelnym komunikatem kolizji.
 
+## Jasny i ciemny wygląd
+
+- Użytkownik może przełączyć wygląd stałym przyciskiem z ikoną księżyca lub
+  słońca. Wybór zostaje zapamiętany tylko w jego przeglądarce.
+- Ciemny wariant korzysta z granatu KLA, nie z czystej czerni. Zachowuje te same
+  układy, komunikaty i hierarchię co wariant jasny.
+- Tryb systemowy jest używany przy pierwszej wizycie, dopóki użytkownik sam nie
+  wybierze wyglądu.
+- Zmiana kolorów jest natychmiastowa, bez dekoracyjnej animacji i bez błysku
+  jasnego tła przy przechodzeniu między podstronami.
+
 ## Skille Codex
 
 25 lipca zainstalowano:

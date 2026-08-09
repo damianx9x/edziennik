@@ -41,7 +41,7 @@ export type Resource = {
   teacherIds?: readonly string[];
   parentIds?: readonly string[];
   studentIds?: readonly string[];
-  directorAccessGranted?: boolean;
+  participantIds?: readonly string[];
 };
 
 /**
@@ -89,12 +89,6 @@ export function can(
   }
 
   if (actor.role === "DIRECTOR") {
-    if (action === "view:conversation") {
-      return resource.directorAccessGranted === true;
-    }
-    if (action === "send:group-message") {
-      return false;
-    }
     return true;
   }
 
@@ -154,6 +148,7 @@ export function can(
   }
 
   if (action === "view:conversation" || action === "send:group-message") {
+    if (resource.participantIds) return resource.participantIds.includes(actor.id);
     if (actor.role === "TEACHER") {
       return resource.teacherIds?.includes(actor.id) === true;
     }

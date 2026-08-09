@@ -55,8 +55,8 @@ export function OnboardingTour({ role, openInitially }: { role: Role; openInitia
         <div className="onboarding-progress" aria-hidden="true">{roleSteps.map((_, index) => <span key={index} className={index <= step ? "active" : ""} />)}</div>
         <main><span className="onboarding-icon"><Icon aria-hidden="true" /></span><h2 id="onboarding-title">{current.title}</h2><p>{current.description}</p><Link href={current.href} onClick={close}>{current.label} <ArrowRight /></Link></main>
         <footer>
-          <button type="button" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}><ArrowLeft /> Wstecz</button>
-          {step < roleSteps.length - 1 ? <button type="button" onClick={() => setStep((value) => value + 1)}>Dalej <ArrowRight /></button> : <form action={finishOnboardingAction} onSubmit={close}><input type="hidden" name="result" value="completed" /><button type="submit">Gotowe</button></form>}
+          <button className="onboarding-back" type="button" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}><ArrowLeft /> Wstecz</button>
+          {step < roleSteps.length - 1 ? <button className="onboarding-next" type="button" onClick={() => setStep((value) => Math.min(roleSteps.length - 1, value + 1))}>Dalej <ArrowRight /></button> : <form action={finishOnboardingAction} onSubmit={close}><input type="hidden" name="result" value="completed" /><button className="onboarding-next" type="submit">Gotowe</button></form>}
         </footer>
         {openInitially ? <form className="onboarding-dismiss" action={finishOnboardingAction} onSubmit={close}><input type="hidden" name="result" value="dismissed" /><button type="submit">Pomiń teraz — zawsze znajdziesz samouczek pod ikoną ?</button></form> : null}
       </div>

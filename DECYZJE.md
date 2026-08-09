@@ -640,3 +640,42 @@ zgodzie szkoły na transfer danych do dostawcy.
 duplikować dane. Potwierdzenie musi oznaczać świadome działanie. Pozorowany
 przycisk „Połącz Messenger” tworzyłby fałszywą obietnicę i ryzyko ujawnienia
 danych uczniów poza kontrolowanym kanałem szkoły.
+
+## ADR-055 — dwustopniowy zrzut, granatowy tryb ciemny i powtarzalne demo
+
+**Data:** 2026-08-09
+
+- Zrzut problemu jest uzbrajany w formularzu, ale wykonywany dopiero z małej
+  ikony po przejściu do miejsca błędu. Formularz nie może zasłaniać zrzutu.
+- Motyw ciemny jest wariantem istniejących tokenów KLA, zapamiętywanym lokalnie;
+  nie tworzy osobnego zestawu komponentów.
+- Seed demonstracyjny jest idempotentny i zawiera syntetyczne grupy, rodziców,
+  wykładowców, lekcje z historią obecności, rozmowy, umowy i różne stany
+  płatności. Uruchomienie hosta uzupełnia seed przed zbudowaniem commita.
+- Pliki `.command` są prostą, lokalną warstwą obsługi nad istniejącym
+  launchd/watchdog. Nie zastępują mechanizmu nadzoru.
+
+## ADR-056 — bezpośredni, jawny wgląd dyrektora i rozmowy z wybranymi osobami
+
+**Data:** 2026-08-09
+**Decyzja:** dyrektor może otworzyć treść służbowej rozmowy bez każdorazowego
+wpisywania celu i uzasadnienia. System automatycznie zapisuje w audycie kto,
+kiedy i którą rozmowę otworzył, bez kopiowania jej treści do logu. Każda rola
+widzi stałą, krótką informację, że dyrektor ma wgląd w komunikację służbową.
+Niniejsza decyzja zastępuje wymóg ręcznego formularza z ADR-053; pozostałe
+zasady jawności i audytu nadal obowiązują.
+
+Oprócz kanałów grupowych istnieją rozmowy z wybranymi osobami. Ich skład ustala
+dyrektor. Uczestnik widzi rozmowę tylko wtedy, gdy został do niej jawnie dodany;
+wykładowca nie może sam rozszerzyć składu ani uzyskać dostępu do nieprzypisanej
+grupy. Powiadomienia i załączniki korzystają z tej samej centralnej kontroli
+członkostwa.
+
+**Dlaczego:** szybki dostęp operacyjny dyrektora nie powinien wymagać pozornego
+formularza, ale nadal musi być przejrzysty i rozliczalny. Osobne członkostwo
+rozmowy zapobiega ujawnieniu prywatnej wiadomości całej grupie.
+
+Build wydaniowy Next.js używa jawnie Webpacka. Turbopack pozostaje narzędziem
+developerskim, ale w środowisku pakowania próbował uruchamiać pomocniczy proces
+nasłuchujący na porcie i uniemożliwiał powtarzalne zbudowanie paczki. Zmiana nie
+wpływa na kod ani hosting aplikacji; daje ten sam produkcyjny wynik Next.js.

@@ -96,6 +96,62 @@ export async function canUseGroupConversation(session: ActiveSession, groupId: s
   return can(actor, "send:group-message", resource);
 }
 
+export async function canUseConversation(session: ActiveSession, conversationId: string) {
+  const conversation = await db.conversation.findFirst({
+    where: { id: conversationId, schoolId: session.user.schoolId, archivedAt: null },
+    select: {
+      kind: true,
+      groupId: true,
+      participants: { where: { userId: session.user.id, archivedAt: null }, select: { userId: true } },
+    },
+  });
+  if (!conversation) return false;
+  const actor: Actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
+  if (conversation.kind === "DIRECT") return can(actor, "send:group-message", { schoolId: session.user.schoolId, participantIds: conversation.participants.map((item) => item.userId) });
+  if (session.user.role === "DIRECTOR") return can(actor, "send:group-message", { schoolId: session.user.schoolId });
+  return Boolean(conversation.groupId && await canUseGroupConversation(session, conversation.groupId));
+}
+
+export async function getConversationRecipientIds(conversationId: string, schoolId: string, excludeId?: string) {
+  const conversation = await db.conversation.findFirst({
+    where: { id: conversationId, schoolId, archivedAt: null },
+    select: {
+      kind: true,
+      groupId: true,
+      participants: { where: { archivedAt: null }, select: { userId: true } },
+    },
+  });
+  if (!conversation) return [];
+  const ids = conversation.kind === "DIRECT"
+    ? conversation.participants.map((item) => item.userId)
+    : conversation.groupId ? await getGroupRecipientIds(conversation.groupId, schoolId) : [];
+  return [...new Set(ids)].filter((id) => id !== excludeId);
+}
+
+export async function getDirectConversations(session: ActiveSession) {
+  return db.conversation.findMany({
+    where: {
+      schoolId: session.user.schoolId,
+      kind: "DIRECT",
+      archivedAt: null,
+      ...(session.user.role === "DIRECTOR" ? {} : { participants: { some: { userId: session.user.id, archivedAt: null } } }),
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      participants: {
+        where: { archivedAt: null },
+        orderBy: { user: { name: "asc" } },
+        select: { user: { select: { id: true, name: true, role: true } } },
+      },
+      _count: { select: { messages: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+    },
+  });
+}
+
 export async function getGroupRecipientIds(groupId: string, schoolId: string, excludeId?: string) {
   const resource = await getConversationResource(groupId, schoolId);
   if (!resource) return [];

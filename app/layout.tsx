@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import { FeedbackWidget } from "./components/feedback-widget";
 import { PageVisitTracker } from "./components/page-visit-tracker";
+import { ThemeToggle } from "./components/theme-toggle";
 import { SiteContentProvider } from "../modules/site-content/site-content-provider";
 import "./globals.css";
 
@@ -46,11 +47,20 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pl" data-scroll-behavior="smooth">
+    <html lang="pl" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{const t=localStorage.getItem('kla-color-theme')||matchMedia('(prefers-color-scheme: dark)').matches&&'dark'||'light';document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{}",
+          }}
+        />
+      </head>
       <body>
         <SiteContentProvider>
           {children}
           <PageVisitTracker />
+          <ThemeToggle />
           <FeedbackWidget />
         </SiteContentProvider>
       </body>

@@ -11,6 +11,7 @@ import {
 import { auth } from "../lib/server/auth";
 import type { IdentityRole } from "../modules/identity/auth/access";
 import { demoGroups } from "../modules/demo-data/groups";
+import { getFileStorage } from "../modules/files/storage";
 
 const connectionString = process.env.DATABASE_URL;
 const allowInsecureDemoCredentials =
@@ -164,6 +165,7 @@ async function main() {
   let studentSequence = 1;
   let firstGroupId: string | null = null;
   const demoGroupIds: string[] = [];
+  const syntheticStudentIds: string[] = [];
 
   for (const groupDefinition of demoGroups) {
     const group = await prisma.courseGroup.upsert({
@@ -213,6 +215,7 @@ async function main() {
           studentId: student.id,
         },
       });
+      syntheticStudentIds.push(student.id);
       studentSequence += 1;
     }
   }
@@ -401,9 +404,341 @@ async function main() {
     });
   }
 
-  console.log(
-    `Dane demo gotowe: ${demoGroups.length} grup z wymaganiami grafiku, ${studentSequence} syntetycznych uczniów i 4 konta ról.`,
+  const additionalTeachers = await Promise.all(
+    ["Wykładowca Demo 02", "Wykładowca Demo 03", "Wykładowca Demo 04"].map(
+      async (name, index) => {
+        const user = await prisma.user.upsert({
+          where: { email: `wykladowca.demo.${index + 2}@invalid.example` },
+          update: { schoolId: school.id, name, status: "ACTIVE", archivedAt: null },
+          create: {
+            schoolId: school.id,
+            email: `wykladowca.demo.${index + 2}@invalid.example`,
+            name,
+            role: "TEACHER",
+            status: "ACTIVE",
+            emailVerified: true,
+          },
+        });
+        await prisma.teacherProfile.upsert({
+          where: { userId: user.id },
+          update: { displayName: name },
+          create: { userId: user.id, displayName: name },
+        });
+        return user;
+      },
+    ),
   );
+
+  const demoParents = [parent];
+  for (let index = 1; index <= 6; index += 1) {
+    const name = `Rodzic Demo ${String(index + 1).padStart(2, "0")}`;
+    demoParents.push(
+      await prisma.user.upsert({
+        where: { email: `rodzic.demo.${index + 1}@invalid.example` },
+        update: { schoolId: school.id, name, status: "ACTIVE", archivedAt: null },
+        create: {
+          schoolId: school.id,
+          email: `rodzic.demo.${index + 1}@invalid.example`,
+          name,
+          role: "PARENT",
+          status: "ACTIVE",
+          emailVerified: true,
+        },
+      }),
+    );
+  }
+
+  const parentLinks = [panelStudent.id, ...syntheticStudentIds.slice(0, 8)];
+  for (const [index, childId] of parentLinks.entries()) {
+    const linkedParent = index < 3 ? parent : demoParents[(index % 6) + 1];
+    await prisma.parentChild.upsert({
+      where: { parentId_childId: { parentId: linkedParent.id, childId } },
+      update: { schoolId: school.id, archivedAt: null },
+      create: { schoolId: school.id, parentId: linkedParent.id, childId },
+    });
+  }
+
+  const weekStart = startOfWeek(new Date());
+  const slotIds: string[] = [];
+  for (const [index, groupId] of demoGroupIds.entries()) {
+    const room = demoRooms[index % demoRooms.length];
+    const teacherForGroup =
+      index < 4 ? teacher : additionalTeachers[(index - 4) % additionalTeachers.length];
+    await prisma.groupTeacher.upsert({
+      where: { groupId_teacherId: { groupId, teacherId: teacherForGroup.id } },
+      update: { archivedAt: null, isPrimary: index < 4 },
+      create: { groupId, teacherId: teacherForGroup.id, isPrimary: index < 4 },
+    });
+
+    for (const weekOffset of [-1, 0, 1]) {
+      const startAt = new Date(weekStart);
+      startAt.setDate(startAt.getDate() + weekOffset * 7 + (index % 5));
+      startAt.setHours(14 + Math.floor(index / 5) * 2, (index % 2) * 15, 0, 0);
+      const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+      const slotId = stableUuid(100 + (weekOffset + 1) * 20 + index);
+      const slot = await prisma.scheduleSlot.upsert({
+        where: { id: slotId },
+        update: {
+          schoolId: school.id,
+          groupId,
+          roomId: room.id,
+          teacherId: teacherForGroup.id,
+          startAt,
+          endAt,
+          status: weekOffset < 0 ? "COMPLETED" : "PLANNED",
+          archivedAt: null,
+          topic: weekOffset < 0 ? "Powtórka i konwersacje — demo" : "English in action — demo",
+        },
+        create: {
+          id: slotId,
+          schoolId: school.id,
+          groupId,
+          roomId: room.id,
+          teacherId: teacherForGroup.id,
+          createdById: director.id,
+          startAt,
+          endAt,
+          status: weekOffset < 0 ? "COMPLETED" : "PLANNED",
+          topic: weekOffset < 0 ? "Powtórka i konwersacje — demo" : "English in action — demo",
+        },
+      });
+      slotIds.push(slot.id);
+
+      if (weekOffset < 0) {
+        const enrolled = await prisma.enrollment.findMany({
+          where: { groupId, status: "ACTIVE" },
+          take: 5,
+          orderBy: { joinedAt: "asc" },
+          select: { studentId: true },
+        });
+        for (const [studentIndex, enrollment] of enrolled.entries()) {
+          await prisma.attendanceRecord.upsert({
+            where: {
+              scheduleSlotId_studentId: {
+                scheduleSlotId: slot.id,
+                studentId: enrollment.studentId,
+              },
+            },
+            update: {
+              recordedById: teacherForGroup.id,
+              status: studentIndex === 3 ? "ABSENT" : studentIndex === 4 ? "LATE" : "PRESENT",
+            },
+            create: {
+              schoolId: school.id,
+              scheduleSlotId: slot.id,
+              studentId: enrollment.studentId,
+              recordedById: teacherForGroup.id,
+              status: studentIndex === 3 ? "ABSENT" : studentIndex === 4 ? "LATE" : "PRESENT",
+              note: studentIndex === 4 ? "Syntetyczny przykład spóźnienia" : null,
+            },
+          });
+        }
+      }
+    }
+
+    const conversation = await prisma.conversation.upsert({
+      where: { groupId },
+      update: { schoolId: school.id, archivedAt: null },
+      create: { schoolId: school.id, groupId },
+    });
+    const groupMessage = await prisma.message.upsert({
+      where: {
+        authorId_clientRequestId: {
+          authorId: teacherForGroup.id,
+          clientRequestId: `00000000-0000-4000-8100-${String(index + 1).padStart(12, "0")}`,
+        },
+      },
+      update: { requiresAcknowledgement: index % 3 === 0 },
+      create: {
+        schoolId: school.id,
+        conversationId: conversation.id,
+        authorId: teacherForGroup.id,
+        body: `Wiadomość demonstracyjna dla grupy ${index + 1}: proszę sprawdzić plan najbliższych zajęć.`,
+        clientRequestId: `00000000-0000-4000-8100-${String(index + 1).padStart(12, "0")}`,
+        requiresAcknowledgement: index % 3 === 0,
+      },
+    });
+    await prisma.messageRead.createMany({
+      data: [{ schoolId: school.id, messageId: groupMessage.id, userId: teacherForGroup.id }],
+      skipDuplicates: true,
+    });
+  }
+
+  await seedDemoContracts({
+    schoolId: school.id,
+    directorId: director.id,
+    parentId: parent.id,
+    studentIds: [panelStudent.id, ...syntheticStudentIds.slice(0, 2)],
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      schoolId: school.id,
+      actorId: director.id,
+      action: "demo.seed.expanded",
+      entityType: "School",
+      entityId: school.id,
+      metadata: {
+        synthetic: true,
+        groups: demoGroupIds.length,
+        parents: demoParents.length,
+        teachers: additionalTeachers.length + 1,
+        scheduleSlots: slotIds.length,
+      },
+    },
+  });
+
+  console.log(
+    `Dane demo gotowe: ${demoGroups.length} grup, ${studentSequence - 1} syntetycznych uczniów, ${slotIds.length} lekcji, rozmowy, obecności, umowy i płatności.`,
+  );
+}
+
+function startOfWeek(value: Date) {
+  const date = new Date(value);
+  const day = date.getDay();
+  date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function stableUuid(value: number) {
+  return `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+}
+
+async function seedDemoContracts(input: {
+  schoolId: string;
+  directorId: string;
+  parentId: string;
+  studentIds: string[];
+}) {
+  const storage = getFileStorage();
+  const pdfBytes = new TextEncoder().encode(
+    "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF",
+  );
+  let storedFile = await prisma.storedFile.findFirst({
+    where: {
+      schoolId: input.schoolId,
+      purpose: "CONTRACT",
+      originalName: "KLA-umowa-demo.pdf",
+      archivedAt: null,
+    },
+  });
+  const stored = storedFile
+    ? await storage.read(storedFile.storageKey).then(() => null).catch(() => storage.put({ schoolId: input.schoolId, bytes: pdfBytes }))
+    : await storage.put({ schoolId: input.schoolId, bytes: pdfBytes });
+  if (!storedFile && stored) {
+    storedFile = await prisma.storedFile.create({
+      data: {
+        schoolId: input.schoolId,
+        uploadedById: input.directorId,
+        storageKey: stored.storageKey,
+        originalName: "KLA-umowa-demo.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: stored.sizeBytes,
+        sha256: stored.sha256,
+        purpose: "CONTRACT",
+      },
+    });
+  } else if (storedFile && stored) {
+    storedFile = await prisma.storedFile.update({
+      where: { id: storedFile.id },
+      data: {
+        storageKey: stored.storageKey,
+        sizeBytes: stored.sizeBytes,
+        sha256: stored.sha256,
+      },
+    });
+  }
+  if (!storedFile) throw new Error("Nie udało się przygotować pliku umowy demo.");
+
+  const dueOffsets = [-7, 5, 21];
+  const statuses = ["OVERDUE", "PENDING", "PAID"] as const;
+  for (const [index, studentId] of input.studentIds.entries()) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + dueOffsets[index]);
+    dueDate.setHours(12, 0, 0, 0);
+    const contractId = stableUuid(300 + index);
+    const contract = await prisma.contract.upsert({
+      where: { id: contractId },
+      update: {
+        title: `Umowa demonstracyjna ${index + 1}`,
+        archivedAt: null,
+      },
+      create: {
+        id: contractId,
+        schoolId: input.schoolId,
+        title: `Umowa demonstracyjna ${index + 1}`,
+        serviceSummary: "Syntetyczny przykład umowy na zajęcia języka angielskiego.",
+        requiresPayment: true,
+        paymentSummary: "Przykładowa miesięczna opłata demonstracyjna.",
+      },
+    });
+    const version = await prisma.contractVersion.upsert({
+      where: { contractId_version: { contractId: contract.id, version: 1 } },
+      update: {
+        storedFileId: storedFile.id,
+        sha256: storedFile.sha256,
+        paymentDueDate: dueDate,
+      },
+      create: {
+        contractId: contract.id,
+        storedFileId: storedFile.id,
+        createdById: input.directorId,
+        version: 1,
+        sha256: storedFile.sha256,
+        title: contract.title,
+        serviceSummary: contract.serviceSummary,
+        requiresPayment: true,
+        paymentSummary: contract.paymentSummary,
+        paymentAmountCents: 35000 + index * 2500,
+        paymentLabel: `Czesne demonstracyjne ${index + 1}`,
+        paymentDueDate: dueDate,
+      },
+    });
+    const assignment = await prisma.contractAssignment.upsert({
+      where: {
+        versionId_parentId_studentId: {
+          versionId: version.id,
+          parentId: input.parentId,
+          studentId,
+        },
+      },
+      update: { status: "ACCEPTED", viewedAt: new Date(), expiresAt: null },
+      create: {
+        schoolId: input.schoolId,
+        contractId: contract.id,
+        versionId: version.id,
+        parentId: input.parentId,
+        studentId,
+        status: "ACCEPTED",
+        viewedAt: new Date(),
+      },
+    });
+    await prisma.contractAcceptance.upsert({
+      where: { assignmentId: assignment.id },
+      update: { documentHash: storedFile.sha256 },
+      create: {
+        assignmentId: assignment.id,
+        acceptedById: input.parentId,
+        documentHash: storedFile.sha256,
+        evidence: { synthetic: true, statementVersion: "demo" },
+      },
+    });
+    await prisma.paymentRecord.upsert({
+      where: { contractAssignmentId: assignment.id },
+      update: { status: statuses[index], dueDate, changedById: input.directorId },
+      create: {
+        schoolId: input.schoolId,
+        studentId,
+        changedById: input.directorId,
+        contractAssignmentId: assignment.id,
+        period: `DEMO-${index + 1}`,
+        status: statuses[index],
+        dueDate,
+        note: "Syntetyczny status do testów interfejsu.",
+      },
+    });
+  }
 }
 
 main()

@@ -56,6 +56,7 @@ export function FeedbackWidget() {
   const [role, setRole] = useState<FeedbackRole>("guest");
   const [description, setDescription] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [captureArmed, setCaptureArmed] = useState(false);
   const [status, setStatus] = useState<FeedbackStatus>({ kind: "idle" });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -156,6 +157,21 @@ export function FeedbackWidget() {
     setIsOpen(false);
   }
 
+  function armScreenCapture() {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setStatus({
+        kind: "error",
+        message:
+          "Ta przeglądarka nie pozwala zrobić zrzutu automatycznie. Dodaj gotowy obraz z urządzenia.",
+      });
+      return;
+    }
+
+    setCaptureArmed(true);
+    setIsOpen(false);
+    recordClientEvent({ code: "screen_capture_armed", level: "info" });
+  }
+
   async function captureScreen() {
     if (!navigator.mediaDevices?.getDisplayMedia) {
       setStatus({
@@ -166,6 +182,7 @@ export function FeedbackWidget() {
       return;
     }
 
+    setCaptureArmed(false);
     setStatus({ kind: "working", message: "Wybierz ekran lub kartę KLA…" });
     recordClientEvent({ code: "screen_capture_started", level: "info" });
 
@@ -191,6 +208,7 @@ export function FeedbackWidget() {
         type: "image/png",
       });
       setScreenshot(file);
+      setIsOpen(true);
       setStatus({
         kind: "success",
         message: "Zrzut jest gotowy. Sprawdź podgląd przed udostępnieniem.",
@@ -198,6 +216,7 @@ export function FeedbackWidget() {
       });
       recordClientEvent({ code: "screen_capture_ready", level: "info" });
     } catch (error) {
+      setIsOpen(true);
       setStatus({
         kind: "error",
         message:
@@ -330,6 +349,31 @@ export function FeedbackWidget() {
 
   return (
     <>
+      {captureArmed ? (
+        <div className="feedback-capture-mode" role="status">
+          <span>Przejdź do miejsca z błędem</span>
+          <button
+            className="feedback-capture-trigger"
+            type="button"
+            onClick={captureScreen}
+            aria-label="Zrób zrzut widocznego miejsca"
+            title="Zrób zrzut widocznego miejsca"
+          >
+            <Camera aria-hidden="true" />
+            <span>Zrób zrzut</span>
+          </button>
+          <button
+            className="feedback-capture-cancel"
+            type="button"
+            onClick={() => {
+              setCaptureArmed(false);
+              setIsOpen(true);
+            }}
+          >
+            Anuluj
+          </button>
+        </div>
+      ) : null}
       <button
         ref={triggerRef}
         className="feedback-trigger"
@@ -414,9 +458,9 @@ export function FeedbackWidget() {
                   <button
                     className="button button-secondary button-small"
                     type="button"
-                    onClick={captureScreen}
+                    onClick={armScreenCapture}
                   >
-                    <Camera aria-hidden="true" /> Zrób zrzut
+                    <Camera aria-hidden="true" /> Wskaż miejsce błędu
                   </button>
                   <label className="button button-secondary button-small upload-button">
                     <Paperclip aria-hidden="true" /> Dodaj plik

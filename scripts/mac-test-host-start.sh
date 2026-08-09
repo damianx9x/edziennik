@@ -66,6 +66,18 @@ if ! (
   exit 1
 fi
 
+echo "Uzupełniam bezpieczne dane demonstracyjne..."
+mkdir -p "$state_dir/private-files"
+chmod 700 "$state_dir/private-files"
+if ! (
+  cd "$project_dir"
+  KLA_PRIVATE_FILES_DIR="$state_dir/private-files" npm run db:seed:demo
+) >"$logs_dir/seed.log" 2>&1; then
+  echo "Przygotowanie danych demo nie powiodło się. Ostatnie linie:"
+  tail -100 "$logs_dir/seed.log"
+  exit 1
+fi
+
 node --env-file="$project_dir/.env" \
   "$project_dir/scripts/apply-director-mfa-policy.mjs"
 

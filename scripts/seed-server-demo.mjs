@@ -1,4 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { access, mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import { hashPassword } from "better-auth/crypto";
 import pg from "pg";
@@ -44,6 +46,10 @@ const demoGroups = [
 
 const pool = new Pool({ connectionString });
 const client = await pool.connect();
+
+function stableUuid(value) {
+  return `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
+}
 
 async function ensureCredentialUser({
   schoolId,
@@ -225,6 +231,7 @@ try {
   let firstGroupId;
   let studentSequence = 1;
   const groupIds = [];
+  const syntheticStudentIds = [];
 
   for (const [city, classLabel, studentCount] of demoGroups) {
     const groupName = `KLA ${city} ${classLabel} 2025/26`;
@@ -277,6 +284,7 @@ try {
         ],
       );
       const studentId = studentResult.rows[0].id;
+      syntheticStudentIds.push(studentId);
 
       await client.query(
         `INSERT INTO "StudentProfile" ("userId")
@@ -369,6 +377,220 @@ try {
     [schoolId, parentId, panelStudentId],
   );
 
+  for (const childId of syntheticStudentIds.slice(0, 2)) {
+    await client.query(
+      `INSERT INTO "ParentChild" (
+         "schoolId", "parentId", "childId", "createdAt"
+       ) VALUES ($1, $2, $3, NOW())
+       ON CONFLICT ("parentId", "childId")
+       DO UPDATE SET "schoolId" = EXCLUDED."schoolId", "archivedAt" = NULL`,
+      [schoolId, parentId, childId],
+    );
+  }
+
+  const weekStart = new Date();
+  const weekday = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - (weekday === 0 ? 6 : weekday - 1));
+  weekStart.setHours(0, 0, 0, 0);
+  let scheduleSlotCount = 0;
+  for (const [index, groupId] of groupIds.entries()) {
+    const room = rooms[index % rooms.length];
+    const conversationResult = await client.query(
+      `INSERT INTO "Conversation" (
+         "id", "schoolId", "groupId", "createdAt", "updatedAt"
+       ) VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT ("groupId")
+       DO UPDATE SET "schoolId" = EXCLUDED."schoolId", "archivedAt" = NULL, "updatedAt" = NOW()
+       RETURNING "id"`,
+      [stableUuid(500 + index), schoolId, groupId],
+    );
+    const conversationId = conversationResult.rows[0].id;
+    await client.query(
+      `INSERT INTO "Message" (
+         "id", "schoolId", "conversationId", "authorId", "kind", "body",
+         "clientRequestId", "requiresAcknowledgement", "createdAt"
+       ) VALUES ($1, $2, $3, $4, 'CHAT', $5, $6, $7, NOW())
+       ON CONFLICT ("authorId", "clientRequestId")
+       DO UPDATE SET "body" = EXCLUDED."body", "requiresAcknowledgement" = EXCLUDED."requiresAcknowledgement"`,
+      [
+        stableUuid(600 + index),
+        schoolId,
+        conversationId,
+        teacherId,
+        `Wiadomość demonstracyjna dla grupy ${index + 1}: proszę sprawdzić plan najbliższych zajęć.`,
+        `00000000-0000-4000-8200-${String(index + 1).padStart(12, "0")}`,
+        index % 3 === 0,
+      ],
+    );
+
+    for (const [weekIndex, weekOffset] of [-1, 0, 1].entries()) {
+      const startAt = new Date(weekStart);
+      startAt.setDate(startAt.getDate() + weekOffset * 7 + (index % 5));
+      startAt.setHours(14 + Math.floor(index / 5) * 2, (index % 2) * 15, 0, 0);
+      const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+      const slotId = stableUuid(700 + weekIndex * 20 + index);
+      await client.query(
+        `INSERT INTO "ScheduleSlot" (
+           "id", "schoolId", "groupId", "roomId", "teacherId", "createdById",
+           "startAt", "endAt", "timeZone", "status", "topic", "version",
+           "createdAt", "updatedAt", "isLocked"
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Europe/Warsaw', $9, $10, 1, NOW(), NOW(), false)
+         ON CONFLICT ("id") DO UPDATE SET
+           "groupId" = EXCLUDED."groupId", "roomId" = EXCLUDED."roomId",
+           "teacherId" = EXCLUDED."teacherId", "startAt" = EXCLUDED."startAt",
+           "endAt" = EXCLUDED."endAt", "status" = EXCLUDED."status",
+           "topic" = EXCLUDED."topic", "archivedAt" = NULL, "updatedAt" = NOW()`,
+        [
+          slotId,
+          schoolId,
+          groupId,
+          room.id,
+          teacherId,
+          directorId,
+          startAt,
+          endAt,
+          weekOffset < 0 ? "COMPLETED" : "PLANNED",
+          weekOffset < 0 ? "Powtórka i konwersacje — demo" : "English in action — demo",
+        ],
+      );
+      scheduleSlotCount += 1;
+
+      if (weekOffset < 0) {
+        const enrollmentResult = await client.query(
+          `SELECT "studentId" FROM "Enrollment"
+           WHERE "groupId" = $1 AND "status" = 'ACTIVE'
+           ORDER BY "joinedAt" ASC LIMIT 5`,
+          [groupId],
+        );
+        for (const [studentIndex, row] of enrollmentResult.rows.entries()) {
+          const attendanceStatus = studentIndex === 3 ? "ABSENT" : studentIndex === 4 ? "LATE" : "PRESENT";
+          await client.query(
+            `INSERT INTO "AttendanceRecord" (
+               "id", "schoolId", "scheduleSlotId", "studentId", "recordedById",
+               "status", "note", "createdAt", "updatedAt"
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+             ON CONFLICT ("scheduleSlotId", "studentId") DO UPDATE SET
+               "recordedById" = EXCLUDED."recordedById", "status" = EXCLUDED."status",
+               "note" = EXCLUDED."note", "updatedAt" = NOW()`,
+            [
+              randomUUID(),
+              schoolId,
+              slotId,
+              row.studentId,
+              teacherId,
+              attendanceStatus,
+              studentIndex === 4 ? "Syntetyczny przykład spóźnienia" : null,
+            ],
+          );
+        }
+      }
+    }
+  }
+
+  const pdfBytes = Buffer.from(
+    "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF",
+  );
+  const documentHash = createHash("sha256").update(pdfBytes).digest("hex");
+  const storageKey = `${schoolId}/2026/08/${stableUuid(990)}`;
+  const storageRoot = path.resolve(process.env.KLA_PRIVATE_FILES_DIR ?? ".data/private-files");
+  const documentPath = path.join(storageRoot, storageKey);
+  await mkdir(path.dirname(documentPath), { recursive: true, mode: 0o700 });
+  await access(documentPath).catch(() => writeFile(documentPath, pdfBytes, { mode: 0o600 }));
+  const storedFileResult = await client.query(
+    `INSERT INTO "StoredFile" (
+       "id", "schoolId", "uploadedById", "storageKey", "originalName", "mimeType",
+       "sizeBytes", "sha256", "purpose", "createdAt"
+     ) VALUES ($1, $2, $3, $4, 'KLA-umowa-demo.pdf', 'application/pdf', $5, $6, 'CONTRACT', NOW())
+     ON CONFLICT ("storageKey") DO UPDATE SET
+       "sizeBytes" = EXCLUDED."sizeBytes", "sha256" = EXCLUDED."sha256", "archivedAt" = NULL
+     RETURNING "id"`,
+    [stableUuid(991), schoolId, directorId, storageKey, pdfBytes.length, documentHash],
+  );
+  const storedFileId = storedFileResult.rows[0].id;
+  const contractStudents = [panelStudentId, ...syntheticStudentIds.slice(0, 2)];
+  const paymentStatuses = ["OVERDUE", "PENDING", "PAID"];
+  const dueOffsets = [-7, 5, 21];
+  for (const [index, studentId] of contractStudents.entries()) {
+    const contractId = stableUuid(1000 + index);
+    const versionId = stableUuid(1010 + index);
+    const assignmentId = stableUuid(1020 + index);
+    await client.query(
+      `INSERT INTO "Contract" (
+         "id", "schoolId", "title", "acceptanceMode", "serviceSummary",
+         "requiresPayment", "paymentSummary", "createdAt", "updatedAt"
+       ) VALUES ($1, $2, $3, 'DOCUMENTARY', $4, true, $5, NOW(), NOW())
+       ON CONFLICT ("id") DO UPDATE SET "title" = EXCLUDED."title", "archivedAt" = NULL, "updatedAt" = NOW()`,
+      [
+        contractId,
+        schoolId,
+        `Umowa demonstracyjna ${index + 1}`,
+        "Syntetyczny przykład umowy na zajęcia języka angielskiego.",
+        "Przykładowa miesięczna opłata demonstracyjna.",
+      ],
+    );
+    await client.query(
+      `INSERT INTO "ContractVersion" (
+         "id", "contractId", "storedFileId", "createdById", "version", "sha256",
+         "title", "acceptanceMode", "serviceSummary", "requiresPayment",
+         "paymentSummary", "paymentAmountCents", "paymentLabel", "paymentDueDate", "createdAt"
+       ) VALUES ($1, $2, $3, $4, 1, $5, $6, 'DOCUMENTARY', $7, true, $8, $9, $10, CURRENT_DATE + $11::integer, NOW())
+       ON CONFLICT ("contractId", "version") DO UPDATE SET
+         "storedFileId" = EXCLUDED."storedFileId", "sha256" = EXCLUDED."sha256",
+         "paymentDueDate" = EXCLUDED."paymentDueDate"
+       RETURNING "id"`,
+      [
+        versionId,
+        contractId,
+        storedFileId,
+        directorId,
+        documentHash,
+        `Umowa demonstracyjna ${index + 1}`,
+        "Syntetyczny przykład umowy na zajęcia języka angielskiego.",
+        "Przykładowa miesięczna opłata demonstracyjna.",
+        35000 + index * 2500,
+        `Czesne demonstracyjne ${index + 1}`,
+        dueOffsets[index],
+      ],
+    );
+    await client.query(
+      `INSERT INTO "ContractAssignment" (
+         "id", "schoolId", "contractId", "versionId", "parentId", "studentId",
+         "status", "sentAt", "viewedAt", "createdAt"
+       ) VALUES ($1, $2, $3, $4, $5, $6, 'ACCEPTED', NOW(), NOW(), NOW())
+       ON CONFLICT ("versionId", "parentId", "studentId") DO UPDATE SET
+         "status" = 'ACCEPTED', "viewedAt" = NOW(), "expiresAt" = NULL
+       RETURNING "id"`,
+      [assignmentId, schoolId, contractId, versionId, parentId, studentId],
+    );
+    await client.query(
+      `INSERT INTO "ContractAcceptance" (
+         "id", "assignmentId", "acceptedById", "documentHash", "evidence", "acceptedAt"
+       ) VALUES ($1, $2, $3, $4, $5::jsonb, NOW())
+       ON CONFLICT ("assignmentId") DO UPDATE SET "documentHash" = EXCLUDED."documentHash"`,
+      [stableUuid(1030 + index), assignmentId, parentId, documentHash, JSON.stringify({ synthetic: true })],
+    );
+    await client.query(
+      `INSERT INTO "PaymentRecord" (
+         "id", "schoolId", "studentId", "changedById", "contractAssignmentId",
+         "period", "status", "dueDate", "note", "createdAt", "updatedAt"
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE + $8::integer, $9, NOW(), NOW())
+       ON CONFLICT ("contractAssignmentId") DO UPDATE SET
+         "status" = EXCLUDED."status", "dueDate" = EXCLUDED."dueDate",
+         "changedById" = EXCLUDED."changedById", "updatedAt" = NOW()`,
+      [
+        stableUuid(1040 + index),
+        schoolId,
+        studentId,
+        directorId,
+        assignmentId,
+        `DEMO-${index + 1}`,
+        paymentStatuses[index],
+        dueOffsets[index],
+        "Syntetyczny status do testów interfejsu.",
+      ],
+    );
+  }
+
   await client.query(
     `INSERT INTO "AuditLog" (
        "id", "schoolId", "actorId", "action", "entityType", "entityId",
@@ -386,6 +608,8 @@ try {
       JSON.stringify({
         groups: demoGroups.length,
         syntheticStudents: studentSequence - 1,
+        scheduleSlots: scheduleSlotCount,
+        contracts: contractStudents.length,
       }),
     ],
   );
@@ -394,7 +618,7 @@ try {
   console.log(
     `Dane demo gotowe: ${demoGroups.length} grup, ${
       studentSequence - 1
-    } syntetycznych uczniów, 3 sale i 4 konta testowe.`,
+    } syntetycznych uczniów, ${scheduleSlotCount} lekcji, rozmowy, obecności, umowy i płatności.`,
   );
 } catch (error) {
   await client.query("ROLLBACK");

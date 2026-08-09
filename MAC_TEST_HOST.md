@@ -20,6 +20,26 @@ Dlatego test używa nazwanego Cloudflare Tunnel:
 Adres pozostaje stały. Mac nadal jest tymczasowym serwerem testowym i nie jest
 hostingiem produkcyjnym.
 
+## Najprostsza obsługa
+
+W głównym katalogu projektu są trzy pliki, które można uruchomić dwuklikiem w
+Finderze:
+
+- `URUCHOM_DEMO.command` — buduje i wystawia ostatni zatwierdzony commit, a po
+  sukcesie otwiera publiczny adres;
+- `ZATRZYMAJ_DEMO.command` — zatrzymuje aplikację i automatyczny nadzór;
+- `STATUS_DEMO.command` — pokazuje, czy aplikacja, baza, kontrola zdrowia i
+  tunel działają oraz jaki commit jest wystawiony.
+
+Jednorazowe uruchomienie `ZAINSTALUJ_SKROTY_DEMO.command` dodaje te trzy
+bezpieczne skróty na Biurku. Skróty wskazują na pliki projektu, więc nie tworzą
+drugiej kopii aplikacji i nie mogą się rozjechać z aktualnym kodem.
+
+Po restarcie Maca usługi wracają po zalogowaniu do konta macOS. Jeśli chcesz od
+razu wystawić nowy commit, użyj `URUCHOM_DEMO.command`. Skrypt nie wystawi
+niezatwierdzonych zmian i wyświetli prosty komunikat zamiast publikować
+przypadkowy stan projektu.
+
 ## Uruchomienie
 
 W katalogu projektu:

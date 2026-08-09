@@ -9,9 +9,9 @@ import { can, type Actor } from "@/modules/access-control/can";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { getFileStorage } from "@/modules/files/storage";
 
-import { canUseGroupConversation, getGroupRecipientIds } from "./access";
+import { canUseConversation, canUseGroupConversation, getConversationRecipientIds, getGroupRecipientIds } from "./access";
 import { processEmailDeliveryQueue } from "./queue";
-import { announcementSchema, directorAccessSchema, messageSchema, type MessagingActionState } from "./schema";
+import { announcementSchema, directConversationSchema, messageSchema, type MessagingActionState } from "./schema";
 
 const messagesPath = "/panel/wiadomosci";
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
@@ -40,14 +40,19 @@ async function isRateLimited(userId: string) {
 
 export async function sendMessageAction(_previous: MessagingActionState, formData: FormData): Promise<MessagingActionState> {
   const session = await requireActiveSession(messagesPath);
-  const parsed = messageSchema.safeParse({ groupId: formData.get("groupId"), body: formData.get("body"), requiresAcknowledgement: formData.get("requiresAcknowledgement") === "on", clientRequestId: formData.get("clientRequestId") });
+  const parsed = messageSchema.safeParse({ groupId: formData.get("groupId") || undefined, conversationId: formData.get("conversationId") || undefined, body: formData.get("body"), requiresAcknowledgement: formData.get("requiresAcknowledgement") === "on", clientRequestId: formData.get("clientRequestId") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź wiadomość." };
-  if (!(await canUseGroupConversation(session, parsed.data.groupId))) return { status: "error", message: "Nie masz dostępu do rozmowy tej grupy." };
+  const allowed = parsed.data.conversationId
+    ? await canUseConversation(session, parsed.data.conversationId)
+    : await canUseGroupConversation(session, parsed.data.groupId!);
+  if (!allowed) return { status: "error", message: "Nie masz dostępu do tej rozmowy." };
   if (await isRateLimited(session.user.id)) return { status: "error", message: "Wysłano wiele wiadomości. Poczekaj minutę i spróbuj ponownie." };
 
   const existing = await db.message.findUnique({ where: { authorId_clientRequestId: { authorId: session.user.id, clientRequestId: parsed.data.clientRequestId } }, select: { id: true } });
   if (existing) return { status: "success", message: "Wiadomość została już wysłana." };
-  const recipients = await getGroupRecipientIds(parsed.data.groupId, session.user.schoolId, session.user.id);
+  const recipients = parsed.data.conversationId
+    ? await getConversationRecipientIds(parsed.data.conversationId, session.user.schoolId, session.user.id)
+    : await getGroupRecipientIds(parsed.data.groupId!, session.user.schoolId, session.user.id);
   let attachment: Awaited<ReturnType<typeof prepareAttachment>>;
   try { attachment = await prepareAttachment(formData); } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Sprawdź załącznik." }; }
   const storage = getFileStorage();
@@ -55,11 +60,13 @@ export async function sendMessageAction(_previous: MessagingActionState, formDat
   try {
     if (attachment.bytes) stored = await storage.put({ schoolId: session.user.schoolId, bytes: attachment.bytes });
     await db.$transaction(async (tx) => {
-      const conversation = await tx.conversation.upsert({
-        where: { groupId: parsed.data.groupId },
-        create: { schoolId: session.user.schoolId, groupId: parsed.data.groupId },
-        update: { updatedAt: new Date() },
-      });
+      const conversation = parsed.data.conversationId
+        ? await tx.conversation.update({ where: { id: parsed.data.conversationId }, data: { updatedAt: new Date() } })
+        : await tx.conversation.upsert({
+            where: { groupId: parsed.data.groupId! },
+            create: { schoolId: session.user.schoolId, groupId: parsed.data.groupId!, kind: "GROUP" },
+            update: { updatedAt: new Date() },
+          });
       const message = await tx.message.create({ data: { schoolId: session.user.schoolId, conversationId: conversation.id, authorId: session.user.id, body: parsed.data.body, clientRequestId: parsed.data.clientRequestId, requiresAcknowledgement: parsed.data.requiresAcknowledgement } });
       if (stored && attachment.file) {
         const storedFile = await tx.storedFile.create({ data: { schoolId: session.user.schoolId, uploadedById: session.user.id, storageKey: stored.storageKey, originalName: attachment.file.name.slice(0, 180), mimeType: attachment.file.type, sizeBytes: stored.sizeBytes, sha256: stored.sha256, purpose: "MESSAGE_ATTACHMENT" } });
@@ -67,7 +74,7 @@ export async function sendMessageAction(_previous: MessagingActionState, formDat
       }
       if (recipients.length) await tx.emailDelivery.createMany({ data: recipients.map((recipientId) => ({ schoolId: session.user.schoolId, messageId: message.id, recipientId, idempotencyKey: `message:${message.id}:recipient:${recipientId}` })), skipDuplicates: true });
       await tx.messageRead.create({ data: { schoolId: session.user.schoolId, messageId: message.id, userId: session.user.id } });
-      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.sent", entityType: "Conversation", entityId: conversation.id, metadata: { groupId: parsed.data.groupId, recipientCount: recipients.length, messageKind: "CHAT" } } });
+      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.sent", entityType: "Conversation", entityId: conversation.id, metadata: { groupId: parsed.data.groupId ?? null, conversationKind: conversation.kind, recipientCount: recipients.length, messageKind: "CHAT" } } });
     });
     revalidatePath(messagesPath);
     after(() => processEmailDeliveryQueue(session.user.schoolId));
@@ -121,30 +128,33 @@ export async function sendAnnouncementAction(_previous: MessagingActionState, fo
   }
 }
 
-export async function grantDirectorConversationAccessAction(formData: FormData) {
+export async function createDirectConversationAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
-  const actor: Actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
-  if (!can(actor, "audit:view-conversation", { schoolId: session.user.schoolId })) redirect("/panel/brak-dostepu");
-  const parsed = directorAccessSchema.safeParse({ conversationId: formData.get("conversationId"), purpose: formData.get("purpose"), reason: formData.get("reason") });
-  if (!parsed.success) redirect(`${messagesPath}?blad=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Sprawdź uzasadnienie.")}`);
-  const conversation = await db.conversation.findFirst({ where: { id: parsed.data.conversationId, schoolId: session.user.schoolId, archivedAt: null }, select: { id: true, groupId: true } });
-  if (!conversation) redirect(`${messagesPath}?blad=${encodeURIComponent("Rozmowa nie istnieje.")}`);
-  const access = await db.$transaction(async (tx) => {
-    const created = await tx.directorConversationAccess.create({ data: { schoolId: session.user.schoolId, conversationId: conversation.id, directorId: session.user.id, purpose: parsed.data.purpose, reason: parsed.data.reason, expiresAt: new Date(Date.now() + 15 * 60_000) } });
-    await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.director_access.granted", entityType: "Conversation", entityId: conversation.id, metadata: { accessId: created.id, groupId: conversation.groupId, purpose: parsed.data.purpose, expiresAt: created.expiresAt.toISOString() } } });
+  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  const parsed = directConversationSchema.safeParse({ title: formData.get("title"), participantIds: formData.getAll("participantIds") });
+  if (!parsed.success) redirect(`${messagesPath}?blad=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Sprawdź odbiorców.")}`);
+  const participantIds = [...new Set([...parsed.data.participantIds, session.user.id])];
+  const validUsers = await db.user.findMany({
+    where: { id: { in: participantIds }, schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"] } },
+    select: { id: true },
+  });
+  if (validUsers.length !== participantIds.length) redirect(`${messagesPath}?blad=${encodeURIComponent("Co najmniej jeden odbiorca jest nieaktywny lub spoza szkoły.")}`);
+  const conversation = await db.$transaction(async (tx) => {
+    const created = await tx.conversation.create({ data: { schoolId: session.user.schoolId, kind: "DIRECT", title: parsed.data.title, createdById: session.user.id } });
+    await tx.conversationParticipant.createMany({ data: validUsers.map((user) => ({ conversationId: created.id, userId: user.id, schoolId: session.user.schoolId, addedById: session.user.id })) });
+    await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.direct_conversation.created", entityType: "Conversation", entityId: created.id, metadata: { participantCount: validUsers.length } } });
     return created;
   });
-  redirect(`${messagesPath}?rozmowa=${conversation.groupId}&dostep=${access.id}`);
+  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
 }
 
 export async function markMessagesReadAction(messageIds: string[]) {
   const session = await requireActiveSession(messagesPath);
   if (!Array.isArray(messageIds) || messageIds.length === 0 || messageIds.length > 100) return;
-  const messages = await db.message.findMany({ where: { id: { in: messageIds }, schoolId: session.user.schoolId }, select: { id: true, conversation: { select: { groupId: true } } } });
+  const messages = await db.message.findMany({ where: { id: { in: messageIds }, schoolId: session.user.schoolId }, select: { id: true, conversationId: true } });
   const allowed: string[] = [];
   for (const message of messages) {
-    if (session.user.role === "DIRECTOR") continue;
-    if (await canUseGroupConversation(session, message.conversation.groupId)) allowed.push(message.id);
+    if (await canUseConversation(session, message.conversationId)) allowed.push(message.id);
   }
   if (allowed.length) await db.messageRead.createMany({ data: allowed.map((messageId) => ({ messageId, userId: session.user.id, schoolId: session.user.schoolId })), skipDuplicates: true });
 }
@@ -152,9 +162,9 @@ export async function markMessagesReadAction(messageIds: string[]) {
 export async function acknowledgeMessageAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
   const messageId = String(formData.get("messageId") ?? "");
-  if (!/^[0-9a-f-]{36}$/i.test(messageId) || session.user.role === "DIRECTOR") return;
-  const message = await db.message.findFirst({ where: { id: messageId, schoolId: session.user.schoolId, requiresAcknowledgement: true }, select: { id: true, authorId: true, conversation: { select: { groupId: true } } } });
-  if (!message || message.authorId === session.user.id || !(await canUseGroupConversation(session, message.conversation.groupId))) return;
+  if (!/^[0-9a-f-]{36}$/i.test(messageId)) return;
+  const message = await db.message.findFirst({ where: { id: messageId, schoolId: session.user.schoolId, requiresAcknowledgement: true }, select: { id: true, authorId: true, conversationId: true } });
+  if (!message || message.authorId === session.user.id || !(await canUseConversation(session, message.conversationId))) return;
   await db.$transaction([
     db.messageAcknowledgement.upsert({ where: { messageId_userId: { messageId, userId: session.user.id } }, create: { messageId, userId: session.user.id, schoolId: session.user.schoolId }, update: {} }),
     db.messageRead.upsert({ where: { messageId_userId: { messageId, userId: session.user.id } }, create: { messageId, userId: session.user.id, schoolId: session.user.schoolId }, update: {} }),

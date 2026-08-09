@@ -77,24 +77,28 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   if (["TEACHER", "PARENT", "STUDENT"].includes(role)) {
     const groups = await getAccessibleGroups(session);
     const groupIds = groups.map((group) => group.id);
-    if (groupIds.length) {
+    const directConversationIds = (await db.conversationParticipant.findMany({
+      where: { schoolId: session.user.schoolId, userId: session.user.id, archivedAt: null, conversation: { archivedAt: null, kind: "DIRECT" } },
+      select: { conversationId: true },
+    })).map((item) => item.conversationId);
+    if (groupIds.length || directConversationIds.length) {
       const messages = await db.message.findMany({
         where: {
           schoolId: session.user.schoolId,
           authorId: { not: session.user.id },
-          conversation: { groupId: { in: groupIds } },
+          conversation: { OR: [{ groupId: { in: groupIds } }, { id: { in: directConversationIds } }] },
           reads: { none: { userId: session.user.id } },
         },
         orderBy: { createdAt: "desc" },
         take: 30,
-        select: { id: true, subject: true, kind: true, createdAt: true, conversation: { select: { groupId: true, group: { select: { name: true } } } } },
+        select: { id: true, subject: true, kind: true, createdAt: true, conversation: { select: { id: true, kind: true, title: true, groupId: true, group: { select: { name: true } } } } },
       });
       for (const item of messages) raw.push({
         key: `message:${item.id}`,
         kind: "MESSAGE",
-        title: item.kind === "ANNOUNCEMENT" ? item.subject ?? "Nowe ogłoszenie szkoły" : `Nowa wiadomość · ${item.conversation.group.name}`,
+        title: item.kind === "ANNOUNCEMENT" ? item.subject ?? "Nowe ogłoszenie szkoły" : `Nowa wiadomość · ${item.conversation.kind === "DIRECT" ? item.conversation.title ?? "rozmowa prywatna" : item.conversation.group?.name ?? "grupa"}`,
         description: "Otwórz rozmowę, aby przeczytać bezpiecznie w eDzienniku.",
-        href: `/panel/wiadomosci?rozmowa=${item.conversation.groupId}`,
+        href: `/panel/wiadomosci?rozmowa=${encodeURIComponent(item.conversation.kind === "DIRECT" ? `direct:${item.conversation.id}` : `group:${item.conversation.groupId}`)}`,
         occurredAt: item.createdAt,
       });
     }

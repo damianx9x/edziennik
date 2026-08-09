@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { invitableIdentityRoleValues } from "../auth/access";
 
-import { normalizeEmail } from "./token";
+import { normalizeEmail } from "./normalize";
 
 const personName = z
   .string()

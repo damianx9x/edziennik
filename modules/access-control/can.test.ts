@@ -146,22 +146,19 @@ describe("can", () => {
     }
   });
 
-  it("requires a short audited grant before a director reads a conversation", () => {
-    expect(
-      can(director, "view:conversation", {
-        schoolId,
-        directorAccessGranted: false,
-      }),
-    ).toBe(false);
-    expect(
-      can(director, "view:conversation", {
-        schoolId,
-        directorAccessGranted: true,
-      }),
-    ).toBe(true);
+  it("keeps a direct conversation inside its explicit participant list", () => {
+    const directConversation: Resource = { schoolId, participantIds: [teacher.id, parent.id] };
+    expect(can(teacher, "view:conversation", directConversation)).toBe(true);
+    expect(can(parent, "send:group-message", directConversation)).toBe(true);
+    expect(can(student, "view:conversation", directConversation)).toBe(false);
+    expect(can(director, "view:conversation", directConversation)).toBe(true);
+  });
+
+  it("lets the director read and write school conversations while access is audited by the loader", () => {
+    expect(can(director, "view:conversation", { schoolId })).toBe(true);
     expect(can(director, "audit:view-conversation", { schoolId })).toBe(true);
     expect(can(director, "send:announcement", { schoolId })).toBe(true);
-    expect(can(director, "send:group-message", { schoolId })).toBe(false);
+    expect(can(director, "send:group-message", { schoolId })).toBe(true);
   });
 
   it("keeps technical diagnostics away from message content", () => {
@@ -170,7 +167,6 @@ describe("can", () => {
       teacherIds: [teacher.id],
       parentIds: [parent.id],
       studentIds: [student.id],
-      directorAccessGranted: true,
     };
 
     expect(can(systemOwner, "view:conversation", conversation)).toBe(false);

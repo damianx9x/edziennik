@@ -18,6 +18,15 @@ nadmiarowych danych.
 - gdy systemowe udostępnianie plików nie działa, pliki są pobierane, a
   przygotowany e-mail przypomina o ich ręcznym dołączeniu.
 
+## Zrzut miejsca błędu
+
+Automatyczny zrzut działa w dwóch świadomych krokach. Użytkownik najpierw
+wybiera `Wskaż miejsce błędu`; formularz znika, a aplikacja pokazuje małą ikonę
+aparatu. Użytkownik przechodzi do wadliwego miejsca i dopiero wtedy wybiera
+`Zrób zrzut`. Przeglądarka nadal pokazuje własne okno wyboru ekranu lub karty.
+Po wykonaniu zrzutu formularz wraca z podglądem. Nic nie jest wysyłane bez
+zatwierdzenia zgłoszenia przez użytkownika.
+
 Przeglądarka nigdy nie robi zrzutu ukradkiem. System operacyjny pokazuje wybór
 ekranu/karty, a użytkownik musi wyrazić zgodę.
 
