@@ -79,6 +79,26 @@ describe("can", () => {
     expect(can(parent, "view:student", foreignChild)).toBe(false);
   });
 
+  it("keeps contracts and payments inside the parent-child boundary", () => {
+    const ownRecord: Resource = { schoolId, parentIds: [parent.id] };
+    const foreignRecord: Resource = { schoolId, parentIds: ["parent-2"] };
+
+    expect(can(parent, "view:contract", ownRecord)).toBe(true);
+    expect(can(parent, "accept:contract", ownRecord)).toBe(true);
+    expect(can(parent, "view:payment", ownRecord)).toBe(true);
+    expect(can(parent, "view:contract", foreignRecord)).toBe(false);
+    expect(can(parent, "view:payment", foreignRecord)).toBe(false);
+    expect(can(student, "view:payment", ownRecord)).toBe(false);
+    expect(can(teacher, "view:contract", ownRecord)).toBe(false);
+  });
+
+  it("allows only school management to change contracts and payments", () => {
+    expect(can(director, "manage:contracts", { schoolId })).toBe(true);
+    expect(can(director, "manage:payments", { schoolId })).toBe(true);
+    expect(can(teacher, "manage:contracts", { schoolId })).toBe(false);
+    expect(can(parent, "manage:payments", { schoolId })).toBe(false);
+  });
+
   it("allows a student to open only their own profile", () => {
     expect(
       can(student, "view:student", { schoolId, ownerId: student.id }),

@@ -120,6 +120,21 @@ enum RecordChangeStatus {
   REJECTED
 }
 
+enum ContractStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  UNSET
+  PENDING
+  PAID
+  OVERDUE
+}
+
 model School {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -145,6 +160,9 @@ model School {
   importBatches          ImportBatch[]
   recordChanges          RecordChangeRequest[]
   pageVisits             PageVisit[]
+  contracts              Contract[]
+  contractAssignments    ContractAssignment[]
+  paymentRecords         PaymentRecord[]
 }
 
 model Location {
@@ -212,6 +230,12 @@ model User {
   importBatches              ImportBatch[]           @relation("ImportCreator")
   requestedRecordChanges     RecordChangeRequest[]   @relation("RecordChangeRequester")
   reviewedRecordChanges      RecordChangeRequest[]   @relation("RecordChangeReviewer")
+  createdContractVersions    ContractVersion[]       @relation("ContractVersionCreator")
+  contractAssignmentsParent  ContractAssignment[]    @relation("ContractParent")
+  contractAssignmentsChild   ContractAssignment[]    @relation("ContractStudent")
+  contractAcceptances        ContractAcceptance[]    @relation("ContractAcceptor")
+  paymentRecordsAsStudent    PaymentRecord[]         @relation("PaymentStudent")
+  changedPaymentRecords      PaymentRecord[]         @relation("PaymentChangedBy")
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -672,13 +696,110 @@ model StoredFile {
   createdAt    DateTime          @default(now())
   archivedAt   DateTime?
 
-  school        School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  uploadedBy    User          @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
-  importBatches ImportBatch[] @relation("ImportSource")
+  school           School            @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  uploadedBy       User              @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  importBatches    ImportBatch[]     @relation("ImportSource")
+  contractVersions ContractVersion[] @relation("ContractFile")
 
   @@index([schoolId, purpose, createdAt])
   @@index([uploadedById, createdAt])
   @@index([archivedAt])
+}
+
+model Contract {
+  id         String    @id @default(uuid()) @db.Uuid
+  schoolId   String    @db.Uuid
+  title      String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  school      School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  versions    ContractVersion[]
+  assignments ContractAssignment[]
+
+  @@index([schoolId, createdAt])
+  @@index([schoolId, archivedAt])
+}
+
+model ContractVersion {
+  id           String   @id @default(uuid()) @db.Uuid
+  contractId   String   @db.Uuid
+  storedFileId String   @db.Uuid
+  createdById  String   @db.Uuid
+  version      Int
+  sha256       String   @db.Char(64)
+  createdAt    DateTime @default(now())
+
+  contract    Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  storedFile  StoredFile           @relation("ContractFile", fields: [storedFileId], references: [id], onDelete: Restrict)
+  createdBy   User                 @relation("ContractVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  assignments ContractAssignment[]
+
+  @@unique([contractId, version])
+  @@index([storedFileId])
+  @@index([createdById, createdAt])
+}
+
+model ContractAssignment {
+  id         String         @id @default(uuid()) @db.Uuid
+  schoolId   String         @db.Uuid
+  contractId String         @db.Uuid
+  versionId  String         @db.Uuid
+  parentId   String         @db.Uuid
+  studentId  String         @db.Uuid
+  status     ContractStatus @default(SENT)
+  sentAt     DateTime       @default(now())
+  viewedAt   DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime       @default(now())
+
+  school     School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  contract   Contract            @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  version    ContractVersion     @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  parent     User                @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
+  student    User                @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  acceptance ContractAcceptance?
+
+  @@unique([versionId, parentId, studentId])
+  @@index([schoolId, status, createdAt])
+  @@index([parentId, status, createdAt])
+  @@index([studentId, createdAt])
+}
+
+model ContractAcceptance {
+  id           String   @id @default(uuid()) @db.Uuid
+  assignmentId String   @unique @db.Uuid
+  acceptedById String   @db.Uuid
+  documentHash String   @db.Char(64)
+  evidence     Json
+  acceptedAt   DateTime @default(now())
+
+  assignment ContractAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  acceptedBy User               @relation("ContractAcceptor", fields: [acceptedById], references: [id], onDelete: Restrict)
+
+  @@index([acceptedById, acceptedAt])
+}
+
+model PaymentRecord {
+  id          String        @id @default(uuid()) @db.Uuid
+  schoolId    String        @db.Uuid
+  studentId   String        @db.Uuid
+  changedById String        @db.Uuid
+  period      String
+  status      PaymentStatus @default(UNSET)
+  dueDate     DateTime?     @db.Date
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student   User   @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  changedBy User   @relation("PaymentChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, studentId, period])
+  @@index([schoolId, status, dueDate])
+  @@index([studentId, period])
 }
 
 model ImportBatch {

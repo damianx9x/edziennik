@@ -203,13 +203,13 @@ async function DirectorDashboard({
       </div>
 
       <section className="locked-module-row">
-        <article>
+        <Link href="/panel/umowy" className="module-ready">
           <FileSignature aria-hidden="true" />
           <span>
             <strong>Umowy online</strong>
-            <small>Etap 4</small>
+            <small>Otwórz moduł</small>
           </span>
-        </article>
+        </Link>
         <article id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <span>
@@ -217,13 +217,13 @@ async function DirectorDashboard({
             <small>Etap 5</small>
           </span>
         </article>
-        <article id="platnosci">
+        <Link href="/panel/platnosci" className="module-ready" id="platnosci">
           <CalendarClock aria-hidden="true" />
           <span>
             <strong>Status płatności</strong>
-            <small>Etap 4</small>
+            <small>Otwórz moduł</small>
           </span>
-        </article>
+        </Link>
         <article id="postepy">
           <TrendingUp aria-hidden="true" />
           <span>

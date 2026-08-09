@@ -4666,7 +4666,8 @@ body:has(.invitation-page) .feedback-trigger {
   gap: 10px;
 }
 
-.locked-module-row article {
+.locked-module-row article,
+.locked-module-row > a {
   min-height: 72px;
   padding: 12px 15px;
   display: flex;
@@ -4677,13 +4678,29 @@ body:has(.invitation-page) .feedback-trigger {
   background: #f8f6f1;
 }
 
-.locked-module-row article > svg {
+.locked-module-row article > svg,
+.locked-module-row > a > svg {
   width: 20px;
   color: var(--muted);
 }
 
-.locked-module-row article > span {
+.locked-module-row article > span,
+.locked-module-row > a > span {
   display: grid;
+}
+
+.locked-module-row > a.module-ready {
+  border-style: solid;
+  border-color: #c7d5f2;
+  background: var(--blue-100);
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.locked-module-row > a.module-ready:hover {
+  transform: translateY(-2px);
+  border-color: var(--blue-700);
 }
 
 .locked-module-row strong {
@@ -6755,6 +6772,473 @@ body:has(.invitation-page) .feedback-trigger {
 
   .invite-create-card {
     position: static;
+  }
+}
+
+/* Etap 4: umowy i ręczne statusy płatności */
+.stage4-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.stage4-heading h1 {
+  max-width: 820px;
+  margin: 8px 0 10px;
+  color: var(--navy-950);
+  font-size: clamp(36px, 4.4vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.stage4-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.stage4-form,
+.stage4-list-section {
+  margin-bottom: 24px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid rgb(23 38 80 / 10%);
+  border-radius: 28px;
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.stage4-form {
+  display: grid;
+  gap: 18px;
+}
+
+.stage4-form-heading,
+.contract-card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.stage4-form-heading h2,
+.stage4-section-title h2 {
+  margin: 4px 0 5px;
+  color: var(--navy-950);
+  font-size: clamp(24px, 2.5vw, 34px);
+  letter-spacing: -0.035em;
+}
+
+.stage4-form-heading p,
+.stage4-form label small {
+  margin: 0;
+  color: var(--muted);
+}
+
+.stage4-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 52px;
+  color: var(--navy-900);
+  border-radius: 16px;
+  background: var(--blue-100);
+}
+
+.stage4-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.stage4-icon-payment {
+  color: var(--green);
+  background: #e5f4ef;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.stage4-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.stage4-form label {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  color: var(--navy-900);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.stage4-form input,
+.stage4-form select,
+.stage4-form textarea {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid #cfd3dd;
+  border-radius: 13px;
+  background: var(--white);
+}
+
+.stage4-form textarea {
+  resize: vertical;
+}
+
+.stage4-primary,
+.stage4-secondary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.stage4-primary {
+  justify-self: start;
+  color: var(--white);
+  background: var(--navy-900);
+  box-shadow: var(--shadow-sm);
+}
+
+.stage4-primary:hover {
+  background: var(--blue-700);
+}
+
+.stage4-primary:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.stage4-primary svg,
+.stage4-secondary svg {
+  width: 19px;
+  height: 19px;
+}
+
+.stage4-secondary {
+  color: var(--navy-900);
+  border: 1px solid #cfd3dd;
+  background: var(--white);
+}
+
+.stage4-feedback {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.stage4-feedback.success {
+  color: #135f4e;
+  background: #e5f4ef;
+}
+
+.stage4-feedback.error {
+  color: #9f172c;
+  background: var(--red-100);
+}
+
+.stage4-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.stage4-section-title > span {
+  padding: 7px 11px;
+  color: var(--navy-900);
+  border-radius: 999px;
+  background: var(--blue-100);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stage4-empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 28px;
+  text-align: center;
+  border: 1px dashed #cfd3dd;
+  border-radius: 20px;
+}
+
+.stage4-empty > svg {
+  width: 34px;
+  height: 34px;
+  color: var(--blue-700);
+}
+
+.stage4-empty h3 {
+  margin: 12px 0 5px;
+}
+
+.stage4-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.stage4-card-list,
+.payment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.contract-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.55fr);
+  align-items: center;
+  gap: 20px;
+  padding: 18px;
+  border: 1px solid #e0dfda;
+  border-radius: 18px;
+  background: var(--white);
+}
+
+.contract-card h3,
+.payment-list h3 {
+  margin: 6px 0 3px;
+  color: var(--navy-950);
+}
+
+.contract-card p,
+.contract-card small,
+.payment-list p,
+.payment-list small {
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.stage4-status,
+.payment-status {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--navy-900);
+  background: var(--blue-100);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-accepted,
+.payment-paid {
+  color: #135f4e;
+  background: #e5f4ef;
+}
+
+.status-expired,
+.payment-overdue {
+  color: #9f172c;
+  background: var(--red-100);
+}
+
+.contract-card-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.contract-accept-form {
+  display: grid;
+  gap: 10px;
+}
+
+.contract-version-details {
+  border-top: 1px solid #e0dfda;
+  padding-top: 10px;
+}
+
+.contract-version-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.contract-version-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.contract-version-details summary svg {
+  width: 18px;
+  height: 18px;
+}
+
+.contract-version-details form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 13px;
+  background: var(--cream);
+}
+
+.contract-version-details label {
+  display: grid;
+  gap: 7px;
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.contract-version-details input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid #cfd3dd;
+  border-radius: 11px;
+  background: var(--white);
+}
+
+.contract-version-details form > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.stage4-check {
+  min-height: 44px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.stage4-check input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  margin-top: 1px;
+}
+
+.contract-accepted-note,
+.contract-expired-note {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.contract-accepted-note { color: var(--green); }
+.contract-expired-note { color: var(--red-700); }
+
+.contract-accepted-note svg,
+.contract-expired-note svg,
+.payment-status svg {
+  width: 18px;
+  height: 18px;
+}
+
+.payment-list article {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) minmax(180px, auto);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid #e0dfda;
+  border-radius: 16px;
+  background: var(--white);
+}
+
+.stage4-legal-note {
+  padding: 16px 18px;
+  color: #755812;
+  border: 1px solid #efdda2;
+  border-radius: 14px;
+  background: var(--yellow-100);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 820px) {
+  .stage4-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stage4-form-row,
+  .contract-card,
+  .payment-list article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .payment-list article {
+    gap: 8px;
+  }
+
+  .stage4-primary,
+  .stage4-secondary {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .stage4-heading h1 {
+    font-size: 38px;
+  }
+
+  .stage4-form,
+  .stage4-list-section {
+    padding: 17px;
+    border-radius: 20px;
+  }
+
+  .stage4-form-heading,
+  .contract-card-main {
+    align-items: flex-start;
+  }
+
+  .stage4-icon {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  .stage4-section-title {
+    align-items: flex-start;
+  }
+
+  .contract-card {
+    padding: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage4-primary,
+  .stage4-secondary {
+    transition: none;
   }
 }
 

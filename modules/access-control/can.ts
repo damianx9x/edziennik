@@ -18,7 +18,12 @@ export type Action =
   | "manage:schedule"
   | "edit:lesson"
   | "view:student"
-  | "edit:attendance";
+  | "edit:attendance"
+  | "manage:contracts"
+  | "view:contract"
+  | "accept:contract"
+  | "manage:payments"
+  | "view:payment";
 
 export type Actor = {
   id: string;
@@ -63,7 +68,9 @@ export function can(
   if (
     action === "view:director-dashboard" ||
     action === "manage:school" ||
-    action === "manage:schedule"
+    action === "manage:schedule" ||
+    action === "manage:contracts" ||
+    action === "manage:payments"
   ) {
     return false;
   }
@@ -111,6 +118,17 @@ export function can(
     if (actor.role === "TEACHER") {
       return resource.teacherIds?.includes(actor.id) === true;
     }
+  }
+
+  if (
+    action === "view:contract" ||
+    action === "accept:contract" ||
+    action === "view:payment"
+  ) {
+    return (
+      actor.role === "PARENT" &&
+      resource.parentIds?.includes(actor.id) === true
+    );
   }
 
   return false;

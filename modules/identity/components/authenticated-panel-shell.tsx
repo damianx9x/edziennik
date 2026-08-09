@@ -4,6 +4,8 @@ import {
   Bell,
   CalendarDays,
   ContactRound,
+  CreditCard,
+  FileSignature,
   GraduationCap,
   Home,
   MessageCircleMore,
@@ -29,6 +31,8 @@ type PanelSection =
   | "statistics"
   | "notifications"
   | "schedule"
+  | "contracts"
+  | "payments"
   | "logs";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
@@ -70,6 +74,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: CalendarDays,
         key: "schedule",
       },
+      { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
+      { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
         href: "/panel/szkola/statystyki",
         label: "Statystyki",
@@ -93,6 +99,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: CalendarDays,
         key: "schedule",
       },
+      { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
+      { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
         href: "/panel/szkola/narzedzia",
         label: "Ustawienia",
@@ -139,6 +147,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: CalendarDays,
         key: "schedule",
       },
+      { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
+      { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
         href: "/panel/rodzic#wiadomosci",
         label: "Wiadomości",
@@ -180,7 +190,9 @@ export async function AuthenticatedPanelShell({
           ["home", "school", "logs", "records", "schedule"].includes(item.key),
         )
       : session.user.role === "DIRECTOR"
-        ? navigation
+        ? navigation.filter((item) =>
+            ["home", "records", "schedule", "contracts", "payments"].includes(item.key),
+          )
         : navigation;
   const pendingChangeCount =
     session.user.role === "SYSTEM_OWNER" ||
@@ -256,7 +268,7 @@ export async function AuthenticatedPanelShell({
             <span className="status-dot" />
             <div>
               <strong>Bezpieczna sesja</strong>
-              <small>Etap 3 · dostęp wg roli</small>
+              <small>Etap 4 · dostęp wg roli</small>
             </div>
           </div>
         </aside>

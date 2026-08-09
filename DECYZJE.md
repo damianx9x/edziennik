@@ -1,5 +1,24 @@
 # Decyzje architektoniczne
 
+## ADR-024 — akceptacja dokładnej wersji umowy
+
+**Data:** 2026-08-09
+**Decyzja:** dokument umowy jest prywatnym plikiem PDF, a każda korekta tworzy
+nową wersję z własnym SHA-256. Akceptacja wskazuje przypisanie, rodzica, czas,
+wersję oraz skrót dokumentu i nigdy nie nadpisuje wcześniejszej akceptacji.
+**Dlaczego:** pozwala wykazać, jaki dokument został świadomie zaakceptowany,
+bez udawania kwalifikowanego podpisu elektronicznego. Tekst prawny nadal musi
+zatwierdzić prawnik.
+
+## ADR-025 — ręczny rejestr statusu płatności
+
+**Data:** 2026-08-09
+**Decyzja:** eDziennik przechowuje wyłącznie administracyjny status okresu,
+opcjonalny termin i krótką notatkę. Nie przechowuje danych karty, rachunku ani
+treści przelewu. Każda zmiana tworzy zdarzenie audytowe.
+**Dlaczego:** odpowiada zakresowi pilota i nie zmienia aplikacji w system
+płatniczy lub księgowy.
+
 ## ADR-001 — pilot zamiast pełnej produkcji
 
 **Data:** 2026-07-25
