@@ -1,8 +1,10 @@
+import { cache } from "react";
+
 import { db } from "@/lib/server/db";
 import { can, type Actor, type Resource } from "@/modules/access-control/can";
 import type { ActiveSession } from "@/modules/identity/auth/session";
 
-export async function getAccessibleGroups(session: ActiveSession) {
+export const getAccessibleGroups = cache(async function getAccessibleGroups(session: ActiveSession) {
   const base = {
     schoolId: session.user.schoolId,
     isActive: true,
@@ -46,12 +48,13 @@ export async function getAccessibleGroups(session: ActiveSession) {
     });
   }
   return [];
-}
+});
 
 const groupSelect = {
   id: true,
   name: true,
   location: { select: { name: true } },
+  _count: { select: { teachers: { where: { archivedAt: null } }, enrollments: { where: { status: "ACTIVE" as const } } } },
   conversation: {
     select: {
       id: true,

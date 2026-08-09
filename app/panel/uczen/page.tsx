@@ -11,6 +11,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { db } from "@/lib/server/db";
 import { requirePanelAccess } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 
@@ -23,6 +24,10 @@ export default async function StudentPanelPage() {
     "/panel/uczen",
   );
   const firstName = session.user.name.trim().split(/\s+/)[0] || "Uczniu";
+  const [groupCount, nextLesson] = await Promise.all([
+    db.enrollment.count({ where: { studentId: session.user.id, status: "ACTIVE", group: { schoolId: session.user.schoolId, archivedAt: null } } }),
+    db.scheduleSlot.findFirst({ where: { schoolId: session.user.schoolId, startAt: { gte: new Date() }, status: { not: "CANCELLED" }, group: { enrollments: { some: { studentId: session.user.id, status: "ACTIVE" } } } }, orderBy: { startAt: "asc" }, select: { startAt: true, group: { select: { name: true } }, room: { select: { name: true } } } }),
+  ]);
 
   return (
     <AuthenticatedPanelShell session={session}>
@@ -42,14 +47,13 @@ export default async function StudentPanelPage() {
           <CalendarDays aria-hidden="true" />
           <span>
             <strong>Najbliższa lekcja</strong>
-            <small>Po przypisaniu grupy</small>
+            <small>{nextLesson ? formatLessonDate(nextLesson.startAt) : groupCount ? "Szkoła przygotowuje kolejny termin" : "Po przypisaniu grupy"}</small>
           </span>
         </div>
         <div className="student-empty-lesson">
           <Clock3 aria-hidden="true" />
-          <p>
-            Plan pojawi się tutaj automatycznie. Nie trzeba niczego wpisywać.
-          </p>
+          <p>{nextLesson ? `${nextLesson.group.name} · ${nextLesson.room.name}` : groupCount ? "Nie ma teraz kolejnych zaplanowanych lekcji. Otwórz plan, aby sprawdzić wcześniejsze zajęcia." : "Plan pojawi się tutaj automatycznie. Nie trzeba niczego wpisywać."}</p>
+          <Link href="/panel/plan">Otwórz pełny plan</Link>
         </div>
       </section>
 
@@ -91,4 +95,8 @@ export default async function StudentPanelPage() {
       </div>
     </AuthenticatedPanelShell>
   );
+}
+
+function formatLessonDate(date: Date) {
+  return new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }).format(date);
 }

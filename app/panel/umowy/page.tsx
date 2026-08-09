@@ -18,17 +18,19 @@ import { AuthenticatedPanelShell } from "@/modules/identity/components/authentic
 export const metadata: Metadata = { title: "Umowy online" };
 export const dynamic = "force-dynamic";
 
-export default async function ContractsPage() {
+export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; umowa?: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
   if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
     redirect("/panel/brak-dostepu");
   }
 
   const isManagement = session.user.role === "DIRECTOR";
+  const params = await searchParams;
+  const parentId = isManagement && params.rodzic ? params.rodzic : undefined;
   const assignments = await db.contractAssignment.findMany({
     where: {
       schoolId: session.user.schoolId,
-      ...(isManagement ? {} : { parentId: session.user.id }),
+      ...(isManagement ? parentId ? { parentId } : {} : { parentId: session.user.id }),
     },
     orderBy: { createdAt: "desc" },
     include: {
@@ -104,6 +106,7 @@ export default async function ContractsPage() {
           </div>
           <span>{assignments.length} {assignments.length === 1 ? "dokument" : "dokumentów"}</span>
         </div>
+        {parentId ? <a className="stage4-filter-reset" href="/panel/umowy">Pokaż umowy wszystkich rodziców</a> : null}
         {assignments.length === 0 ? (
           <div className="stage4-empty">
             <FileText aria-hidden="true" />
@@ -113,6 +116,7 @@ export default async function ContractsPage() {
         ) : (
           <ContractList
             isManagement={isManagement}
+            initialSelectedId={params.umowa}
             items={assignments.map((assignment) => {
               const expired = Boolean(
                 assignment.expiresAt &&

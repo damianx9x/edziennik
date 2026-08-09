@@ -615,3 +615,28 @@ widocznej karcie; późniejszy realtime zachowa ten sam kontrakt modułu.
 ukrytego nadzoru ani rozszerzać dostępu technicznego do rozmów rodzin. Outbox
 oddziela zapis wiadomości od zawodnej usługi zewnętrznej i umożliwia bezpieczne
 ponowienie bez podwójnej wysyłki.
+
+## ADR-054 — centrum uwagi, potwierdzenia i brak pozorowanej integracji Meta
+
+**Data:** 2026-08-09
+**Decyzja:** wszystkie role mają jedno centrum powiadomień. Zdarzenia są
+wyliczane z właściwych źródeł biznesowych (wiadomość, umowa, wersja umowy,
+status płatności albo wniosek o zmianę), a użytkownik zapisuje wyłącznie swój
+stan „przeczytane” lub „przypomnij jutro”. Powiadomienie nie tworzy drugiej
+kopii kwoty, terminu ani treści wiadomości.
+
+Świadome potwierdzenie ogłoszenia jest osobne od automatycznego znacznika
+odczytu. Załączniki komunikatora są prywatne, ograniczone do PDF/JPG/PNG,
+sprawdzane po sygnaturze pliku i pobierane po ponownej autoryzacji członkostwa
+w grupie. Skład rozmowy wynika wyłącznie z kartoteki grupy.
+
+Nie oznaczamy integracji Facebook Messenger jako gotowej. Nie traktujemy
+Messenger Platform jako ogólnego interfejsu do istniejących prywatnych czatów
+grupowych. Ewentualny konektor powstanie osobno dopiero po weryfikacji
+aktualnych uprawnień aplikacji, przeglądzie Meta, podstawie prawnej, retencji i
+zgodzie szkoły na transfer danych do dostawcy.
+
+**Dlaczego:** centrum powiadomień ma kierować do jednego źródła prawdy, a nie
+duplikować dane. Potwierdzenie musi oznaczać świadome działanie. Pozorowany
+przycisk „Połącz Messenger” tworzyłby fałszywą obietnicę i ryzyko ujawnienia
+danych uczniów poza kontrolowanym kanałem szkoły.

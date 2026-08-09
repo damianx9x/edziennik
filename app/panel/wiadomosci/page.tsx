@@ -31,10 +31,12 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
         where: { conversationId: selectedGroup.conversation.id, schoolId: session.user.schoolId },
         orderBy: { createdAt: "asc" }, take: 100,
         select: {
-          id: true, kind: true, subject: true, body: true, createdAt: true, authorId: true,
+          id: true, kind: true, subject: true, body: true, createdAt: true, authorId: true, requiresAcknowledgement: true,
           author: { select: { name: true, role: true } },
           reads: { where: { userId: session.user.id }, select: { userId: true } },
-          _count: { select: { reads: true } },
+          acknowledgements: { where: { userId: session.user.id }, select: { userId: true } },
+          attachments: { select: { id: true, storedFile: { select: { originalName: true, sizeBytes: true, mimeType: true } } } },
+          _count: { select: { reads: true, acknowledgements: true } },
           deliveries: { select: { status: true } },
         },
       })
@@ -66,11 +68,13 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
             conversationId: group.conversation?.id ?? null,
             messageCount: group.conversation?._count.messages ?? 0,
             lastActivity: group.conversation?.messages[0]?.createdAt.toISOString() ?? null,
+            teacherCount: group._count.teachers,
+            studentCount: group._count.enrollments,
           }))}
           selectedGroupId={selectedGroupId}
           canRead={canRead}
           messages={messages.map((message) => ({
-            ...message, createdAt: message.createdAt.toISOString(), readByCurrent: message.reads.length > 0,
+            ...message, createdAt: message.createdAt.toISOString(), readByCurrent: message.reads.length > 0, acknowledgedByCurrent: message.acknowledgements.length > 0,
             delivery: {
               sent: message.deliveries.filter((item) => item.status === "SENT").length,
               pending: message.deliveries.filter((item) => ["QUEUED", "SENDING"].includes(item.status)).length,

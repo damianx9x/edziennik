@@ -11,18 +11,20 @@ import { getEffectivePaymentStatus } from "@/modules/payments/schema";
 export const metadata: Metadata = { title: "Statusy płatności" };
 export const dynamic = "force-dynamic";
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; platnosc?: string }> }) {
   const session = await requireActiveSession("/panel/platnosci");
   if (!["DIRECTOR", "PARENT"].includes(session.user.role)) redirect("/panel/brak-dostepu");
   const isManagement = session.user.role === "DIRECTOR";
   if (isManagement) await requireDirector("/panel/platnosci");
+  const params = await searchParams;
+  const parentId = isManagement && params.rodzic ? params.rodzic : undefined;
 
   const assignments = await db.contractAssignment.findMany({
     where: {
       schoolId: session.user.schoolId,
       version: { requiresPayment: true },
       ...(isManagement
-        ? {}
+        ? parentId ? { parentId } : {}
         : { parentId: session.user.id, status: "ACCEPTED" }),
     },
     orderBy: [{ createdAt: "desc" }],
@@ -62,11 +64,13 @@ export default async function PaymentsPage() {
           <div><span className="section-kicker">Umowy odpłatne</span><h2>Lista rozliczeń</h2></div>
           <span>{assignments.length} pozycji</span>
         </div>
+        {parentId ? <a className="stage4-filter-reset" href="/panel/platnosci">Pokaż rozliczenia wszystkich rodziców</a> : null}
         {assignments.length === 0 ? (
           <div className="stage4-empty"><CreditCard aria-hidden="true" /><h3>Brak umów wymagających płatności</h3><p>{isManagement ? "Płatność pojawi się automatycznie po wysłaniu odpłatnej umowy." : "Jeśli masz pytanie, napisz do szkoły."}</p></div>
         ) : (
           <PaymentList
             isManagement={isManagement}
+            initialSelectedId={params.platnosc}
             items={assignments.map((assignment) => {
               const contractStatus =
                 assignment.status !== "ACCEPTED" &&

@@ -53,7 +53,7 @@ export default async function SchoolPanelPage() {
           schoolId={session.user.schoolId}
         />
       ) : (
-        <TeacherDashboard name={session.user.name} />
+        <TeacherDashboard name={session.user.name} userId={session.user.id} schoolId={session.user.schoolId} />
       )}
     </AuthenticatedPanelShell>
   );
@@ -255,8 +255,12 @@ function formatTime(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }).format(date);
 }
 
-function TeacherDashboard({ name }: { name: string }) {
+async function TeacherDashboard({ name, userId, schoolId }: { name: string; userId: string; schoolId: string }) {
   const firstName = name.trim().split(/\s+/)[0] || "Wykładowco";
+  const [groupCount, nextLesson] = await Promise.all([
+    db.groupTeacher.count({ where: { teacherId: userId, archivedAt: null, group: { schoolId, archivedAt: null } } }),
+    db.scheduleSlot.findFirst({ where: { schoolId, teacherId: userId, startAt: { gte: new Date() }, status: { not: "CANCELLED" }, archivedAt: null }, orderBy: { startAt: "asc" }, select: { startAt: true, group: { select: { name: true } }, room: { select: { name: true } } } }),
+  ]);
   return (
     <>
       <header className="role-panel-heading">
@@ -283,16 +287,15 @@ function TeacherDashboard({ name }: { name: string }) {
       <div className="teacher-today-grid" id="grupy">
         <section className="role-main-card">
           <span className="section-kicker">Dzisiaj</span>
-          <h2>Plan pojawi się po przypisaniu grup</h2>
+          <h2>{nextLesson ? nextLesson.group.name : groupCount ? "Brak kolejnych zaplanowanych zajęć" : "Plan pojawi się po przypisaniu grup"}</h2>
           <p>
-            Po przypisaniu Ci grup i opublikowaniu grafiku zobaczysz tutaj
-            wyłącznie swoje zajęcia.
+            {nextLesson ? `${formatDashboardDate(nextLesson.startAt)} · ${nextLesson.room.name}` : groupCount ? `Masz ${groupCount} przypisanych grup. Otwórz plan, aby zobaczyć pełny tydzień.` : "Po przypisaniu Ci grup zobaczysz tutaj wyłącznie swoje zajęcia."}
           </p>
           <div className="empty-state-action">
             <CalendarClock aria-hidden="true" />
             <span>
-              <strong>Na razie nic nie musisz robić</strong>
-              <small>Dostaniesz powiadomienie po przypisaniu pierwszej grupy.</small>
+              <strong>{nextLesson ? "Najbliższa lekcja jest w planie" : groupCount ? "Grupy są już przypisane" : "Na razie nic nie musisz robić"}</strong>
+              <small>{groupCount ? <Link href="/panel/plan">Otwórz mój plan</Link> : "Dostaniesz powiadomienie po przypisaniu pierwszej grupy."}</small>
             </span>
           </div>
         </section>
@@ -305,4 +308,8 @@ function TeacherDashboard({ name }: { name: string }) {
       </div>
     </>
   );
+}
+
+function formatDashboardDate(date: Date) {
+  return new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }).format(date);
 }

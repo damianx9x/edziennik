@@ -22,6 +22,8 @@ import type { ActiveSession } from "@/modules/identity/auth/session";
 import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 
 import { SignOutButton } from "./sign-out-button";
+import { getNotifications } from "@/modules/notifications/service";
+import { OnboardingTour } from "@/modules/onboarding/components/onboarding-tour";
 
 type PanelSection =
   | "home"
@@ -101,6 +103,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
       {
         href: "/panel/szkola/narzedzia",
         label: "Ustawienia",
@@ -136,6 +139,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: MessageCircleMore,
         key: "messages",
       },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
     ] as const;
   }
   if (role === "PARENT") {
@@ -155,6 +159,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: Bell,
         key: "messages",
       },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
     ] as const;
   }
   return [
@@ -172,6 +177,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       key: "tasks",
     },
     { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
+    { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
   ] as const;
 }
 
@@ -194,17 +200,16 @@ export async function AuthenticatedPanelShell({
         ? navigation.filter((item) =>
             ["home", "records", "schedule", "messages", "payments"].includes(item.key),
           )
-        : navigation;
-  const pendingChangeCount =
-    session.user.role === "SYSTEM_OWNER" ||
-    session.user.role === "DIRECTOR"
-      ? await db.recordChangeRequest.count({
-          where: {
-            schoolId: session.user.schoolId,
-            status: "PENDING",
-          },
-        })
-      : 0;
+        : session.user.role === "PARENT"
+          ? navigation.filter((item) => item.key !== "notifications")
+          : navigation;
+  const [notificationItems, onboarding] = session.user.role === "SYSTEM_OWNER"
+    ? [[], null] as const
+    : await Promise.all([
+        getNotifications(session),
+        db.onboardingProgress.findUnique({ where: { userId: session.user.id }, select: { version: true, completedAt: true, dismissedAt: true } }),
+      ]);
+  const pendingChangeCount = notificationItems.filter((item) => !item.read).length;
   const feedbackRole = {
     SYSTEM_OWNER: "system-owner",
     DIRECTOR: "director",
@@ -224,12 +229,11 @@ export async function AuthenticatedPanelShell({
       <header className="app-panel-topbar">
         <Brand compact />
         <div className="app-panel-account">
-          {session.user.role === "SYSTEM_OWNER" ||
-          session.user.role === "DIRECTOR" ? (
+          {session.user.role !== "SYSTEM_OWNER" ? (
             <Link
               className="app-panel-notifications"
-              href="/panel/szkola#sprawy"
-              aria-label={`Centrum powiadomień: ${pendingChangeCount} oczekujących zmian`}
+              href="/panel/powiadomienia"
+              aria-label={`Centrum powiadomień: ${pendingChangeCount} nowych`}
             >
               <Bell aria-hidden="true" />
               {pendingChangeCount > 0 ? (
@@ -237,6 +241,7 @@ export async function AuthenticatedPanelShell({
               ) : null}
             </Link>
           ) : null}
+          {session.user.role !== "SYSTEM_OWNER" ? <OnboardingTour role={session.user.role} openInitially={!onboarding || (onboarding.version < 1 && !onboarding.completedAt)} /> : null}
           <div className="app-panel-avatar" aria-hidden="true">
             {initials || "K"}
           </div>

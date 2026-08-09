@@ -356,26 +356,36 @@ export function PersonDirectory({
               <section aria-labelledby="person-modules-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-modules-heading">Sprawy tej osoby</h3>
-                  <span>Jedno miejsce, gdy kolejne moduły będą gotowe</span>
+                  <span>Gotowe moduły i zaplanowane funkcje</span>
                 </div>
                 <div className="person-module-grid">
                   <FutureModule
-                    href="/panel/szkola#wiadomosci"
+                    href="/panel/wiadomosci"
                     icon={<MessageCircleMore aria-hidden="true" />}
                     title="Wiadomości"
-                    stage="Etap 5"
+                    status="Otwórz rozmowy"
                   />
-                  <FutureModule
-                    href="/panel/szkola#platnosci"
-                    icon={<WalletCards aria-hidden="true" />}
-                    title="Płatności"
-                    stage="Etap 4"
-                  />
+                  {selected.role === "PARENT" ? (
+                    <FutureModule
+                      href={`/panel/platnosci?rodzic=${selected.id}`}
+                      icon={<WalletCards aria-hidden="true" />}
+                      title="Płatności"
+                      status="Otwórz rozliczenia"
+                    />
+                  ) : null}
+                  {selected.role === "PARENT" ? (
+                    <FutureModule
+                      href={`/panel/umowy?rodzic=${selected.id}`}
+                      icon={<IdCard aria-hidden="true" />}
+                      title="Umowy"
+                      status="Otwórz dokumenty"
+                    />
+                  ) : null}
                   <FutureModule
                     href="/panel/szkola#postepy"
                     icon={<TrendingUp aria-hidden="true" />}
                     title="Postępy"
-                    stage="Etap 6"
+                    status="Planowane · Etap 6"
                   />
                 </div>
               </section>
@@ -476,19 +486,19 @@ function FutureModule({
   href,
   icon,
   title,
-  stage,
+  status,
 }: {
   href: string;
   icon: React.ReactNode;
   title: string;
-  stage: string;
+  status: string;
 }) {
   return (
     <Link href={href}>
       {icon}
       <span>
         <strong>{title}</strong>
-        <small>{stage} · przygotowane miejsce</small>
+        <small>{status}</small>
       </span>
       <ChevronRight aria-hidden="true" />
     </Link>

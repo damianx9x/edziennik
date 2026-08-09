@@ -94,6 +94,7 @@ enum StoredFilePurpose {
   LEARNING_MATERIAL
   HOMEWORK_SUBMISSION
   FEEDBACK_SCREENSHOT
+  MESSAGE_ATTACHMENT
 }
 
 enum ImportStatus {
@@ -168,32 +169,36 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                  User[]
-  locations              Location[]
-  rooms                  Room[]
-  courseGroups           CourseGroup[]
-  parentLinks            ParentChild[]
-  scheduleSlots          ScheduleSlot[]
-  attendance             AttendanceRecord[]
-  availabilityWindows    AvailabilityWindow[]
-  schedulingRequirements SchedulingRequirement[]
-  scheduleGenerations    ScheduleGeneration[]
-  auditLogs              AuditLog[]
-  feedbackReports        FeedbackReport[]
-  invitations            Invitation[]
-  storedFiles            StoredFile[]
-  importBatches          ImportBatch[]
-  recordChanges          RecordChangeRequest[]
-  pageVisits             PageVisit[]
-  contracts              Contract[]
-  contractAssignments    ContractAssignment[]
-  paymentRecords         PaymentRecord[]
-  conversations          Conversation[]
-  messages               Message[]
-  announcements          Announcement[]
-  messageReads           MessageRead[]
-  emailDeliveries        EmailDelivery[]
-  conversationAccesses   DirectorConversationAccess[]
+  users                   User[]
+  locations               Location[]
+  rooms                   Room[]
+  courseGroups            CourseGroup[]
+  parentLinks             ParentChild[]
+  scheduleSlots           ScheduleSlot[]
+  attendance              AttendanceRecord[]
+  availabilityWindows     AvailabilityWindow[]
+  schedulingRequirements  SchedulingRequirement[]
+  scheduleGenerations     ScheduleGeneration[]
+  auditLogs               AuditLog[]
+  feedbackReports         FeedbackReport[]
+  invitations             Invitation[]
+  storedFiles             StoredFile[]
+  importBatches           ImportBatch[]
+  recordChanges           RecordChangeRequest[]
+  pageVisits              PageVisit[]
+  contracts               Contract[]
+  contractAssignments     ContractAssignment[]
+  paymentRecords          PaymentRecord[]
+  conversations           Conversation[]
+  messages                Message[]
+  announcements           Announcement[]
+  messageReads            MessageRead[]
+  emailDeliveries         EmailDelivery[]
+  conversationAccesses    DirectorConversationAccess[]
+  messageAcknowledgements MessageAcknowledgement[]
+  messageAttachments      MessageAttachment[]
+  notificationStates      NotificationState[]
+  onboardingProgress      OnboardingProgress[]
 }
 
 model Location {
@@ -272,6 +277,9 @@ model User {
   messageReads               MessageRead[]
   emailDeliveries            EmailDelivery[]              @relation("EmailRecipient")
   directorConversationAccess DirectorConversationAccess[] @relation("ConversationAccessDirector")
+  messageAcknowledgements    MessageAcknowledgement[]
+  notificationStates         NotificationState[]
+  onboardingProgress         OnboardingProgress?
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -712,28 +720,62 @@ model Announcement {
 }
 
 model Message {
-  id              String      @id @default(uuid()) @db.Uuid
-  schoolId        String      @db.Uuid
-  conversationId  String      @db.Uuid
-  authorId        String      @db.Uuid
-  announcementId  String?     @db.Uuid
-  kind            MessageKind @default(CHAT)
-  subject         String?
-  body            String
-  clientRequestId String
-  createdAt       DateTime    @default(now())
+  id                      String      @id @default(uuid()) @db.Uuid
+  schoolId                String      @db.Uuid
+  conversationId          String      @db.Uuid
+  authorId                String      @db.Uuid
+  announcementId          String?     @db.Uuid
+  kind                    MessageKind @default(CHAT)
+  subject                 String?
+  body                    String
+  clientRequestId         String
+  requiresAcknowledgement Boolean     @default(false)
+  createdAt               DateTime    @default(now())
 
-  school       School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  conversation Conversation    @relation(fields: [conversationId], references: [id], onDelete: Restrict)
-  author       User            @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  announcement Announcement?   @relation(fields: [announcementId], references: [id], onDelete: Restrict)
-  reads        MessageRead[]
-  deliveries   EmailDelivery[]
+  school           School                   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  conversation     Conversation             @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  author           User                     @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  announcement     Announcement?            @relation(fields: [announcementId], references: [id], onDelete: Restrict)
+  reads            MessageRead[]
+  deliveries       EmailDelivery[]
+  acknowledgements MessageAcknowledgement[]
+  attachments      MessageAttachment[]
 
   @@unique([authorId, clientRequestId])
   @@index([schoolId, createdAt])
   @@index([conversationId, createdAt])
   @@index([announcementId])
+}
+
+model MessageAcknowledgement {
+  messageId      String   @db.Uuid
+  userId         String   @db.Uuid
+  schoolId       String   @db.Uuid
+  acknowledgedAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@id([messageId, userId])
+  @@index([schoolId, acknowledgedAt])
+  @@index([userId, acknowledgedAt])
+}
+
+model MessageAttachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  schoolId     String   @db.Uuid
+  messageId    String   @db.Uuid
+  storedFileId String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  school     School     @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  message    Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  storedFile StoredFile @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, createdAt])
+  @@index([messageId])
+  @@index([storedFileId])
 }
 
 model MessageRead {
@@ -848,14 +890,48 @@ model StoredFile {
   createdAt    DateTime          @default(now())
   archivedAt   DateTime?
 
-  school           School            @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  uploadedBy       User              @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
-  importBatches    ImportBatch[]     @relation("ImportSource")
-  contractVersions ContractVersion[] @relation("ContractFile")
+  school             School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  uploadedBy         User                @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  importBatches      ImportBatch[]       @relation("ImportSource")
+  contractVersions   ContractVersion[]   @relation("ContractFile")
+  messageAttachments MessageAttachment[]
 
   @@index([schoolId, purpose, createdAt])
   @@index([uploadedById, createdAt])
   @@index([archivedAt])
+}
+
+model NotificationState {
+  id              String    @id @default(uuid()) @db.Uuid
+  schoolId        String    @db.Uuid
+  userId          String    @db.Uuid
+  notificationKey String
+  readAt          DateTime?
+  snoozedUntil    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationKey])
+  @@index([schoolId, updatedAt])
+  @@index([userId, snoozedUntil])
+}
+
+model OnboardingProgress {
+  userId      String    @id @db.Uuid
+  schoolId    String    @db.Uuid
+  version     Int       @default(1)
+  completedAt DateTime?
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, updatedAt])
 }
 
 model Contract {

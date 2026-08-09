@@ -1,0 +1,160 @@
+import { db } from "@/lib/server/db";
+import type { ActiveSession } from "@/modules/identity/auth/session";
+import { getAccessibleGroups } from "@/modules/messaging/access";
+import { getEffectivePaymentStatus } from "@/modules/payments/schema";
+
+export type NotificationItem = {
+  key: string;
+  kind: "ACTION" | "WARNING" | "INFO" | "MESSAGE";
+  title: string;
+  description: string;
+  href: string;
+  occurredAt: Date;
+  read: boolean;
+  snoozedUntil: Date | null;
+};
+
+export async function getNotifications(session: ActiveSession): Promise<NotificationItem[]> {
+  const now = new Date();
+  const raw: Omit<NotificationItem, "read" | "snoozedUntil">[] = [];
+  const role = session.user.role;
+
+  if (role === "DIRECTOR") {
+    const [changes, failedDeliveries, assignments] = await Promise.all([
+      db.recordChangeRequest.findMany({
+        where: { schoolId: session.user.schoolId, status: "PENDING" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: { id: true, createdAt: true, entityType: true },
+      }),
+      db.emailDelivery.findMany({
+        where: { schoolId: session.user.schoolId, status: "FAILED" },
+        orderBy: { updatedAt: "desc" },
+        take: 20,
+        select: { id: true, updatedAt: true },
+      }),
+      paymentAssignments(session.user.schoolId),
+    ]);
+    for (const item of changes) raw.push({
+      key: `record-change:${item.id}`,
+      kind: "ACTION",
+      title: "Zmiana kartoteki czeka na decyzję",
+      description: `Wykładowca przesłał zmianę w ${item.entityType === "USER" ? "kartotece osoby" : item.entityType === "ROOM" ? "sali" : "grupie"}.`,
+      href: "/panel/szkola/powiadomienia",
+      occurredAt: item.createdAt,
+    });
+    for (const item of failedDeliveries) raw.push({
+      key: `email-failed:${item.id}`,
+      kind: "WARNING",
+      title: "Nie wysłano powiadomienia e-mail",
+      description: "Wiadomość jest w eDzienniku, ale dodatkowy e-mail wymaga ponowienia.",
+      href: "/panel/wiadomosci",
+      occurredAt: item.updatedAt,
+    });
+    addPaymentNotifications(raw, assignments, now, true);
+  }
+
+  if (role === "PARENT") {
+    const [contracts, assignments] = await Promise.all([
+      db.contractAssignment.findMany({
+        where: { schoolId: session.user.schoolId, parentId: session.user.id, status: { in: ["SENT", "VIEWED"] } },
+        orderBy: { sentAt: "desc" },
+        select: { id: true, sentAt: true, expiresAt: true, version: { select: { title: true } } },
+      }),
+      paymentAssignments(session.user.schoolId, session.user.id),
+    ]);
+    for (const item of contracts) raw.push({
+      key: `contract:${item.id}`,
+      kind: item.expiresAt && item.expiresAt.getTime() - now.getTime() < 3 * 86_400_000 ? "WARNING" : "ACTION",
+      title: "Umowa czeka na sprawdzenie",
+      description: item.version.title,
+      href: `/panel/umowy?umowa=${item.id}`,
+      occurredAt: item.sentAt,
+    });
+    addPaymentNotifications(raw, assignments, now, false);
+  }
+
+  if (["TEACHER", "PARENT", "STUDENT"].includes(role)) {
+    const groups = await getAccessibleGroups(session);
+    const groupIds = groups.map((group) => group.id);
+    if (groupIds.length) {
+      const messages = await db.message.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          authorId: { not: session.user.id },
+          conversation: { groupId: { in: groupIds } },
+          reads: { none: { userId: session.user.id } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: { id: true, subject: true, kind: true, createdAt: true, conversation: { select: { groupId: true, group: { select: { name: true } } } } },
+      });
+      for (const item of messages) raw.push({
+        key: `message:${item.id}`,
+        kind: "MESSAGE",
+        title: item.kind === "ANNOUNCEMENT" ? item.subject ?? "Nowe ogłoszenie szkoły" : `Nowa wiadomość · ${item.conversation.group.name}`,
+        description: "Otwórz rozmowę, aby przeczytać bezpiecznie w eDzienniku.",
+        href: `/panel/wiadomosci?rozmowa=${item.conversation.groupId}`,
+        occurredAt: item.createdAt,
+      });
+    }
+  }
+
+  const keys = raw.map((item) => item.key);
+  const states = keys.length ? await db.notificationState.findMany({
+    where: { userId: session.user.id, notificationKey: { in: keys } },
+    select: { notificationKey: true, readAt: true, snoozedUntil: true },
+  }) : [];
+  const stateMap = new Map(states.map((item) => [item.notificationKey, item]));
+  return raw
+    .map((item) => {
+      const state = stateMap.get(item.key);
+      return { ...item, read: Boolean(state?.readAt), snoozedUntil: state?.snoozedUntil ?? null };
+    })
+    .filter((item) => !item.snoozedUntil || item.snoozedUntil <= now)
+    .sort((a, b) => Number(a.read) - Number(b.read) || b.occurredAt.getTime() - a.occurredAt.getTime());
+}
+
+async function paymentAssignments(schoolId: string, parentId?: string) {
+  return db.contractAssignment.findMany({
+    where: { schoolId, ...(parentId ? { parentId, status: "ACCEPTED" as const } : {}), version: { requiresPayment: true } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      parent: { select: { name: true } },
+      student: { select: { name: true } },
+      version: { select: { title: true, paymentDueDate: true } },
+      paymentRecord: { select: { status: true, updatedAt: true } },
+    },
+  });
+}
+
+function addPaymentNotifications(
+  target: Omit<NotificationItem, "read" | "snoozedUntil">[],
+  assignments: Awaited<ReturnType<typeof paymentAssignments>>,
+  now: Date,
+  management: boolean,
+) {
+  for (const item of assignments) {
+    const effective = getEffectivePaymentStatus({
+      contractStatus: item.status,
+      storedStatus: item.paymentRecord?.status ?? null,
+      dueDate: item.version.paymentDueDate,
+      now,
+    });
+    if (!["OVERDUE", "PENDING", "UNSET"].includes(effective)) continue;
+    const dueSoon = item.version.paymentDueDate && item.version.paymentDueDate.getTime() - now.getTime() <= 5 * 86_400_000;
+    if (effective !== "OVERDUE" && !dueSoon) continue;
+    target.push({
+      key: `payment:${item.id}:${effective}`,
+      kind: effective === "OVERDUE" ? "WARNING" : "INFO",
+      title: effective === "OVERDUE" ? "Minął termin płatności" : "Zbliża się termin płatności",
+      description: management ? `${item.parent.name} · ${item.student.name} · ${item.version.title}` : item.version.title,
+      href: `/panel/platnosci?platnosc=${item.id}`,
+      occurredAt: item.paymentRecord?.updatedAt ?? item.version.paymentDueDate ?? item.createdAt,
+    });
+  }
+}

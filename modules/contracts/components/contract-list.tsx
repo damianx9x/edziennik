@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { type MouseEvent, useMemo, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 
@@ -72,9 +72,11 @@ function formatAmount(value: number | null): string {
 export function ContractList({
   items,
   isManagement,
+  initialSelectedId,
 }: {
   items: ContractItem[];
   isManagement: boolean;
+  initialSelectedId?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -82,6 +84,12 @@ export function ContractList({
   const [selected, setSelected] = useState<ContractItem | null>(null);
   const [showDocument, setShowDocument] = useState(false);
   const [documentLoaded, setDocumentLoaded] = useState(false);
+  useEffect(() => {
+    const item = initialSelectedId ? items.find((candidate) => candidate.id === initialSelectedId) : null;
+    if (!item || dialogRef.current?.open) return;
+    setSelected(item);
+    dialogRef.current?.showModal();
+  }, [initialSelectedId, items]);
 
   const groups = useMemo(() => {
     if (!isManagement) return [{ id: "mine", name: "", items }];
@@ -170,9 +178,6 @@ export function ContractList({
         ref={dialogRef}
         className="stage4-preview-dialog"
         onClose={restoreFocus}
-        onClick={(event) => {
-          if (event.target === dialogRef.current) close();
-        }}
         aria-labelledby="contract-preview-title"
       >
         {selected ? (

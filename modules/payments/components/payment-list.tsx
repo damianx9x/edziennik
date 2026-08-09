@@ -81,14 +81,21 @@ function StatusIcon({ status }: { status: PaymentDisplayStatus }) {
 export function PaymentList({
   items,
   isManagement,
+  initialSelectedId,
 }: {
   items: PaymentItem[];
   isManagement: boolean;
+  initialSelectedId?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!initialSelectedId || !items.some((item) => item.assignmentId === initialSelectedId) || dialogRef.current?.open) return;
+    setSelectedAssignmentId(initialSelectedId);
+    requestAnimationFrame(() => dialogRef.current?.showModal());
+  }, [initialSelectedId, items]);
   const selected = useMemo(
     () => items.find((item) => item.assignmentId === selectedAssignmentId) ?? null,
     [items, selectedAssignmentId],
@@ -211,9 +218,6 @@ export function PaymentList({
         ref={dialogRef}
         className="stage4-preview-dialog payment-preview-dialog"
         onClose={restoreFocus}
-        onClick={(event) => {
-          if (event.target === dialogRef.current) close();
-        }}
         aria-labelledby="payment-preview-title"
       >
         {selected ? (

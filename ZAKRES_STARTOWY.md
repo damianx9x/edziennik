@@ -27,12 +27,21 @@ W pilocie:
 - rodzic i uczeń widzą tylko rozmowy wynikające z powiązań,
 - dyrektor wysyła ogłoszenie do jednej lub wielu wybranych grup,
 - odbiorca widzi wiadomość w aplikacji, a e-mail idzie przez kolejkę,
+- wykładowca lub dyrektor może wymagać świadomego potwierdzenia przeczytania,
+- wiadomość może mieć prywatny załącznik PDF, JPG albo PNG do 8 MB,
+- listę rozmów można filtrować po nazwie grupy i lokalizacji,
 - wysyłka ma status, ponowienia, idempotencję i dziennik audytu,
 - odczyt rozmowy przez dyrektora wymaga jawnej podstawy i tworzy `AuditLog`.
 
 Na start stosujemy kontrolowane odświeżanie nowych wiadomości. Wymienny
 `RealtimeProvider` pozwoli później dołączyć WebSocket lub usługę realtime bez
 zmiany logiki rozmów.
+
+Centrum powiadomień łączy nowe wiadomości, umowy do sprawdzenia, zbliżające się
+lub przekroczone terminy płatności oraz decyzje dyrektora. Każdy użytkownik
+może oznaczyć pozycję jako przeczytaną albo odłożyć ją do następnego dnia.
+Pierwsze logowanie uruchamia krótki samouczek zależny od roli; można go później
+otworzyć ponownie z górnego paska.
 
 ## 3. Status płatności
 
