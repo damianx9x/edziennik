@@ -14,6 +14,9 @@ export async function savePaymentStatusAction(
   formData: FormData,
 ): Promise<PaymentActionState> {
   const session = await requireDirector(paymentsPath);
+  if (session.user.role !== "DIRECTOR") {
+    return { status: "error", message: "Tylko dyrektor może zmieniać statusy płatności." };
+  }
   const parsed = paymentRecordSchema.safeParse({
     studentId: formData.get("studentId"),
     period: formData.get("period"),

@@ -7,9 +7,14 @@ describe("contractAssignmentSchema", () => {
     expect(
       contractAssignmentSchema.safeParse({
         title: "Umowa na rok szkolny 2026/27",
+        acceptanceMode: "DOCUMENTARY",
+        serviceSummary: "Zajęcia języka angielskiego od września do czerwca.",
+        requiresPayment: "yes",
+        paymentSummary: "320 zł miesięcznie.",
         parentId: "11111111-1111-4111-8111-111111111111",
         studentId: "22222222-2222-4222-8222-222222222222",
         expiresAt: "2026-09-30",
+        legalReadiness: "confirmed",
       }).success,
     ).toBe(true);
   });

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const SCHOOL_ID_PATTERN =
@@ -19,6 +19,7 @@ export interface FileStorage {
     bytes: Uint8Array;
   }): Promise<StoredFileResult>;
   read(storageKey: string): Promise<Uint8Array>;
+  remove(storageKey: string): Promise<void>;
 }
 
 export class LocalFileStorage implements FileStorage {
@@ -68,6 +69,10 @@ export class LocalFileStorage implements FileStorage {
 
   async read(storageKey: string): Promise<Uint8Array> {
     return readFile(this.resolveStorageKey(storageKey));
+  }
+
+  async remove(storageKey: string): Promise<void> {
+    await unlink(this.resolveStorageKey(storageKey));
   }
 
   private resolveStorageKey(storageKey: string): string {

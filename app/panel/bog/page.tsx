@@ -140,7 +140,7 @@ export default async function SystemOwnerPage() {
           <ShieldCheck aria-hidden="true" />
           <span>Konta z MFA</span>
           <strong>{protectedAccountCount}</strong>
-          <small>Konto Bóg zawsze wymaga MFA</small>
+          <small>Konto obsługi technicznej zawsze wymaga MFA</small>
         </article>
         <article>
           <Activity aria-hidden="true" />

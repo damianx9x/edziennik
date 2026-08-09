@@ -71,7 +71,7 @@ Dane do przekazania klientce:
 Plik ma uprawnienia tylko dla właściciela konta na Macu i nie trafia do Git.
 Nie przekazuj klientce konta `bog`.
 
-Dyrektor w bieżącym pilocie loguje się bez MFA. Konto `Bóg` nadal wymaga MFA i
+Dyrektor w bieżącym pilocie loguje się bez MFA. Konto obsługi technicznej nadal wymaga MFA i
 nie jest przekazywane klientce.
 
 ## Warunki działania

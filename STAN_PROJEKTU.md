@@ -71,7 +71,7 @@ Termin pilota: 1 września 2026.
 
 ### Właściciel techniczny
 
-- rola `SYSTEM_OWNER`, widoczna jako `Bóg`,
+- rola `SYSTEM_OWNER`, widoczna jako `Obsługa techniczna`,
 - konto tworzone tylko skryptem, poza interfejsem zaproszeń,
 - pełny dostęp dyrektora oraz centrum diagnostyczne,
 - głębokie logi, raport systemu i stan konfiguracji,

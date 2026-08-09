@@ -399,7 +399,7 @@ const contents = [
   "",
   "Dyrektor w bieżącym pilocie loguje się bez kodu MFA.",
   "",
-  "Nie przekazuj klientce konta bog.",
+  "Nie przekazuj klientce dostępu obsługi technicznej.",
   "Mac musi być włączony, podłączony do internetu i zasilania.",
   "Po restarcie Maca adres wraca po zalogowaniu użytkownika macOS.",
   "",

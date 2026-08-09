@@ -7000,14 +7000,67 @@ body:has(.invitation-page) .feedback-trigger {
 }
 
 .contract-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.55fr);
-  align-items: center;
-  gap: 20px;
-  padding: 18px;
+  display: block;
+  padding: 0;
   border: 1px solid #e0dfda;
   border-radius: 18px;
   background: var(--white);
+  overflow: hidden;
+}
+
+.contract-card-open,
+.payment-row-open {
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  color: inherit;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.contract-card-open {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.contract-card-open:hover,
+.payment-row-open:hover {
+  background: color-mix(in srgb, var(--blue-100) 38%, var(--white));
+}
+
+.contract-card-open:focus-visible,
+.payment-row-open:focus-visible {
+  outline: 3px solid var(--blue-500);
+  outline-offset: -3px;
+}
+
+.contract-card-copy,
+.payment-row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.contract-card-copy strong,
+.payment-row-copy strong {
+  color: var(--navy-950);
+  font-size: 17px;
+}
+
+.contract-card-copy > span:not(.stage4-status),
+.payment-row-copy > span,
+.contract-card-copy small {
+  color: var(--muted);
+}
+
+.contract-card-eye {
+  width: 22px;
+  height: 22px;
+  color: var(--blue-700);
 }
 
 .contract-card h3,
@@ -7160,15 +7213,286 @@ body:has(.invitation-page) .feedback-trigger {
 }
 
 .payment-list article {
-  min-height: 82px;
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) minmax(180px, auto);
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
   border: 1px solid #e0dfda;
   border-radius: 16px;
   background: var(--white);
+  overflow: hidden;
+}
+
+.payment-row-open {
+  grid-template-columns: 150px minmax(0, 1fr) minmax(180px, auto) auto;
+}
+
+.payment-row-open > svg {
+  width: 21px;
+  height: 21px;
+  color: var(--blue-700);
+}
+
+.stage4-preview-dialog {
+  width: min(1180px, calc(100% - 48px));
+  max-width: none;
+  max-height: min(900px, calc(100dvh - 48px));
+  padding: 0;
+  color: var(--navy-950);
+  border: 1px solid rgb(23 38 80 / 14%);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 32px 90px rgb(10 24 61 / 30%);
+  overflow: hidden;
+}
+
+.stage4-preview-dialog[open] {
+  animation: person-dialog-enter var(--motion-base) var(--ease-enter);
+}
+
+.stage4-preview-dialog::backdrop {
+  background: rgb(9 19 46 / 64%);
+  backdrop-filter: blur(5px);
+}
+
+.stage4-preview-shell {
+  max-height: min(900px, calc(100dvh - 48px));
+  display: flex;
+  flex-direction: column;
+}
+
+.stage4-preview-header {
+  min-height: 96px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e0dfda;
+  background: var(--white);
+}
+
+.stage4-preview-header h2 {
+  margin: 4px 0;
+  font-size: clamp(24px, 3vw, 38px);
+  letter-spacing: -0.04em;
+}
+
+.stage4-preview-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.stage4-preview-header > button {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  color: var(--navy-900);
+  border: 1px solid #d5d7df;
+  border-radius: 14px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.stage4-preview-header > button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.stage4-preview-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(420px, 1.35fr);
+  flex: 1;
+  overflow: auto;
+}
+
+.stage4-preview-summary {
+  padding: 24px;
+  border-right: 1px solid #e0dfda;
+  background: var(--cream);
+}
+
+.stage4-preview-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.stage4-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  color: #135f4e;
+  border-radius: 999px;
+  background: #e5f4ef;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.stage4-mode-chip svg {
+  width: 15px;
+  height: 15px;
+}
+
+.stage4-preview-summary h3,
+.payment-private-note h3 {
+  margin: 20px 0 6px;
+  font-size: 14px;
+}
+
+.stage4-preview-summary p,
+.payment-private-note p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.stage4-preview-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 0;
+}
+
+.stage4-preview-facts > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #deddd7;
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.stage4-preview-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.stage4-preview-facts dd {
+  margin: 4px 0 0;
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.stage4-preview-hash {
+  grid-column: 1 / -1;
+}
+
+.stage4-document-panel {
+  min-height: 520px;
+  padding: 16px;
+  background: #e7e9ef;
+}
+
+.stage4-document-panel iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.stage4-document-placeholder {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 30px;
+  text-align: center;
+  border: 2px dashed #c3c8d4;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 70%);
+}
+
+.stage4-document-placeholder > svg {
+  width: 42px;
+  height: 42px;
+  color: var(--blue-700);
+}
+
+.stage4-document-placeholder h3 {
+  margin: 14px 0 5px;
+}
+
+.stage4-document-placeholder p {
+  max-width: 390px;
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.stage4-preview-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 24px;
+  border-top: 1px solid #e0dfda;
+  background: var(--white);
+}
+
+.stage4-preview-footer .contract-accept-form {
+  max-width: 680px;
+  flex: 1;
+}
+
+.stage4-acceptance-receipt {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 12px;
+}
+
+.stage4-acceptance-receipt > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--green);
+  font-weight: 850;
+}
+
+.stage4-acceptance-receipt svg {
+  width: 18px;
+  height: 18px;
+}
+
+.stage4-external-note,
+.stage4-privacy-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.payment-preview-dialog {
+  width: min(720px, calc(100% - 48px));
+}
+
+.payment-preview-body {
+  padding: 24px;
+  overflow: auto;
+}
+
+.payment-private-note,
+.stage4-privacy-note {
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 13px;
+  background: var(--cream);
+}
+
+.stage4-privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.stage4-privacy-note svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
 }
 
 .stage4-legal-note {
@@ -7188,13 +7512,38 @@ body:has(.invitation-page) .feedback-trigger {
   }
 
   .stage4-form-row,
-  .contract-card,
-  .payment-list article {
+  .contract-card {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .payment-list article {
-    gap: 8px;
+  .payment-row-open {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .payment-row-open .payment-status,
+  .payment-row-open .payment-row-copy,
+  .payment-row-open small {
+    grid-column: 1;
+  }
+
+  .payment-row-open > svg {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+
+  .stage4-preview-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stage4-preview-summary {
+    border-right: 0;
+    border-bottom: 1px solid #e0dfda;
+  }
+
+  .stage4-preview-footer,
+  .stage4-acceptance-receipt {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .stage4-primary,
@@ -7231,7 +7580,51 @@ body:has(.invitation-page) .feedback-trigger {
   }
 
   .contract-card {
+    border-radius: 15px;
+  }
+
+  .contract-card-open {
+    grid-template-columns: auto minmax(0, 1fr);
     padding: 15px;
+  }
+
+  .contract-card-eye {
+    display: none;
+  }
+
+  .stage4-preview-dialog,
+  .payment-preview-dialog {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .stage4-preview-shell {
+    max-height: 100dvh;
+    height: 100dvh;
+  }
+
+  .stage4-preview-header,
+  .stage4-preview-summary,
+  .stage4-preview-footer,
+  .payment-preview-body {
+    padding: 17px;
+  }
+
+  .stage4-preview-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stage4-preview-hash {
+    grid-column: auto;
+  }
+
+  .stage4-document-panel,
+  .stage4-document-panel iframe {
+    min-height: 440px;
   }
 }
 

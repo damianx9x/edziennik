@@ -99,6 +99,16 @@ describe("can", () => {
     expect(can(parent, "manage:payments", { schoolId })).toBe(false);
   });
 
+  it("keeps technical diagnostics away from family contracts and payments", () => {
+    const familyRecord: Resource = { schoolId, parentIds: [parent.id] };
+
+    expect(can(systemOwner, "view:contract", familyRecord)).toBe(false);
+    expect(can(systemOwner, "manage:contracts", familyRecord)).toBe(false);
+    expect(can(systemOwner, "view:payment", familyRecord)).toBe(false);
+    expect(can(systemOwner, "manage:payments", familyRecord)).toBe(false);
+    expect(can(systemOwner, "accept:contract", familyRecord)).toBe(false);
+  });
+
   it("allows a student to open only their own profile", () => {
     expect(
       can(student, "view:student", { schoolId, ownerId: student.id }),

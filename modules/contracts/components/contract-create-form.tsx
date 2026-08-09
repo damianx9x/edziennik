@@ -13,6 +13,7 @@ type ParentOption = {
 
 export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
   const [selectedParentId, setSelectedParentId] = useState("");
+  const [requiresPayment, setRequiresPayment] = useState(true);
   const availableChildren =
     parents.find((parent) => parent.id === selectedParentId)?.children ?? [];
   const [state, action, pending] = useActionState(
@@ -35,6 +36,54 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
         Nazwa umowy
         <input name="title" required maxLength={120} placeholder="np. Umowa na rok szkolny 2026/27" />
       </label>
+      <div className="stage4-form-row">
+        <label>
+          Jak rodzic ma zakończyć formalność?
+          <select name="acceptanceMode" required defaultValue="DOCUMENTARY">
+            <option value="DOCUMENTARY">Akceptacja w eDzienniku — forma dokumentowa</option>
+            <option value="EXTERNAL_SIGNATURE">Tylko podgląd — podpis poza systemem</option>
+          </select>
+          <small>Jeśli umowa wymaga formy pisemnej, wybierz podpis poza systemem.</small>
+        </label>
+        <label>
+          Czy umowa zobowiązuje rodzica do zapłaty?
+          <select
+            name="requiresPayment"
+            value={requiresPayment ? "yes" : "no"}
+            onChange={(event) => setRequiresPayment(event.target.value === "yes")}
+          >
+            <option value="yes">Tak — umowa odpłatna</option>
+            <option value="no">Nie — bez obowiązku zapłaty</option>
+          </select>
+        </label>
+      </div>
+      <label>
+        Najważniejszy zakres i okres usługi
+        <textarea
+          name="serviceSummary"
+          required
+          minLength={10}
+          maxLength={500}
+          rows={3}
+          placeholder="np. Angielski dla grupy Toronto, 60 minut tygodniowo, od września 2026 do czerwca 2027"
+        />
+        <small>Rodzic zobaczy tę informację bezpośrednio przed decyzją.</small>
+      </label>
+      {requiresPayment ? (
+        <label>
+          Cena i najważniejsze zasady płatności
+          <textarea
+            name="paymentSummary"
+            required
+            maxLength={500}
+            rows={3}
+            placeholder="np. 320 zł miesięcznie, płatne do 10. dnia miesiąca"
+          />
+          <small>Nie ukrywaj ceny wyłącznie w załączniku PDF.</small>
+        </label>
+      ) : (
+        <input type="hidden" name="paymentSummary" value="" />
+      )}
       <div className="stage4-form-row">
         <label>
           Rodzic
@@ -61,6 +110,15 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
           <small>System sprawdzi powiązanie z wybranym rodzicem.</small>
         </label>
       </div>
+
+      <label className="stage4-check stage4-legal-check">
+        <input type="checkbox" name="legalReadiness" value="confirmed" required />
+        <span>
+          Sprawdziłem/am treść, cenę, okres, informacje o odstąpieniu oraz to,
+          czy dla tej umowy wystarcza forma dokumentowa. W razie wymogu formy
+          pisemnej wybieram podpis poza systemem.
+        </span>
+      </label>
       <div className="stage4-form-row">
         <label>
           Dokument PDF

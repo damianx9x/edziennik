@@ -15,6 +15,11 @@ import {
   contractAssignmentSchema,
   type ContractActionState,
 } from "./schema";
+import {
+  CONTRACT_ACCEPTANCE_STATEMENT_VERSION,
+  CONTRACT_LEGAL_CHECKLIST_VERSION,
+  getContractAcceptanceStatement,
+} from "./legal";
 
 const contractsPath = "/panel/umowy";
 const MAX_CONTRACT_BYTES = 10 * 1024 * 1024;
@@ -28,11 +33,19 @@ export async function createContractAssignmentAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  if (session.user.role !== "DIRECTOR") {
+    return { status: "error", message: "Tylko dyrektor może wysłać umowę." };
+  }
   const parsed = contractAssignmentSchema.safeParse({
     title: formData.get("title"),
+    acceptanceMode: formData.get("acceptanceMode"),
+    serviceSummary: formData.get("serviceSummary"),
+    requiresPayment: formData.get("requiresPayment"),
+    paymentSummary: formData.get("paymentSummary"),
     parentId: formData.get("parentId"),
     studentId: formData.get("studentId"),
     expiresAt: formData.get("expiresAt"),
+    legalReadiness: formData.get("legalReadiness"),
   });
   if (!parsed.success) {
     return {
@@ -71,26 +84,39 @@ export async function createContractAssignmentAction(
     };
   }
 
+  const storage = getFileStorage();
+  let stored: Awaited<ReturnType<typeof storage.put>> | undefined;
   try {
-    const stored = await getFileStorage().put({
+    const uploaded = await storage.put({
       schoolId: session.user.schoolId,
       bytes,
     });
+    stored = uploaded;
     await db.$transaction(async (tx) => {
       const storedFile = await tx.storedFile.create({
         data: {
           schoolId: session.user.schoolId,
           uploadedById: session.user.id,
-          storageKey: stored.storageKey,
+          storageKey: uploaded.storageKey,
           originalName: file.name.slice(0, 180),
           mimeType: "application/pdf",
-          sizeBytes: stored.sizeBytes,
-          sha256: stored.sha256,
+          sizeBytes: uploaded.sizeBytes,
+          sha256: uploaded.sha256,
           purpose: "CONTRACT",
         },
       });
       const contract = await tx.contract.create({
-        data: { schoolId: session.user.schoolId, title: parsed.data.title },
+        data: {
+          schoolId: session.user.schoolId,
+          title: parsed.data.title,
+          acceptanceMode: parsed.data.acceptanceMode,
+          serviceSummary: parsed.data.serviceSummary,
+          requiresPayment: parsed.data.requiresPayment === "yes",
+          paymentSummary:
+            parsed.data.requiresPayment === "yes"
+              ? parsed.data.paymentSummary
+              : null,
+        },
       });
       const version = await tx.contractVersion.create({
         data: {
@@ -98,7 +124,7 @@ export async function createContractAssignmentAction(
           storedFileId: storedFile.id,
           createdById: session.user.id,
           version: 1,
-          sha256: stored.sha256,
+          sha256: uploaded.sha256,
         },
       });
       const assignment = await tx.contractAssignment.create({
@@ -120,16 +146,22 @@ export async function createContractAssignmentAction(
           action: "contracts.assignment.sent",
           entityType: "ContractAssignment",
           entityId: assignment.id,
-          metadata: { version: 1, documentHash: stored.sha256 },
+          metadata: {
+            version: 1,
+            documentHash: uploaded.sha256,
+            acceptanceMode: parsed.data.acceptanceMode,
+            legalChecklistVersion: CONTRACT_LEGAL_CHECKLIST_VERSION,
+          },
         },
       });
     });
-    revalidatePath(contractsPath);
-    revalidatePath("/panel/rodzic");
-    return { status: "success", message: "Umowa została bezpiecznie wysłana rodzicowi." };
   } catch {
+    if (stored) await storage.remove(stored.storageKey).catch(() => undefined);
     return { status: "error", message: "Nie udało się zapisać umowy. Spróbuj ponownie." };
   }
+  revalidatePath(contractsPath);
+  revalidatePath("/panel/rodzic");
+  return { status: "success", message: "Umowa została bezpiecznie wysłana rodzicowi." };
 }
 
 export async function createContractVersionAction(
@@ -137,6 +169,9 @@ export async function createContractVersionAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  if (session.user.role !== "DIRECTOR") {
+    return { status: "error", message: "Tylko dyrektor może utworzyć nową wersję." };
+  }
   const contractId = String(formData.get("contractId") ?? "");
   const sourceAssignmentId = String(formData.get("sourceAssignmentId") ?? "");
   const file = formData.get("document");
@@ -162,8 +197,11 @@ export async function createContractVersionAction(
   });
   if (!source) return { status: "error", message: "Ta umowa nie jest już dostępna." };
 
+  const storage = getFileStorage();
+  let stored: Awaited<ReturnType<typeof storage.put>> | undefined;
   try {
-    const stored = await getFileStorage().put({ schoolId: session.user.schoolId, bytes });
+    const uploaded = await storage.put({ schoolId: session.user.schoolId, bytes });
+    stored = uploaded;
     await db.$transaction(async (tx) => {
       const latest = await tx.contractVersion.findFirst({
         where: { contractId },
@@ -175,11 +213,11 @@ export async function createContractVersionAction(
         data: {
           schoolId: session.user.schoolId,
           uploadedById: session.user.id,
-          storageKey: stored.storageKey,
+          storageKey: uploaded.storageKey,
           originalName: file.name.slice(0, 180),
           mimeType: "application/pdf",
-          sizeBytes: stored.sizeBytes,
-          sha256: stored.sha256,
+          sizeBytes: uploaded.sizeBytes,
+          sha256: uploaded.sha256,
           purpose: "CONTRACT",
         },
       });
@@ -189,7 +227,7 @@ export async function createContractVersionAction(
           storedFileId: storedFile.id,
           createdById: session.user.id,
           version: latest.version + 1,
-          sha256: stored.sha256,
+          sha256: uploaded.sha256,
         },
       });
       await tx.contractAssignment.updateMany({
@@ -213,16 +251,17 @@ export async function createContractVersionAction(
           action: "contracts.version.created",
           entityType: "ContractAssignment",
           entityId: assignment.id,
-          metadata: { version: version.version, documentHash: stored.sha256 },
+          metadata: { version: version.version, documentHash: uploaded.sha256 },
         },
       });
     });
-    revalidatePath(contractsPath);
-    revalidatePath("/panel/rodzic");
-    return { status: "success", message: "Nowa wersja została wysłana. Poprzednia pozostaje w historii." };
   } catch {
+    if (stored) await storage.remove(stored.storageKey).catch(() => undefined);
     return { status: "error", message: "Nie udało się utworzyć nowej wersji. Spróbuj ponownie." };
   }
+  revalidatePath(contractsPath);
+  revalidatePath("/panel/rodzic");
+  return { status: "success", message: "Nowa wersja została wysłana. Poprzednia pozostaje w historii." };
 }
 
 export async function acceptContractAction(
@@ -251,7 +290,16 @@ export async function acceptContractAction(
       status: true,
       expiresAt: true,
       parentId: true,
-      version: { select: { sha256: true } },
+      contract: {
+        select: {
+          title: true,
+          acceptanceMode: true,
+          serviceSummary: true,
+          requiresPayment: true,
+          paymentSummary: true,
+        },
+      },
+      version: { select: { sha256: true, version: true } },
     },
   });
   if (
@@ -267,6 +315,12 @@ export async function acceptContractAction(
   if (assignment.status === "ACCEPTED") {
     return { status: "success", message: "Ta wersja umowy jest już zaakceptowana." };
   }
+  if (assignment.contract.acceptanceMode !== "DOCUMENTARY") {
+    return {
+      status: "error",
+      message: "Ta umowa wymaga podpisu poza eDziennikiem.",
+    };
+  }
   if (assignment.status === "SENT") {
     return {
       status: "error",
@@ -278,6 +332,13 @@ export async function acceptContractAction(
   }
 
   try {
+    const statementText = getContractAcceptanceStatement({
+      title: assignment.contract.title,
+      version: assignment.version.version,
+      serviceSummary: assignment.contract.serviceSummary,
+      requiresPayment: assignment.contract.requiresPayment,
+      paymentSummary: assignment.contract.paymentSummary,
+    });
     await db.$transaction(async (tx) => {
       const updated = await tx.contractAssignment.updateMany({
         where: { id: assignment.id, status: "VIEWED" },
@@ -291,7 +352,9 @@ export async function acceptContractAction(
           documentHash: assignment.version.sha256,
           evidence: {
             method: "authenticated-explicit-confirmation",
-            statementVersion: "pilot-2026-v1",
+            statementVersion: CONTRACT_ACCEPTANCE_STATEMENT_VERSION,
+            statementText,
+            locale: "pl-PL",
           },
         },
       });

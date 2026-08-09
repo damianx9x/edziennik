@@ -32,9 +32,9 @@ if [[ ! "$app_domain" =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
   exit 1
 fi
 
-read -r -s -p "Hasło konta Bóg (minimum 12 znaków): " owner_password
+read -r -s -p "Hasło konta obsługi technicznej (minimum 12 znaków): " owner_password
 echo
-read -r -s -p "Powtórz hasło konta Bóg: " owner_password_repeat
+read -r -s -p "Powtórz hasło konta obsługi technicznej: " owner_password_repeat
 echo
 
 if [[ ${#owner_password} -lt 12 ]]; then
@@ -185,4 +185,4 @@ compose ps
 echo
 echo "Gotowe: https://${app_domain}/panel/logowanie"
 echo "Dane kont demo: ${test_accounts_file}"
-echo "Konto Bóg wymusi konfigurację MFA przy pierwszym logowaniu."
+echo "Konto obsługi technicznej wymusi konfigurację MFA przy pierwszym logowaniu."

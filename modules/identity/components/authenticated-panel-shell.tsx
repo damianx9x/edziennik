@@ -74,8 +74,6 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: CalendarDays,
         key: "schedule",
       },
-      { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
-      { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       {
         href: "/panel/szkola/statystyki",
         label: "Statystyki",

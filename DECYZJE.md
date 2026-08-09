@@ -289,7 +289,8 @@ hasła bazy w przeglądarce nie może odciąć całej szkoły od danych.
 
 **Data:** 2026-07-26
 **Decyzja:** jedna, nieprzydzielalna przez UI rola `SYSTEM_OWNER`, pokazywana
-jako `Bóg`, ma pełny dostęp między szkołami oraz osobne centrum diagnostyczne.
+jako `Obsługa techniczna`, ma osobne centrum diagnostyczne. Pierwotny pełny
+dostęp do danych biznesowych został ograniczony przez ADR-044.
 Konto tworzy wyłącznie idempotentny skrypt z hasłem pobieranym z prywatnego
 `.env`; każda instalacja unieważnia sesje, a MFA jest obowiązkowe. Konto nie
 pojawia się w zaproszeniach, QR ani zwykłych kartotekach. Ta decyzja rozszerza
@@ -551,3 +552,25 @@ profilowania dzieci i rodziców.
 „synchronizuj z plikiem” najpierw pokaże różnice, a brakujące rekordy wyłącznie
 zarchiwizuje po dodatkowym potwierdzeniu.
 **Dlaczego:** słowo „zastąp” sugerowałoby niebezpieczne usuwanie historii.
+
+## ADR-051 — dwie ścieżki umowy i minimalny dostęp do danych rodzin
+
+**Data:** 2026-08-09
+**Decyzja:** dyrektor wybiera dla każdej umowy jeden z dwóch trybów:
+akceptację w eDzienniku w formie dokumentowej albo wyłącznie udostępnienie PDF
+do podpisu poza systemem. Umowa odpłatna pokazuje bezpośrednio przed decyzją
+zakres usługi, cenę i jednoznaczny przycisk „Zamówienie z obowiązkiem
+zapłaty”. System zapisuje dokładny tekst oświadczenia, wersję, skrót PDF oraz
+czas i pozwala pobrać potwierdzenie. Akceptacja nie jest nazywana
+kwalifikowanym podpisem elektronicznym.
+
+Treść umów i płatności widzi wyłącznie dyrektor oraz właściwy rodzic.
+Wykładowca, uczeń i obsługa techniczna nie otrzymują tych danych. Dostęp
+serwisowy do danych biznesowych może powstać później wyłącznie jako czasowy,
+uzasadniony i audytowany mechanizm break-glass.
+
+**Dlaczego:** diagnostyka nie jest podstawą do stałego dostępu do prywatnych
+danych rodzin. Forma dokumentowa pozwala utrwalić oświadczenie i ustalić
+osobę, ale nie zastępuje formy pisemnej, gdy wymaga jej prawo lub umowa.
+Rozdzielenie trybów zapobiega obiecywaniu skutku prawnego, którego system nie
+zapewnia.

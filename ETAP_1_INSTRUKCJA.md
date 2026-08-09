@@ -8,7 +8,7 @@
 - jednorazowe zaproszenia ważne 7 dni,
 - reset hasła i przygotowana wysyłka e-mail przez Resend,
 - gotowe TOTP 2FA z kodami awaryjnymi; w pilocie wymagane tylko dla konta
-  `Bóg`,
+  `Obsługa techniczna`,
 - limity prób logowania i resetu,
 - audyt zaproszeń bez zapisywania tokenu lub pełnego e-maila w logu,
 - automatyczne rozpoznanie roli w formularzu zgłoszenia błędu.

@@ -1,41 +1,30 @@
 import {
-  CheckCircle2,
-  Clock3,
-  ExternalLink,
-  FileCheck2,
   FileText,
   ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
-import { ContractAcceptForm } from "@/modules/contracts/components/contract-accept-form";
 import { ContractCreateForm } from "@/modules/contracts/components/contract-create-form";
-import { ContractVersionForm } from "@/modules/contracts/components/contract-version-form";
-import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { ContractList } from "@/modules/contracts/components/contract-list";
+import {
+  getContractAcceptanceStatement,
+  getContractActionLabel,
+} from "@/modules/contracts/legal";
+import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 
 export const metadata: Metadata = { title: "Umowy online" };
 export const dynamic = "force-dynamic";
 
-const statusLabels = {
-  DRAFT: "Szkic",
-  SENT: "Wysłana",
-  VIEWED: "Otwarta",
-  ACCEPTED: "Zaakceptowana",
-  EXPIRED: "Wygasła",
-} as const;
-
 export default async function ContractsPage() {
   const session = await requireActiveSession("/panel/umowy");
-  if (!['SYSTEM_OWNER', 'DIRECTOR', 'PARENT'].includes(session.user.role)) {
+  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
     redirect("/panel/brak-dostepu");
   }
 
-  const isManagement = session.user.role === "SYSTEM_OWNER" || session.user.role === "DIRECTOR";
-  if (isManagement) await requireDirector("/panel/umowy");
+  const isManagement = session.user.role === "DIRECTOR";
   const assignments = await db.contractAssignment.findMany({
     where: {
       schoolId: session.user.schoolId,
@@ -43,7 +32,15 @@ export default async function ContractsPage() {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      contract: { select: { title: true } },
+      contract: {
+        select: {
+          title: true,
+          acceptanceMode: true,
+          serviceSummary: true,
+          requiresPayment: true,
+          paymentSummary: true,
+        },
+      },
       version: {
         select: {
           version: true,
@@ -115,48 +112,52 @@ export default async function ContractsPage() {
             <p>{isManagement ? "Użyj formularza powyżej, aby wysłać pierwszą wersję." : "Szkoła powiadomi Cię, gdy dokument będzie gotowy."}</p>
           </div>
         ) : (
-          <div className="stage4-card-list">
-            {assignments.map((assignment) => {
-              const expired = assignment.expiresAt && assignment.expiresAt < new Date() && assignment.status !== "ACCEPTED";
-              const status = expired ? "EXPIRED" : assignment.status;
-              return (
-                <article className="contract-card" key={assignment.id}>
-                  <div className="contract-card-main">
-                    <span className="stage4-icon"><FileCheck2 aria-hidden="true" /></span>
-                    <div>
-                      <span className={`stage4-status status-${status.toLowerCase()}`}>{statusLabels[status]}</span>
-                      <h3>{assignment.contract.title}</h3>
-                      <p>
-                        Wersja {assignment.version.version} · {assignment.student.name}
-                        {isManagement ? ` · rodzic: ${assignment.parent.name}` : ""}
-                      </p>
-                      <small>SHA-256: {assignment.version.sha256.slice(0, 12)}… · {(assignment.version.storedFile.sizeBytes / 1024).toFixed(0)} KB</small>
-                    </div>
-                  </div>
-                  <div className="contract-card-actions">
-                    <Link className="stage4-secondary" href={`/panel/umowy/${assignment.id}/plik`} target="_blank">
-                      Otwórz PDF <ExternalLink aria-hidden="true" />
-                    </Link>
-                    {!isManagement && !expired && assignment.status !== "ACCEPTED" ? (
-                      <ContractAcceptForm assignmentId={assignment.id} />
-                    ) : assignment.status === "ACCEPTED" ? (
-                      <span className="contract-accepted-note"><CheckCircle2 aria-hidden="true" /> Zapisano {assignment.acceptance?.acceptedAt.toLocaleDateString("pl-PL")}</span>
-                    ) : expired ? (
-                      <span className="contract-expired-note"><Clock3 aria-hidden="true" /> Poproś szkołę o nową wersję</span>
-                    ) : null}
-                    {isManagement ? (
-                      <ContractVersionForm contractId={assignment.contractId} assignmentId={assignment.id} />
-                    ) : null}
-                  </div>
-                </article>
+          <ContractList
+            isManagement={isManagement}
+            items={assignments.map((assignment) => {
+              const expired = Boolean(
+                assignment.expiresAt &&
+                assignment.expiresAt < new Date() &&
+                assignment.status !== "ACCEPTED",
               );
+              return {
+                id: assignment.id,
+                contractId: assignment.contractId,
+                title: assignment.contract.title,
+                status: expired ? "EXPIRED" : assignment.status,
+                version: assignment.version.version,
+                sha256: assignment.version.sha256,
+                fileName: assignment.version.storedFile.originalName,
+                sizeLabel: `${(assignment.version.storedFile.sizeBytes / 1024).toFixed(0)} KB`,
+                parentName: assignment.parent.name,
+                studentName: assignment.student.name,
+                sentAt: assignment.sentAt.toISOString(),
+                viewedAt: assignment.viewedAt?.toISOString() ?? null,
+                expiresAt: assignment.expiresAt?.toISOString() ?? null,
+                acceptedAt: assignment.acceptance?.acceptedAt.toISOString() ?? null,
+                acceptanceMode: assignment.contract.acceptanceMode,
+                serviceSummary: assignment.contract.serviceSummary,
+                requiresPayment: assignment.contract.requiresPayment,
+                paymentSummary: assignment.contract.paymentSummary,
+                acceptanceStatement: getContractAcceptanceStatement({
+                  title: assignment.contract.title,
+                  version: assignment.version.version,
+                  serviceSummary: assignment.contract.serviceSummary,
+                  requiresPayment: assignment.contract.requiresPayment,
+                  paymentSummary: assignment.contract.paymentSummary,
+                }),
+                actionLabel: getContractActionLabel(assignment.contract.requiresPayment),
+              };
             })}
-          </div>
+          />
         )}
       </section>
 
       <p className="stage4-legal-note">
-        To prosta akceptacja dokumentu w eDzienniku, nie kwalifikowany podpis elektroniczny. Treść umowy i komunikatu akceptacji wymaga zatwierdzenia przez prawnika przed użyciem z prawdziwymi danymi.
+        Akceptacja w eDzienniku utrwala oświadczenie w formie dokumentowej. Nie
+        zastępuje kwalifikowanego podpisu elektronicznego, gdy prawo albo sama
+        umowa wymagają formy pisemnej. Treść wzorca i obowiązki konsumenckie
+        muszą zostać zatwierdzone przed użyciem z prawdziwymi danymi.
       </p>
     </AuthenticatedPanelShell>
   );

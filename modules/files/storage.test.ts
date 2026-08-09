@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { access, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -33,6 +33,9 @@ describe("LocalFileStorage", () => {
     expect(Array.from(await storage.read(result.storageKey))).toEqual(
       Array.from(bytes),
     );
+
+    await storage.remove(result.storageKey);
+    await expect(access(path.join(directory, result.storageKey))).rejects.toThrow();
   });
 
   it("rejects path traversal and a public storage directory", async () => {

@@ -62,7 +62,7 @@ export const revokeInvitationSchema = z.object({
 });
 
 export const invitationRoleLabels = {
-  SYSTEM_OWNER: "Bóg",
+  SYSTEM_OWNER: "Obsługa techniczna",
   DIRECTOR: "Dyrektor",
   TEACHER: "Wykładowca",
   PARENT: "Rodzic",

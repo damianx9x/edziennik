@@ -21,7 +21,7 @@ Import, eksport, status bazy oraz edycja publicznej strony są w pozycji
 Wykładowca widzi kartoteki wynikające z przypisanych grup. Może wysłać
 propozycję korekty; dyrektor zatwierdza ją w sprawach na ekranie `Start`.
 
-Autor projektu ma dodatkowe, stałe konto `Bóg`. Nie można go utworzyć przez
+Autor projektu ma dodatkowe, stałe konto obsługi technicznej. Nie można go utworzyć przez
 zaproszenie ani kod QR. Dziedziczy panel dyrektora i ma osobne, audytowane
 centrum diagnostyczne.
 
@@ -114,7 +114,7 @@ Dzwonek w prawym górnym rogu pokazuje liczbę propozycji wykładowców. Dyrekto
 widzi rekord, autora, czas i nowe wartości. `Zatwierdź zmianę` zapisuje dane;
 `Odrzuć` pozostawia kartotekę bez zmian. Obie decyzje trafiają do historii.
 
-## Konto Bóg i diagnostyka
+## Konto obsługi technicznej i diagnostyka
 
 Hasła tej roli nigdy nie wpisujemy do kodu ani Gita. W prywatnym `.env` ustaw:
 
@@ -176,7 +176,7 @@ Konta nie tworzy statyczna paczka FTP — wymaga aplikacji Node.js i PostgreSQL.
 - [ ] Widok nie przewija się poziomo przy 375 px.
 - [ ] Każdy element dotykowy ma co najmniej 44 × 44 px.
 - [ ] `npm run check`, `npm run build` i `npm run package:release` przechodzą.
-- [ ] Konto `Bóg` wymusza MFA i otwiera `/panel/bog`.
+- [ ] Konto obsługi technicznej wymusza MFA i otwiera `/panel/bog`.
 - [ ] Dyrektor nie może otworzyć `/panel/bog`.
 - [ ] Raport diagnostyczny nie zawiera pól wrażliwych.
 - [ ] Zaproszenia mają wygodny układ przy 375 px i 1440 px.

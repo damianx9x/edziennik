@@ -49,6 +49,23 @@ export function can(
   action: Action,
   resource: Resource,
 ): boolean {
+  const protectedFamilyActions: readonly Action[] = [
+    "manage:contracts",
+    "view:contract",
+    "accept:contract",
+    "manage:payments",
+    "view:payment",
+  ];
+
+  // Diagnostyka nie uzasadnia stałego dostępu do treści umów i rozliczeń.
+  // Ewentualny dostęp serwisowy wymaga osobnego mechanizmu break-glass.
+  if (
+    actor.role === "SYSTEM_OWNER" &&
+    protectedFamilyActions.includes(action)
+  ) {
+    return false;
+  }
+
   if (actor.role === "SYSTEM_OWNER") {
     return true;
   }

@@ -5,7 +5,7 @@ wszystkich ról, ręczne układanie z wyszarzaniem zajętych zasobów oraz Asyst
 który tworzy propozycję bez kolizji sali, wykładowcy, grupy i wspólnego ucznia.
 Kartoteki, zaproszenia, import/eksport i prywatny magazyn plików z Etapów 1–2
 pozostają fundamentem. Mechanizm TOTP jest gotowy; w pilocie dyrektor loguje się
-bez MFA, a konto `Bóg` nadal zawsze go wymaga.
+bez MFA, a konto obsługi technicznej nadal zawsze go wymaga.
 
 ## Start
 

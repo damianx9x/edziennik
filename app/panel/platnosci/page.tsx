@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, CircleAlert, CreditCard, ShieldCheck } from "lucide-react";
+import { CreditCard, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -6,15 +6,15 @@ import { db } from "@/lib/server/db";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { PaymentStatusForm } from "@/modules/payments/components/payment-status-form";
-import { paymentStatusLabels } from "@/modules/payments/schema";
+import { PaymentList } from "@/modules/payments/components/payment-list";
 
 export const metadata: Metadata = { title: "Statusy płatności" };
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
   const session = await requireActiveSession("/panel/platnosci");
-  if (!['SYSTEM_OWNER', 'DIRECTOR', 'PARENT'].includes(session.user.role)) redirect("/panel/brak-dostepu");
-  const isManagement = session.user.role === "SYSTEM_OWNER" || session.user.role === "DIRECTOR";
+  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) redirect("/panel/brak-dostepu");
+  const isManagement = session.user.role === "DIRECTOR";
   if (isManagement) await requireDirector("/panel/platnosci");
 
   const childIds = isManagement
@@ -57,18 +57,19 @@ export default async function PaymentsPage() {
         {records.length === 0 ? (
           <div className="stage4-empty"><CreditCard aria-hidden="true" /><h3>Brak zapisanych statusów</h3><p>{isManagement ? "Dodaj pierwszy status formularzem powyżej." : "Jeśli masz pytanie, napisz do szkoły."}</p></div>
         ) : (
-          <div className="payment-list">
-            {records.map((record) => (
-              <article key={record.id}>
-                <span className={`payment-status payment-${record.status.toLowerCase()}`}>
-                  {record.status === "PAID" ? <CheckCircle2 aria-hidden="true" /> : record.status === "OVERDUE" ? <CircleAlert aria-hidden="true" /> : <CalendarClock aria-hidden="true" />}
-                  {paymentStatusLabels[record.status]}
-                </span>
-                <div><h3>{record.student.name}</h3><p>{record.period}{record.dueDate ? ` · termin ${record.dueDate.toLocaleDateString("pl-PL")}` : ""}</p></div>
-                {isManagement ? <small>Zmienił/a: {record.changedBy.name} · {record.updatedAt.toLocaleString("pl-PL")}</small> : null}
-              </article>
-            ))}
-          </div>
+          <PaymentList
+            isManagement={isManagement}
+            items={records.map((record) => ({
+              id: record.id,
+              studentName: record.student.name,
+              period: record.period,
+              status: record.status,
+              dueDate: record.dueDate?.toISOString() ?? null,
+              updatedAt: record.updatedAt.toISOString(),
+              changedByName: isManagement ? record.changedBy.name : null,
+              note: isManagement ? record.note : null,
+            }))}
+          />
         )}
       </section>
     </AuthenticatedPanelShell>
