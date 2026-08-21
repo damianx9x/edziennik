@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
-import { requireDirector } from "@/modules/identity/auth/session";
+import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 
 import {
   assertScheduleSlotCanBeSaved,
@@ -251,7 +251,7 @@ export async function saveTeacherAvailabilityAction(
   _previous: ScheduleActionState,
   formData: FormData,
 ): Promise<ScheduleActionState> {
-  const session = await requireDirector(schedulePath);
+  const session = await requireActiveSession(schedulePath);
   const parsed = teacherAvailabilitySchema.safeParse({
     teacherId: formData.get("teacherId"),
     weekdays: formData.getAll("weekdays"),
@@ -265,6 +265,15 @@ export async function saveTeacherAvailabilityAction(
         parsed.error.issues[0]?.message ??
         "Sprawdź dostępność wykładowcy.",
     };
+  }
+  if (
+    session.user.role === "TEACHER" &&
+    parsed.data.teacherId !== session.user.id
+  ) {
+    return { status: "error", message: "Możesz zmienić tylko własną dostępność." };
+  }
+  if (!["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(session.user.role)) {
+    return { status: "error", message: "Nie masz dostępu do tej operacji." };
   }
   const teacher = await db.user.findFirst({
     where: {

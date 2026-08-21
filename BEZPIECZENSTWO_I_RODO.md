@@ -3,6 +3,34 @@
 To checklista techniczno-organizacyjna, nie porada prawna. Treści i podstawy
 musi zatwierdzić prawnik lub IOD klientki.
 
+## Audyt uwag manualnych — 21 sierpnia 2026
+
+- Akceptacja w eDzienniku pozostaje **formą dokumentową**, nie jest opisywana
+  jako podpis kwalifikowany. Kodeks cywilny wymaga możliwości ustalenia osoby
+  składającej oświadczenie (art. 77²), a równoważność z formą pisemną daje
+  dopiero forma elektroniczna z kwalifikowanym podpisem (art. 78¹). System
+  utrwala wersję PDF, hash, konto, czas i treść oświadczenia. Źródło:
+  [Kodeks cywilny](https://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20170000459/T/D20170459L.pdf).
+- eIDAS zabrania odrzucenia podpisu tylko dlatego, że jest elektroniczny, ale
+  nie nadaje każdemu kliknięciu skutku podpisu własnoręcznego. Równoważny jest
+  podpis kwalifikowany. Źródło: [art. 25 eIDAS](https://eur-lex.europa.eu/legal-content/DE-EN/TXT/?uri=CELEX%3A32014R0910).
+- Nie wdrażamy „podpisu SMS” jako automatycznie zgodnego prawnie. Kod SMS może
+  być dodatkowym dowodem identyfikacji dopiero po wyborze dostawcy, analizie
+  ryzyka, kosztów, treści umowy i opinii prawnika.
+- Nauczanie języków obcych jest wskazane w art. 43 ust. 1 pkt 28 ustawy o VAT,
+  ale aplikacja nie może sama rozstrzygać zwolnienia konkretnej usługi. Stawka
+  lub zwolnienie muszą być zatwierdzone przez księgową i zapisane w umowie/PDF.
+  Źródło: [ustawa o VAT](https://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20210000685/O/D20210685.pdf).
+- Minimalizacja, prywatność w projekcie, szyfrowanie, odtwarzalność i regularne
+  testy zabezpieczeń wynikają odpowiednio z art. 5, 25 i 32 RODO. Źródło:
+  [RODO](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32016R0679).
+- Przed prawdziwymi umowami prawnik musi zaakceptować wzorzec, tryb zawarcia,
+  informacje konsumenckie, odstąpienie, retencję dowodów oraz tekst przycisku.
+  Księgowa musi zaakceptować sposób pokazania kwoty brutto i VAT/zwolnienia.
+- Dane dzieci wymagają szczególnej ochrony; zakres kartotek, wiadomości,
+  statystyk i zrzutów trzeba ograniczać do celu. Pomocnicze źródło urzędowe:
+  [poradnik UODO dla szkół](https://uodo.gov.pl/pl/138/479).
+
 ## Korekty ważne
 
 1. Dane dziecka nie są automatycznie szczególną kategorią art. 9, lecz wymagają

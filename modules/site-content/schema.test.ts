@@ -8,6 +8,16 @@ describe("siteContentSchema", () => {
     expect(siteContentSchema.safeParse(defaultSiteContent).success).toBe(true);
   });
 
+  it("adds safe slider defaults to an older exported file", () => {
+    const legacyContent: Partial<typeof defaultSiteContent> = {
+      ...defaultSiteContent,
+    };
+    delete legacyContent.slider;
+    const result = siteContentSchema.parse(legacyContent);
+
+    expect(result.slider).toEqual({ layout: "split", imageFit: "cover" });
+  });
+
   it("requires at least one slider photo", () => {
     const contentWithoutSlides = {
       ...defaultSiteContent,

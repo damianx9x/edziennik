@@ -1,0 +1,6 @@
+[Unit]
+Description=Szyfrowana kopia KLA eDziennik
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/edziennik-kla-backup

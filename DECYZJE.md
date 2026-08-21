@@ -1,5 +1,34 @@
 # Decyzje architektoniczne
 
+## ADR-057 — uwagi z ręcznego przeglądu i pamięć zdjęć strony
+
+**Decyzja:** treść demonstracyjnego edytora strony nadal jest lokalna dla
+przeglądarki, ale zdjęcia i cały dokument treści zapisujemy w IndexedDB.
+`localStorage` służy jedynie jako sygnał synchronizacji i źródło jednorazowej
+migracji. Slider ma jawny tryb dzielony/szeroki oraz cover/contain.
+**Dlaczego:** base64 w `localStorage` osiągało limit już po jednym zdjęciu, a
+jeden sztywny kadr niszczył szerokie grafiki.
+**Granica:** wspólna publikacja na wszystkich urządzeniach wymaga zapisu
+serwerowego i magazynu plików; lokalny edytor jest demonstracją.
+
+## ADR-058 — Raspberry Pi jest hostem pilota, nie gwarancją HA
+
+**Decyzja:** wspieramy Raspberry Pi 4B 8 GB na 64-bitowym Raspberry Pi OS,
+PostgreSQL i Node 22, z systemd, nginx, kontrolą HTTP i szyfrowanymi kopiami.
+**Dlaczego:** 1–10 równoczesnych użytkowników mieści się w zasobach Pi, jeśli
+baza działa na SSD. Instalacja natywna zużywa mniej RAM niż pełny stos Docker.
+**Konsekwencja:** brak prądu lub Internetu nadal wyłącza usługę. Dla pilota
+wymagamy SSD, UPS, zewnętrznej kopii i HTTPS; VPS pozostaje bezpieczniejszy.
+
+## ADR-059 — uwagi prawne z PDF nie są automatyczną wykładnią prawa
+
+**Decyzja:** zachowujemy dwa tryby umowy: dokumentowy w eDzienniku i podpis
+poza systemem. Nie nazywamy kodu SMS podpisem i nie hardkodujemy stawki VAT.
+**Dlaczego:** właściwa forma zależy od treści umowy, a kwalifikowany podpis ma
+inny skutek niż zwykła akceptacja. VAT wymaga potwierdzenia księgowego.
+**Warunek:** wzorzec, proces konsumencki, VAT i retencja muszą przejść odbiór
+prawnika, IOD i księgowej przed danymi rzeczywistymi.
+
 ## ADR-024 — akceptacja dokładnej wersji umowy
 
 **Data:** 2026-08-09

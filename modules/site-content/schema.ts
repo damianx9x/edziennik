@@ -13,6 +13,12 @@ export const siteContentSchema = z.object({
     primaryCta: shortText,
     secondaryCta: shortText,
   }),
+  slider: z
+    .object({
+      layout: z.enum(["split", "wide"]),
+      imageFit: z.enum(["cover", "contain"]),
+    })
+    .default({ layout: "split", imageFit: "cover" }),
   slides: z
     .array(
       z.object({

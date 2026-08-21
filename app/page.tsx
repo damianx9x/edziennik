@@ -45,7 +45,7 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className="hero">
+      <section className={`hero hero-${content.slider.layout}`}>
         <div className="hero-copy">
           <span className="eyebrow">
             <Sparkles size={16} aria-hidden="true" />
@@ -82,7 +82,7 @@ export default function Home() {
           </ul>
         </div>
 
-        <HeroSlider slides={content.slides} />
+        <HeroSlider slides={content.slides} imageFit={content.slider.imageFit} />
       </section>
 
       <section className="proof-strip" aria-label="King’s Language Academy w skrócie">

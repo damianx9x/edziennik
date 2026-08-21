@@ -16,7 +16,7 @@ import {
   requirePanelAccess,
 } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
-import { ScheduleAssistantPanel } from "@/modules/schedule/components/schedule-assistant-panel";
+import { AvailabilityForm, ScheduleAssistantPanel } from "@/modules/schedule/components/schedule-assistant-panel";
 import { ScheduleWorkspace } from "@/modules/schedule/components/schedule-workspace";
 import {
   getWeekStartDate,
@@ -214,11 +214,11 @@ export default async function SchedulePage({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
-    isManagement
+    isSchoolStaff
       ? db.availabilityWindow.findMany({
           where: {
             schoolId: session.user.schoolId,
-            teacherId: { not: null },
+            teacherId: isManagement ? { not: null } : session.user.id,
             isAvailable: true,
           },
           select: {
@@ -491,6 +491,9 @@ export default async function SchedulePage({
     "d MMM yyyy",
     { locale: pl },
   )}`;
+  const ownAvailability = availability.find(
+    (entry) => entry.teacherId === session.user.id,
+  );
 
   return (
     <AuthenticatedPanelShell session={session} active="schedule">
@@ -532,9 +535,24 @@ export default async function SchedulePage({
       ) : (
         <div className="schedule-view-note">
           <CalendarCheck2 aria-hidden="true" />
-          Zmiany wprowadza szkoła. Twój plan aktualizuje się automatycznie.
+          {session.user.role === "TEACHER"
+            ? "Plan publikuje dyrektor. Niżej możesz podać własną dostępność."
+            : "Zmiany wprowadza szkoła. Twój plan aktualizuje się automatycznie."}
         </div>
       )}
+
+      {session.user.role === "TEACHER" ? (
+        <section className="teacher-availability-card" aria-labelledby="teacher-availability-title">
+          <div>
+            <span className="section-kicker">Preferencje do grafiku</span>
+            <h2 id="teacher-availability-title">Kiedy możesz prowadzić zajęcia?</h2>
+            <p>Podaj swoje dni i godziny. To nie zmienia opublikowanego planu — pomaga dyrektorowi układać kolejne tygodnie.</p>
+          </div>
+          {ownAvailability ? (
+            <AvailabilityForm entry={ownAvailability} />
+          ) : null}
+        </section>
+      ) : null}
 
       {mode === "assistant" && isManagement ? (
         <ScheduleAssistantPanel

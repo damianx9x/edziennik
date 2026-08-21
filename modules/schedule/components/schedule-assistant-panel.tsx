@@ -811,7 +811,7 @@ function RequirementForm({
   );
 }
 
-function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) {
+export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) {
   const [state, action, pending] = useActionState(
     saveTeacherAvailabilityAction,
     initialState,

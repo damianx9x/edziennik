@@ -23,6 +23,7 @@ const fieldLabels: Record<string, string> = {
   externalId: "Identyfikator",
   capacity: "Liczba miejsc",
   cefrLevel: "Poziom CEFR",
+  locationId: "Lokalizacja",
 };
 
 export default async function NotificationsPage() {
@@ -50,20 +51,36 @@ export default async function NotificationsPage() {
   const [users, rooms, groups] = await Promise.all([
     db.user.findMany({
       where: { id: { in: userIds }, schoolId: session.user.schoolId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, email: true, phone: true, externalId: true },
     }),
     db.room.findMany({
       where: { id: { in: roomIds }, schoolId: session.user.schoolId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, capacity: true, locationId: true },
     }),
     db.courseGroup.findMany({
       where: { id: { in: groupIds }, schoolId: session.user.schoolId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, cefrLevel: true, locationId: true },
     }),
   ]);
+  const locationIds = new Set<string>();
+  for (const item of [...rooms, ...groups]) locationIds.add(item.locationId);
+  for (const request of requests) {
+    const payload = request.payload as Record<string, unknown> | null;
+    if (typeof payload?.locationId === "string") locationIds.add(payload.locationId);
+  }
+  const locations = await db.location.findMany({
+    where: { id: { in: [...locationIds] }, schoolId: session.user.schoolId },
+    select: { id: true, name: true },
+  });
+  const locationNames = new Map(locations.map((item) => [item.id, item.name]));
   const names = new Map(
     [...users, ...rooms, ...groups].map((item) => [item.id, item.name]),
   );
+  const currentValues = new Map<string, Record<string, unknown>>([
+    ...users.map((item) => [item.id, item] as const),
+    ...rooms.map((item) => [item.id, item] as const),
+    ...groups.map((item) => [item.id, item] as const),
+  ]);
 
   return (
     <AuthenticatedPanelShell session={session} active="notifications">
@@ -118,11 +135,14 @@ export default async function NotificationsPage() {
                     </p>
                   </div>
                 </div>
-                <dl className="record-review-fields">
+                <dl className="record-review-fields record-review-comparison">
                   {request.changedFields.map((field) => (
                     <div key={field}>
                       <dt>{fieldLabels[field] ?? field}</dt>
-                      <dd>{formatValue(payload[field])}</dd>
+                      <dd>
+                        <span><small>Było</small>{formatValue(currentValues.get(request.entityId)?.[field], field, locationNames)}</span>
+                        <span><small>Będzie</small>{formatValue(payload[field], field, locationNames)}</span>
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -151,8 +171,9 @@ export default async function NotificationsPage() {
   );
 }
 
-function formatValue(value: unknown) {
+function formatValue(value: unknown, field: string, locations: Map<string, string>) {
   if (value === null || value === "") return "Usunięcie wartości";
+  if (field === "locationId" && typeof value === "string") return locations.get(value) ?? "Nieaktywna lokalizacja";
   if (typeof value === "number" || typeof value === "string") return String(value);
   return "Nowa wartość";
 }

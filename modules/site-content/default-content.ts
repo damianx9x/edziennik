@@ -11,6 +11,10 @@ export const defaultSiteContent: SiteContent = {
     primaryCta: "Otwórz eDziennik",
     secondaryCta: "Poznaj KLA",
   },
+  slider: {
+    layout: "split",
+    imageFit: "cover",
+  },
   slides: [
     {
       id: "london-bus",

@@ -1,0 +1,24 @@
+[Unit]
+Description=KLA eDziennik
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kla
+Group=kla
+WorkingDirectory=/opt/kla/current
+EnvironmentFile=/etc/kla/edziennik.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/kla
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

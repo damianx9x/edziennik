@@ -15,8 +15,10 @@ import type { SiteContent } from "../../modules/site-content/schema";
 
 export function HeroSlider({
   slides,
+  imageFit,
 }: {
   slides: SiteContent["slides"];
+  imageFit: SiteContent["slider"]["imageFit"];
 }) {
   const autoplay = useMemo(
     () =>
@@ -113,7 +115,7 @@ export function HeroSlider({
                 loading={index === 0 ? "eager" : "lazy"}
                 unoptimized={slide.src.startsWith("data:")}
                 sizes="(max-width: 760px) 100vw, 55vw"
-                style={{ objectPosition: slide.position }}
+                style={{ objectPosition: slide.position, objectFit: imageFit }}
               />
               <div className="hero-slide-shade" />
               <div className="hero-slide-caption">

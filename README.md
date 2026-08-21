@@ -1,11 +1,10 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etap 3 dodaje wspólny plan dla
-wszystkich ról, ręczne układanie z wyszarzaniem zajętych zasobów oraz Asystenta,
-który tworzy propozycję bez kolizji sali, wykładowcy, grupy i wspólnego ucznia.
-Kartoteki, zaproszenia, import/eksport i prywatny magazyn plików z Etapów 1–2
-pozostają fundamentem. Mechanizm TOTP jest gotowy; w pilocie dyrektor loguje się
-bez MFA, a konto obsługi technicznej nadal zawsze go wymaga.
+Mobilny eDziennik King’s Language Academy. Etapy 0–4 są przyjęte, a Etap 5
+(komunikator, ogłoszenia, pliki i potwierdzenia) jest funkcjonalny i czeka na
+odbiór klientki. Działają role, kartoteki, zaproszenia, import/eksport, grafik z
+asystentem, obecności, wersjonowane umowy i ręczne płatności. Aktualny audyt i
+pozostały zakres opisuje `AUDYT_ETAPOW_2026-08-21.md`.
 
 ## Start
 
@@ -23,6 +22,7 @@ npm run check
 npm run build
 npm run package:release
 npm run package:preview
+npm run package:raspberry
 npm run db:migrate:dev
 npm run db:seed:demo
 ```
@@ -32,7 +32,7 @@ npm run db:seed:demo
 `INSTRUKCJA_HOME_PL.md`.
 
 `package:release` tworzy aplikację Node.js
-`outputs/edziennik-kla-stage-3.zip`. Ta paczka wymaga PostgreSQL i hostingu
+Paczka w `outputs/` wymaga PostgreSQL i hostingu
 Node.js; zwykłe FTP jej nie uruchomi.
 
 ## Dokumenty
@@ -51,6 +51,8 @@ Node.js; zwykłe FTP jej nie uruchomi.
 - `INSTRUKCJA_HOME_PL.md` — domeny, SSL, WebFTP i pokaz klientce,
 - `AGENTS.md` — zasady kolejnych sesji,
 - `DECYZJE.md` — historia decyzji.
+- `AUDYT_ETAPOW_2026-08-21.md` — wykonane funkcje, uwagi z PDF i zaległości,
+- `raspberry/README.md` — instalacja pilota na Raspberry Pi 4B 8 GB.
 
 ## Wymagania i środowisko
 
@@ -58,5 +60,5 @@ Node.js 22.13–24 LTS, npm 11 i PostgreSQL. Skopiuj `.env.example` do `.env`;
 nigdy nie commituj `.env`. Puste klucze e-mail/SMS są celowe.
 
 Statyczny szkielet można pokazać na zwykłym hostingu home.pl. Pełny pilot z
-logowaniem i bazą jest przygotowany do samodzielnego serwera Node na MyDevil
-MD2. Procedury: `INSTRUKCJA_HOME_PL.md` i `DEPLOYMENT_MYDEVIL.md`.
+logowaniem i bazą wymaga serwera Node. Procedury: `INSTRUKCJA_HOME_PL.md`,
+`DEPLOYMENT_MYDEVIL.md` oraz `raspberry/README.md`.

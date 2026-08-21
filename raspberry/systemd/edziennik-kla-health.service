@@ -1,0 +1,7 @@
+[Unit]
+Description=Kontrola HTTP KLA eDziennik
+After=edziennik-kla.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/edziennik-kla-health

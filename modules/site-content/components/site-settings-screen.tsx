@@ -92,8 +92,8 @@ function SiteContentEditor({
   protectedMode,
 }: {
   initialContent: SiteContent;
-  onSave: (content: SiteContent) => { ok: boolean; message: string };
-  onReset: () => void;
+  onSave: (content: SiteContent) => Promise<{ ok: boolean; message: string }>;
+  onReset: () => Promise<void>;
   backHref: string;
   backLabel: string;
   protectedMode: boolean;
@@ -107,15 +107,15 @@ function SiteContentEditor({
   const [workingSlideId, setWorkingSlideId] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
-  function save() {
-    const result = onSave(draft);
+  async function save() {
+    const result = await onSave(draft);
     setStatus({
       kind: result.ok ? "success" : "error",
       message: result.message,
     });
   }
 
-  function restoreDefaults() {
+  async function restoreDefaults() {
     if (
       !window.confirm(
         "Przywrócić wszystkie domyślne teksty i zdjęcia? Tej zmiany nie można cofnąć.",
@@ -123,7 +123,7 @@ function SiteContentEditor({
     ) {
       return;
     }
-    onReset();
+    await onReset();
     setDraft(defaultSiteContent);
     setStatus({
       kind: "success",
@@ -526,6 +526,52 @@ function SliderFields({
 }) {
   return (
     <div className="editor-fields">
+      <EditorCard
+        title="Układ slidera"
+        hint="Dopasuj zwykłe zdjęcia albo szeroką grafikę banerową."
+      >
+        <div className="editor-two-columns">
+          <label className="editor-field">
+            <span>Położenie</span>
+            <select
+              value={draft.slider.layout}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  slider: {
+                    ...current.slider,
+                    layout: event.target.value as SiteContent["slider"]["layout"],
+                  },
+                }))
+              }
+            >
+              <option value="split">Obok nagłówka</option>
+              <option value="wide">Szeroki baner pod nagłówkiem</option>
+            </select>
+          </label>
+          <label className="editor-field">
+            <span>Kadrowanie zdjęcia</span>
+            <select
+              value={draft.slider.imageFit}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  slider: {
+                    ...current.slider,
+                    imageFit: event.target.value as SiteContent["slider"]["imageFit"],
+                  },
+                }))
+              }
+            >
+              <option value="cover">Wypełnij cały kadr</option>
+              <option value="contain">Pokaż całe zdjęcie</option>
+            </select>
+          </label>
+        </div>
+        <p className="editor-field-help">
+          Dla grafiki „Magia języków” wybierz szeroki baner i „Pokaż całe zdjęcie”.
+        </p>
+      </EditorCard>
       <div className="editor-section-callout">
         <div>
           <strong>Do 5 zdjęć</strong>
@@ -544,7 +590,10 @@ function SliderFields({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             disabled={draft.slides.length >= 5}
-            onChange={(event) => addSlide(event.target.files?.[0])}
+            onChange={async (event) => {
+              await addSlide(event.target.files?.[0]);
+              event.target.value = "";
+            }}
             hidden
           />
         </label>
@@ -574,9 +623,10 @@ function SliderFields({
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) =>
-                      replaceSlidePhoto(slide.id, event.target.files?.[0])
-                    }
+                    onChange={async (event) => {
+                      await replaceSlidePhoto(slide.id, event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
                     hidden
                   />
                 </label>
