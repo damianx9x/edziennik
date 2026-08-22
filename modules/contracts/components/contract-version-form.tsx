@@ -21,6 +21,10 @@ export function ContractVersionForm({
     paymentAmountCents: number | null;
     paymentLabel: string | null;
     paymentDueDate: string | null;
+    serviceStartDate: string | null;
+    serviceEndDate: string | null;
+    cancellationSummary: string | null;
+    requiresEarlyStartRequest: boolean;
   };
 }) {
   const [requiresPayment, setRequiresPayment] = useState(initial.requiresPayment);
@@ -49,6 +53,27 @@ export function ContractVersionForm({
         <label>
           Zakres i okres usługi
           <textarea name="serviceSummary" defaultValue={initial.serviceSummary} rows={3} maxLength={500} required />
+        </label>
+        <div className="contract-version-grid">
+          <label>
+            Początek zajęć
+            <input name="serviceStartDate" type="date" defaultValue={initial.serviceStartDate?.slice(0, 10) ?? ""} required />
+          </label>
+          <label>
+            Koniec okresu umowy
+            <input name="serviceEndDate" type="date" defaultValue={initial.serviceEndDate?.slice(0, 10) ?? ""} required />
+          </label>
+        </div>
+        <label>
+          Zasady zakończenia lub wypowiedzenia
+          <textarea name="cancellationSummary" defaultValue={initial.cancellationSummary ?? ""} rows={3} maxLength={700} required />
+        </label>
+        <label>
+          Wcześniejsze rozpoczęcie zajęć
+          <select name="requiresEarlyStartRequest" defaultValue={initial.requiresEarlyStartRequest ? "yes" : "no"} required>
+            <option value="no">Bez osobnego żądania rodzica</option>
+            <option value="yes">Rodzic ma wyraźnie zażądać rozpoczęcia przed upływem 14 dni</option>
+          </select>
         </label>
         <label>
           Czy wersja tworzy obowiązek zapłaty?

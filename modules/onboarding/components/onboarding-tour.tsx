@@ -51,7 +51,17 @@ export function OnboardingTour({ role, openInitially }: { role: Role; openInitia
     <button className="app-panel-help" type="button" onClick={() => dialogRef.current?.showModal()} aria-label="Pokaż samouczek"><CircleHelp aria-hidden="true" /></button>
     <dialog ref={dialogRef} className="onboarding-dialog" aria-labelledby="onboarding-title">
       <div className="onboarding-shell">
-        <header><span>Krótki samouczek · {step + 1} z {roleSteps.length}</span><button type="button" onClick={close} aria-label="Zamknij samouczek"><X /></button></header>
+        <header>
+          <span>Krótki samouczek · {step + 1} z {roleSteps.length}</span>
+          {openInitially ? (
+            <form action={finishOnboardingAction} onSubmit={close}>
+              <input type="hidden" name="result" value="dismissed" />
+              <button type="submit" aria-label="Zamknij samouczek"><X /></button>
+            </form>
+          ) : (
+            <button type="button" onClick={close} aria-label="Zamknij samouczek"><X /></button>
+          )}
+        </header>
         <div className="onboarding-progress" aria-hidden="true">{roleSteps.map((_, index) => <span key={index} className={index <= step ? "active" : ""} />)}</div>
         <main><span className="onboarding-icon"><Icon aria-hidden="true" /></span><h2 id="onboarding-title">{current.title}</h2><p>{current.description}</p><Link href={current.href} onClick={close}>{current.label} <ArrowRight /></Link></main>
         <footer>

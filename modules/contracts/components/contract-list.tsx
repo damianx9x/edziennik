@@ -2,6 +2,7 @@
 
 import {
   CheckCircle2,
+  CircleHelp,
   Clock3,
   Download,
   Eye,
@@ -11,6 +12,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
@@ -41,6 +43,10 @@ type ContractItem = {
   paymentAmountCents: number | null;
   paymentLabel: string | null;
   paymentDueDate: string | null;
+  serviceStartDate: string | null;
+  serviceEndDate: string | null;
+  cancellationSummary: string | null;
+  requiresEarlyStartRequest: boolean;
   acceptanceStatement: string;
   actionLabel: string;
 };
@@ -189,9 +195,14 @@ export function ContractList({
                 <h2 id="contract-preview-title">{selected.title}</h2>
                 <p>{selected.studentName}{isManagement ? ` · ${selected.parentName}` : ""}</p>
               </div>
-              <button type="button" onClick={close} aria-label="Zamknij podgląd">
-                <X aria-hidden="true" />
-              </button>
+              <div className="stage4-preview-header-actions">
+                <Link href="/panel/umowy/pomoc" title="Jak działają umowy online?">
+                  <CircleHelp aria-hidden="true" /><span>Pomoc prawna</span>
+                </Link>
+                <button type="button" onClick={close} aria-label="Zamknij podgląd">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
             </header>
 
             <div className="stage4-preview-body">
@@ -209,6 +220,10 @@ export function ContractList({
                 </div>
                 <h3>Co obejmuje umowa</h3>
                 <p>{selected.serviceSummary}</p>
+                <div className="contract-service-period">
+                  <div><span>Od</span><strong>{formatDate(selected.serviceStartDate)}</strong></div>
+                  <div><span>Do</span><strong>{formatDate(selected.serviceEndDate)}</strong></div>
+                </div>
                 <h3>{selected.requiresPayment ? "Cena i płatność" : "Bez obowiązku zapłaty"}</h3>
                 {selected.requiresPayment ? (
                   <div className="contract-payment-summary">
@@ -218,6 +233,15 @@ export function ContractList({
                     {selected.paymentSummary ? <p>{selected.paymentSummary}</p> : null}
                   </div>
                 ) : <p>Ta umowa nie tworzy obowiązku zapłaty.</p>}
+                <h3>Zakończenie lub wypowiedzenie</h3>
+                <p>{selected.cancellationSummary ?? "Szczegółowe zasady znajdują się w dokumencie PDF."}</p>
+                <div className="contract-consumer-summary">
+                  <ShieldCheck aria-hidden="true" />
+                  <div>
+                    <strong>Umowa zawierana na odległość</strong>
+                    <span>Co do zasady masz 14 dni na odstąpienie. Szczegóły i formularz znajdziesz w PDF oraz w pomocy prawnej.</span>
+                  </div>
+                </div>
                 <dl className="stage4-preview-facts">
                   <div><dt>Wysłano</dt><dd>{formatDate(selected.sentAt, true)}</dd></div>
                   <div><dt>Otwarto</dt><dd>{formatDate(selected.viewedAt, true)}</dd></div>
@@ -262,6 +286,8 @@ export function ContractList({
                   assignmentId={selected.id}
                   statement={selected.acceptanceStatement}
                   actionLabel={selected.actionLabel}
+                  requiresPayment={selected.requiresPayment}
+                  requiresEarlyStartRequest={selected.requiresEarlyStartRequest}
                 />
               ) : !isManagement && selected.acceptanceMode === "DOCUMENTARY" && selected.status !== "ACCEPTED" && selected.status !== "EXPIRED" ? (
                 <p className="stage4-external-note">Najpierw wyświetl dokument PDF. Pole akceptacji pojawi się po jego załadowaniu.</p>
@@ -291,6 +317,10 @@ export function ContractList({
                     paymentAmountCents: selected.paymentAmountCents,
                     paymentLabel: selected.paymentLabel,
                     paymentDueDate: selected.paymentDueDate,
+                    serviceStartDate: selected.serviceStartDate,
+                    serviceEndDate: selected.serviceEndDate,
+                    cancellationSummary: selected.cancellationSummary,
+                    requiresEarlyStartRequest: selected.requiresEarlyStartRequest,
                   }}
                 />
               ) : null}

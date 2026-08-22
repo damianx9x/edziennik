@@ -8,7 +8,7 @@
 | 1 | zakończony | Jedno logowanie, role, zaproszenia e-mail/QR, odzyskanie dostępu, sesje i 2FA gotowe do wymuszenia. |
 | 2 | zakończony | Kartoteki osób, grup, sal i lokalizacji, relacje, archiwizacja, import/podgląd/eksport CSV i historia zmian. |
 | 3 | zakończony | Grafik ręczny, kolizje sali/wykładowcy/grupy, asystent, publikacja po podglądzie, widoki ról i obecności. |
-| 4 | zakończony funkcjonalnie | Wersjonowane PDF, przypisanie rodzic–dziecko, akceptacja append-only, ręczny status płatności i powiadomienia. Odbiór prawny wzorca pozostaje bramką przed produkcją. |
+| 4 | zakończony funkcjonalnie | Wersjonowane PDF, przypisanie rodzic–dziecko, akceptacja append-only, osobne informacje konsumenckie, FAQ, ręczny status płatności i powiadomienia. Odbiór prawny wzorca pozostaje bramką przed produkcją. |
 | 5 | funkcjonalny, do odbioru | Rozmowy grupowe i bezpośrednie, ogłoszenia, załączniki, potwierdzenia przeczytania, kolejka e-mail oraz audyt dostępu dyrektora. Integracja z Meta nie jest wdrożona. |
 | 6 | niewykonany | Materiały, zadania domowe, monitoring wykonania oraz pełna PWA. |
 | 7 | niewykonany | Test pilota z klientką, szkolenie, test odtwarzania kopii, retencja, monitoring produkcyjny i formalny odbiór prawny/RODO. |

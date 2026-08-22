@@ -89,6 +89,19 @@ const nextConfig: NextConfig = {
                 },
               ],
             },
+            {
+              source: "/panel/umowy/:assignmentId/plik",
+              headers: [
+                {
+                  key: "Content-Security-Policy",
+                  value: "sandbox; default-src 'none'; frame-ancestors 'self'",
+                },
+                {
+                  key: "X-Frame-Options",
+                  value: "SAMEORIGIN",
+                },
+              ],
+            },
           ];
         },
       }),

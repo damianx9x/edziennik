@@ -29,6 +29,20 @@ inny skutek niż zwykła akceptacja. VAT wymaga potwierdzenia księgowego.
 **Warunek:** wzorzec, proces konsumencki, VAT i retencja muszą przejść odbiór
 prawnika, IOD i księgowej przed danymi rzeczywistymi.
 
+## ADR-060 — informacje konsumenckie należą do wersji umowy
+
+**Data:** 2026-08-22
+**Decyzja:** okres świadczenia, zasady wypowiedzenia, warunki płatności i wymóg
+osobnego żądania wcześniejszego rozpoczęcia zapisujemy w `ContractVersion`.
+Bezpośrednio przed zawarciem rodzic potwierdza osobno przeczytanie PDF,
+otrzymanie informacji konsumenckich, obowiązek zapłaty i — jeśli dotyczy —
+wcześniejszy start wraz z konsekwencjami. Dowód zapisuje treść oświadczenia,
+wersję informacji, etykietę przycisku i zaznaczone potwierdzenia.
+**Dlaczego:** jedno ogólne pole „akceptuję” nie pokazuje, które informacje
+rodzic rzeczywiście otrzymał. Dane wersjonowane chronią przed późniejszym
+nadpisaniem warunków. FAQ jest wspólne dla dyrektora i rodzica, ale nie
+zastępuje zatwierdzonego wzorca ani opinii prawnej.
+
 ## ADR-024 — akceptacja dokładnej wersji umowy
 
 **Data:** 2026-08-09

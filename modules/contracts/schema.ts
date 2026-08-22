@@ -19,6 +19,26 @@ const contractTermsSchema = z.object({
       (value) => value === "" || !Number.isNaN(Date.parse(`${value}T12:00:00`)),
       "Wpisz poprawny termin płatności.",
     ),
+  serviceStartDate: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || !Number.isNaN(Date.parse(`${value}T12:00:00`)),
+      "Wpisz poprawną datę rozpoczęcia zajęć.",
+    ),
+  serviceEndDate: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || !Number.isNaN(Date.parse(`${value}T12:00:00`)),
+      "Wpisz poprawną datę zakończenia zajęć.",
+    ),
+  cancellationSummary: z
+    .string()
+    .trim()
+    .min(10, "Krótko opisz czas trwania oraz zasady wypowiedzenia umowy.")
+    .max(700),
+  requiresEarlyStartRequest: z.enum(["yes", "no"]),
   legalReadiness: z.literal("confirmed", {
     error: "Potwierdź sprawdzenie informacji i właściwego trybu zawarcia.",
   }),
@@ -28,6 +48,19 @@ function validateContractTerms(
   data: z.infer<typeof contractTermsSchema>,
   context: z.RefinementCtx,
 ) {
+  if (!data.serviceStartDate || !data.serviceEndDate) {
+    context.addIssue({
+      code: "custom",
+      path: [!data.serviceStartDate ? "serviceStartDate" : "serviceEndDate"],
+      message: "Ustaw początek i koniec okresu objętego umową.",
+    });
+  } else if (data.serviceEndDate < data.serviceStartDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["serviceEndDate"],
+      message: "Data zakończenia musi przypadać po dacie rozpoczęcia.",
+    });
+  }
   if (data.requiresPayment === "yes" && data.paymentSummary.length < 3) {
     context.addIssue({
       code: "custom",
@@ -78,9 +111,15 @@ export const contractVersionSchema = contractTermsSchema.superRefine(validateCon
 
 export const contractAcceptanceSchema = z.object({
   assignmentId: z.uuid(),
-  confirmation: z.literal("accepted", {
-    error: "Potwierdź zapoznanie się z dokumentem.",
+  documentConfirmation: z.literal("accepted", {
+    error: "Potwierdź przeczytanie dokumentu PDF.",
   }),
+  consumerInformationConfirmation: z.literal("accepted", {
+    error: "Potwierdź otrzymanie informacji konsumenckich.",
+  }),
+  paymentConfirmation: z.string().optional(),
+  earlyStartRequest: z.string().optional(),
+  earlyStartConsequences: z.string().optional(),
 });
 
 export type ContractActionState = {

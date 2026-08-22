@@ -1,6 +1,7 @@
 "use client";
 
-import { FileUp, LoaderCircle, Send } from "lucide-react";
+import { CircleHelp, FileUp, LoaderCircle, Send } from "lucide-react";
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { createContractAssignmentAction } from "../actions";
@@ -30,6 +31,9 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
           <h2>Wyślij dokładną wersję PDF</h2>
           <p>Dokument po wysłaniu nie jest edytowany. Korekta będzie nową wersją.</p>
         </div>
+        <Link className="contract-help-link" href="/panel/umowy/pomoc">
+          <CircleHelp aria-hidden="true" /> Zasady prawne i checklista
+        </Link>
       </div>
 
       <label>
@@ -69,6 +73,39 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
         />
         <small>Rodzic zobaczy tę informację bezpośrednio przed decyzją.</small>
       </label>
+      <fieldset className="stage4-payment-terms">
+        <legend>Czas trwania i zakończenie umowy</legend>
+        <div className="stage4-form-row">
+          <label>
+            Początek zajęć
+            <input name="serviceStartDate" type="date" required />
+          </label>
+          <label>
+            Koniec okresu umowy
+            <input name="serviceEndDate" type="date" required />
+          </label>
+        </div>
+        <label>
+          Jak można zakończyć albo wypowiedzieć umowę?
+          <textarea
+            name="cancellationSummary"
+            required
+            minLength={10}
+            maxLength={700}
+            rows={3}
+            placeholder="np. miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca; szczegóły w § 8 dokumentu"
+          />
+          <small>Ta informacja pojawi się tuż przed przyciskiem zawarcia umowy.</small>
+        </label>
+        <label>
+          Czy poprosić rodzica o wcześniejsze rozpoczęcie zajęć?
+          <select name="requiresEarlyStartRequest" defaultValue="no" required>
+            <option value="no">Nie — zajęcia nie wymagają osobnego żądania</option>
+            <option value="yes">Tak — mogą zacząć się przed upływem 14 dni</option>
+          </select>
+          <small>Wybierz „Tak” tylko wtedy, gdy rodzic ma wyraźnie zażądać rozpoczęcia usługi przed upływem terminu na odstąpienie.</small>
+        </label>
+      </fieldset>
       {requiresPayment ? (
         <fieldset className="stage4-payment-terms">
           <legend>Warunki płatności zapisane z tą wersją</legend>
@@ -148,7 +185,8 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
         <span>
           Sprawdziłem/am treść, cenę, okres, informacje o odstąpieniu oraz to,
           czy dla tej umowy wystarcza forma dokumentowa. W razie wymogu formy
-          pisemnej wybieram podpis poza systemem.
+          pisemnej wybieram podpis poza systemem. Dokument zawiera również dane
+          przedsiębiorcy, reklamację, prawo odstąpienia i formularz odstąpienia.
         </span>
       </label>
       <div className="stage4-form-row">

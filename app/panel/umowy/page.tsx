@@ -1,8 +1,10 @@
 import {
+  CircleHelp,
   FileText,
   ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
@@ -46,6 +48,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           paymentAmountCents: true,
           paymentLabel: true,
           paymentDueDate: true,
+          serviceStartDate: true,
+          serviceEndDate: true,
+          cancellationSummary: true,
+          requiresEarlyStartRequest: true,
           storedFile: { select: { originalName: true, sizeBytes: true } },
         },
       },
@@ -85,7 +91,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
               : "Najpierw otwórz PDF. Potem świadomie zaakceptuj dokładnie tę wersję."}
           </p>
         </div>
-        <span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Niezmienna wersja PDF</span>
+        <div className="contract-heading-actions">
+          <Link className="contract-help-link" href="/panel/umowy/pomoc">
+            <CircleHelp aria-hidden="true" /> Jak to działa prawnie?
+          </Link>
+          <span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Niezmienna wersja PDF</span>
+        </div>
       </header>
 
       {isManagement ? (
@@ -131,7 +142,9 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                 version: assignment.version.version,
                 sha256: assignment.version.sha256,
                 fileName: assignment.version.storedFile.originalName,
-                sizeLabel: `${(assignment.version.storedFile.sizeBytes / 1024).toFixed(0)} KB`,
+                sizeLabel: assignment.version.storedFile.sizeBytes < 1024
+                  ? "mniej niż 1 KB"
+                  : `${(assignment.version.storedFile.sizeBytes / 1024).toFixed(0)} KB`,
                 parentName: assignment.parent.name,
                 parentId: assignment.parent.id,
                 studentName: assignment.student.name,
@@ -146,6 +159,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                 paymentAmountCents: assignment.version.paymentAmountCents,
                 paymentLabel: assignment.version.paymentLabel,
                 paymentDueDate: assignment.version.paymentDueDate?.toISOString() ?? null,
+                serviceStartDate: assignment.version.serviceStartDate?.toISOString() ?? null,
+                serviceEndDate: assignment.version.serviceEndDate?.toISOString() ?? null,
+                cancellationSummary: assignment.version.cancellationSummary,
+                requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
                 acceptanceStatement: getContractAcceptanceStatement({
                   title: assignment.version.title,
                   version: assignment.version.version,
@@ -155,6 +172,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                   paymentAmountCents: assignment.version.paymentAmountCents,
                   paymentLabel: assignment.version.paymentLabel,
                   paymentDueDate: assignment.version.paymentDueDate?.toLocaleDateString("pl-PL") ?? null,
+                  serviceStartDate: assignment.version.serviceStartDate?.toLocaleDateString("pl-PL") ?? null,
+                  serviceEndDate: assignment.version.serviceEndDate?.toLocaleDateString("pl-PL") ?? null,
+                  cancellationSummary: assignment.version.cancellationSummary,
+                  requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
                 }),
                 actionLabel: getContractActionLabel(assignment.version.requiresPayment),
               };
@@ -164,10 +185,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       </section>
 
       <p className="stage4-legal-note">
-        Akceptacja w eDzienniku utrwala oświadczenie w formie dokumentowej. Nie
-        zastępuje kwalifikowanego podpisu elektronicznego, gdy prawo albo sama
-        umowa wymagają formy pisemnej. Treść wzorca i obowiązki konsumenckie
-        muszą zostać zatwierdzone przed użyciem z prawdziwymi danymi.
+        <ShieldCheck aria-hidden="true" />
+        <span>
+          System zapisuje osobę, czas, treść oświadczeń, wersję i skrót PDF.
+          Nie zastępuje podpisu kwalifikowanego, jeśli szczególny przepis albo
+          dokument wymagają formy pisemnej. <Link href="/panel/umowy/pomoc">Poznaj zasady i podstawy prawne</Link>.
+        </span>
       </p>
     </AuthenticatedPanelShell>
   );

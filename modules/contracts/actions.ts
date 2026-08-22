@@ -18,6 +18,8 @@ import {
 } from "./schema";
 import {
   CONTRACT_ACCEPTANCE_STATEMENT_VERSION,
+  CONTRACT_CONSUMER_NOTICE,
+  CONTRACT_CONSUMER_NOTICE_VERSION,
   CONTRACT_LEGAL_CHECKLIST_VERSION,
   getContractAcceptanceStatement,
 } from "./legal";
@@ -51,6 +53,10 @@ export async function createContractAssignmentAction(
     paymentAmount: formData.get("paymentAmount"),
     paymentLabel: formData.get("paymentLabel"),
     paymentDueDate: formData.get("paymentDueDate"),
+    serviceStartDate: formData.get("serviceStartDate"),
+    serviceEndDate: formData.get("serviceEndDate"),
+    cancellationSummary: formData.get("cancellationSummary"),
+    requiresEarlyStartRequest: formData.get("requiresEarlyStartRequest"),
     parentId: formData.get("parentId"),
     studentId: formData.get("studentId"),
     expiresAt: formData.get("expiresAt"),
@@ -154,6 +160,11 @@ export async function createContractAssignmentAction(
             parsed.data.requiresPayment === "yes"
               ? new Date(`${parsed.data.paymentDueDate}T12:00:00`)
               : null,
+          serviceStartDate: new Date(`${parsed.data.serviceStartDate}T12:00:00`),
+          serviceEndDate: new Date(`${parsed.data.serviceEndDate}T12:00:00`),
+          cancellationSummary: parsed.data.cancellationSummary,
+          requiresEarlyStartRequest:
+            parsed.data.requiresEarlyStartRequest === "yes",
         },
       });
       const assignment = await tx.contractAssignment.create({
@@ -212,6 +223,10 @@ export async function createContractVersionAction(
     paymentAmount: formData.get("paymentAmount"),
     paymentLabel: formData.get("paymentLabel"),
     paymentDueDate: formData.get("paymentDueDate"),
+    serviceStartDate: formData.get("serviceStartDate"),
+    serviceEndDate: formData.get("serviceEndDate"),
+    cancellationSummary: formData.get("cancellationSummary"),
+    requiresEarlyStartRequest: formData.get("requiresEarlyStartRequest"),
     legalReadiness: formData.get("legalReadiness"),
   });
   if (!parsed.success) {
@@ -294,6 +309,11 @@ export async function createContractVersionAction(
             parsed.data.requiresPayment === "yes"
               ? new Date(`${parsed.data.paymentDueDate}T12:00:00`)
               : null,
+          serviceStartDate: new Date(`${parsed.data.serviceStartDate}T12:00:00`),
+          serviceEndDate: new Date(`${parsed.data.serviceEndDate}T12:00:00`),
+          cancellationSummary: parsed.data.cancellationSummary,
+          requiresEarlyStartRequest:
+            parsed.data.requiresEarlyStartRequest === "yes",
         },
       });
       await tx.contractAssignment.updateMany({
@@ -337,7 +357,11 @@ export async function acceptContractAction(
   const session = await requireActiveSession(contractsPath);
   const parsed = contractAcceptanceSchema.safeParse({
     assignmentId: formData.get("assignmentId"),
-    confirmation: formData.get("confirmation"),
+    documentConfirmation: formData.get("documentConfirmation"),
+    consumerInformationConfirmation: formData.get("consumerInformationConfirmation"),
+    paymentConfirmation: formData.get("paymentConfirmation") ?? undefined,
+    earlyStartRequest: formData.get("earlyStartRequest") ?? undefined,
+    earlyStartConsequences: formData.get("earlyStartConsequences") ?? undefined,
   });
   if (!parsed.success) {
     return {
@@ -368,6 +392,10 @@ export async function acceptContractAction(
           paymentAmountCents: true,
           paymentLabel: true,
           paymentDueDate: true,
+          serviceStartDate: true,
+          serviceEndDate: true,
+          cancellationSummary: true,
+          requiresEarlyStartRequest: true,
         },
       },
     },
@@ -391,6 +419,25 @@ export async function acceptContractAction(
       message: "Ta umowa wymaga podpisu poza eDziennikiem.",
     };
   }
+  if (
+    assignment.version.requiresPayment &&
+    parsed.data.paymentConfirmation !== "accepted"
+  ) {
+    return {
+      status: "error",
+      message: "Potwierdź, że rozumiesz obowiązek zapłaty.",
+    };
+  }
+  if (
+    assignment.version.requiresEarlyStartRequest &&
+    (parsed.data.earlyStartRequest !== "accepted" ||
+      parsed.data.earlyStartConsequences !== "accepted")
+  ) {
+    return {
+      status: "error",
+      message: "Potwierdź oba oświadczenia dotyczące wcześniejszego rozpoczęcia zajęć.",
+    };
+  }
   if (assignment.status === "SENT") {
     return {
       status: "error",
@@ -411,6 +458,10 @@ export async function acceptContractAction(
       paymentAmountCents: assignment.version.paymentAmountCents,
       paymentLabel: assignment.version.paymentLabel,
       paymentDueDate: assignment.version.paymentDueDate?.toLocaleDateString("pl-PL") ?? null,
+      serviceStartDate: assignment.version.serviceStartDate?.toLocaleDateString("pl-PL") ?? null,
+      serviceEndDate: assignment.version.serviceEndDate?.toLocaleDateString("pl-PL") ?? null,
+      cancellationSummary: assignment.version.cancellationSummary,
+      requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
     });
     await db.$transaction(async (tx) => {
       const updated = await tx.contractAssignment.updateMany({
@@ -427,6 +478,19 @@ export async function acceptContractAction(
             method: "authenticated-explicit-confirmation",
             statementVersion: CONTRACT_ACCEPTANCE_STATEMENT_VERSION,
             statementText,
+            consumerNoticeVersion: CONTRACT_CONSUMER_NOTICE_VERSION,
+            consumerNoticeText: CONTRACT_CONSUMER_NOTICE,
+            confirmations: {
+              documentRead: true,
+              consumerInformationReceived: true,
+              paymentObligationAcknowledged: assignment.version.requiresPayment,
+              earlyStartRequested: assignment.version.requiresEarlyStartRequest,
+              earlyStartConsequencesAcknowledged:
+                assignment.version.requiresEarlyStartRequest,
+            },
+            actionLabel: assignment.version.requiresPayment
+              ? "Zamówienie z obowiązkiem zapłaty"
+              : "Akceptuję umowę",
             locale: "pl-PL",
           },
         },

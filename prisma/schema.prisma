@@ -169,37 +169,37 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                   User[]
-  locations               Location[]
-  rooms                   Room[]
-  courseGroups            CourseGroup[]
-  parentLinks             ParentChild[]
-  scheduleSlots           ScheduleSlot[]
-  attendance              AttendanceRecord[]
-  availabilityWindows     AvailabilityWindow[]
-  schedulingRequirements  SchedulingRequirement[]
-  scheduleGenerations     ScheduleGeneration[]
-  auditLogs               AuditLog[]
-  feedbackReports         FeedbackReport[]
-  invitations             Invitation[]
-  storedFiles             StoredFile[]
-  importBatches           ImportBatch[]
-  recordChanges           RecordChangeRequest[]
-  pageVisits              PageVisit[]
-  contracts               Contract[]
-  contractAssignments     ContractAssignment[]
-  paymentRecords          PaymentRecord[]
-  conversations           Conversation[]
+  users                    User[]
+  locations                Location[]
+  rooms                    Room[]
+  courseGroups             CourseGroup[]
+  parentLinks              ParentChild[]
+  scheduleSlots            ScheduleSlot[]
+  attendance               AttendanceRecord[]
+  availabilityWindows      AvailabilityWindow[]
+  schedulingRequirements   SchedulingRequirement[]
+  scheduleGenerations      ScheduleGeneration[]
+  auditLogs                AuditLog[]
+  feedbackReports          FeedbackReport[]
+  invitations              Invitation[]
+  storedFiles              StoredFile[]
+  importBatches            ImportBatch[]
+  recordChanges            RecordChangeRequest[]
+  pageVisits               PageVisit[]
+  contracts                Contract[]
+  contractAssignments      ContractAssignment[]
+  paymentRecords           PaymentRecord[]
+  conversations            Conversation[]
   conversationParticipants ConversationParticipant[]
-  messages                Message[]
-  announcements           Announcement[]
-  messageReads            MessageRead[]
-  emailDeliveries         EmailDelivery[]
-  conversationAccesses    DirectorConversationAccess[]
-  messageAcknowledgements MessageAcknowledgement[]
-  messageAttachments      MessageAttachment[]
-  notificationStates      NotificationState[]
-  onboardingProgress      OnboardingProgress[]
+  messages                 Message[]
+  announcements            Announcement[]
+  messageReads             MessageRead[]
+  emailDeliveries          EmailDelivery[]
+  conversationAccesses     DirectorConversationAccess[]
+  messageAcknowledgements  MessageAcknowledgement[]
+  messageAttachments       MessageAttachment[]
+  notificationStates       NotificationState[]
+  onboardingProgress       OnboardingProgress[]
 }
 
 model Location {
@@ -278,9 +278,9 @@ model User {
   messageReads               MessageRead[]
   emailDeliveries            EmailDelivery[]              @relation("EmailRecipient")
   directorConversationAccess DirectorConversationAccess[] @relation("ConversationAccessDirector")
-  createdConversations       Conversation[]                @relation("ConversationCreator")
-  conversationMemberships    ConversationParticipant[]     @relation("ConversationParticipantUser")
-  addedConversationMembers   ConversationParticipant[]     @relation("ConversationParticipantAdder")
+  createdConversations       Conversation[]               @relation("ConversationCreator")
+  conversationMemberships    ConversationParticipant[]    @relation("ConversationParticipantUser")
+  addedConversationMembers   ConversationParticipant[]    @relation("ConversationParticipantAdder")
   messageAcknowledgements    MessageAcknowledgement[]
   notificationStates         NotificationState[]
   onboardingProgress         OnboardingProgress?
@@ -690,21 +690,21 @@ model AuditLog {
 }
 
 model Conversation {
-  id         String    @id @default(uuid()) @db.Uuid
-  schoolId   String    @db.Uuid
-  groupId    String?   @unique @db.Uuid
-  kind       String    @default("GROUP")
-  title      String?
-  createdById String?  @db.Uuid
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  archivedAt DateTime?
+  id          String    @id @default(uuid()) @db.Uuid
+  schoolId    String    @db.Uuid
+  groupId     String?   @unique @db.Uuid
+  kind        String    @default("GROUP")
+  title       String?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
 
-  school   School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  group    CourseGroup?                 @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  createdBy User?                       @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  messages Message[]
-  accesses DirectorConversationAccess[]
+  school       School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group        CourseGroup?                 @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy    User?                        @relation("ConversationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  messages     Message[]
+  accesses     DirectorConversationAccess[]
   participants ConversationParticipant[]
 
   @@index([schoolId, updatedAt])
@@ -982,21 +982,25 @@ model Contract {
 }
 
 model ContractVersion {
-  id                 String                 @id @default(uuid()) @db.Uuid
-  contractId         String                 @db.Uuid
-  storedFileId       String                 @db.Uuid
-  createdById        String                 @db.Uuid
-  version            Int
-  sha256             String                 @db.Char(64)
-  title              String                 @default("")
-  acceptanceMode     ContractAcceptanceMode @default(DOCUMENTARY)
-  serviceSummary     String                 @default("")
-  requiresPayment    Boolean                @default(true)
-  paymentSummary     String?
-  paymentAmountCents Int?
-  paymentLabel       String?
-  paymentDueDate     DateTime?              @db.Date
-  createdAt          DateTime               @default(now())
+  id                        String                 @id @default(uuid()) @db.Uuid
+  contractId                String                 @db.Uuid
+  storedFileId              String                 @db.Uuid
+  createdById               String                 @db.Uuid
+  version                   Int
+  sha256                    String                 @db.Char(64)
+  title                     String                 @default("")
+  acceptanceMode            ContractAcceptanceMode @default(DOCUMENTARY)
+  serviceSummary            String                 @default("")
+  requiresPayment           Boolean                @default(true)
+  paymentSummary            String?
+  paymentAmountCents        Int?
+  paymentLabel              String?
+  paymentDueDate            DateTime?              @db.Date
+  serviceStartDate          DateTime?              @db.Date
+  serviceEndDate            DateTime?              @db.Date
+  cancellationSummary       String?
+  requiresEarlyStartRequest Boolean                @default(false)
+  createdAt                 DateTime               @default(now())
 
   contract    Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
   storedFile  StoredFile           @relation("ContractFile", fields: [storedFileId], references: [id], onDelete: Restrict)

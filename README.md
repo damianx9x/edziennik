@@ -3,7 +3,7 @@
 Mobilny eDziennik King’s Language Academy. Etapy 0–4 są przyjęte, a Etap 5
 (komunikator, ogłoszenia, pliki i potwierdzenia) jest funkcjonalny i czeka na
 odbiór klientki. Działają role, kartoteki, zaproszenia, import/eksport, grafik z
-asystentem, obecności, wersjonowane umowy i ręczne płatności. Aktualny audyt i
+asystentem, obecności, wersjonowane umowy z centrum pomocy prawnej i ręczne płatności. Aktualny audyt i
 pozostały zakres opisuje `AUDYT_ETAPOW_2026-08-21.md`.
 
 ## Start

@@ -3,14 +3,14 @@
 To checklista techniczno-organizacyjna, nie porada prawna. Treści i podstawy
 musi zatwierdzić prawnik lub IOD klientki.
 
-## Audyt uwag manualnych — 21 sierpnia 2026
+## Audyt umów elektronicznych — 22 sierpnia 2026
 
 - Akceptacja w eDzienniku pozostaje **formą dokumentową**, nie jest opisywana
   jako podpis kwalifikowany. Kodeks cywilny wymaga możliwości ustalenia osoby
   składającej oświadczenie (art. 77²), a równoważność z formą pisemną daje
   dopiero forma elektroniczna z kwalifikowanym podpisem (art. 78¹). System
   utrwala wersję PDF, hash, konto, czas i treść oświadczenia. Źródło:
-  [Kodeks cywilny](https://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20170000459/T/D20170459L.pdf).
+  [Kodeks cywilny](https://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20250001071/T/D20251071L.pdf).
 - eIDAS zabrania odrzucenia podpisu tylko dlatego, że jest elektroniczny, ale
   nie nadaje każdemu kliknięciu skutku podpisu własnoręcznego. Równoważny jest
   podpis kwalifikowany. Źródło: [art. 25 eIDAS](https://eur-lex.europa.eu/legal-content/DE-EN/TXT/?uri=CELEX%3A32014R0910).
@@ -27,6 +27,12 @@ musi zatwierdzić prawnik lub IOD klientki.
 - Przed prawdziwymi umowami prawnik musi zaakceptować wzorzec, tryb zawarcia,
   informacje konsumenckie, odstąpienie, retencję dowodów oraz tekst przycisku.
   Księgowa musi zaakceptować sposób pokazania kwoty brutto i VAT/zwolnienia.
+- Dla umowy odpłatnej system pokazuje bezpośrednio przed decyzją usługę, okres,
+  cenę, termin, zasady zakończenia oraz przycisk „Zamówienie z obowiązkiem
+  zapłaty”. Rodzic osobno potwierdza dokument, informacje konsumenckie i — gdy
+  dotyczy — żądanie rozpoczęcia zajęć przed upływem 14 dni. Źródła:
+  [ustawa o prawach konsumenta](https://eli.gov.pl/eli/DU/2014/827/ogl/pol),
+  [wyjaśnienia UOKiK](https://prawakonsumenta.uokik.gov.pl/pytania-i-odpowiedzi/prawo-do-informacji/).
 - Dane dzieci wymagają szczególnej ochrony; zakres kartotek, wiadomości,
   statystyk i zrzutów trzeba ograniczać do celu. Pomocnicze źródło urzędowe:
   [poradnik UODO dla szkół](https://uodo.gov.pl/pl/138/479).

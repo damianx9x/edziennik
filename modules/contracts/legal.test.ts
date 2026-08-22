@@ -15,6 +15,10 @@ const validAssignment = {
   paymentAmount: "320,00",
   paymentLabel: "Czesne za wrzesień 2026",
   paymentDueDate: "2026-09-10",
+  serviceStartDate: "2026-09-01",
+  serviceEndDate: "2027-06-30",
+  cancellationSummary: "Miesięczny okres wypowiedzenia.",
+  requiresEarlyStartRequest: "no" as const,
   parentId: "4f593853-ef16-4c74-b917-c48cb3ea63b8",
   studentId: "9753fcdf-8c1f-4356-9cd8-4dd53a0ad9db",
   expiresAt: "",
@@ -54,6 +58,10 @@ describe("contract legal guardrails", () => {
       paymentAmountCents: 32000,
       paymentLabel: validAssignment.paymentLabel,
       paymentDueDate: "10 wrz 2026",
+      serviceStartDate: "1 wrz 2026",
+      serviceEndDate: "30 cze 2027",
+      cancellationSummary: validAssignment.cancellationSummary,
+      requiresEarlyStartRequest: false,
     });
 
     expect(statement).toContain("wersja 2");
@@ -61,6 +69,7 @@ describe("contract legal guardrails", () => {
     expect(statement).toContain(validAssignment.paymentSummary);
     expect(statement).toContain("320,00 zł brutto");
     expect(statement).toContain(validAssignment.paymentLabel);
+    expect(statement).toContain(validAssignment.cancellationSummary);
     expect(getContractActionLabel(true)).toBe("Zamówienie z obowiązkiem zapłaty");
   });
 });

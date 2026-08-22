@@ -652,11 +652,17 @@ async function seedDemoContracts(input: {
   if (!storedFile) throw new Error("Nie udało się przygotować pliku umowy demo.");
 
   const dueOffsets = [-7, 5, 21];
-  const statuses = ["OVERDUE", "PENDING", "PAID"] as const;
+  const paymentStatuses = ["OVERDUE", "PENDING", "PAID"] as const;
+  const contractStatuses = ["VIEWED", "ACCEPTED", "ACCEPTED"] as const;
   for (const [index, studentId] of input.studentIds.entries()) {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + dueOffsets[index]);
     dueDate.setHours(12, 0, 0, 0);
+    const serviceStartDate = new Date();
+    serviceStartDate.setDate(serviceStartDate.getDate() + (index === 0 ? 3 : -30));
+    serviceStartDate.setHours(12, 0, 0, 0);
+    const serviceEndDate = new Date(serviceStartDate);
+    serviceEndDate.setMonth(serviceEndDate.getMonth() + 9);
     const contractId = stableUuid(300 + index);
     const contract = await prisma.contract.upsert({
       where: { id: contractId },
@@ -679,6 +685,10 @@ async function seedDemoContracts(input: {
         storedFileId: storedFile.id,
         sha256: storedFile.sha256,
         paymentDueDate: dueDate,
+        serviceStartDate,
+        serviceEndDate,
+        cancellationSummary: "Miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca. Przykład demonstracyjny — szczegóły w PDF.",
+        requiresEarlyStartRequest: index === 0,
       },
       create: {
         contractId: contract.id,
@@ -693,6 +703,10 @@ async function seedDemoContracts(input: {
         paymentAmountCents: 35000 + index * 2500,
         paymentLabel: `Czesne demonstracyjne ${index + 1}`,
         paymentDueDate: dueDate,
+        serviceStartDate,
+        serviceEndDate,
+        cancellationSummary: "Miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca. Przykład demonstracyjny — szczegóły w PDF.",
+        requiresEarlyStartRequest: index === 0,
       },
     });
     const assignment = await prisma.contractAssignment.upsert({
@@ -703,41 +717,46 @@ async function seedDemoContracts(input: {
           studentId,
         },
       },
-      update: { status: "ACCEPTED", viewedAt: new Date(), expiresAt: null },
+      update: { status: contractStatuses[index], viewedAt: new Date(), expiresAt: null },
       create: {
         schoolId: input.schoolId,
         contractId: contract.id,
         versionId: version.id,
         parentId: input.parentId,
         studentId,
-        status: "ACCEPTED",
+        status: contractStatuses[index],
         viewedAt: new Date(),
       },
     });
-    await prisma.contractAcceptance.upsert({
-      where: { assignmentId: assignment.id },
-      update: { documentHash: storedFile.sha256 },
-      create: {
-        assignmentId: assignment.id,
-        acceptedById: input.parentId,
-        documentHash: storedFile.sha256,
-        evidence: { synthetic: true, statementVersion: "demo" },
-      },
-    });
-    await prisma.paymentRecord.upsert({
-      where: { contractAssignmentId: assignment.id },
-      update: { status: statuses[index], dueDate, changedById: input.directorId },
-      create: {
-        schoolId: input.schoolId,
-        studentId,
-        changedById: input.directorId,
-        contractAssignmentId: assignment.id,
-        period: `DEMO-${index + 1}`,
-        status: statuses[index],
-        dueDate,
-        note: "Syntetyczny status do testów interfejsu.",
-      },
-    });
+    if (contractStatuses[index] === "ACCEPTED") {
+      await prisma.contractAcceptance.upsert({
+        where: { assignmentId: assignment.id },
+        update: { documentHash: storedFile.sha256 },
+        create: {
+          assignmentId: assignment.id,
+          acceptedById: input.parentId,
+          documentHash: storedFile.sha256,
+          evidence: { synthetic: true, statementVersion: "demo" },
+        },
+      });
+      await prisma.paymentRecord.upsert({
+        where: { contractAssignmentId: assignment.id },
+        update: { status: paymentStatuses[index], dueDate, changedById: input.directorId },
+        create: {
+          schoolId: input.schoolId,
+          studentId,
+          changedById: input.directorId,
+          contractAssignmentId: assignment.id,
+          period: `DEMO-${index + 1}`,
+          status: paymentStatuses[index],
+          dueDate,
+          note: "Syntetyczny status do testów interfejsu.",
+        },
+      });
+    } else {
+      await prisma.paymentRecord.deleteMany({ where: { contractAssignmentId: assignment.id } });
+      await prisma.contractAcceptance.deleteMany({ where: { assignmentId: assignment.id } });
+    }
   }
 }
 

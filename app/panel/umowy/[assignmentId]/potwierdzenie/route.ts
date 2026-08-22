@@ -7,6 +7,16 @@ import { requireActiveSession, requireDirector } from "@/modules/identity/auth/s
 type AcceptanceEvidence = {
   statementVersion?: string;
   statementText?: string;
+  consumerNoticeVersion?: string;
+  consumerNoticeText?: string;
+  actionLabel?: string;
+  confirmations?: {
+    documentRead?: boolean;
+    consumerInformationReceived?: boolean;
+    paymentObligationAcknowledged?: boolean;
+    earlyStartRequested?: boolean;
+    earlyStartConsequencesAcknowledged?: boolean;
+  };
 };
 
 export async function GET(
@@ -64,9 +74,21 @@ export async function GET(
     `Data i czas: ${assignment.acceptance.acceptedAt.toISOString()}`,
     `SHA-256 dokumentu: ${assignment.acceptance.documentHash}`,
     `Wersja oświadczenia: ${evidence.statementVersion ?? "brak danych"}`,
+    `Wersja informacji konsumenckiej: ${evidence.consumerNoticeVersion ?? "brak danych"}`,
+    `Przycisk końcowy: ${evidence.actionLabel ?? "brak danych"}`,
     "",
     "Złożone oświadczenie:",
     evidence.statementText ?? "Oświadczenie zapisano w starszej wersji pilota.",
+    "",
+    "Potwierdzenia:",
+    `- dokument przeczytany: ${evidence.confirmations?.documentRead ? "tak" : "brak danych"}`,
+    `- informacje konsumenckie otrzymane: ${evidence.confirmations?.consumerInformationReceived ? "tak" : "brak danych"}`,
+    `- obowiązek zapłaty potwierdzony: ${evidence.confirmations?.paymentObligationAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
+    `- wcześniejsze rozpoczęcie zażądane: ${evidence.confirmations?.earlyStartRequested ? "tak" : "nie dotyczy / brak danych"}`,
+    `- konsekwencje wcześniejszego startu przyjęte: ${evidence.confirmations?.earlyStartConsequencesAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
+    "",
+    "Informacja konsumencka zapisana przy akceptacji:",
+    evidence.consumerNoticeText ?? "Brak w starszej wersji pilota.",
     "",
     "To potwierdzenie dotyczy akceptacji w formie dokumentowej. Nie jest",
     "kwalifikowanym podpisem elektronicznym ani jego zamiennikiem.",
