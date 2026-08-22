@@ -317,16 +317,33 @@ NODE
 launchctl bootout "$watchdog_domain" >/dev/null 2>&1 || true
 launchctl bootout "$launch_domain" >/dev/null 2>&1 || true
 
+wait_for_launch_agent_unload() {
+  local domain="$1"
+
+  for attempt in {1..20}; do
+    if ! launchctl print "$domain" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+
+  return 1
+}
+
+wait_for_launch_agent_unload "$watchdog_domain" || true
+wait_for_launch_agent_unload "$launch_domain" || true
+
 bootstrap_launch_agent() {
   local domain="$1"
   local plist="$2"
 
   for attempt in {1..5}; do
-    if launchctl bootstrap "gui/$(id -u)" "$plist"; then
+    if launchctl bootstrap "gui/$(id -u)" "$plist" >/dev/null 2>&1; then
       return 0
     fi
 
     launchctl bootout "$domain" >/dev/null 2>&1 || true
+    wait_for_launch_agent_unload "$domain" || true
     if [[ "$attempt" -lt 5 ]]; then
       sleep 1
     fi
