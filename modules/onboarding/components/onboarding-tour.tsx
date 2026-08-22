@@ -13,7 +13,7 @@ const commonMessages: Step = { title: "Wiadomości bez szukania czatu", descript
 const steps: Record<Role, Step[]> = {
   DIRECTOR: [
     { title: "Command Center", description: "Tutaj zaczynasz dzień: plan szkoły i sprawy wymagające decyzji.", href: "/panel/szkola", label: "Przejdź do startu", icon: Home },
-    { title: "Grafik szkoły", description: "Układaj ręcznie lub przygotuj szkic automatycznie bez kolizji sal, grup i wykładowców.", href: "/panel/plan", label: "Otwórz grafik", icon: CalendarDays },
+    { title: "Grafik szkoły", description: "Najpierw zobaczysz kalendarz. Stąd możesz przejść do układania ręcznego albo uruchomić Asystenta.", href: "/panel/plan", label: "Otwórz kalendarz", icon: CalendarDays },
     commonMessages,
     { title: "Umowy i płatności", description: "Umowa jest źródłem kwoty i terminu. Status płatności zmieniasz ręcznie.", href: "/panel/umowy", label: "Otwórz umowy", icon: FileSignature },
     { title: "Centrum powiadomień", description: "Tu trafiają terminy, błędy wysyłki i zmiany oczekujące na decyzję.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell },

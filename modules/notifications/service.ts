@@ -20,7 +20,7 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   const role = session.user.role;
 
   if (role === "DIRECTOR") {
-    const [changes, failedDeliveries, assignments] = await Promise.all([
+    const [changes, failedDeliveries, assignments, signedContracts] = await Promise.all([
       db.recordChangeRequest.findMany({
         where: { schoolId: session.user.schoolId, status: "PENDING" },
         orderBy: { createdAt: "desc" },
@@ -34,6 +34,20 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
         select: { id: true, updatedAt: true },
       }),
       paymentAssignments(session.user.schoolId),
+      db.contractAssignment.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          status: "SIGNED_PENDING_REVIEW",
+        },
+        orderBy: { signedUploadedAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          signedUploadedAt: true,
+          parent: { select: { name: true } },
+          version: { select: { title: true } },
+        },
+      }),
     ]);
     for (const item of changes) raw.push({
       key: `record-change:${item.id}`,
@@ -50,6 +64,14 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
       description: "Wiadomość jest w eDzienniku, ale dodatkowy e-mail wymaga ponowienia.",
       href: "/panel/wiadomosci",
       occurredAt: item.updatedAt,
+    });
+    for (const item of signedContracts) raw.push({
+      key: `signed-contract:${item.id}`,
+      kind: "ACTION",
+      title: "Podpisana umowa czeka na sprawdzenie",
+      description: `${item.parent.name} · ${item.version.title}`,
+      href: `/panel/umowy?umowa=${item.id}`,
+      occurredAt: item.signedUploadedAt ?? now,
     });
     addPaymentNotifications(raw, assignments, now, true);
   }

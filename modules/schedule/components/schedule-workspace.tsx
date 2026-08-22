@@ -19,11 +19,13 @@ import {
   CheckCircle2,
   CheckCheck,
   Clock3,
+  DoorOpen,
+  GraduationCap,
   GripHorizontal,
   GripVertical,
   MapPin,
   Move,
-  Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -54,6 +56,7 @@ import {
   DAY_START_HOUR,
   GRID_STEP_MINUTES,
 } from "../schema";
+import { getScheduleTone } from "../presentation";
 import type {
   ScheduleActionState,
   ScheduleLocation,
@@ -652,6 +655,29 @@ export function ScheduleWorkspace({
         </button>
       </section>
 
+      <section className="schedule-legend" aria-label="Jak czytać grafik">
+        <div className="schedule-location-legend">
+          <strong>Kolor oznacza lokalizację</strong>
+          <div>
+            {locations.map((location) => (
+              <span
+                key={location.id}
+                className={`schedule-tone-${getScheduleTone(location.id)}`}
+              >
+                <i aria-hidden="true" />
+                {location.name}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="schedule-icon-legend" aria-label="Znaczenie ikon">
+          <span><UsersRound aria-hidden="true" /> grupa</span>
+          <span><MapPin aria-hidden="true" /> lokalizacja</span>
+          <span><DoorOpen aria-hidden="true" /> sala</span>
+          <span><GraduationCap aria-hidden="true" /> wykładowca</span>
+        </div>
+      </section>
+
       <div className="schedule-mobile-days" role="tablist" aria-label="Dni tygodnia">
         {days.map((day) => (
           <button
@@ -876,7 +902,7 @@ function LessonCard({
     <article
       ref={setNodeRef}
       style={style}
-      className={`schedule-lesson ${isDragging ? "dragging" : ""}`}
+      className={`schedule-lesson schedule-tone-${getScheduleTone(slot.locationId)} ${isDragging ? "dragging" : ""}`}
     >
       <div className="schedule-lesson-main">
         {canManage ? (
@@ -894,12 +920,15 @@ function LessonCard({
           <span>
             {slot.startTime}–{slot.endTime}
           </span>
-          <strong>{slot.groupName}</strong>
+          <strong><UsersRound aria-hidden="true" /> {slot.groupName}</strong>
           <small>
-            <MapPin aria-hidden="true" /> {slot.locationName} · {slot.roomName}
+            <MapPin aria-hidden="true" /> {slot.locationName}
           </small>
           <small>
-            <Users aria-hidden="true" /> {slot.teacherName}
+            <DoorOpen aria-hidden="true" /> {slot.roomName}
+          </small>
+          <small>
+            <GraduationCap aria-hidden="true" /> {slot.teacherName}
           </small>
         </div>
       </div>

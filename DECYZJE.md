@@ -722,3 +722,52 @@ Build wydaniowy Next.js używa jawnie Webpacka. Turbopack pozostaje narzędziem
 developerskim, ale w środowisku pakowania próbował uruchamiać pomocniczy proces
 nasłuchujący na porcie i uniemożliwiał powtarzalne zbudowanie paczki. Zmiana nie
 wpływa na kod ani hosting aplikacji; daje ten sam produkcyjny wynik Next.js.
+
+## ADR-061 — kalendarz jako domyślny grafik i kolory lokalizacji
+
+**Data:** 2026-08-22
+**Decyzja:** wejście „Otwórz grafik” prowadzi bezpośrednio do kalendarza
+tygodniowego. Asystent automatyczny pozostaje osobnym, świadomie wybranym
+trybem. Każda lokalizacja otrzymuje stabilny kolor wyliczany z jej identyfikatora,
+a grupa, lokalizacja, sala i wykładowca są dodatkowo oznaczone ikoną i tekstem.
+
+**Dlaczego:** dyrektor najczęściej chce najpierw zobaczyć faktyczny plan.
+Kolor przyspiesza skanowanie, lecz nie jest jedynym nośnikiem informacji, dzięki
+czemu grafik pozostaje czytelny dla osób nierozróżniających barw.
+
+## ADR-062 — jawne granice Meta i wymienne miejsca kopii
+
+**Data:** 2026-08-22
+**Decyzja:** rezygnujemy z integracji API Meta. Po wycofaniu Groups API Meta
+nie udostępnia wspieranej drogi automatycznej wysyłki do zwykłych grup.
+Dyrektor otrzymuje wyłącznie skrót otwierający Messenger w osobnej karcie;
+eDziennik nie przekazuje tam danych ani tokenów.
+
+Kopie zapasowe otrzymają wymienne adaptery: prywatny folder, zamontowany dysk
+lub NAS oraz SFTP. Zwykłe FTP nie jest dopuszczone dla produkcyjnych danych.
+Obecny ekran jest planem konfiguracji, a nie pozorowanym przełącznikiem usługi.
+Aktywacja w przyszłym etapie wymaga szyfrowania, audytu, alarmów i skutecznego
+testu odtworzenia.
+
+## ADR-063 — podpisany skan jako kontrolowany tryb umowy
+
+**Data:** 2026-08-22
+**Decyzja:** obok akceptacji w formie dokumentowej dyrektor może wybrać tryb
+„wydruk, podpis odręczny i wgranie”. Rodzic pobiera niezmienny PDF, podpisuje
+cały egzemplarz i wgrywa PDF/JPG/PNG. Dokument otrzymuje stan „Podpis do
+sprawdzenia”; dopiero dyrektor zatwierdza zgodność albo prosi o ponowne wgranie.
+Każdy odczyt, upload, skrót pliku i decyzja są audytowane.
+
+Wgrany skan jest dowodem i kopią roboczą w formie dokumentowej; sam skan nie
+jest nazywany kwalifikowanym podpisem elektronicznym ani automatycznie
+równoważnym oryginałowi papierowemu. Oryginał należy zachować, jeżeli umowa lub
+przepis wymaga formy pisemnej. Kod SMS pozostaje poza pilotem: może wspierać
+identyfikację i dowód działania, lecz bez kwalifikowanej usługi nie zastępuje
+podpisu własnoręcznego.
+
+**Dlaczego:** proces jest prosty dla rodzica, zachowuje dokładną wersję umowy i
+nie przypisuje zwykłemu SMS-owi ani skanowi skutku podpisu kwalifikowanego.
+
+**Dlaczego:** interfejs nie może obiecywać funkcji blokowanej przez dostawcę ani
+sukcesu kopii, której nie da się odtworzyć. Adaptery pozwalają zmienić miejsce
+bez przebudowy logiki retencji, szyfrowania i monitoringu.

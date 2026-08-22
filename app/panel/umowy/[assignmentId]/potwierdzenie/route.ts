@@ -5,6 +5,8 @@ import { can } from "@/modules/access-control/can";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 
 type AcceptanceEvidence = {
+  method?: string;
+  signedFileHash?: string;
   statementVersion?: string;
   statementText?: string;
   consumerNoticeVersion?: string;
@@ -39,7 +41,7 @@ export async function GET(
     select: {
       id: true,
       parentId: true,
-      version: { select: { title: true, version: true, sha256: true } },
+      version: { select: { title: true, version: true, sha256: true, acceptanceMode: true } },
       student: { select: { name: true } },
       parent: { select: { name: true } },
       acceptance: {
@@ -63,35 +65,53 @@ export async function GET(
   }
 
   const evidence = assignment.acceptance.evidence as AcceptanceEvidence;
+  const isSignedCopy = assignment.version.acceptanceMode === "EXTERNAL_SIGNATURE";
   const lines = [
-    "POTWIERDZENIE AKCEPTACJI UMOWY W EDZIENNIKU KLA",
+    isSignedCopy
+      ? "POTWIERDZENIE WERYFIKACJI PODPISANEJ UMOWY W EDZIENNIKU KLA"
+      : "POTWIERDZENIE AKCEPTACJI UMOWY W EDZIENNIKU KLA",
     "",
     `Umowa: ${assignment.version.title}`,
     `Wersja: ${assignment.version.version}`,
     `Uczeń: ${assignment.student.name}`,
     `Rodzic: ${assignment.parent.name}`,
-    `Osoba akceptująca: ${assignment.acceptance.acceptedBy.name}`,
+    `${isSignedCopy ? "Osoba sprawdzająca" : "Osoba akceptująca"}: ${assignment.acceptance.acceptedBy.name}`,
     `Data i czas: ${assignment.acceptance.acceptedAt.toISOString()}`,
     `SHA-256 dokumentu: ${assignment.acceptance.documentHash}`,
-    `Wersja oświadczenia: ${evidence.statementVersion ?? "brak danych"}`,
-    `Wersja informacji konsumenckiej: ${evidence.consumerNoticeVersion ?? "brak danych"}`,
-    `Przycisk końcowy: ${evidence.actionLabel ?? "brak danych"}`,
+    ...(isSignedCopy
+      ? [
+          "Tryb: podpis odręczny i wgrana kopia dokumentu",
+          `SHA-256 podpisanego pliku: ${evidence.signedFileHash ?? assignment.acceptance.documentHash}`,
+        ]
+      : [
+          `Wersja oświadczenia: ${evidence.statementVersion ?? "brak danych"}`,
+          `Wersja informacji konsumenckiej: ${evidence.consumerNoticeVersion ?? "brak danych"}`,
+          `Przycisk końcowy: ${evidence.actionLabel ?? "brak danych"}`,
+        ]),
     "",
-    "Złożone oświadczenie:",
-    evidence.statementText ?? "Oświadczenie zapisano w starszej wersji pilota.",
-    "",
-    "Potwierdzenia:",
-    `- dokument przeczytany: ${evidence.confirmations?.documentRead ? "tak" : "brak danych"}`,
-    `- informacje konsumenckie otrzymane: ${evidence.confirmations?.consumerInformationReceived ? "tak" : "brak danych"}`,
-    `- obowiązek zapłaty potwierdzony: ${evidence.confirmations?.paymentObligationAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
-    `- wcześniejsze rozpoczęcie zażądane: ${evidence.confirmations?.earlyStartRequested ? "tak" : "nie dotyczy / brak danych"}`,
-    `- konsekwencje wcześniejszego startu przyjęte: ${evidence.confirmations?.earlyStartConsequencesAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
-    "",
-    "Informacja konsumencka zapisana przy akceptacji:",
-    evidence.consumerNoticeText ?? "Brak w starszej wersji pilota.",
-    "",
-    "To potwierdzenie dotyczy akceptacji w formie dokumentowej. Nie jest",
-    "kwalifikowanym podpisem elektronicznym ani jego zamiennikiem.",
+    ...(isSignedCopy
+      ? [
+          "Dyrektor potwierdził zgodność wgranego pliku z przypisaną wersją umowy.",
+          "Podpisany dokument jest przechowywany oddzielnie i pozostaje dostępny po sprawdzeniu uprawnień.",
+          "To potwierdzenie nie zastępuje papierowego oryginału dokumentu.",
+        ]
+      : [
+          "Złożone oświadczenie:",
+          evidence.statementText ?? "Oświadczenie zapisano w starszej wersji pilota.",
+          "",
+          "Potwierdzenia:",
+          `- dokument przeczytany: ${evidence.confirmations?.documentRead ? "tak" : "brak danych"}`,
+          `- informacje konsumenckie otrzymane: ${evidence.confirmations?.consumerInformationReceived ? "tak" : "brak danych"}`,
+          `- obowiązek zapłaty potwierdzony: ${evidence.confirmations?.paymentObligationAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
+          `- wcześniejsze rozpoczęcie zażądane: ${evidence.confirmations?.earlyStartRequested ? "tak" : "nie dotyczy / brak danych"}`,
+          `- konsekwencje wcześniejszego startu przyjęte: ${evidence.confirmations?.earlyStartConsequencesAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
+          "",
+          "Informacja konsumencka zapisana przy akceptacji:",
+          evidence.consumerNoticeText ?? "Brak w starszej wersji pilota.",
+          "",
+          "To potwierdzenie dotyczy akceptacji w formie dokumentowej. Nie jest",
+          "kwalifikowanym podpisem elektronicznym ani jego zamiennikiem.",
+        ]),
   ];
 
   await db.auditLog.create({

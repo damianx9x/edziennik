@@ -125,6 +125,7 @@ enum ContractStatus {
   DRAFT
   SENT
   VIEWED
+  SIGNED_PENDING_REVIEW
   ACCEPTED
   EXPIRED
 }
@@ -922,6 +923,7 @@ model StoredFile {
   importBatches      ImportBatch[]       @relation("ImportSource")
   contractVersions   ContractVersion[]   @relation("ContractFile")
   messageAttachments MessageAttachment[]
+  signedAssignments   ContractAssignment[] @relation("SignedContractFile")
 
   @@index([schoolId, purpose, createdAt])
   @@index([uploadedById, createdAt])
@@ -1023,6 +1025,8 @@ model ContractAssignment {
   status     ContractStatus @default(SENT)
   sentAt     DateTime       @default(now())
   viewedAt   DateTime?
+  signedFileId String?       @unique @db.Uuid
+  signedUploadedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime       @default(now())
 
@@ -1033,11 +1037,13 @@ model ContractAssignment {
   student       User                @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
   acceptance    ContractAcceptance?
   paymentRecord PaymentRecord?
+  signedFile    StoredFile?          @relation("SignedContractFile", fields: [signedFileId], references: [id], onDelete: Restrict)
 
   @@unique([versionId, parentId, studentId])
   @@index([schoolId, status, createdAt])
   @@index([parentId, status, createdAt])
   @@index([studentId, createdAt])
+  @@index([signedFileId])
 }
 
 model ContractAcceptance {

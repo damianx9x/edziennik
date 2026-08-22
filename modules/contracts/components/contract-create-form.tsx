@@ -45,9 +45,9 @@ export function ContractCreateForm({ parents }: { parents: ParentOption[] }) {
           Jak rodzic ma zakończyć formalność?
           <select name="acceptanceMode" required defaultValue="DOCUMENTARY">
             <option value="DOCUMENTARY">Akceptacja w eDzienniku — forma dokumentowa</option>
-            <option value="EXTERNAL_SIGNATURE">Tylko podgląd — podpis poza systemem</option>
+            <option value="EXTERNAL_SIGNATURE">Wydruk, podpis odręczny i bezpieczne wgranie</option>
           </select>
-          <small>Jeśli umowa wymaga formy pisemnej, wybierz podpis poza systemem.</small>
+          <small>Jeśli potrzebujesz podpisanego egzemplarza, rodzic pobierze PDF, podpisze go i wgra skan.</small>
         </label>
         <label>
           Czy umowa zobowiązuje rodzica do zapłaty?

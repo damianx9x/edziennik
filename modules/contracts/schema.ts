@@ -122,6 +122,13 @@ export const contractAcceptanceSchema = z.object({
   earlyStartConsequences: z.string().optional(),
 });
 
+export const signedContractSchema = z.object({
+  assignmentId: z.uuid(),
+  confirmation: z.literal("signed", {
+    error: "Potwierdź, że wgrywasz kompletny dokument podpisany przez rodzica.",
+  }),
+});
+
 export type ContractActionState = {
   status: "idle" | "success" | "error";
   message?: string;

@@ -46,7 +46,7 @@ export function ContractVersionForm({
             Sposób zawarcia
             <select name="acceptanceMode" defaultValue={initial.acceptanceMode} required>
               <option value="DOCUMENTARY">Akceptacja w eDzienniku</option>
-              <option value="EXTERNAL_SIGNATURE">Podpis poza systemem</option>
+              <option value="EXTERNAL_SIGNATURE">Wydruk, podpis i wgranie skanu</option>
             </select>
           </label>
         </div>

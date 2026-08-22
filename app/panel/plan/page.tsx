@@ -107,7 +107,7 @@ export default async function SchedulePage({
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR";
   const isSchoolStaff = isManagement || session.user.role === "TEACHER";
-  const mode = isManagement && params.tryb !== "reczny" ? "assistant" : "manual";
+  const mode = isManagement && params.tryb === "auto" ? "assistant" : "manual";
 
   const groupWhere =
     isManagement
@@ -513,7 +513,7 @@ export default async function SchedulePage({
         <nav className="schedule-mode-switch" aria-label="Sposób układania grafiku">
           <Link
             className={mode === "assistant" ? "active" : ""}
-            href={`/panel/plan?tydzien=${weekStartKey}`}
+            href={`/panel/plan?tydzien=${weekStartKey}&tryb=auto`}
           >
             <Sparkles aria-hidden="true" />
             <span>
@@ -523,7 +523,7 @@ export default async function SchedulePage({
           </Link>
           <Link
             className={mode === "manual" ? "active" : ""}
-            href={`/panel/plan?tydzien=${weekStartKey}&tryb=reczny`}
+            href={`/panel/plan?tydzien=${weekStartKey}`}
           >
             <CalendarRange aria-hidden="true" />
             <span>

@@ -10,6 +10,7 @@ import {
   FileText,
   GripHorizontal,
   ShieldCheck,
+  UploadCloud,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -19,12 +20,14 @@ import { useMovableDialog } from "@/modules/records/components/use-movable-dialo
 
 import { ContractAcceptForm } from "./contract-accept-form";
 import { ContractVersionForm } from "./contract-version-form";
+import { SignedContractForm } from "./signed-contract-form";
+import { reviewSignedContractAction } from "../actions";
 
 type ContractItem = {
   id: string;
   contractId: string;
   title: string;
-  status: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "EXPIRED";
+  status: "DRAFT" | "SENT" | "VIEWED" | "SIGNED_PENDING_REVIEW" | "ACCEPTED" | "EXPIRED";
   version: number;
   sha256: string;
   fileName: string;
@@ -36,6 +39,8 @@ type ContractItem = {
   viewedAt: string | null;
   expiresAt: string | null;
   acceptedAt: string | null;
+  signedUploadedAt: string | null;
+  signedFile: { name: string; sizeBytes: number; sha256: string } | null;
   acceptanceMode: "DOCUMENTARY" | "EXTERNAL_SIGNATURE";
   serviceSummary: string;
   requiresPayment: boolean;
@@ -55,6 +60,7 @@ const statusLabels = {
   DRAFT: "Szkic",
   SENT: "Wysłana",
   VIEWED: "Otwarta",
+  SIGNED_PENDING_REVIEW: "Podpis do sprawdzenia",
   ACCEPTED: "Zaakceptowana",
   EXPIRED: "Wygasła",
 } as const;
@@ -163,7 +169,7 @@ export function ContractList({
               <span className="stage4-icon"><FileCheck2 aria-hidden="true" /></span>
               <span className="contract-card-copy">
                 <span className={`stage4-status status-${item.status.toLowerCase()}`}>
-                  {statusLabels[item.status]}
+                  {item.status === "VIEWED" && item.acceptanceMode === "EXTERNAL_SIGNATURE" ? "Oczekuje na podpis" : statusLabels[item.status]}
                 </span>
                 <strong>{item.title}</strong>
                 <span>
@@ -209,13 +215,13 @@ export function ContractList({
               <section className="stage4-preview-summary" aria-label="Najważniejsze warunki">
                 <div className="stage4-preview-status-row">
                   <span className={`stage4-status status-${selected.status.toLowerCase()}`}>
-                    {statusLabels[selected.status]}
+                    {selected.status === "VIEWED" && selected.acceptanceMode === "EXTERNAL_SIGNATURE" ? "Oczekuje na podpis" : statusLabels[selected.status]}
                   </span>
                   <span className="stage4-mode-chip">
                     <ShieldCheck aria-hidden="true" />
                     {selected.acceptanceMode === "DOCUMENTARY"
                       ? "Akceptacja w eDzienniku"
-                      : "Podpis poza systemem"}
+                      : "Wydruk, podpis i bezpieczny upload"}
                   </span>
                 </div>
                 <h3>Co obejmuje umowa</h3>
@@ -294,14 +300,21 @@ export function ContractList({
               ) : selected.status === "ACCEPTED" ? (
                 <div className="stage4-acceptance-receipt">
                   <span><CheckCircle2 aria-hidden="true" /> Zapisano {formatDate(selected.acceptedAt, true)}</span>
+                  {selected.acceptanceMode === "EXTERNAL_SIGNATURE" && selected.signedFile ? (
+                    <a className="stage4-secondary" href={`/panel/umowy/${selected.id}/podpisany`}>
+                      <Download aria-hidden="true" /> Pobierz podpisany dokument
+                    </a>
+                  ) : null}
                   <a className="stage4-secondary" href={`/panel/umowy/${selected.id}/potwierdzenie`}>
                     <Download aria-hidden="true" /> Pobierz potwierdzenie
                   </a>
                 </div>
               ) : selected.status === "EXPIRED" ? (
                 <span className="contract-expired-note"><Clock3 aria-hidden="true" /> Poproś szkołę o nową wersję</span>
+              ) : selected.acceptanceMode === "EXTERNAL_SIGNATURE" && selected.status === "SIGNED_PENDING_REVIEW" ? (
+                isManagement ? <div className="signed-review-actions"><a className="stage4-secondary" href={`/panel/umowy/${selected.id}/podpisany`}><Download /> Pobierz podpisany plik</a><form action={reviewSignedContractAction}><input type="hidden" name="assignmentId" value={selected.id} /><button className="stage4-primary" name="decision" value="approve">Zatwierdź podpis</button><button className="stage4-secondary" name="decision" value="reject">Poproś o ponowne wgranie</button></form></div> : <p className="stage4-external-note"><UploadCloud aria-hidden="true" /> Podpisany dokument czeka na sprawdzenie przez dyrektora.</p>
               ) : selected.acceptanceMode === "EXTERNAL_SIGNATURE" ? (
-                <p className="stage4-external-note">Zapoznaj się z dokumentem. Szkoła przekaże osobno sposób podpisu.</p>
+                !isManagement && documentLoaded ? <SignedContractForm assignmentId={selected.id} /> : <p className="stage4-external-note">Pobierz PDF, wydrukuj i podpisz cały dokument. Po wyświetleniu PDF pojawi się bezpieczne pole wgrania.</p>
               ) : null}
 
               {isManagement ? (

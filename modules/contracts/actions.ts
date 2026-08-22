@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
@@ -14,6 +15,7 @@ import {
   contractAcceptanceSchema,
   contractAssignmentSchema,
   contractVersionSchema,
+  signedContractSchema,
   type ContractActionState,
 } from "./schema";
 import {
@@ -34,6 +36,78 @@ function amountToCents(value: string): number | null {
 
 function isPdf(bytes: Uint8Array): boolean {
   return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
+}
+
+function signedFileMime(bytes: Uint8Array): "application/pdf" | "image/jpeg" | "image/png" | null {
+  if (isPdf(bytes)) return "application/pdf";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.slice(0, 8).every((value, index) => value === [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a][index])) return "image/png";
+  return null;
+}
+
+export async function uploadSignedContractAction(
+  _previous: ContractActionState,
+  formData: FormData,
+): Promise<ContractActionState> {
+  const session = await requireActiveSession(contractsPath);
+  const parsed = signedContractSchema.safeParse({ assignmentId: formData.get("assignmentId"), confirmation: formData.get("confirmation") });
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź plik." };
+  const assignment = await db.contractAssignment.findFirst({
+    where: { id: parsed.data.assignmentId, schoolId: session.user.schoolId, parentId: session.user.id, status: "VIEWED", version: { acceptanceMode: "EXTERNAL_SIGNATURE" } },
+    select: { id: true },
+  });
+  if (!assignment) return { status: "error", message: "Najpierw pobierz aktualny PDF albo sprawdź, czy plik nie został już wysłany." };
+  const file = formData.get("signedDocument");
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Wybierz podpisany PDF albo czytelne zdjęcie." };
+  if (file.size > MAX_CONTRACT_BYTES) return { status: "error", message: "Podpisany dokument może mieć maksymalnie 10 MB." };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mimeType = signedFileMime(bytes);
+  if (!mimeType) return { status: "error", message: "Dozwolony jest prawidłowy PDF, JPG albo PNG." };
+  const storage = getFileStorage();
+  let stored: Awaited<ReturnType<typeof storage.put>> | undefined;
+  try {
+    stored = await storage.put({ schoolId: session.user.schoolId, bytes });
+    await db.$transaction(async (tx) => {
+      const storedFile = await tx.storedFile.create({ data: { schoolId: session.user.schoolId, uploadedById: session.user.id, storageKey: stored!.storageKey, originalName: file.name.slice(0, 180), mimeType, sizeBytes: stored!.sizeBytes, sha256: stored!.sha256, purpose: "CONTRACT" } });
+      const updated = await tx.contractAssignment.updateMany({ where: { id: assignment.id, status: "VIEWED", signedFileId: null }, data: { status: "SIGNED_PENDING_REVIEW", signedFileId: storedFile.id, signedUploadedAt: new Date() } });
+      if (updated.count !== 1) throw new Error("STALE_ASSIGNMENT");
+      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "contracts.signed_file.uploaded", entityType: "ContractAssignment", entityId: assignment.id, metadata: { fileHash: stored!.sha256, mimeType, sizeBytes: stored!.sizeBytes } } });
+    });
+  } catch {
+    if (stored) await storage.remove(stored.storageKey).catch(() => undefined);
+    return { status: "error", message: "Nie udało się zapisać podpisanego dokumentu. Spróbuj ponownie." };
+  }
+  revalidatePath(contractsPath);
+  return { status: "success", message: "Dokument trafił do dyrektora. Otrzymasz informację po sprawdzeniu." };
+}
+
+export async function reviewSignedContractAction(formData: FormData): Promise<void> {
+  const session = await requireDirector(contractsPath);
+  if (session.user.role !== "DIRECTOR") return;
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const decision = String(formData.get("decision") ?? "");
+  const assignment = await db.contractAssignment.findFirst({ where: { id: assignmentId, schoolId: session.user.schoolId, status: "SIGNED_PENDING_REVIEW" }, select: { id: true, signedFileId: true, signedFile: { select: { sha256: true } } } });
+  if (!assignment?.signedFileId || !assignment.signedFile) return;
+  const signedFileId = assignment.signedFileId;
+  const signedFileHash = assignment.signedFile.sha256;
+  await db.$transaction(async (tx) => {
+    if (decision === "approve") {
+      const updated = await tx.contractAssignment.updateMany({ where: { id: assignment.id, status: "SIGNED_PENDING_REVIEW" }, data: { status: "ACCEPTED" } });
+      if (updated.count !== 1) throw new Error("STALE_ASSIGNMENT");
+      await tx.contractAcceptance.create({ data: { assignmentId: assignment.id, acceptedById: session.user.id, documentHash: signedFileHash, evidence: { method: "handwritten-signed-copy-reviewed", signedFileHash, reviewedByRole: "DIRECTOR" } } });
+    } else if (decision === "reject") {
+      const updated = await tx.contractAssignment.updateMany({
+        where: { id: assignment.id, status: "SIGNED_PENDING_REVIEW" },
+        data: { status: "VIEWED", signedFileId: null, signedUploadedAt: null },
+      });
+      if (updated.count !== 1) throw new Error("STALE_ASSIGNMENT");
+      await tx.storedFile.update({ where: { id: signedFileId }, data: { archivedAt: new Date() } });
+    } else return;
+    await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: decision === "approve" ? "contracts.signed_file.approved" : "contracts.signed_file.rejected", entityType: "ContractAssignment", entityId: assignment.id, metadata: { signedFileHash } } });
+  });
+  revalidatePath(contractsPath);
+  revalidatePath("/panel/rodzic");
+  redirect(`${contractsPath}?umowa=${assignment.id}`);
 }
 
 export async function createContractAssignmentAction(

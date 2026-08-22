@@ -32,7 +32,7 @@ export const paymentDisplayStatusLabels: Record<PaymentDisplayStatus, string> = 
 };
 
 export function getEffectivePaymentStatus(input: {
-  contractStatus: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "EXPIRED";
+  contractStatus: "DRAFT" | "SENT" | "VIEWED" | "SIGNED_PENDING_REVIEW" | "ACCEPTED" | "EXPIRED";
   storedStatus: (typeof paymentStatusValues)[number] | null;
   dueDate: Date | null;
   now?: Date;

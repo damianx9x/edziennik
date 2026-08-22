@@ -103,6 +103,20 @@ musi zatwierdzić prawnik lub IOD klientki.
 - [ ] Aktualizacje zależności, monitoring i alerty.
 - [ ] Plan incydentu i osoby kontaktowe.
 
+### Podpisane egzemplarze umów
+
+- Oryginał PDF i wgrany podpisany egzemplarz są przechowywane poza `public/`.
+- Dostęp ma wyłącznie właściwy rodzic i dyrektor po autoryzacji na serwerze;
+  sama znajomość adresu pliku nie wystarcza.
+- System sprawdza sygnaturę PDF/JPG/PNG, limit 10 MB, nadaje losowy klucz,
+  zapisuje plik z prawami `0600` i liczy SHA-256.
+- Upload, pobranie, zatwierdzenie i odrzucenie tworzą wpis audytowy bez treści
+  pliku i bez danych podpisu.
+- Odrzucony plik jest logicznie archiwizowany. Fizyczne usunięcie wykona
+  polityka retencji uzgodniona z prawnikiem i IOD.
+- Backup umów jest szyfrowany, poza serwerem aplikacji i przechodzi okresowy
+  test odtworzenia. Klucz szyfrowania nie znajduje się w bazie ani repozytorium.
+
 ## Minimalizacja
 
 Nie zbieramy PESEL, zdrowia, pełnego adresu, zdjęcia ani daty urodzenia „na

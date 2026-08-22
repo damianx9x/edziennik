@@ -58,6 +58,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       parent: { select: { id: true, name: true } },
       student: { select: { name: true } },
       acceptance: { select: { acceptedAt: true } },
+      signedFile: { select: { originalName: true, sizeBytes: true, sha256: true } },
     },
   });
 
@@ -132,7 +133,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
               const expired = Boolean(
                 assignment.expiresAt &&
                 assignment.expiresAt < new Date() &&
-                assignment.status !== "ACCEPTED",
+                !["ACCEPTED", "SIGNED_PENDING_REVIEW"].includes(assignment.status),
               );
               return {
                 id: assignment.id,
@@ -152,6 +153,8 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                 viewedAt: assignment.viewedAt?.toISOString() ?? null,
                 expiresAt: assignment.expiresAt?.toISOString() ?? null,
                 acceptedAt: assignment.acceptance?.acceptedAt.toISOString() ?? null,
+                signedUploadedAt: assignment.signedUploadedAt?.toISOString() ?? null,
+                signedFile: assignment.signedFile ? { name: assignment.signedFile.originalName, sizeBytes: assignment.signedFile.sizeBytes, sha256: assignment.signedFile.sha256 } : null,
                 acceptanceMode: assignment.version.acceptanceMode,
                 serviceSummary: assignment.version.serviceSummary,
                 requiresPayment: assignment.version.requiresPayment,

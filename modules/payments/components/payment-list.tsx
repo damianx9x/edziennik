@@ -41,7 +41,7 @@ type PaymentItem = {
   studentName: string;
   contractTitle: string;
   contractVersion: number;
-  contractStatus: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "EXPIRED";
+  contractStatus: "DRAFT" | "SENT" | "VIEWED" | "SIGNED_PENDING_REVIEW" | "ACCEPTED" | "EXPIRED";
   acceptedAt: string | null;
   paymentLabel: string;
   paymentAmountCents: number | null;

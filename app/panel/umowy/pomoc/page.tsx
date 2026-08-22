@@ -119,7 +119,11 @@ export default async function ContractLegalHelpPage() {
           </div>
           <details>
             <summary>Czy trzeba drukować i podpisywać umowę?</summary>
-            <p>Zwykle nie. Oświadczenie złożone po zalogowaniu może zostać utrwalone w formie dokumentowej. Jeżeli konkretny dokument albo przepis wymaga formy pisemnej, szkoła wybiera podpis poza systemem.</p>
+            <p>Dyrektor wybiera jeden z dwóch trybów. W formie dokumentowej rodzic składa jawne oświadczenie po zalogowaniu. W trybie papierowym pobiera dokładny PDF, podpisuje cały egzemplarz i wgrywa czytelny skan do sprawdzenia przez dyrektora. Sam skan jest materiałem dowodowym, ale nie należy go automatycznie utożsamiać z oryginałem, gdy przepis wymaga formy pisemnej.</p>
+          </details>
+          <details>
+            <summary>Czy kod SMS zastępuje podpis?</summary>
+            <p>Nie automatycznie. Kod może pomóc potwierdzić kontrolę nad numerem i wzmocnić materiał dowodowy, ale zwykły SMS nie jest kwalifikowanym podpisem elektronicznym. Równoważność z podpisem własnoręcznym zapewnia kwalifikowany podpis elektroniczny. Dlatego pilot używa prostego podpisu odręcznego i bezpiecznego wgrania albo jawnej formy dokumentowej.</p>
           </details>
           <details>
             <summary>Czy kliknięcie jest podpisem kwalifikowanym?</summary>
@@ -147,7 +151,7 @@ export default async function ContractLegalHelpPage() {
           </details>
           <details>
             <summary>Jakie dane zapisuje system?</summary>
-            <p>Tylko dane potrzebne do identyfikacji oświadczenia i ochrony obu stron: konto, czas, wersję dokumentu, jego skrót oraz treść zaznaczonych potwierdzeń. System nie wymaga danych biometrycznych.</p>
+            <p>Tylko dane potrzebne do identyfikacji oświadczenia i ochrony obu stron: konto, czas, wersję dokumentu, jego skrót, treść potwierdzeń oraz — w trybie papierowym — podpisany plik. Pliki są poza katalogiem publicznym, pobierane dopiero po sprawdzeniu uprawnień i objęte audytem. Docelowa retencja, szyfrowany backup i procedura usunięcia muszą zostać zatwierdzone z prawnikiem oraz IOD.</p>
           </details>
         </section>
 

@@ -8,6 +8,8 @@ import {
   HardDrive,
   Image,
   LayoutTemplate,
+  MessageCircleMore,
+  Server,
   ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -17,6 +19,7 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { ImportWizard } from "@/modules/imports/components/import-wizard";
+import { IntegrationReadinessPanel } from "@/modules/settings/components/integration-readiness-panel";
 
 export const metadata: Metadata = { title: "Ustawienia szkoły" };
 export const dynamic = "force-dynamic";
@@ -138,7 +141,19 @@ export default async function TransfersPage() {
             Zobacz stronę
           </Link>
         </article>
+        <article>
+          <span className="record-icon record-icon-blue"><MessageCircleMore aria-hidden="true" /></span>
+          <div><span className="section-kicker">Komunikacja zewnętrzna</span><h2>Otwórz Messenger</h2><p>Szybki skrót bez łączenia prywatnego konta z eDziennikiem.</p></div>
+          <a className="button button-secondary" href="#meta">Przejdź do skrótu</a>
+        </article>
+        <article>
+          <span className="record-icon record-icon-green"><Server aria-hidden="true" /></span>
+          <div><span className="section-kicker">Bezpieczeństwo danych</span><h2>Kopie zapasowe</h2><p>Wybierz lokalny folder, dysk lub bezpieczny serwer SFTP.</p></div>
+          <a className="button button-secondary" href="#kopie">Zaplanuj kopię</a>
+        </article>
       </section>
+
+      <IntegrationReadinessPanel />
 
       <section
         className="transfer-choice-grid tools-data-section"

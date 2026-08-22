@@ -24,6 +24,7 @@ import {
   requirePanelAccess,
 } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
+import { getScheduleTone } from "@/modules/schedule/presentation";
 
 export const metadata: Metadata = { title: "Panel szkoły" };
 export const dynamic = "force-dynamic";
@@ -79,6 +80,7 @@ async function DirectorDashboard({
     groups,
     rooms,
     students,
+    signedContracts,
   ] = await Promise.all([
     db.scheduleSlot.findMany({
       where: {
@@ -92,7 +94,7 @@ async function DirectorDashboard({
         id: true,
         startAt: true,
         endAt: true,
-        group: { select: { name: true, location: { select: { name: true } } } },
+        group: { select: { name: true, location: { select: { id: true, name: true } } } },
         room: { select: { name: true } },
         teacher: { select: { name: true } },
       },
@@ -108,11 +110,14 @@ async function DirectorDashboard({
     db.courseGroup.count({ where: { schoolId, archivedAt: null } }),
     db.room.count({ where: { schoolId, archivedAt: null } }),
     db.user.count({ where: { schoolId, role: "STUDENT", archivedAt: null } }),
+    db.contractAssignment.count({
+      where: { schoolId, status: "SIGNED_PENDING_REVIEW" },
+    }),
   ]);
   const daySlots = Array.from({ length: 6 }, (_, day) =>
     slots.filter((slot) => dayIndex(slot.startAt) === day),
   );
-  const matters = pendingChanges + activeInvitations + openReports;
+  const matters = pendingChanges + activeInvitations + openReports + signedContracts;
 
   return (
     <>
@@ -161,10 +166,11 @@ async function DirectorDashboard({
               <h3>{["Pon.", "Wt.", "Śr.", "Czw.", "Pt.", "Sob."][index]}</h3>
               <div>
                 {items.length ? items.slice(0, 4).map((slot) => (
-                  <article key={slot.id}>
+                  <article key={slot.id} className={`schedule-tone-${getScheduleTone(slot.group.location.id)}`}>
                     <time>{formatTime(slot.startAt)}</time>
                     <strong>{slot.group.name}</strong>
-                    <small>{slot.group.location.name} · {slot.room.name}</small>
+                    <small><MapPin aria-hidden="true" /> {slot.group.location.name}</small>
+                    <small><DoorOpen aria-hidden="true" /> {slot.room.name}</small>
                   </article>
                 )) : <span className="command-empty-day">Brak zajęć</span>}
                 {items.length > 4 ? <small className="command-more">+{items.length - 4} kolejnych</small> : null}
@@ -187,6 +193,7 @@ async function DirectorDashboard({
             <CommandMatter icon={<BellRing />} label="Zmiany w kartotekach" value={pendingChanges} href="/panel/szkola/powiadomienia" />
             <CommandMatter icon={<MailPlus />} label="Aktywne zaproszenia" value={activeInvitations} href="/panel/szkola/zaproszenia" />
             <CommandMatter icon={<AlertTriangle />} label="Zgłoszenia użytkowników" value={openReports} href="/panel/szkola/statystyki" />
+            <CommandMatter icon={<FileSignature />} label="Podpisane umowy" value={signedContracts} href="/panel/umowy" />
           </div>
         </section>
 

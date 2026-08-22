@@ -668,12 +668,14 @@ async function seedDemoContracts(input: {
       where: { id: contractId },
       update: {
         title: `Umowa demonstracyjna ${index + 1}`,
+        acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
         archivedAt: null,
       },
       create: {
         id: contractId,
         schoolId: input.schoolId,
         title: `Umowa demonstracyjna ${index + 1}`,
+        acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
         serviceSummary: "Syntetyczny przykład umowy na zajęcia języka angielskiego.",
         requiresPayment: true,
         paymentSummary: "Przykładowa miesięczna opłata demonstracyjna.",
@@ -689,6 +691,7 @@ async function seedDemoContracts(input: {
         serviceEndDate,
         cancellationSummary: "Miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca. Przykład demonstracyjny — szczegóły w PDF.",
         requiresEarlyStartRequest: index === 0,
+        acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
       },
       create: {
         contractId: contract.id,
@@ -697,6 +700,7 @@ async function seedDemoContracts(input: {
         version: 1,
         sha256: storedFile.sha256,
         title: contract.title,
+        acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
         serviceSummary: contract.serviceSummary,
         requiresPayment: true,
         paymentSummary: contract.paymentSummary,
@@ -709,6 +713,36 @@ async function seedDemoContracts(input: {
         requiresEarlyStartRequest: index === 0,
       },
     });
+    if (index === 0) {
+      const previousAssignment = await prisma.contractAssignment.findUnique({
+        where: {
+          versionId_parentId_studentId: {
+            versionId: version.id,
+            parentId: input.parentId,
+            studentId,
+          },
+        },
+        select: { id: true, signedFileId: true },
+      });
+      if (previousAssignment) {
+        await prisma.contractAcceptance.deleteMany({
+          where: { assignmentId: previousAssignment.id },
+        });
+        await prisma.paymentRecord.deleteMany({
+          where: { contractAssignmentId: previousAssignment.id },
+        });
+        await prisma.contractAssignment.update({
+          where: { id: previousAssignment.id },
+          data: { signedFileId: null, signedUploadedAt: null },
+        });
+        if (previousAssignment.signedFileId) {
+          await prisma.storedFile.update({
+            where: { id: previousAssignment.signedFileId },
+            data: { archivedAt: new Date() },
+          });
+        }
+      }
+    }
     const assignment = await prisma.contractAssignment.upsert({
       where: {
         versionId_parentId_studentId: {
@@ -717,7 +751,12 @@ async function seedDemoContracts(input: {
           studentId,
         },
       },
-      update: { status: contractStatuses[index], viewedAt: new Date(), expiresAt: null },
+      update: {
+        status: contractStatuses[index],
+        viewedAt: new Date(),
+        expiresAt: null,
+        ...(index === 0 ? { signedFileId: null, signedUploadedAt: null } : {}),
+      },
       create: {
         schoolId: input.schoolId,
         contractId: contract.id,
