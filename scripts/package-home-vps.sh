@@ -65,3 +65,4 @@ rm -f -- "$release_zip"
 )
 
 echo "Gotowy instalator VPS: $release_zip"
+shasum -a 256 "$release_zip" >"$release_zip.sha256"

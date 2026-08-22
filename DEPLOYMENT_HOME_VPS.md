@@ -24,7 +24,7 @@ hostingu. Zmieniamy tylko rekord subdomeny `staging`.
 
 ## Co robi instalator
 
-Paczka `outputs/edziennik-kla-home-vps-stage-2.zip` zawiera kod i instalator.
+Paczka `outputs/edziennik-kla-home-vps-stage-5.zip` zawiera kod i instalator.
 Jedno uruchomienie:
 
 1. instaluje Docker Engine i Docker Compose z oficjalnego repozytorium,
@@ -88,7 +88,7 @@ Wtedy wykonam część techniczną i testy. Samodzielna procedura wygląda tak:
 Na Macu:
 
 ```bash
-scp outputs/edziennik-kla-home-vps-stage-2.zip root@ADRES_IP:/root/
+scp outputs/edziennik-kla-home-vps-stage-5.zip root@ADRES_IP:/root/
 ```
 
 Przy pierwszym połączeniu potwierdź odcisk serwera dopiero po porównaniu go
@@ -101,7 +101,7 @@ ssh root@ADRES_IP
 apt-get update
 apt-get install -y unzip
 mkdir -p /opt/kla
-unzip /root/edziennik-kla-home-vps-stage-2.zip -d /opt/kla
+unzip /root/edziennik-kla-home-vps-stage-5.zip -d /opt/kla
 cd /opt/kla/edziennik-kla-home-vps
 ```
 
@@ -165,13 +165,16 @@ plik `deployment/home-vps/.env`, a następnie uruchom:
 sudo ./deployment/home-vps/update.sh
 ```
 
-Skrypt robi kopię, buduje obraz na Linuksie, uruchamia migracje i dopiero potem
-podmienia aplikację. Nie uruchamia ponownie danych demo ani nie zmienia hasła
-właściciela.
+Skrypt blokuje równoległe aktualizacje, buduje nową wersję, gdy stara nadal
+działa, robi kopię, uruchamia sprawdzone migracje i dopiero potem przełącza
+aplikację. Po przełączeniu sprawdza stan usługi; jeśli test nie przejdzie,
+automatycznie przywraca poprzedni obraz aplikacji. Nie uruchamia ponownie danych
+demo ani nie zmienia hasła właściciela. Szczegóły:
+`AKTUALIZACJE_I_ROLLBACK.md`.
 
 ## Czego jeszcze nie nazywamy produkcją
 
-To jest staging do odbioru Etapu 2. Przed prawdziwymi danymi potrzebne są
+To jest staging do odbioru Etapów 0–5. Przed prawdziwymi danymi potrzebne są
 między innymi:
 
 - formalna umowa powierzenia i zamknięta checklista RODO,

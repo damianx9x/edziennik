@@ -49,12 +49,7 @@ export default function RootLayout({
   return (
     <html lang="pl" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{const t=localStorage.getItem('kla-color-theme')||matchMedia('(prefers-color-scheme: dark)').matches&&'dark'||'light';document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{}",
-          }}
-        />
+        <script src="/theme-init.js" />
       </head>
       <body>
         <SiteContentProvider>

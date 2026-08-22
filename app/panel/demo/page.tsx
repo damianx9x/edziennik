@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Brand } from "../../components/brand";
 import {
@@ -66,6 +67,10 @@ const schoolModules = [
 ] as const;
 
 export default function DemoDashboardPage() {
+  if (process.env.KLA_STATIC_PREVIEW !== "1") {
+    redirect("/panel");
+  }
+
   return (
     <main className="demo-shell">
       <header className="demo-topbar">

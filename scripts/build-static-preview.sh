@@ -24,6 +24,7 @@ rsync -a \
   --exclude "node_modules" \
   --exclude "out" \
   --exclude "outputs" \
+  --exclude "proxy.ts" \
   --exclude "work" \
   "$project_dir/" "$preview_source_dir/"
 
@@ -31,14 +32,20 @@ rm -rf -- \
   "$preview_source_dir/app/api" \
   "$preview_source_dir/app/zaproszenie" \
   "$preview_source_dir/app/panel/bezpieczenstwo" \
+  "$preview_source_dir/app/panel/bog" \
   "$preview_source_dir/app/panel/brak-dostepu" \
   "$preview_source_dir/app/panel/konto-nieaktywne" \
   "$preview_source_dir/app/panel/nowe-haslo" \
   "$preview_source_dir/app/panel/odzyskaj-dostep" \
+  "$preview_source_dir/app/panel/plan" \
+  "$preview_source_dir/app/panel/platnosci" \
+  "$preview_source_dir/app/panel/powiadomienia" \
   "$preview_source_dir/app/panel/rodzic" \
   "$preview_source_dir/app/panel/szkola" \
   "$preview_source_dir/app/panel/uczen" \
-  "$preview_source_dir/app/panel/weryfikacja-2fa"
+  "$preview_source_dir/app/panel/umowy" \
+  "$preview_source_dir/app/panel/weryfikacja-2fa" \
+  "$preview_source_dir/app/panel/wiadomosci"
 
 ln -s "$project_dir/node_modules" "$preview_source_dir/node_modules"
 

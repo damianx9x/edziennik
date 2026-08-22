@@ -290,9 +290,10 @@ export async function AuthenticatedPanelShell({
               key={item.key}
               href={item.href}
               className={active === item.key ? "active" : undefined}
+              aria-label={item.label}
             >
               <Icon aria-hidden="true" />
-              <span>{item.label}</span>
+              <span>{item.key === "notifications" ? "Alerty" : item.label}</span>
             </Link>
           );
         })}

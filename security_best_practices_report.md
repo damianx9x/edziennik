@@ -1,54 +1,96 @@
-# Raport bezpieczeństwa — 5 sierpnia 2026
+# Raport bezpieczeństwa przed finałem — 2026-08-22
 
-## Naprawione w tej iteracji
+## Wynik
 
-### CSV-001 — High — formuły w eksporcie
+Nie wykryto krytycznej luki pozwalającej ominąć role albo pobrać cudze dane.
+Testy obejmują odmowę rodzicowi dostępu do cudzego dziecka, wykładowcy do
+cudzej grupy i uczniowi do panelu szkoły. Po poprawkach `npm audit` nie zgłasza
+znanych podatności produkcyjnych. Projekt nadaje się do odbioru na danych
+syntetycznych, lecz poniższe bramki nadal blokują prawdziwe dane dzieci.
 
-- Lokalizacja: `modules/imports/export.ts`, `escapeCsvCell`.
-- Wpływ: komórka kontrolowana przez użytkownika mogła zostać wykonana przez
-  Excel jako formuła.
-- Naprawa: wartości zaczynające się od `=`, `+`, `-`, `@` są neutralizowane;
-  parser bezpiecznie przywraca wartość przy ponownym imporcie; dodano test.
+## Poprawione ustalenia
 
-### TENANT-001 — High — anonimowa analityka
+### SUPPLY-001 — podatna zależność pośrednia (wysokie)
 
-- Lokalizacja: `app/api/statystyki/odwiedziny/route.ts`.
-- Wpływ: ruch publiczny mógł trafić do pierwszej szkoły w bazie.
-- Naprawa: anonimowy zapis wymaga jednoznacznego `KLA_PUBLIC_SCHOOL_SLUG`.
+- **Reguła:** aktualne zależności bez znanych podatności wysokich.
+- **Miejsce:** `package.json` (`overrides`) i `.github/workflows/ci.yml`.
+- **Dowód:** Prisma wciągało `deepmerge-ts@7.1.5`; przypięto poprawioną 8.0.2,
+  a CI uruchamia `npm audit --omit=dev`.
+- **Wpływ:** podatny kod mógł działać podczas konfiguracji lub migracji.
+- **Naprawa:** override, nowy lockfile, Dependabot i pełny build.
+- **Ryzyko resztkowe:** usunąć override, gdy Prisma zaktualizuje zależność.
+- **Fałszywy alarm:** nie — pakiet był obecny w drzewie instalacji.
 
-### SCHEDULE-001 — High — nieaktualny szkic Asystenta
+### DEPLOY-001 — aktualizacja bez pewnego cofania (wysokie)
 
-- Lokalizacja: `modules/schedule/actions.ts`.
-- Wpływ: po ręcznej zmianie nadal istniał szkic obliczony dla starego stanu.
-- Naprawa: utworzenie, przesunięcie i odwołanie lekcji odrzuca gotowe szkice
-  w tej samej transakcji.
+- **Reguła:** wydanie musi być atomowe, odwracalne i poprzedzone kopią.
+- **Miejsce:** `raspberry/update.sh`, `deployment/home-vps/update.sh`,
+  `scripts/check-migrations-safe.mjs`.
+- **Dowód:** aktualizatory nie przywracały kodu po nieudanym healthchecku.
+- **Wpływ:** wadliwa wersja mogła pozostawić niedostępny panel.
+- **Naprawa:** blokada, build obok starej wersji, backup, healthcheck, rollback i
+  polityka migracji expand–migrate–contract.
+- **Ryzyko resztkowe:** rollback kodu nie cofa danych; destrukcyjne porządki są
+  osobnym, późniejszym wydaniem.
+- **Fałszywy alarm:** nie.
 
-## Otwarte przed prawdziwymi danymi
+### CSP-001 — zbyt szerokie wykonywanie skryptów (średnie)
 
-### AUTH-001 — Critical — słabe dane demo
+- **Reguła:** chronione strony nie dopuszczają dowolnego skryptu inline.
+- **Miejsce:** `proxy.ts:5-31`, `app/layout.tsx`, `public/theme-init.js`.
+- **Dowód:** poprzedni CSP zawierał `script-src 'unsafe-inline'`.
+- **Wpływ:** skuteczny XSS miałby łatwiejsze wykonanie w panelu.
+- **Naprawa:** nonce na wrażliwych trasach i zewnętrzna inicjalizacja motywu.
+- **Ryzyko resztkowe:** style nadal wymagają `unsafe-inline`; skrypty nie.
+- **Fałszywy alarm:** nie.
 
-Na wyraźne żądanie właściciela testowe środowisko syntetyczne dopuszcza łatwe
-hasła. Flaga ma domyślnie wartość `0`, nie może być użyta w produkcji, a konto
-właściciela nadal wymaga MFA. Przed prawdziwymi danymi wyjątek musi zostać
-usunięty, wszystkie hasła zmienione i sesje unieważnione.
+### DEMO-001 — pozorowany ekran w pełnej aplikacji (niskie)
 
-### BACKUP-001 — High — kopia tylko lokalna
+- **Reguła:** użytkownik nie może pomylić makiety z funkcją biznesową.
+- **Miejsce:** `app/panel/demo/page.tsx`.
+- **Dowód:** trasa zawierała wizualne przyciski bez źródła danych.
+- **Wpływ:** błędny odbiór funkcji.
+- **Naprawa:** pełna aplikacja przekierowuje do prawdziwego panelu; makieta
+  pozostaje wyłącznie w statycznym pokazie FTP.
+- **Ryzyko resztkowe:** statyczny pokaz musi być opisany jako demo.
+- **Fałszywy alarm:** nie.
 
-Obecny skrypt VPS nie zapewnia kompletnego szyfrowania, kopii poza serwerem i
-automatycznego testu odtworzenia. UI może pokazywać stan, ale nie może nadpisywać
-żywej bazy surowym SQL.
+## Otwarte bramki przed produkcją
 
-### IMPORT-RETENTION-001 — High — retencja plików źródłowych
+### AUTH-001 — konta demo i 2FA dyrektora (krytyczne dla produkcji)
 
-Potrzebne jest okresowe usuwanie źródłowych plików importu według zatwierdzonej
-retencji oraz zapis wyniku zadania bez danych arkusza.
+- **Miejsce:** `.env.example:14-19`, `raspberry/install.sh:87`.
+- **Ryzyko:** łatwe hasła albo wyłączone 2FA oznaczają przejęcie danych rodzin.
+- **Stan:** bezpieczna wartość domyślna zabrania łatwych danych; produkcja
+  wymaga usunięcia seedów demo, silnych haseł i 2FA dyrektora.
 
-### CHANGE-REQUEST-001 — High — propozycje grafiku
+### LEGAL-001 — wgląd dyrektora w wiadomości (wysokie)
 
-Potrzebny jest osobny, wersjonowany wniosek wykładowcy i ponowna kontrola
-kolizji podczas akceptacji dyrektora.
+- **Miejsce:** `DECYZJE.md` ADR-056 i `modules/messaging/`.
+- **Ryzyko:** jawny i audytowany wgląd nadal wymaga zatwierdzonego regulaminu,
+  obowiązku informacyjnego, celu oraz retencji.
+- **Mitigacja:** właściciel techniczny nie czyta treści; audit nie kopiuje
+  wiadomości. Prawnik/IOD musi zatwierdzić proces.
 
-### RECORD-CONCURRENCY-001 — High — stara propozycja kartoteki
+### STORAGE-001 — zewnętrzny backup i retencje (wysokie)
 
-Wniosek powinien zapisywać wersję bazową. Akceptacja starego wniosku nie może
-nadpisywać nowszej edycji bez pokazania konfliktu.
+- **Miejsce:** `raspberry/README.md:94`, `raspberry/backup.sh`.
+- **Ryzyko:** kopia na tym samym urządzeniu nie chroni przed awarią; okres `0`
+  celowo niczego nie usuwa.
+- **Mitigacja:** LUKS2, age, SFTP, ClamAV i test odtworzenia są przygotowane.
+  Produkcja wymaga osobnego celu SFTP, retencji i udanego odtworzenia.
+
+### OPS-001 — pojedynczy Raspberry Pi (średnie)
+
+- **Ryzyko:** awaria prądu, Internetu lub SSD wyłącza usługę.
+- **Mitigacja:** UPS, watchdog, monitoring i przećwiczona odbudowa na zapasowym
+  urządzeniu.
+
+## Kontrole wykonane
+
+- centralna odmowa i izolacja `schoolId` (`modules/access-control/can.ts`),
+- prywatne losowe klucze plików, brak zapisu w `public/`, 0600 i ClamAV,
+- brak `eval`, `new Function` i niekontrolowanych HTML sinków,
+- redakcja logów, brak pełnego IP i treści wiadomości w audycie,
+- append-only dla zaakceptowanych wersji umów,
+- kontrola sekretów, migracji, zależności, testów i builda w CI.

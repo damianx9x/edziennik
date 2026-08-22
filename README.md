@@ -1,10 +1,10 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etapy 0–4 są przyjęte, a Etap 5
-(komunikator, ogłoszenia, pliki i potwierdzenia) jest funkcjonalny i czeka na
-odbiór klientki. Działają role, kartoteki, zaproszenia, import/eksport, grafik z
-asystentem, obecności, wersjonowane umowy z centrum pomocy prawnej i ręczne płatności. Aktualny audyt i
-pozostały zakres opisuje `AUDYT_ETAPOW_2026-08-21.md`.
+Mobilny eDziennik King’s Language Academy. Etapy 0–5 są funkcjonalne na danych
+syntetycznych i przechodzą odbiór przedprodukcyjny. Działają role, kartoteki,
+zaproszenia, import/eksport, grafik z asystentem, obecności, wersjonowane umowy,
+ręczne płatności, komunikator, powiadomienia i prywatne pliki. Aktualny stan,
+blokery produkcyjne i bezpieczny rytm wydawania opisuje `STAN_PROJEKTU.md`.
 
 ## Start
 
@@ -23,6 +23,7 @@ npm run build
 npm run package:release
 npm run package:preview
 npm run package:raspberry
+npm audit --omit=dev
 npm run db:migrate:dev
 npm run db:seed:demo
 ```
@@ -50,7 +51,10 @@ Node.js; zwykłe FTP jej nie uruchomi.
 - `OBSERVABILITY_I_ZGLOSZENIA.md` — logi, zrzuty i zgłoszenia,
 - `INSTRUKCJA_HOME_PL.md` — domeny, SSL, WebFTP i pokaz klientce,
 - `AGENTS.md` — zasady kolejnych sesji,
-- `DECYZJE.md` — historia decyzji.
+- `DECYZJE.md` — historia decyzji,
+- `AKTUALIZACJE_I_ROLLBACK.md` — bezpieczne aktualizacje i cofanie,
+- `security_best_practices_report.md` — bieżący raport bezpieczeństwa,
+- `wr-threat-model.md` — model zagrożeń całego systemu,
 - `AUDYT_ETAPOW_2026-08-21.md` — wykonane funkcje, uwagi z PDF i zaległości,
 - `raspberry/README.md` — instalacja pilota na Raspberry Pi 4B 8 GB.
 

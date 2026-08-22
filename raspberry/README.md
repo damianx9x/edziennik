@@ -99,7 +99,11 @@ zarchiwizowane i zapisuje zdarzenie audytowe.
 
 ## Aktualizacja i awaria
 
-- Aktualizacja zaakceptowanej paczki: `sudo ./raspberry/update.sh`.
+- Aktualizacja zaakceptowanej paczki: `sudo kla-update` (lub
+  `sudo ./raspberry/update.sh` przed pierwszą instalacją skrótu).
+- Aktualizator blokuje równoległe uruchomienie, robi szyfrowaną kopię, wykonuje
+  tylko bezpieczne migracje i automatycznie wraca do poprzedniego kodu, jeśli
+  test zdrowia nowej wersji się nie powiedzie.
 - Ręczny backup: `sudo edziennik-kla-backup`.
 - Logi: `sudo journalctl -u edziennik-kla -n 200 --no-pager`.
 - Pełne odtworzenie wymaga wpisania dokładnego potwierdzenia:

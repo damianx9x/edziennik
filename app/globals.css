@@ -9982,7 +9982,7 @@ html[data-theme="dark"] .schedule-tone-5 {
 
 .messaging-composer { padding: 14px 18px 18px; border-top: 1px solid var(--line); background: var(--surface); }
 .messaging-composer > label { display: block; margin: 0 0 7px 4px; color: var(--navy-900); font-size: 11px; font-weight: 900; }
-.messaging-composer > div { display: grid; grid-template-columns: minmax(0, 1fr) 52px; align-items: end; gap: 10px; }
+.messaging-composer-main { display: grid; grid-template-columns: minmax(0, 1fr) 52px; align-items: end; gap: 10px; }
 .messaging-composer textarea { width: 100%; min-height: 52px; max-height: 150px; resize: vertical; padding: 13px 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); line-height: 1.4; }
 .messaging-composer button { width: 52px; height: 52px; display: grid; place-items: center; cursor: pointer; color: var(--white); border-radius: 16px; background: var(--navy-action); }
 .messaging-composer button:disabled { cursor: wait; opacity: .58; }
@@ -10059,7 +10059,7 @@ html[data-theme="dark"] .schedule-tone-5 {
   .messaging-message { width: 90%; padding: 12px 13px 9px; }
   .messaging-message.announcement { width: 98%; }
   .messaging-composer { position: sticky; bottom: 74px; z-index: 3; padding: 10px; box-shadow: 0 -10px 30px rgb(16 28 61 / 7%); }
-  .messaging-composer > div { grid-template-columns: minmax(0, 1fr) 50px; gap: 7px; }
+  .messaging-composer-main { grid-template-columns: minmax(0, 1fr) 50px; gap: 7px; }
   .messaging-composer button { width: 50px; height: 50px; }
   .messaging-thread-empty, .messaging-thread-locked, .messaging-empty { min-height: 330px; padding: 25px 18px; }
   .messaging-privacy-note { margin-bottom: 88px; }
@@ -10187,7 +10187,8 @@ html[data-theme="dark"] .schedule-tone-5 {
 .messaging-acknowledged { margin-top: 10px; }
 .messaging-ack-form svg, .messaging-acknowledged svg { width: 17px; }
 .messaging-composer-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.messaging-composer-options label, .messaging-file-field, .messaging-ack-option { display: flex; min-height: 44px; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--navy-900); font-size: .8rem; font-weight: 800; }
+.messaging-composer-options label, .messaging-file-field, .messaging-ack-option { min-width: 0; display: flex; min-height: 44px; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--navy-900); font-size: .8rem; font-weight: 800; }
+.messaging-composer-options label > span { min-width: 0; overflow-wrap: anywhere; }
 .messaging-composer-options input[type="file"], .messaging-file-field input[type="file"] { max-width: 190px; }
 .messaging-ack-option span { display: grid; gap: 2px; }
 .messaging-ack-option small { color: var(--muted); font-weight: 500; line-height: 1.35; }

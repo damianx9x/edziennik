@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -26,5 +30,11 @@ jobs:
         run: npm run db:generate
       - name: Check
         run: npm run check
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Build
         run: npm run build
+      - name: Validate deployment scripts
+        run: |
+          bash -n raspberry/install.sh raspberry/update.sh
+          bash -n deployment/home-vps/install.sh deployment/home-vps/update.sh

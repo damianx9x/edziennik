@@ -130,6 +130,7 @@ install -m 755 "$SOURCE_DIR/raspberry/print-recovery-key.sh" /usr/local/sbin/edz
 install -m 755 "$SOURCE_DIR/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
 install -m 755 "$SOURCE_DIR/raspberry/status.sh" /usr/local/bin/kla-status
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
+install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 
 if [[ ! -f "$VAULT/secrets/backup-age.key" ]]; then
   age-keygen -o "$VAULT/secrets/backup-age.key" 2> "$VAULT/secrets/backup-recipient.txt"

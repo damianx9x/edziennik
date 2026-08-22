@@ -785,6 +785,39 @@ podpisu własnoręcznego.
 **Dlaczego:** proces jest prosty dla rodzica, zachowuje dokładną wersję umowy i
 nie przypisuje zwykłemu SMS-owi ani skanowi skutku podpisu kwalifikowanego.
 
-**Dlaczego:** interfejs nie może obiecywać funkcji blokowanej przez dostawcę ani
-sukcesu kopii, której nie da się odtworzyć. Adaptery pozwalają zmienić miejsce
-bez przebudowy logiki retencji, szyfrowania i monitoringu.
+## ADR-064 — przedwydaniowa bramka bezpieczeństwa i odwracalne aktualizacje
+
+**Data:** 2026-08-22
+**Decyzja:** CI sprawdza testy, typy, sekrety, ryzykowne migracje, podatności
+produkcyjnych zależności, build i składnię skryptów wdrożeniowych. Nowe migracje
+mają być rozszerzające i zgodne ze starą wersją aplikacji. Aktualizatory budują
+nową wersję obok działającej, tworzą kopię, przełączają usługę dopiero po
+przygotowaniu i automatycznie cofają kod po nieudanym teście zdrowia. Paczki
+otrzymują sumę SHA-256.
+
+**Dlaczego:** samo odtworzenie starego kodu nie cofnie bezpiecznie destrukcyjnej
+migracji bazy. Połączenie reguły expand–migrate–contract, kopii i testu zdrowia
+ogranicza ryzyko utraty danych oraz przestoju.
+
+## ADR-065 — ścisły CSP panelu i brak pozorowanego demo
+
+**Data:** 2026-08-22
+**Decyzja:** chronione i wrażliwe trasy panelu otrzymują CSP z jednorazowym
+nonce, bez `unsafe-inline` dla skryptów w produkcji. Inicjalizacja motywu jest
+zewnętrznym, statycznym skryptem bez danych użytkownika. Dawny ekran
+`/panel/demo` przekierowuje w pełnej aplikacji do prawdziwego panelu; pozostaje
+jedynie elementem odrębnego statycznego pokazu FTP.
+
+**Dlaczego:** CSP ogranicza skutki wstrzyknięcia skryptu, a nieaktywny ekran z
+pozorowanymi przyciskami nie może być mylony z wdrożonym modułem.
+
+## ADR-066 — kontrolowana poprawka zależności Prisma
+
+**Data:** 2026-08-22
+**Decyzja:** podatna zależność pośrednia `deepmerge-ts` używana przez narzędzia
+Prisma jest przypięta przez `overrides` do poprawionej wersji 8.0.2. CI wykonuje
+`npm audit --omit=dev`, a Dependabot przygotowuje małe, cykliczne aktualizacje.
+
+**Dlaczego:** czekanie na wydanie zależności nadrzędnej pozostawiałoby znaną
+podatność w drzewie produkcyjnym. Każda aktualizacja nadal przechodzi pełne
+testy i build przed przyjęciem.

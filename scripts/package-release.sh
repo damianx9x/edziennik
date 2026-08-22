@@ -70,6 +70,7 @@ cp DEPLOYMENT_HOME_VPS.md "$release_root/DEPLOYMENT_HOME_VPS.md"
 cp MAC_TEST_HOST.md "$release_root/MAC_TEST_HOST.md"
 cp STAN_PROJEKTU.md "$release_root/STAN_PROJEKTU.md"
 cp CYKL_TESTOWY.md "$release_root/CYKL_TESTOWY.md"
+cp AKTUALIZACJE_I_ROLLBACK.md "$release_root/AKTUALIZACJE_I_ROLLBACK.md"
 cp ETAP_1_INSTRUKCJA.md "$release_root/ETAP_1_INSTRUKCJA.md"
 cp ETAP_2_INSTRUKCJA.md "$release_root/ETAP_2_INSTRUKCJA.md"
 cp ETAP_3_GRAFIK.md "$release_root/ETAP_3_GRAFIK.md"
@@ -105,4 +106,5 @@ rm -f -- "$release_zip"
 )
 
 echo "Gotowy pakiet: $release_zip"
+shasum -a 256 "$release_zip" >"$release_zip.sha256"
 "$project_dir/scripts/package-home-vps.sh" --skip-checks

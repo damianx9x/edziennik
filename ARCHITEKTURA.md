@@ -141,10 +141,11 @@ zadania kolejki z tempem, ponowieniami i limitem kosztu.
 ### Pliki
 
 `FileStorage` oddziela metadane biznesowe od magazynu binarnego. Lokalnie zapis
-działa w `.data/private-files` poza `public/`; staging i produkcja używają prywatnego
-magazynu S3-compatible. Aplikacja wydaje krótkotrwały adres podpisany dopiero po
-sprawdzeniu `can(...)`. Umowa, materiał i oddane zadanie wskazują rekord pliku,
-nie publiczny URL.
+działa w `.data/private-files` poza `public/`. W pilocie Raspberry Pi baza i
+pliki są przechowywane razem w szyfrowanym sejfie LUKS2 na SSD. Alternatywny
+hosting może użyć prywatnego magazynu S3-compatible przez ten sam interfejs.
+Aplikacja odczytuje plik dopiero po ponownym sprawdzeniu `can(...)`; umowa,
+materiał i oddane zadanie wskazują rekord pliku, nigdy publiczny URL.
 
 ### Kolejka i wysyłka
 

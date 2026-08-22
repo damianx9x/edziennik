@@ -14,9 +14,6 @@ Otwórz `http://localhost:3000`. Zatrzymanie: `Control + C`.
 Instalator sprawdza Node.js, instaluje wersje z lockfile, tworzy `.env` tylko
 gdy go nie ma, generuje klienta Prisma i nigdy nie nadpisuje istniejących haseł.
 
-Panel demonstracyjny szkoły:
-`eDziennik → Szkoła → Zobacz panel demonstracyjny`.
-
 Logowanie z Etapu 1:
 `eDziennik → Zaloguj się`. Rola konta automatycznie otwiera właściwy panel.
 Konta testowe i bezpieczna procedura
@@ -111,17 +108,19 @@ Późniejsze środowiska aplikacji:
 - `panel.kingslanguageacademy.pl` — produkcja po odbiorze.
 
 Paczka `kla-szkielet-etap-0-5-home-pl.zip` jest stroną do zwykłego FTP. Paczka
-`edziennik-kla-stage-3.zip` wymaga hostingu Node.js i procedury z
+`edziennik-kla-stage-5.zip` wymaga hostingu Node.js i procedury z
 `DEPLOYMENT_MYDEVIL.md`.
 
 Pełne środowisko testowe na home.pl korzysta z osobnego VPS Linux oraz paczki
-`edziennik-kla-home-vps-stage-3.zip`. Instalator tworzy PostgreSQL, dane
+`edziennik-kla-home-vps-stage-5.zip`. Instalator tworzy PostgreSQL, dane
 syntetyczne, konto `bog`, wymuszenie MFA i HTTPS. Instrukcja:
 `DEPLOYMENT_HOME_VPS.md`.
 
 Aktualny stan wykonanych funkcji i braków: `STAN_PROJEKTU.md`.
 Stała procedura lokalnych testów, commita i odbioru klientki:
 `CYKL_TESTOWY.md`.
+Bezpieczne aktualizacje, kontrola sumy pliku i automatyczne cofanie:
+`AKTUALIZACJE_I_ROLLBACK.md`.
 
 Tymczasowy pokaz z tego Maca:
 

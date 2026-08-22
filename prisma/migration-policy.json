@@ -1,0 +1,12 @@
+{
+  "acceptedLegacyMigrations": [
+    "20260725202000_stage1_identity",
+    "20260725225500_stage2_records_import_files",
+    "20260726174624_stage2_invitations_and_record_changes",
+    "20260728081644_stage3_schedule_diary",
+    "20260728082423_stage3_schedule_assistant",
+    "20260728133000_stage3_locations",
+    "20260809184500_contract_legal_modes",
+    "20260809233000_direct_conversations"
+  ]
+}
