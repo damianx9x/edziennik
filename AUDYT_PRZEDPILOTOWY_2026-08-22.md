@@ -29,6 +29,11 @@ dzieci. Produkcję odblokowuje dopiero zamknięcie bramek opisanych w sekcji
 2. Identyfikatory w trasach prywatnych plików nie były odrzucane przed zapytaniem
    do PostgreSQL. Niepoprawny identyfikator mógł powodować błąd 500. Wszystkie
    trasy umów i załączników walidują teraz UUID i zwracają kontrolowane 404.
+3. Polityka CSP panelu używała jednorazowego nonce, lecz część publicznego buildu
+   była statyczna. Przeglądarka prawidłowo blokowała wtedy skrypty startowe
+   Next.js. Cały panel jest teraz renderowany dynamicznie, dzięki czemu własne
+   skrypty otrzymują nonce konkretnego żądania. Publiczny test nie zgłasza błędów
+   CSP.
 
 ### Średnie
 
@@ -42,6 +47,9 @@ dzieci. Produkcję odblokowuje dopiero zamknięcie bramek opisanych w sekcji
    pozostałe wrażliwe operacje.
 4. Powiadomienie o konkretnej racie otwierało kartę całej umowy zamiast tej
    raty. Odnośnik wskazuje teraz dokładny wiersz rozliczenia.
+5. W bazie demonstracyjnej pozostało pięć historycznych umów bez aktualnego
+   pakietu dokumentów. Usunięto wyłącznie te syntetyczne wpisy i ich zależne
+   statusy. Demo pokazuje teraz trzy kompletne warianty z trzema PDF-ami.
 
 ### Spójność i UX
 
