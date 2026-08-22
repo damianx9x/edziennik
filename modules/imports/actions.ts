@@ -6,6 +6,7 @@ import path from "node:path";
 import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
+import { scanFileForMalware } from "@/modules/files/malware-scanner";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { createRecordOnlyEmail } from "@/modules/people/record-email";
 import {
@@ -50,6 +51,7 @@ export async function previewImportAction(
   const bytes = new Uint8Array(await file.arrayBuffer());
   let preview: ImportPreview;
   try {
+    await scanFileForMalware(bytes);
     preview = await parseImportFile({ fileName: originalName, bytes });
   } catch (error) {
     return importError(
@@ -147,10 +149,16 @@ export async function commitImportAction(
     );
   }
   if (batch.createdAt.getTime() < Date.now() - 24 * 60 * 60 * 1_000) {
-    await db.importBatch.update({
-      where: { id: batch.id },
-      data: { status: "ARCHIVED", archivedAt: new Date() },
-    });
+    await db.$transaction([
+      db.importBatch.update({
+        where: { id: batch.id },
+        data: { status: "ARCHIVED", archivedAt: new Date() },
+      }),
+      db.storedFile.update({
+        where: { id: batch.sourceFileId },
+        data: { archivedAt: new Date() },
+      }),
+    ]);
     return importError("Podgląd wygasł po 24 godzinach. Wczytaj plik ponownie.");
   }
 
@@ -160,10 +168,10 @@ export async function commitImportAction(
     digest !== batch.sourceFile.sha256 ||
     bytes.byteLength !== batch.sourceFile.sizeBytes
   ) {
-    await db.importBatch.update({
-      where: { id: batch.id },
-      data: { status: "FAILED" },
-    });
+    await db.$transaction([
+      db.importBatch.update({ where: { id: batch.id }, data: { status: "FAILED" } }),
+      db.storedFile.update({ where: { id: batch.sourceFileId }, data: { archivedAt: new Date() } }),
+    ]);
     return importError(
       "Plik nie przeszedł kontroli integralności. Wczytaj go ponownie.",
     );
@@ -195,6 +203,10 @@ export async function commitImportAction(
         where: { id: batch.id },
         data: { status: "COMMITTED", committedAt: new Date() },
       });
+      await transaction.storedFile.update({
+        where: { id: batch.sourceFileId },
+        data: { archivedAt: new Date() },
+      });
       const discardedGenerationCount =
         await discardReadyScheduleGenerations(
           transaction,
@@ -216,10 +228,10 @@ export async function commitImportAction(
       });
     });
   } catch {
-    await db.importBatch.update({
-      where: { id: batch.id },
-      data: { status: "FAILED" },
-    });
+    await db.$transaction([
+      db.importBatch.update({ where: { id: batch.id }, data: { status: "FAILED" } }),
+      db.storedFile.update({ where: { id: batch.sourceFileId }, data: { archivedAt: new Date() } }),
+    ]);
     return importError(
       "Import nie został zapisany. Żadne dane nie uległy zmianie. Sprawdź duplikaty i spróbuj ponownie.",
     );

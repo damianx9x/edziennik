@@ -1,5 +1,22 @@
 # Decyzje architektoniczne
 
+## ADR-061 — jeden szyfrowany sejf danych na Raspberry Pi
+
+**Data:** 2026-08-22
+**Decyzja:** PostgreSQL i prywatne dokumenty przechowujemy razem na osobnym
+SSD zaszyfrowanym LUKS2. Karta systemowa nie zawiera bazy, dokumentów ani
+sekretów aplikacji. Pierwsza
+konfiguracja tworzy hasło codziennego odblokowania i losowy klucz odzyskiwania
+pokazany tylko raz. Każdy upload przechodzi przez ClamAV w trybie fail-closed.
+Backup łączy bazę, dokumenty i manifest wersji, szyfruje `age`, a następnie może
+wysłać go SFTP poza urządzenie. Test odtworzenia używa tymczasowej bazy.
+**Dlaczego:** szyfrowanie plików kluczem zapisanym obok danych nie chroni przed
+kradzieżą całego urządzenia. Pi 4B nie ma wbudowanego TPM, więc bez dodatkowego
+sprzętu po restarcie wymagane jest jedno ręczne odblokowanie.
+**Granice:** instalator usuwa wyłącznie wskazany i dwukrotnie potwierdzony SSD.
+Retencja umów pozostaje wyłączona (`0`) do zatwierdzenia przez prawnika/IOD.
+Produkcja nadal wymaga UPS, HTTPS, zewnętrznego SFTP i procedury awaryjnej.
+
 ## ADR-057 — uwagi z ręcznego przeglądu i pamięć zdjęć strony
 
 **Decyzja:** treść demonstracyjnego edytora strony nadal jest lokalna dla

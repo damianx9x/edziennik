@@ -1,6 +1,13 @@
 [Unit]
 Description=Szyfrowana kopia KLA eDziennik
+RequiresMountsFor=/srv/kla-vault
+ConditionPathIsMountPoint=/srv/kla-vault
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/edziennik-kla-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+NoNewPrivileges=true

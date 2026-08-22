@@ -1,6 +1,7 @@
 [Unit]
 Description=Kontrola HTTP KLA eDziennik
 After=edziennik-kla.service
+ConditionPathIsMountPoint=/srv/kla-vault
 
 [Service]
 Type=oneshot

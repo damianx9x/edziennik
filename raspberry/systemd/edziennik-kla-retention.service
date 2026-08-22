@@ -1,0 +1,12 @@
+[Unit]
+Description=Retencja prywatnych plików KLA
+After=postgresql.service
+Requires=postgresql.service
+RequiresMountsFor=/srv/kla-vault
+ConditionPathIsMountPoint=/srv/kla-vault
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/edziennik-kla-retention
+PrivateTmp=true
+NoNewPrivileges=true

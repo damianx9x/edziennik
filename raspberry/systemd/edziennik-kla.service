@@ -2,6 +2,9 @@
 Description=KLA eDziennik
 After=network-online.target postgresql.service
 Wants=network-online.target
+Requires=postgresql.service
+RequiresMountsFor=/srv/kla-vault
+ConditionPathIsMountPoint=/srv/kla-vault
 
 [Service]
 Type=simple
@@ -17,8 +20,15 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/kla
+ReadWritePaths=/srv/kla-vault/private-files
 UMask=0077
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target

@@ -32,7 +32,8 @@
     "package:release": "./scripts/package-release.sh",
     "package:vps": "./scripts/package-home-vps.sh",
     "package:preview": "./scripts/package-home-preview.sh",
-    "package:raspberry": "mkdir -p outputs && tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./.env' --exclude='./outputs' --exclude='./tmp' --exclude='./.data' --exclude='./work' --exclude='./out' --exclude='./.playwright-cli' --exclude='./tsconfig.tsbuildinfo' -czf outputs/edziennik-kla-raspberry-source.tar.gz ."
+    "check:raspberry": "./raspberry/test-package.sh",
+    "package:raspberry": "npm run check:raspberry && mkdir -p outputs && tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./.env' --exclude='./outputs' --exclude='./tmp' --exclude='./.data' --exclude='./work' --exclude='./out' --exclude='./.playwright-cli' --exclude='./tsconfig.tsbuildinfo' -czf outputs/edziennik-kla-raspberry-source.tar.gz ."
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

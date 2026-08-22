@@ -1,0 +1,13 @@
+[Unit]
+Description=Miesięczny test odtworzenia KLA
+After=postgresql.service
+Requires=postgresql.service
+RequiresMountsFor=/srv/kla-vault
+ConditionPathIsMountPoint=/srv/kla-vault
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/edziennik-kla-restore-test-latest
+PrivateTmp=true
+NoNewPrivileges=true
+Nice=15

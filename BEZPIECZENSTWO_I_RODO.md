@@ -103,6 +103,23 @@ musi zatwierdzić prawnik lub IOD klientki.
 - [ ] Aktualizacje zależności, monitoring i alerty.
 - [ ] Plan incydentu i osoby kontaktowe.
 
+### Raspberry Pi — szyfrowany sejf
+
+- Baza PostgreSQL i prywatne dokumenty znajdują się na jednym woluminie LUKS2
+  na osobnym SSD; karta microSD nie jest magazynem danych biznesowych.
+- Klucz odzyskiwania jest generowany podczas pierwszej konfiguracji i nie jest
+  później przechowywany na urządzeniu. Jego utrata razem z hasłem oznacza brak
+  możliwości odzyskania danych.
+- Każdy plik przechodzi centralny skan ClamAV. Na produkcji niedostępność
+  skanera blokuje upload — plik nie trafia do magazynu „na później”.
+- Kopia bazy, dokumentów i manifestu wersji jest szyfrowana przed wysłaniem
+  SFTP. Serwer SFTP musi być poza Raspberry Pi i najlepiej poza lokalem.
+- Test odtworzenia tworzy tymczasową bazę, wykonuje realne `pg_restore` i
+  sprawdza archiwum dokumentów. Wynik jest dowodem technicznym, nie zastępuje
+  protokołu okresowego testu podpisanego przez odpowiedzialną osobę.
+- Automatyczne usuwanie umów i wiadomości pozostaje wyłączone do zatwierdzenia
+  okresów przez prawnika/IOD. Wartość `0` oznacza brak automatycznego kasowania.
+
 ### Podpisane egzemplarze umów
 
 - Oryginał PDF i wgrany podpisany egzemplarz są przechowywane poza `public/`.

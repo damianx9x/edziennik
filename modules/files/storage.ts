@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { scanFileForMalware } from "./malware-scanner";
+
 const SCHOOL_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STORAGE_KEY_PATTERN =
@@ -50,6 +52,8 @@ export class LocalFileStorage implements FileStorage {
     if (input.bytes.byteLength === 0) {
       throw new Error("Nie można zapisać pustego pliku.");
     }
+
+    await scanFileForMalware(input.bytes);
 
     const now = new Date();
     const year = String(now.getUTCFullYear());
