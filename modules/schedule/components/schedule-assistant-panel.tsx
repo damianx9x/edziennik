@@ -816,6 +816,19 @@ export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) 
     saveTeacherAvailabilityAction,
     initialState,
   );
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(
+    () =>
+      new Set(
+        entry.configured
+          ? entry.windows.map((window) => window.weekday)
+          : weekdayLabels.filter((day) => day.value <= 5).map((day) => day.value),
+      ),
+  );
+  const distinctHours = new Set(
+    entry.windows.map(
+      (window) => `${window.startMinute}-${window.endMinute}`,
+    ),
+  ).size;
   return (
     <details className="assistant-config-item">
       <summary>
@@ -830,58 +843,76 @@ export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) 
           <strong>{entry.teacherName}</strong>
           <small>
             {entry.configured
-              ? `${entry.weekdays.length} dni · ${timeValue(
-                  entry.startMinute,
-                )}–${timeValue(entry.endMinute)}`
-              : "Domyślnie: wszystkie dni 13:00–21:00"}
+              ? `${entry.windows.length} dni · ${
+                  distinctHours > 1 ? "różne godziny" : "te same godziny"
+                }`
+              : "Ustaw osobne godziny dla każdego dnia"}
           </small>
         </div>
         <ArrowRight aria-hidden="true" />
       </summary>
       <form action={action} className="assistant-config-form">
         <input type="hidden" name="teacherId" value={entry.teacherId} />
-        <fieldset className="assistant-days">
-          <legend>Dni dostępności</legend>
-          <div>
-            {weekdayLabels.map((day) => (
-              <label key={day.value}>
+        <fieldset className="availability-day-fieldset">
+          <legend>Dostępność w tygodniu</legend>
+          <p className="field-help">
+            Zaznacz dni, w których możesz prowadzić zajęcia, i ustaw godziny
+            osobno dla każdego dnia.
+          </p>
+          <div className="availability-day-list">
+            {weekdayLabels.map((day) => {
+              const window = entry.windows.find(
+                (candidate) => candidate.weekday === day.value,
+              );
+              const selected = selectedDays.has(day.value);
+              return (
+              <div className={`availability-day-row${selected ? " selected" : ""}`} key={day.value}>
+                <label className="availability-day-toggle">
                 <input
                   type="checkbox"
-                  name="weekdays"
-                  value={day.value}
-                  defaultChecked={
-                    entry.configured
-                      ? entry.weekdays.includes(day.value)
-                      : day.value <= 5
-                  }
+                  name={`available:${day.value}`}
+                  defaultChecked={selected}
+                  onChange={(event) => {
+                    setSelectedDays((current) => {
+                      const next = new Set(current);
+                      if (event.target.checked) next.add(day.value);
+                      else next.delete(day.value);
+                      return next;
+                    });
+                  }}
                 />
-                <span>{day.short}</span>
+                  <span>{day.full}</span>
               </label>
-            ))}
+                <div className="availability-day-hours">
+                  <label>
+                    <span>Od</span>
+                    <input
+                      type="time"
+                      name={`startTime:${day.value}`}
+                      step="1800"
+                      defaultValue={timeValue(window?.startMinute ?? 15 * 60)}
+                      disabled={!selected}
+                      required={selected}
+                    />
+                  </label>
+                  <span aria-hidden="true">–</span>
+                  <label>
+                    <span>Do</span>
+                    <input
+                      type="time"
+                      name={`endTime:${day.value}`}
+                      step="1800"
+                      defaultValue={timeValue(window?.endMinute ?? 19 * 60)}
+                      disabled={!selected}
+                      required={selected}
+                    />
+                  </label>
+                </div>
+              </div>
+              );
+            })}
           </div>
         </fieldset>
-        <div className="assistant-form-grid">
-          <label>
-            Od
-            <input
-              type="time"
-              name="startTime"
-              step="1800"
-              defaultValue={timeValue(entry.startMinute)}
-              required
-            />
-          </label>
-          <label>
-            Do
-            <input
-              type="time"
-              name="endTime"
-              step="1800"
-              defaultValue={timeValue(entry.endMinute)}
-              required
-            />
-          </label>
-        </div>
         {state.message ? (
           <p
             className={`assistant-form-message ${state.status}`}

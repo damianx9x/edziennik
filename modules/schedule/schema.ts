@@ -72,15 +72,23 @@ export const schedulingRequirementSchema = z.object({
 
 export const teacherAvailabilitySchema = z.object({
   teacherId: z.string().uuid("Wybierz wykładowcę."),
-  weekdays: z.array(z.coerce.number().int().min(1).max(6)).min(
-    1,
-    "Wybierz co najmniej jeden dzień dostępności.",
-  ),
-  startMinute: z.coerce.number().int().min(780).max(1230),
-  endMinute: z.coerce.number().int().min(810).max(1260),
-}).refine((value) => value.startMinute < value.endMinute, {
-  message: "Godzina końca musi być późniejsza niż początek.",
-  path: ["endMinute"],
+  windows: z.array(z.object({
+    weekday: z.coerce.number().int().min(1).max(6),
+    startMinute: z.coerce.number().int().min(780).max(1230),
+    endMinute: z.coerce.number().int().min(810).max(1260),
+  }).refine((value) => value.startMinute < value.endMinute, {
+    message: "Godzina końca musi być późniejsza niż początek.",
+    path: ["endMinute"],
+  })).min(1, "Wybierz co najmniej jeden dzień dostępności.").max(6),
+}).superRefine((value, context) => {
+  const weekdays = value.windows.map((window) => window.weekday);
+  if (new Set(weekdays).size !== weekdays.length) {
+    context.addIssue({
+      code: "custom",
+      path: ["windows"],
+      message: "Każdy dzień może wystąpić tylko raz.",
+    });
+  }
 });
 
 export const scheduleGenerationSchema = z

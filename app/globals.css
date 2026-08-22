@@ -9561,6 +9561,101 @@ html[data-theme="dark"] .schedule-tone-5 {
   outline-offset: 2px;
 }
 
+.availability-day-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.availability-day-fieldset legend {
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.availability-day-fieldset .field-help {
+  margin: 4px 0 10px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.availability-day-list {
+  display: grid;
+  gap: 7px;
+}
+
+.availability-day-row {
+  min-width: 0;
+  min-height: 62px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(260px, 1.3fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #f7f5f0;
+}
+
+.availability-day-row.selected {
+  border-color: rgb(38 92 176 / 28%);
+  background: var(--blue-050);
+}
+
+.availability-day-toggle {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.availability-day-toggle input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  accent-color: var(--navy-900);
+}
+
+.availability-day-hours {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+}
+
+.availability-day-hours label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.availability-day-hours input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 9px;
+  color: var(--navy-900);
+  border: 1px solid #c9cbd2;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.availability-day-hours input:disabled {
+  opacity: 0.48;
+}
+
 .assistant-form-message {
   margin: 0;
   padding: 9px 11px;
@@ -10873,16 +10968,33 @@ html[data-theme="dark"] .schedule-tone-5 {
 }
 
 .schedule-lesson-main {
+  height: 100%;
   min-width: 0;
   display: flex;
   gap: 6px;
 }
 
-.schedule-lesson-main > div {
+.schedule-lesson-open {
   min-width: 0;
-  padding-right: 36px;
+  min-height: 44px;
+  padding: 0 36px 0 0;
+  flex: 1;
+  min-width: 0;
   display: grid;
+  align-content: start;
   gap: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.schedule-lesson-open:focus-visible {
+  outline: 3px solid rgb(38 92 176 / 32%);
+  outline-offset: 2px;
+  border-radius: 7px;
 }
 
 .schedule-lesson-main span {
@@ -10913,6 +11025,11 @@ html[data-theme="dark"] .schedule-tone-5 {
 
 .schedule-lesson-main small svg {
   width: 11px;
+}
+
+.schedule-lesson-main .schedule-topic {
+  margin-top: 3px;
+  color: var(--navy-700);
 }
 
 .schedule-drag-handle,
@@ -11074,11 +11191,153 @@ html[data-theme="dark"] .schedule-tone-5 {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  resize: both;
   color: var(--navy-950);
   border: 1px solid rgb(23 38 80 / 13%);
   border-radius: 24px;
   background: var(--paper);
   box-shadow: 0 28px 90px rgb(10 17 38 / 35%);
+}
+
+.lesson-overview-grid {
+  margin: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.lesson-overview-grid > div {
+  min-width: 0;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.lesson-overview-grid svg {
+  width: 20px;
+  flex: 0 0 20px;
+  color: var(--blue-700);
+}
+
+.lesson-overview-grid span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.lesson-overview-grid strong {
+  overflow: hidden;
+  color: var(--navy-900);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-edit-form {
+  display: grid;
+  gap: 20px;
+}
+
+.lesson-readonly-topic {
+  margin: 0 24px;
+  padding: 18px;
+  border-radius: 17px;
+  background: var(--blue-050);
+}
+
+.lesson-readonly-topic h3 {
+  margin: 5px 0 0;
+  color: var(--navy-950);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.lesson-attendance-list label > span small {
+  margin-top: 2px;
+  display: block;
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.lesson-attendance-cards {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lesson-attendance-cards article {
+  min-width: 0;
+  padding: 13px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+}
+
+.lesson-attendance-cards span {
+  overflow: hidden;
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-attendance-cards strong {
+  color: var(--blue-700);
+  font-size: 11px;
+}
+
+.lesson-attendance-cards small {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.lesson-self-check-in {
+  margin: 0 24px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgb(31 122 100 / 20%);
+  border-radius: 16px;
+  background: #e5f4ef;
+}
+
+.lesson-self-check-in strong {
+  color: var(--navy-900);
+  font-size: 13px;
+}
+
+.lesson-self-check-in p,
+.lesson-self-check-in small {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.lesson-self-check-in > small,
+.lesson-self-check-in > .assistant-form-message {
+  grid-column: 1 / -1;
+}
+
+.lesson-view-footer {
+  align-items: center;
+  justify-content: space-between;
 }
 
 .lesson-journal-dialog::backdrop {
@@ -11353,6 +11612,12 @@ html:has(dialog[open]) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .availability-day-row {
+    padding: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
   .assistant-generate-card {
     align-items: stretch;
   }
@@ -11557,6 +11822,7 @@ html:has(dialog[open]) {
     height: calc(100dvh - 16px);
     max-height: none;
     border-radius: 18px;
+    resize: none;
   }
 
   .lesson-journal-shell {
@@ -11576,9 +11842,16 @@ html:has(dialog[open]) {
   }
 
   .lesson-topic-field,
-  .lesson-attendance {
+  .lesson-attendance,
+  .lesson-overview-grid,
+  .lesson-readonly-topic,
+  .lesson-self-check-in {
     margin-right: 16px;
     margin-left: 16px;
+  }
+
+  .lesson-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .lesson-attendance {
@@ -11604,6 +11877,18 @@ html:has(dialog[open]) {
     white-space: normal;
   }
 
+  .lesson-attendance-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lesson-self-check-in {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lesson-self-check-in .button {
+    width: 100%;
+  }
+
   .lesson-journal-shell > .assistant-form-message {
     margin-right: 16px;
     margin-left: 16px;
@@ -11612,8 +11897,9 @@ html:has(dialog[open]) {
   .lesson-journal-footer {
     margin-top: auto;
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    position: static;
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .lesson-journal-footer .button {

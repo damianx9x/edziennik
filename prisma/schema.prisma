@@ -184,6 +184,7 @@ model School {
   parentLinks              ParentChild[]
   scheduleSlots            ScheduleSlot[]
   attendance               AttendanceRecord[]
+  lessonCheckIns            LessonCheckIn[]
   availabilityWindows      AvailabilityWindow[]
   schedulingRequirements   SchedulingRequirement[]
   scheduleGenerations      ScheduleGeneration[]
@@ -266,6 +267,7 @@ model User {
   createdSlots               ScheduleSlot[]               @relation("ScheduleCreator")
   attendanceAsStudent        AttendanceRecord[]           @relation("AttendanceStudent")
   attendanceRecorded         AttendanceRecord[]           @relation("AttendanceRecorder")
+  lessonCheckIns              LessonCheckIn[]               @relation("LessonCheckInStudent")
   availabilityWindows        AvailabilityWindow[]         @relation("AvailabilityTeacher")
   schedulingRequirements     SchedulingRequirement[]      @relation("RequirementTeacher")
   createdScheduleGenerations ScheduleGeneration[]         @relation("ScheduleGenerationCreator")
@@ -558,6 +560,7 @@ model ScheduleSlot {
   teacher    User                @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
   createdBy  User                @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
   attendance AttendanceRecord[]
+  checkIns   LessonCheckIn[]
   generation ScheduleGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, startAt, endAt])
@@ -681,6 +684,25 @@ model AttendanceRecord {
 
   @@unique([scheduleSlotId, studentId])
   @@index([schoolId, studentId, createdAt])
+}
+
+/// Potwierdzenie ucznia, że dotarł na zajęcia. Nie zastępuje oficjalnej
+/// obecności wpisanej przez wykładowcę lub dyrektora.
+model LessonCheckIn {
+  id             String   @id @default(uuid()) @db.Uuid
+  schoolId       String   @db.Uuid
+  scheduleSlotId String   @db.Uuid
+  studentId      String   @db.Uuid
+  checkedInAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlot ScheduleSlot @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+  student      User         @relation("LessonCheckInStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleSlotId, studentId])
+  @@index([schoolId, studentId, checkedInAt])
 }
 
 model AuditLog {

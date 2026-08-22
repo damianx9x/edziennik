@@ -36,10 +36,13 @@ export type ScheduleSlotView = {
   version: number;
   isLocked: boolean;
   canEditLesson: boolean;
+  canConfirmArrival: boolean;
+  checkInWindowOpen: boolean;
   students: Array<{
     id: string;
     name: string;
     attendanceStatus: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" | null;
+    selfCheckedInAt: string | null;
   }>;
 };
 
@@ -70,9 +73,11 @@ export type ScheduleRequirementView = {
 export type TeacherAvailabilityView = {
   teacherId: string;
   teacherName: string;
-  weekdays: number[];
-  startMinute: number;
-  endMinute: number;
+  windows: Array<{
+    weekday: number;
+    startMinute: number;
+    endMinute: number;
+  }>;
   configured: boolean;
 };
 

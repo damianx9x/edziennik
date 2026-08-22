@@ -14,7 +14,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   AlertTriangle,
-  BookOpenCheck,
   CalendarPlus,
   CheckCircle2,
   CheckCheck,
@@ -45,6 +44,7 @@ import { useMovableDialog } from "@/modules/records/components/use-movable-dialo
 
 import {
   cancelScheduleSlotAction,
+  confirmLessonArrivalAction,
   createScheduleSlotAction,
   moveScheduleSlotAction,
   moveScheduleSlotFormAction,
@@ -271,10 +271,12 @@ export function ScheduleWorkspace({
   const unavailableTeachers = new Map(
     availability.flatMap((item) => {
       if (!item.configured) return [];
-      const fits =
-        item.weekdays.includes(newWeekday) &&
-        item.startMinute <= newStartMinute &&
-        item.endMinute >= newEndMinute;
+      const fits = item.windows.some(
+        (window) =>
+          window.weekday === newWeekday &&
+          window.startMinute <= newStartMinute &&
+          window.endMinute >= newEndMinute,
+      );
       return fits
         ? []
         : [
@@ -916,21 +918,7 @@ function LessonCard({
             <GripVertical aria-hidden="true" />
           </button>
         ) : null}
-        <div>
-          <span>
-            {slot.startTime}–{slot.endTime}
-          </span>
-          <strong><UsersRound aria-hidden="true" /> {slot.groupName}</strong>
-          <small>
-            <MapPin aria-hidden="true" /> {slot.locationName}
-          </small>
-          <small>
-            <DoorOpen aria-hidden="true" /> {slot.roomName}
-          </small>
-          <small>
-            <GraduationCap aria-hidden="true" /> {slot.teacherName}
-          </small>
-        </div>
+        <LessonDetailsDialog slot={slot} />
       </div>
       {canManage ? (
         <details
@@ -1000,12 +988,6 @@ function LessonCard({
           </div>
         </details>
       ) : null}
-      {slot.canEditLesson ? <LessonJournalDialog slot={slot} /> : null}
-      {slot.topic ? (
-        <p className="schedule-topic">
-          <Clock3 aria-hidden="true" /> {slot.topic}
-        </p>
-      ) : null}
     </article>
   );
 }
@@ -1017,11 +999,11 @@ const attendanceLabels: Record<LessonAttendanceStatus, string> = {
   EXCUSED: "Usprawiedliwiona",
 };
 
-function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
+function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const titleId = useId();
-  const [isOpen, setIsOpen] = useState(false);
   const [attendance, setAttendance] = useState<
     Record<string, LessonAttendanceStatus | "">
   >(
@@ -1036,7 +1018,7 @@ function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
     async (previousState: ScheduleActionState, formData: FormData) => {
       try {
         const result = await saveLessonJournalAction(previousState, formData);
-        if (result.status === "success") setIsOpen(false);
+        if (result.status === "success") dialogRef.current?.close();
         return result;
       } catch {
         return {
@@ -1048,33 +1030,49 @@ function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
     },
     initialActionState,
   );
+  const [checkInState, checkInAction, checkInPending] = useActionState(
+    confirmLessonArrivalAction,
+    initialActionState,
+  );
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isOpen && !dialog.open) dialog.showModal();
-    if (!isOpen && dialog.open) dialog.close();
-  }, [isOpen]);
+  function openLessonDetails() {
+    setAttendance(
+      Object.fromEntries(
+        slot.students.map((student) => [
+          student.id,
+          student.attendanceStatus ?? "",
+        ]),
+      ),
+    );
+    if (!dialogRef.current?.open) dialogRef.current?.showModal();
+  }
 
   return (
     <>
       <button
-        className="schedule-journal-trigger"
+        ref={triggerRef}
+        className="schedule-lesson-open"
         type="button"
-        onClick={() => {
-          setAttendance(
-            Object.fromEntries(
-              slot.students.map((student) => [
-                student.id,
-                student.attendanceStatus ?? "",
-              ]),
-            ),
-          );
-          setIsOpen(true);
-        }}
+        aria-haspopup="dialog"
+        onPointerUp={openLessonDetails}
+        onClick={openLessonDetails}
       >
-        <BookOpenCheck aria-hidden="true" />
-        {slot.topic ? "Dziennik lekcji" : "Uzupełnij lekcję"}
+        <span>{slot.startTime}–{slot.endTime}</span>
+        <strong><UsersRound aria-hidden="true" /> {slot.groupName}</strong>
+        <small>
+          <MapPin aria-hidden="true" /> {slot.locationName}
+        </small>
+        <small>
+          <DoorOpen aria-hidden="true" /> {slot.roomName}
+        </small>
+        <small>
+          <GraduationCap aria-hidden="true" /> {slot.teacherName}
+        </small>
+        {slot.topic ? (
+          <small className="schedule-topic">
+            <Clock3 aria-hidden="true" /> {slot.topic}
+          </small>
+        ) : null}
       </button>
       <dialog
         ref={dialogRef}
@@ -1082,16 +1080,14 @@ function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
         aria-labelledby={titleId}
         onClose={() => {
           resetDialogPosition();
-          setIsOpen(false);
+          triggerRef.current?.focus();
         }}
       >
-        <form action={action} className="lesson-journal-shell">
-          <input type="hidden" name="slotId" value={slot.id} />
-          <input type="hidden" name="version" value={slot.version} />
+        <div className="lesson-journal-shell">
           <header className="lesson-journal-heading stage4-dialog-drag-handle" onPointerDown={startDrag}>
             <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
             <div>
-              <span className="section-kicker">Dziennik lekcji</span>
+              <span className="section-kicker">Szczegóły lekcji</span>
               <h2 id={titleId}>{slot.groupName}</h2>
               <p>
                 {slot.dateKey} · {slot.startTime}–{slot.endTime}
@@ -1100,103 +1096,159 @@ function LessonJournalDialog({ slot }: { slot: ScheduleSlotView }) {
             <button
               type="button"
               className="schedule-create-close"
-              aria-label="Zamknij dziennik lekcji"
-              onClick={() => setIsOpen(false)}
+              aria-label="Zamknij szczegóły lekcji"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => dialogRef.current?.close()}
             >
               <X aria-hidden="true" />
             </button>
           </header>
-
-          <label className="lesson-topic-field">
-            <span>Temat lekcji</span>
-            <textarea
-              name="topic"
-              maxLength={240}
-              rows={2}
-              defaultValue={slot.topic ?? ""}
-              placeholder="Np. Past Simple — pytania i krótkie odpowiedzi"
-            />
-            <small>Krótko i konkretnie. Temat zobaczą rodzic i uczeń.</small>
-          </label>
-
-          <section className="lesson-attendance" aria-labelledby={`${titleId}-attendance`}>
-            <div className="lesson-attendance-heading">
-              <div>
-                <span className="section-kicker">Szybka obecność</span>
-                <h3 id={`${titleId}-attendance`}>Kto jest na zajęciach?</h3>
-              </div>
-              {slot.students.length > 0 ? (
-                <button
-                  className="button button-secondary button-small"
-                  type="button"
-                  onClick={() =>
-                    setAttendance(
-                      Object.fromEntries(
-                        slot.students.map((student) => [student.id, "PRESENT"]),
-                      ),
-                    )
-                  }
-                >
-                  <CheckCheck aria-hidden="true" /> Wszyscy obecni
-                </button>
-              ) : null}
-            </div>
-
-            {slot.students.length === 0 ? (
-              <div className="schedule-message">
-                Ta grupa nie ma jeszcze aktywnych uczniów.
-              </div>
-            ) : (
-              <div className="lesson-attendance-list">
-                {slot.students.map((student) => (
-                  <label key={student.id}>
-                    <span>{student.name}</span>
-                    <select
-                      name={`attendance:${student.id}`}
-                      value={attendance[student.id] ?? ""}
-                      onChange={(event) =>
-                        setAttendance((current) => ({
-                          ...current,
-                          [student.id]: event.target.value as
-                            | LessonAttendanceStatus
-                            | "",
-                        }))
-                      }
-                    >
-                      <option value="">Nieoznaczona</option>
-                      {Object.entries(attendanceLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            )}
+          <section className="lesson-overview-grid" aria-label="Informacje o lekcji">
+            <div><MapPin aria-hidden="true" /><span>Lokalizacja<strong>{slot.locationName}</strong></span></div>
+            <div><DoorOpen aria-hidden="true" /><span>Sala<strong>{slot.roomName}</strong></span></div>
+            <div><GraduationCap aria-hidden="true" /><span>Wykładowca<strong>{slot.teacherName}</strong></span></div>
           </section>
 
-          {state.message ? (
-            <p className={`assistant-form-message ${state.status}`} role="status">
-              {state.message}
-            </p>
-          ) : null}
-
-          <footer className="lesson-journal-footer">
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => setIsOpen(false)}
-            >
-              Anuluj
-            </button>
-            <button className="button button-primary" type="submit" disabled={pending}>
-              <CheckCircle2 aria-hidden="true" />
-              {pending ? "Zapisuję…" : "Zapisz lekcję"}
-            </button>
-          </footer>
-        </form>
+          {slot.canEditLesson ? (
+            <form action={action} className="lesson-edit-form">
+              <input type="hidden" name="slotId" value={slot.id} />
+              <input type="hidden" name="version" value={slot.version} />
+              <label className="lesson-topic-field">
+                <span>Temat lekcji</span>
+                <textarea
+                  name="topic"
+                  maxLength={240}
+                  rows={2}
+                  defaultValue={slot.topic ?? ""}
+                  placeholder="Np. Past Simple — pytania i krótkie odpowiedzi"
+                />
+                <small>Krótko i konkretnie. Temat zobaczą rodzic i uczeń.</small>
+              </label>
+              <AttendanceEditor
+                slot={slot}
+                titleId={titleId}
+                attendance={attendance}
+                setAttendance={setAttendance}
+              />
+              {state.message ? (
+                <p className={`assistant-form-message ${state.status}`} role="status">
+                  {state.message}
+                </p>
+              ) : null}
+              <footer className="lesson-journal-footer">
+                <Link className="button button-secondary lesson-calendar-link" href={`/panel/plan/${slot.id}/kalendarz`}>
+                  <CalendarPlus aria-hidden="true" /> Przypomnienie
+                </Link>
+                <button className="button button-secondary" type="button" onClick={() => dialogRef.current?.close()}>
+                  Anuluj
+                </button>
+                <button className="button button-primary" type="submit" disabled={pending}>
+                  <CheckCircle2 aria-hidden="true" />
+                  {pending ? "Zapisuję…" : "Zapisz lekcję"}
+                </button>
+              </footer>
+            </form>
+          ) : (
+            <>
+              <section className="lesson-readonly-topic">
+                <span className="section-kicker">Temat lekcji</span>
+                <h3>{slot.topic ?? "Temat nie został jeszcze uzupełniony"}</h3>
+              </section>
+              <AttendanceOverview slot={slot} titleId={titleId} />
+              {slot.canConfirmArrival ? (
+                <form action={checkInAction} className="lesson-self-check-in">
+                  <input type="hidden" name="slotId" value={slot.id} />
+                  <div>
+                    <strong>Jesteś już na zajęciach?</strong>
+                    <p>Twoje potwierdzenie pomaga wykładowcy, ale nie zastępuje oficjalnej obecności.</p>
+                  </div>
+                  <button
+                    className="button button-primary"
+                    type="submit"
+                    disabled={checkInPending || !slot.checkInWindowOpen || Boolean(slot.students[0]?.selfCheckedInAt)}
+                  >
+                    <CheckCircle2 aria-hidden="true" />
+                    {slot.students[0]?.selfCheckedInAt
+                      ? "Przybycie potwierdzone"
+                      : checkInPending
+                        ? "Potwierdzam…"
+                        : "Potwierdź przybycie"}
+                  </button>
+                  {!slot.checkInWindowOpen && !slot.students[0]?.selfCheckedInAt ? (
+                    <small>Przycisk działa od 30 minut przed lekcją do 15 minut po jej zakończeniu.</small>
+                  ) : null}
+                  {checkInState.message ? (
+                    <p className={`assistant-form-message ${checkInState.status}`} role="status">{checkInState.message}</p>
+                  ) : null}
+                </form>
+              ) : null}
+              <footer className="lesson-journal-footer lesson-view-footer">
+                <Link className="button button-secondary" href={`/panel/plan/${slot.id}/kalendarz`}>
+                  <CalendarPlus aria-hidden="true" /> Dodaj przypomnienie do telefonu
+                </Link>
+                <button className="button button-primary" type="button" onClick={() => dialogRef.current?.close()}>Gotowe</button>
+              </footer>
+            </>
+          )}
+        </div>
       </dialog>
     </>
+  );
+}
+
+function AttendanceEditor({
+  slot,
+  titleId,
+  attendance,
+  setAttendance,
+}: {
+  slot: ScheduleSlotView;
+  titleId: string;
+  attendance: Record<string, LessonAttendanceStatus | "">;
+  setAttendance: (value: Record<string, LessonAttendanceStatus | ""> | ((current: Record<string, LessonAttendanceStatus | "">) => Record<string, LessonAttendanceStatus | "">)) => void;
+}) {
+  return (
+    <section className="lesson-attendance" aria-labelledby={`${titleId}-attendance`}>
+      <div className="lesson-attendance-heading">
+        <div><span className="section-kicker">Oficjalna obecność</span><h3 id={`${titleId}-attendance`}>Kto jest na zajęciach?</h3></div>
+        {slot.students.length > 0 ? (
+          <button className="button button-secondary button-small" type="button" onClick={() => setAttendance(Object.fromEntries(slot.students.map((student) => [student.id, "PRESENT"])))}>
+            <CheckCheck aria-hidden="true" /> Wszyscy obecni
+          </button>
+        ) : null}
+      </div>
+      {slot.students.length === 0 ? <div className="schedule-message">Ta grupa nie ma jeszcze aktywnych uczniów.</div> : (
+        <div className="lesson-attendance-list">
+          {slot.students.map((student) => (
+            <label key={student.id}>
+              <span>{student.name}{student.selfCheckedInAt ? <small>Potwierdził/a przybycie</small> : null}</span>
+              <select name={`attendance:${student.id}`} value={attendance[student.id] ?? ""} onChange={(event) => setAttendance((current) => ({ ...current, [student.id]: event.target.value as LessonAttendanceStatus | "" }))}>
+                <option value="">Nieoznaczona</option>
+                {Object.entries(attendanceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AttendanceOverview({ slot, titleId }: { slot: ScheduleSlotView; titleId: string }) {
+  return (
+    <section className="lesson-attendance" aria-labelledby={`${titleId}-attendance`}>
+      <div className="lesson-attendance-heading"><div><span className="section-kicker">Obecność</span><h3 id={`${titleId}-attendance`}>{slot.students.length > 1 ? "Uczniowie" : "Twój status"}</h3></div></div>
+      {slot.students.length === 0 ? <div className="schedule-message">Brak informacji o obecności.</div> : (
+        <div className="lesson-attendance-cards">
+          {slot.students.map((student) => (
+            <article key={student.id}>
+              <span>{student.name}</span>
+              <strong>{student.attendanceStatus ? attendanceLabels[student.attendanceStatus] : "Jeszcze nieoznaczona"}</strong>
+              {student.selfCheckedInAt ? <small>Przybycie potwierdzone przez ucznia</small> : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

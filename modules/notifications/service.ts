@@ -99,6 +99,57 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   if (["TEACHER", "PARENT", "STUDENT"].includes(role)) {
     const groups = await getAccessibleGroups(session);
     const groupIds = groups.map((group) => group.id);
+    if (groupIds.length) {
+      const upcomingLessons = await db.scheduleSlot.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          groupId: { in: groupIds },
+          archivedAt: null,
+          status: { not: "CANCELLED" },
+          startAt: { gte: subMinutes(now, 15), lte: addHours(now, 24) },
+          ...(role === "TEACHER"
+            ? {
+                OR: [
+                  { teacherId: session.user.id },
+                  { group: { teachers: { some: { teacherId: session.user.id, archivedAt: null } } } },
+                ],
+              }
+            : {}),
+        },
+        orderBy: { startAt: "asc" },
+        take: 20,
+        select: {
+          id: true,
+          startAt: true,
+          group: { select: { name: true } },
+          room: { select: { name: true, location: { select: { name: true } } } },
+          checkIns: {
+            where: { studentId: session.user.id },
+            select: { id: true },
+          },
+        },
+      });
+      const formatter = new Intl.DateTimeFormat("pl-PL", {
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Warsaw",
+      });
+      for (const lesson of upcomingLessons) {
+        const checkInOpen =
+          role === "STUDENT" &&
+          now >= subMinutes(lesson.startAt, 30) &&
+          lesson.checkIns.length === 0;
+        raw.push({
+          key: `lesson-reminder:${lesson.id}`,
+          kind: checkInOpen ? "ACTION" : "INFO",
+          title: checkInOpen ? "Potwierdź przybycie na zajęcia" : "Zbliżają się zajęcia z angielskiego",
+          description: `${lesson.group.name} · ${formatter.format(lesson.startAt)} · ${lesson.room.location.name}, ${lesson.room.name}`,
+          href: "/panel/plan",
+          occurredAt: lesson.startAt,
+        });
+      }
+    }
     const directConversationIds = (await db.conversationParticipant.findMany({
       where: { schoolId: session.user.schoolId, userId: session.user.id, archivedAt: null, conversation: { archivedAt: null, kind: "DIRECT" } },
       select: { conversationId: true },
@@ -202,3 +253,4 @@ function addPaymentNotifications(
     });
   }
 }
+import { addHours, subMinutes } from "date-fns";

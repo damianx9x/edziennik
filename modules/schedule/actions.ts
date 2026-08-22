@@ -1,11 +1,13 @@
 "use server";
 
-import { differenceInMinutes } from "date-fns";
+import { addMinutes, differenceInMinutes, subMinutes } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { can, type Actor } from "@/modules/access-control/can";
 import {
+  requireActiveSession,
   requireDirector,
   requireSchoolStaff,
 } from "@/modules/identity/auth/session";
@@ -25,6 +27,100 @@ import {
 import type { ScheduleActionState } from "./types";
 
 const schedulePath = "/panel/plan";
+
+export async function confirmLessonArrivalAction(
+  _previous: ScheduleActionState,
+  formData: FormData,
+): Promise<ScheduleActionState> {
+  const session = await requireActiveSession(schedulePath);
+  if (session.user.role !== "STUDENT") {
+    return {
+      status: "error",
+      message: "Przybycie na zajęcia potwierdza uczeń ze swojego konta.",
+    };
+  }
+
+  const parsed = z.string().uuid().safeParse(formData.get("slotId"));
+  if (!parsed.success) {
+    return { status: "error", message: "Nie rozpoznano tej lekcji." };
+  }
+
+  try {
+    const now = new Date();
+    await db.$transaction(async (transaction) => {
+      const slot = await transaction.scheduleSlot.findFirst({
+        where: {
+          id: parsed.data,
+          schoolId: session.user.schoolId,
+          archivedAt: null,
+          status: { not: "CANCELLED" },
+          group: {
+            enrollments: {
+              some: {
+                studentId: session.user.id,
+                status: "ACTIVE",
+              },
+            },
+          },
+        },
+        select: { id: true, startAt: true, endAt: true },
+      });
+      if (!slot) {
+        throw new Error("Ta lekcja nie jest dostępna na Twoim koncie.");
+      }
+
+      const windowStart = subMinutes(slot.startAt, 30);
+      const windowEnd = addMinutes(slot.endAt, 15);
+      if (now < windowStart || now > windowEnd) {
+        throw new Error(
+          "Przybycie możesz potwierdzić od 30 minut przed lekcją do 15 minut po jej zakończeniu.",
+        );
+      }
+
+      await transaction.lessonCheckIn.upsert({
+        where: {
+          scheduleSlotId_studentId: {
+            scheduleSlotId: slot.id,
+            studentId: session.user.id,
+          },
+        },
+        update: { checkedInAt: now },
+        create: {
+          schoolId: session.user.schoolId,
+          scheduleSlotId: slot.id,
+          studentId: session.user.id,
+          checkedInAt: now,
+        },
+      });
+      await transaction.auditLog.create({
+        data: {
+          schoolId: session.user.schoolId,
+          actorId: session.user.id,
+          action: "schedule.lesson-arrival.confirmed",
+          entityType: "ScheduleSlot",
+          entityId: slot.id,
+          metadata: { source: "student-self-check-in" },
+        },
+      });
+    });
+
+    revalidatePath(schedulePath);
+    revalidatePath("/panel");
+    return {
+      status: "success",
+      message: "Przybycie zostało potwierdzone. Wykładowca nadal wpisuje oficjalną obecność.",
+      slotId: parsed.data,
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Nie udało się potwierdzić przybycia. Spróbuj ponownie.",
+    };
+  }
+}
 
 export async function saveLessonJournalAction(
   _previous: ScheduleActionState,

@@ -252,11 +252,16 @@ export async function saveTeacherAvailabilityAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireActiveSession(schedulePath);
+  const windows = Array.from({ length: 6 }, (_, index) => index + 1)
+    .filter((weekday) => formData.get(`available:${weekday}`) === "on")
+    .map((weekday) => ({
+      weekday,
+      startMinute: minuteValue(formData.get(`startTime:${weekday}`)),
+      endMinute: minuteValue(formData.get(`endTime:${weekday}`)),
+    }));
   const parsed = teacherAvailabilitySchema.safeParse({
     teacherId: formData.get("teacherId"),
-    weekdays: formData.getAll("weekdays"),
-    startMinute: minuteValue(formData.get("startTime")),
-    endMinute: minuteValue(formData.get("endTime")),
+    windows,
   });
   if (!parsed.success) {
     return {
@@ -314,12 +319,12 @@ export async function saveTeacherAvailabilityAction(
       },
     });
     await tx.availabilityWindow.createMany({
-      data: parsed.data.weekdays.map((weekday) => ({
+      data: parsed.data.windows.map((window) => ({
         schoolId: session.user.schoolId,
         teacherId: currentTeacher.id,
-        weekday,
-        startMinute: parsed.data.startMinute,
-        endMinute: parsed.data.endMinute,
+        weekday: window.weekday,
+        startMinute: window.startMinute,
+        endMinute: window.endMinute,
         isAvailable: true,
       })),
     });
@@ -333,9 +338,7 @@ export async function saveTeacherAvailabilityAction(
         entityType: "User",
         entityId: currentTeacher.id,
         metadata: {
-          weekdays: parsed.data.weekdays,
-          startMinute: parsed.data.startMinute,
-          endMinute: parsed.data.endMinute,
+          windows: parsed.data.windows,
           discardedGenerationCount,
         },
       },

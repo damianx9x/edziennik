@@ -1,4 +1,4 @@
-import { addDays, addWeeks, differenceInMinutes, format } from "date-fns";
+import { addDays, addMinutes, addWeeks, differenceInMinutes, format, subMinutes } from "date-fns";
 import { pl } from "date-fns/locale";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import {
@@ -243,36 +243,70 @@ export default async function SchedulePage({
 
   const visibleLocationIds = new Set(groupsRaw.map((group) => group.locationId));
 
-  const [journalEnrollments, attendanceRaw] = isSchoolStaff
-    ? await Promise.all([
-        db.enrollment.findMany({
-          where: {
-            groupId: { in: groupIds },
-            status: "ACTIVE",
-          },
-          select: {
-            groupId: true,
-            studentId: true,
-            student: { select: { name: true } },
-          },
-        }),
-        db.attendanceRecord.findMany({
-          where: {
-            schoolId: session.user.schoolId,
-            scheduleSlotId: { in: slotsRaw.map((slot) => slot.id) },
-          },
-          select: {
-            scheduleSlotId: true,
-            studentId: true,
-            status: true,
-          },
-        }),
-      ])
-    : [[], []];
+  const journalEnrollments = await db.enrollment.findMany({
+    where: {
+      groupId: { in: groupIds },
+      status: "ACTIVE",
+      ...(isSchoolStaff
+        ? {}
+        : session.user.role === "PARENT"
+          ? {
+              student: {
+                childLinks: {
+                  some: {
+                    parentId: session.user.id,
+                    archivedAt: null,
+                  },
+                },
+              },
+            }
+          : { studentId: session.user.id }),
+    },
+    select: {
+      groupId: true,
+      studentId: true,
+      student: { select: { name: true } },
+    },
+  });
+  const visibleStudentIds = Array.from(
+    new Set(journalEnrollments.map((enrollment) => enrollment.studentId)),
+  );
+  const [attendanceRaw, checkInsRaw] = await Promise.all([
+    db.attendanceRecord.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        scheduleSlotId: { in: slotsRaw.map((slot) => slot.id) },
+        studentId: { in: visibleStudentIds },
+      },
+      select: {
+        scheduleSlotId: true,
+        studentId: true,
+        status: true,
+      },
+    }),
+    db.lessonCheckIn.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        scheduleSlotId: { in: slotsRaw.map((slot) => slot.id) },
+        studentId: { in: visibleStudentIds },
+      },
+      select: {
+        scheduleSlotId: true,
+        studentId: true,
+        checkedInAt: true,
+      },
+    }),
+  ]);
   const attendanceBySlotAndStudent = new Map(
     attendanceRaw.map((record) => [
       `${record.scheduleSlotId}:${record.studentId}`,
       record.status,
+    ]),
+  );
+  const checkInBySlotAndStudent = new Map(
+    checkInsRaw.map((record) => [
+      `${record.scheduleSlotId}:${record.studentId}`,
+      record.checkedInAt.toISOString(),
     ]),
   );
   const studentsByGroup = new Map<string, typeof journalEnrollments>();
@@ -328,6 +362,12 @@ export default async function SchedulePage({
         group?.teachers.some(
           (teacher) => teacher.teacherId === session.user.id,
         ) === true);
+    const now = new Date();
+    const canConfirmArrival = session.user.role === "STUDENT";
+    const checkInWindowOpen =
+      canConfirmArrival &&
+      now >= subMinutes(slot.startAt, 30) &&
+      now <= addMinutes(slot.endAt, 15);
     return {
       id: slot.id,
       groupId: slot.groupId,
@@ -352,16 +392,20 @@ export default async function SchedulePage({
       version: slot.version,
       isLocked: slot.isLocked,
       canEditLesson,
-      students: canEditLesson
-        ? (studentsByGroup.get(slot.groupId) ?? []).map((enrollment) => ({
+      canConfirmArrival,
+      checkInWindowOpen,
+      students: (studentsByGroup.get(slot.groupId) ?? []).map((enrollment) => ({
             id: enrollment.studentId,
             name: enrollment.student.name,
             attendanceStatus:
               attendanceBySlotAndStudent.get(
                 `${slot.id}:${enrollment.studentId}`,
               ) ?? null,
-          }))
-        : [],
+            selfCheckedInAt:
+              checkInBySlotAndStudent.get(
+                `${slot.id}:${enrollment.studentId}`,
+              ) ?? null,
+          })),
     };
   });
   const days = Array.from({ length: 6 }, (_, index) => {
@@ -407,9 +451,11 @@ export default async function SchedulePage({
     return {
       teacherId: teacher.id,
       teacherName: teacher.name,
-      weekdays: windows.map((window) => window.weekday),
-      startMinute: windows[0]?.startMinute ?? 15 * 60,
-      endMinute: windows[0]?.endMinute ?? 19 * 60,
+      windows: windows.map((window) => ({
+        weekday: window.weekday,
+        startMinute: window.startMinute,
+        endMinute: window.endMinute,
+      })),
       configured: windows.length > 0,
     };
   });

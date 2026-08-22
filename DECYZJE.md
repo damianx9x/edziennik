@@ -856,3 +856,25 @@ odpowiada za jego niezmienność, komplet kroków i dowód oświadczenia.
 **Dlaczego:** dyrektor i rodzic potrzebują pewnej instrukcji dopasowanej do
 kursów języka angielskiego, ale interfejs nie może składać fałszywej obietnicy,
 że mechanizm techniczny naprawi brak wymaganej informacji w źródłowym PDF.
+
+## ADR-069 — dzienna dostępność i rozdzielenie przybycia od obecności
+
+**Data:** 2026-08-22
+**Decyzja:** wykładowca ustawia osobne godziny dostępności dla każdego dnia
+tygodnia. Grafik i asystent uznają termin za poprawny tylko wtedy, gdy cała
+lekcja mieści się w oknie wskazanego dnia. Każda lekcja otwiera jeden wspólny
+widok szczegółów: dyrektor i przypisany wykładowca wpisują temat oraz oficjalną
+obecność, rodzic odczytuje dane swoich dzieci, a uczeń odczytuje własne dane i
+może potwierdzić przybycie od 30 minut przed zajęciami do 15 minut po nich.
+Potwierdzenie ucznia jest osobnym, audytowanym zapisem i nigdy nie zastępuje
+obecności wpisanej przez szkołę.
+
+Przed pełnymi powiadomieniami push aplikacja pokazuje przypomnienie w centrum
+powiadomień i pozwala pobrać prywatny plik kalendarza z alarmem 30 minut przed
+lekcją. Powiadomienia działające w tle po zamknięciu strony wymagają zgody
+urządzenia i infrastruktury PWA/VAPID w kolejnym etapie.
+
+**Dlaczego:** różne dni pracy wykładowcy nie mogą być spłaszczane do jednych
+godzin. Rozdzielenie samodzielnego check-inu od dokumentacji szkoły zapobiega
+sytuacji, w której uczeń sam ustala oficjalną frekwencję, a kalendarz telefonu
+daje proste i niezawodne przypomnienie bez pozorowania niewdrożonej funkcji.

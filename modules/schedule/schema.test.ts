@@ -4,6 +4,7 @@ import {
   getWeekStartKey,
   intervalsOverlap,
   scheduleGenerationSchema,
+  teacherAvailabilitySchema,
   toUtcInterval,
 } from "./schema";
 
@@ -79,6 +80,30 @@ describe("schedule interval", () => {
         scope: "LOCATION",
         rangeStart: "2026-07-27",
         rangeEnd: "2026-08-01",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts different availability hours on different weekdays", () => {
+    expect(
+      teacherAvailabilitySchema.safeParse({
+        teacherId: "57c9a10e-73af-4edc-bc1f-17706a3ee0b9",
+        windows: [
+          { weekday: 1, startMinute: 15 * 60, endMinute: 18 * 60 },
+          { weekday: 3, startMinute: 16 * 60 + 30, endMinute: 20 * 60 },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects two availability rows for the same weekday", () => {
+    expect(
+      teacherAvailabilitySchema.safeParse({
+        teacherId: "57c9a10e-73af-4edc-bc1f-17706a3ee0b9",
+        windows: [
+          { weekday: 2, startMinute: 15 * 60, endMinute: 18 * 60 },
+          { weekday: 2, startMinute: 17 * 60, endMinute: 19 * 60 },
+        ],
       }).success,
     ).toBe(false);
   });

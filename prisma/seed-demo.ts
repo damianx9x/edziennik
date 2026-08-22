@@ -430,6 +430,26 @@ async function main() {
     ),
   );
 
+  const allDemoTeachers = [teacher, ...additionalTeachers];
+  await prisma.availabilityWindow.deleteMany({
+    where: {
+      schoolId: school.id,
+      teacherId: { in: allDemoTeachers.map((item) => item.id) },
+    },
+  });
+  await prisma.availabilityWindow.createMany({
+    data: allDemoTeachers.flatMap((item, teacherIndex) =>
+      [1, 2, 3, 4, 5].map((weekday) => ({
+        schoolId: school.id,
+        teacherId: item.id,
+        weekday,
+        startMinute: (14 + ((weekday + teacherIndex) % 3)) * 60,
+        endMinute: (18 + ((weekday + teacherIndex) % 3)) * 60,
+        isAvailable: true,
+      })),
+    ),
+  });
+
   const demoParents = [parent];
   for (let index = 1; index <= 6; index += 1) {
     const name = `Rodzic Demo ${String(index + 1).padStart(2, "0")}`;
@@ -564,6 +584,45 @@ async function main() {
       skipDuplicates: true,
     });
   }
+
+  // Ruchoma lekcja demonstracyjna pozwala od razu sprawdzić przypomnienie
+  // oraz osobne potwierdzenie przybycia ucznia, bez zmiany oficjalnej obecności.
+  const reminderStartAt = new Date(Date.now() + 20 * 60 * 1000);
+  reminderStartAt.setSeconds(0, 0);
+  const reminderEndAt = new Date(reminderStartAt.getTime() + 60 * 60 * 1000);
+  const reminderSlot = await prisma.scheduleSlot.upsert({
+    where: { id: stableUuid(199) },
+    update: {
+      schoolId: school.id,
+      groupId: demoGroupIds[0],
+      roomId: demoRooms[0].id,
+      teacherId: teacher.id,
+      startAt: reminderStartAt,
+      endAt: reminderEndAt,
+      status: "PLANNED",
+      archivedAt: null,
+      topic: "Speaking warm-up — lekcja przypominająca",
+    },
+    create: {
+      id: stableUuid(199),
+      schoolId: school.id,
+      groupId: demoGroupIds[0],
+      roomId: demoRooms[0].id,
+      teacherId: teacher.id,
+      createdById: director.id,
+      startAt: reminderStartAt,
+      endAt: reminderEndAt,
+      status: "PLANNED",
+      topic: "Speaking warm-up — lekcja przypominająca",
+    },
+  });
+  await prisma.lessonCheckIn.deleteMany({
+    where: { scheduleSlotId: reminderSlot.id },
+  });
+  await prisma.attendanceRecord.deleteMany({
+    where: { scheduleSlotId: reminderSlot.id },
+  });
+  slotIds.push(reminderSlot.id);
 
   await seedDemoContracts({
     schoolId: school.id,
