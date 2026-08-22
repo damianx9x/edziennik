@@ -85,7 +85,7 @@ const nextConfig: NextConfig = {
               headers: [
                 {
                   key: "Cache-Control",
-                  value: "private, no-store, max-age=0",
+                  value: "private, no-store, no-transform, max-age=0",
                 },
               ],
             },

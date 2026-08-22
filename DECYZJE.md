@@ -897,3 +897,15 @@ grafiku i zapisuje się w audycie.
 **Dlaczego:** jedno źródło prawdy zapobiega rozjechaniu kartotek, grafiku,
 obecności i komunikacji, a codzienna czynność pozostaje prosta: najpierw grupa,
 potem jej osoby i preferowana sala.
+
+## ADR-071 — Cloudflare nie przekształca HTML panelu
+
+**Data:** 2026-08-22
+**Decyzja:** prywatne odpowiedzi `/panel/*` mają nagłówek
+`Cache-Control: private, no-store, no-transform, max-age=0`. Dyrektywa
+`no-transform` blokuje modyfikowanie adresów e-mail w HTML przez warstwę
+pośrednią. Statyczne zasoby Next.js zachowują własne reguły cache.
+
+**Dlaczego:** automatyczne maskowanie e-maili przez Cloudflare zmieniało drzewo
+dokumentu przed uruchomieniem Reacta i powodowało błąd hydratacji przy
+bezpośrednim otwarciu kartotek.
