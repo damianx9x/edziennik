@@ -72,7 +72,7 @@ export default async function StudentPanelPage() {
           </div>
           <h2>Materiały</h2>
           <p>Notatki i pliki od wykładowcy zawsze pod ręką.</p>
-          <span>W przygotowaniu · Etap 6</span>
+          <span>Moduł nie jest jeszcze uruchomiony</span>
         </article>
         <article>
           <div className="student-action-icon student-action-red">
@@ -80,7 +80,7 @@ export default async function StudentPanelPage() {
           </div>
           <h2>Zadania</h2>
           <p>Krótka lista z jasnym terminem i statusem wykonania.</p>
-          <span>W przygotowaniu · Etap 6</span>
+          <span>Moduł nie jest jeszcze uruchomiony</span>
         </article>
         <article>
           <div className="student-action-icon student-action-gold">

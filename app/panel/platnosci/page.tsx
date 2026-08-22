@@ -37,12 +37,18 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           paymentLabel: true,
           paymentDueDate: true,
           paymentSummary: true,
+          installmentCount: true,
+          totalAmountCents: true,
         },
       },
       parent: { select: { id: true, name: true } },
       student: { select: { name: true } },
       acceptance: { select: { acceptedAt: true } },
       paymentRecord: {
+        include: { changedBy: { select: { name: true } } },
+      },
+      paymentInstallments: {
+        orderBy: { installmentNumber: "asc" },
         include: { changedBy: { select: { name: true } } },
       },
     },
@@ -53,7 +59,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
     <AuthenticatedPanelShell session={session} active="payments">
       <header className="stage4-heading">
         <div>
-          <span className="section-kicker">Etap 4 · płatności</span>
+          <span className="section-kicker">Rozliczenia kursów</span>
           <h1>{isManagement ? "Płatności wynikające z umów" : "Płatności z zaakceptowanych umów"}</h1>
           <p>{isManagement ? "Kwota i termin pochodzą z wersji wysłanej rodzicowi. Ty zmieniasz tylko status rozliczenia." : "Widzisz kwotę, termin i aktualny status. Płatności nie wykonuje się w eDzienniku."}</p>
         </div>
@@ -62,7 +68,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       <section className="stage4-list-section">
         <div className="stage4-section-title">
           <div><span className="section-kicker">Umowy odpłatne</span><h2>Lista rozliczeń</h2></div>
-          <span>{assignments.length} pozycji</span>
+          <span>{assignments.reduce((sum, item) => sum + Math.max(item.paymentInstallments.length, 1), 0)} pozycji</span>
         </div>
         {parentId ? <a className="stage4-filter-reset" href="/panel/platnosci">Pokaż rozliczenia wszystkich rodziców</a> : null}
         {assignments.length === 0 ? (
@@ -71,20 +77,22 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
           <PaymentList
             isManagement={isManagement}
             initialSelectedId={params.platnosc}
-            items={assignments.map((assignment) => {
+            items={assignments.flatMap((assignment) => {
               const contractStatus =
                 assignment.status !== "ACCEPTED" &&
                 assignment.expiresAt &&
                 assignment.expiresAt < now
                   ? "EXPIRED"
                   : assignment.status;
-              return {
+              const base = {
                 assignmentId: assignment.id,
                 parentId: assignment.parent.id,
                 parentName: assignment.parent.name,
                 studentName: assignment.student.name,
                 contractTitle: assignment.version.title,
                 contractVersion: assignment.version.version,
+                installmentCount: assignment.version.installmentCount,
+                totalAmountCents: assignment.version.totalAmountCents,
                 contractStatus,
                 acceptedAt: assignment.acceptance?.acceptedAt.toISOString() ?? null,
                 paymentLabel: assignment.version.paymentLabel ?? "Płatność z umowy",
@@ -102,6 +110,21 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
                 changedByName: isManagement ? assignment.paymentRecord?.changedBy.name ?? null : null,
                 note: isManagement ? assignment.paymentRecord?.note ?? null : null,
               };
+              if (assignment.paymentInstallments.length === 0) return [{ ...base, itemId: assignment.id, installmentId: "", installmentNumber: 0 }];
+              return assignment.paymentInstallments.map((installment) => ({
+                ...base,
+                itemId: installment.id,
+                installmentId: installment.id,
+                installmentNumber: installment.installmentNumber,
+                paymentLabel: `Rata ${installment.installmentNumber} z ${assignment.version.installmentCount ?? assignment.paymentInstallments.length}`,
+                paymentAmountCents: installment.amountCents,
+                dueDate: installment.dueDate.toISOString(),
+                storedStatus: installment.status,
+                displayStatus: getEffectivePaymentStatus({ contractStatus, storedStatus: installment.status, dueDate: installment.dueDate, now }),
+                updatedAt: installment.updatedAt.toISOString(),
+                changedByName: isManagement ? installment.changedBy.name : null,
+                note: isManagement ? installment.note : null,
+              }));
             })}
           />
         )}

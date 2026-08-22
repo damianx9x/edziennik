@@ -52,6 +52,11 @@ type ContractItem = {
   serviceEndDate: string | null;
   cancellationSummary: string | null;
   requiresEarlyStartRequest: boolean;
+  installmentCount: number | null;
+  installmentAmountCents: number | null;
+  totalAmountCents: number | null;
+  documents: { id: string; kind: "AGREEMENT_RODO" | "PRICE_LIST" | "SCHEDULE" | "OTHER"; title: string; fileName: string; sizeLabel: string }[];
+  viewedDocumentIds: string[];
   acceptanceStatement: string;
   actionLabel: string;
 };
@@ -96,10 +101,15 @@ export function ContractList({
   const [selected, setSelected] = useState<ContractItem | null>(null);
   const [showDocument, setShowDocument] = useState(false);
   const [documentLoaded, setDocumentLoaded] = useState(false);
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  const [openedDocumentIds, setOpenedDocumentIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     const item = initialSelectedId ? items.find((candidate) => candidate.id === initialSelectedId) : null;
     if (!item || dialogRef.current?.open) return;
     setSelected(item);
+    setActiveDocumentId(item.documents[0]?.id ?? null);
+    setOpenedDocumentIds(new Set(item.viewedDocumentIds));
+    setDocumentLoaded(item.documents.length > 0 && item.viewedDocumentIds.length >= item.documents.length);
     dialogRef.current?.showModal();
   }, [initialSelectedId, items]);
 
@@ -122,7 +132,9 @@ export function ContractList({
     lastTriggerRef.current = event.currentTarget;
     setSelected(item);
     setShowDocument(false);
-    setDocumentLoaded(false);
+    setDocumentLoaded(item.documents.length > 0 && item.viewedDocumentIds.length >= item.documents.length);
+    setActiveDocumentId(item.documents[0]?.id ?? null);
+    setOpenedDocumentIds(new Set(item.viewedDocumentIds));
     requestAnimationFrame(() => dialogRef.current?.showModal());
   }
 
@@ -130,6 +142,8 @@ export function ContractList({
     dialogRef.current?.close();
     setShowDocument(false);
     setDocumentLoaded(false);
+    setActiveDocumentId(null);
+    setOpenedDocumentIds(new Set());
   }
 
   function restoreFocus() {
@@ -224,23 +238,19 @@ export function ContractList({
                       : "Wydruk, podpis i bezpieczny upload"}
                   </span>
                 </div>
-                <h3>Co obejmuje umowa</h3>
-                <p>{selected.serviceSummary}</p>
-                <div className="contract-service-period">
-                  <div><span>Od</span><strong>{formatDate(selected.serviceStartDate)}</strong></div>
-                  <div><span>Do</span><strong>{formatDate(selected.serviceEndDate)}</strong></div>
-                </div>
+                <h3>Pakiet przekazany rodzicowi</h3>
+                <p>{selected.documents.length ? "Umowa i informacje RODO, obowiązujący cennik lub kosztorys oraz harmonogram zajęć. Treść pozostaje w oryginalnych plikach szkoły." : selected.serviceSummary}</p>
                 <h3>{selected.requiresPayment ? "Cena i płatność" : "Bez obowiązku zapłaty"}</h3>
                 {selected.requiresPayment ? (
                   <div className="contract-payment-summary">
-                    <strong>{formatAmount(selected.paymentAmountCents)}</strong>
-                    <span>{selected.paymentLabel ?? "Płatność wynikająca z umowy"}</span>
-                    <small>Termin: {formatDate(selected.paymentDueDate)}</small>
+                    <strong>{selected.installmentCount ? `${selected.installmentCount} rat × ${formatAmount(selected.installmentAmountCents)}` : formatAmount(selected.paymentAmountCents)}</strong>
+                    <span>{selected.totalAmountCents ? `Kwota całkowita: ${formatAmount(selected.totalAmountCents)}` : selected.paymentLabel ?? "Płatność wynikająca z umowy"}</span>
+                    <small>Pierwszy termin: {formatDate(selected.paymentDueDate)}</small>
                     {selected.paymentSummary ? <p>{selected.paymentSummary}</p> : null}
                   </div>
                 ) : <p>Ta umowa nie tworzy obowiązku zapłaty.</p>}
-                <h3>Zakończenie lub wypowiedzenie</h3>
-                <p>{selected.cancellationSummary ?? "Szczegółowe zasady znajdują się w dokumencie PDF."}</p>
+                <h3>Warunki umowy</h3>
+                <p>Szczegółowy okres, zasady wypowiedzenia i terminy znajdują się w załączonej umowie oraz harmonogramie. System ich nie dubluje.</p>
                 <div className="contract-consumer-summary">
                   <ShieldCheck aria-hidden="true" />
                   <div>
@@ -258,19 +268,27 @@ export function ContractList({
               </section>
 
               <section className="stage4-document-panel">
+                {selected.documents.length ? <><div className="contract-document-tabs" role="tablist" aria-label="Dokumenty w pakiecie">{selected.documents.map((document) => <button key={document.id} type="button" role="tab" aria-selected={activeDocumentId === document.id} onClick={() => { setActiveDocumentId(document.id); setShowDocument(true); }}><FileText aria-hidden="true" /><span><strong>{document.title}</strong><small>{openedDocumentIds.has(document.id) ? "Sprawdzony" : `${document.fileName} · ${document.sizeLabel}`}</small></span></button>)}</div><p className="stage4-inline-info">Sprawdzone dokumenty: {openedDocumentIds.size} z {selected.documents.length}</p></> : null}
                 {showDocument ? (
                   <iframe
                     title={`Dokument ${selected.title}`}
-                    src={`/panel/umowy/${selected.id}/plik`}
-                    onLoad={() => setDocumentLoaded(true)}
+                    src={activeDocumentId ? `/panel/umowy/${selected.id}/dokument/${activeDocumentId}` : `/panel/umowy/${selected.id}/plik`}
+                    onLoad={() => {
+                      if (!activeDocumentId) { setDocumentLoaded(true); return; }
+                      setOpenedDocumentIds((current) => {
+                        const next = new Set(current); next.add(activeDocumentId);
+                        setDocumentLoaded(next.size >= selected.documents.length);
+                        return next;
+                      });
+                    }}
                   />
                 ) : (
                   <div className="stage4-document-placeholder">
                     <FileText aria-hidden="true" />
-                    <h3>Dokument nie otworzy się sam</h3>
-                    <p>Wybierz przycisk, aby świadomie wyświetlić dokładną wersję PDF.</p>
+                    <h3>{selected.documents.length ? "Wybierz jeden z trzech dokumentów" : "Dokument nie otworzy się sam"}</h3>
+                    <p>Rodzic może osobno sprawdzić umowę, cennik i harmonogram.</p>
                     <button className="stage4-primary" type="button" onClick={() => setShowDocument(true)}>
-                      <Eye aria-hidden="true" /> Wyświetl PDF
+                      <Eye aria-hidden="true" /> {selected.documents.length ? "Otwórz pierwszy dokument" : "Wyświetl PDF"}
                     </button>
                   </div>
                 )}
@@ -280,11 +298,11 @@ export function ContractList({
             <footer className="stage4-preview-footer">
               <a
                 className="stage4-secondary"
-                href={`/panel/umowy/${selected.id}/plik?download=1`}
+                href={activeDocumentId ? `/panel/umowy/${selected.id}/dokument/${activeDocumentId}?download=1` : `/panel/umowy/${selected.id}/plik?download=1`}
                 target="_blank"
                 rel="noreferrer"
               >
-                <Download aria-hidden="true" /> Pobierz PDF
+                <Download aria-hidden="true" /> Pobierz wybrany PDF
               </a>
 
               {!isManagement && selected.acceptanceMode === "DOCUMENTARY" && selected.status !== "ACCEPTED" && selected.status !== "EXPIRED" && documentLoaded ? (
@@ -317,7 +335,7 @@ export function ContractList({
                 !isManagement && documentLoaded ? <SignedContractForm assignmentId={selected.id} /> : <p className="stage4-external-note">Pobierz PDF, wydrukuj i podpisz cały dokument. Po wyświetleniu PDF pojawi się bezpieczne pole wgrania.</p>
               ) : null}
 
-              {isManagement ? (
+              {isManagement && selected.documents.length === 0 ? (
                 <ContractVersionForm
                   contractId={selected.contractId}
                   assignmentId={selected.id}

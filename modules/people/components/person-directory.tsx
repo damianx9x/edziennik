@@ -356,7 +356,7 @@ export function PersonDirectory({
               <section aria-labelledby="person-modules-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-modules-heading">Sprawy tej osoby</h3>
-                  <span>Gotowe moduły i zaplanowane funkcje</span>
+                  <span>Skróty do powiązanych informacji</span>
                 </div>
                 <div className="person-module-grid">
                   <FutureModule
@@ -385,7 +385,7 @@ export function PersonDirectory({
                     href="/panel/szkola#postepy"
                     icon={<TrendingUp aria-hidden="true" />}
                     title="Postępy"
-                    status="Planowane · Etap 6"
+                    status="Moduł nie jest jeszcze uruchomiony"
                   />
                 </div>
               </section>

@@ -1,11 +1,11 @@
 export const CONTRACT_LEGAL_CHECKLIST_VERSION = "kla-contract-checklist-2026-v2";
-export const CONTRACT_ACCEPTANCE_STATEMENT_VERSION = "kla-documentary-2026-v3";
-export const CONTRACT_CONSUMER_NOTICE_VERSION = "kla-consumer-notice-2026-v1";
+export const CONTRACT_ACCEPTANCE_STATEMENT_VERSION = "kla-documentary-2026-v4";
+export const CONTRACT_CONSUMER_NOTICE_VERSION = "kla-consumer-notice-2026-v2";
 
 export const CONTRACT_LEGAL_REVIEW_DATE = "22 sierpnia 2026";
 
 export const CONTRACT_CONSUMER_NOTICE =
-  "Umowa jest zawierana na odległość. Co do zasady konsument może odstąpić od niej w ciągu 14 dni od zawarcia, bez podawania przyczyny. Jeżeli na wyraźne żądanie rodzica świadczenie rozpocznie się wcześniej, po odstąpieniu szkoła może rozliczyć część usługi wykonaną do tej chwili. Prawo odstąpienia może wygasnąć po pełnym wykonaniu usługi tylko po spełnieniu warunków ustawowych. Szczegółowe zasady i formularz odstąpienia muszą znajdować się w przekazanym dokumencie.";
+  "Umowa na kurs języka angielskiego jest zawierana na odległość. Rodzic otrzymuje przed decyzją umowę i informacje RODO, indywidualny kosztorys oraz harmonogram. Konsument może co do zasady odstąpić od umowy w ciągu 14 dni bez podawania przyczyny. Jeśli na jego wyraźne żądanie zajęcia rozpoczną się wcześniej, szkoła może rozliczyć usługę wykonaną do chwili odstąpienia. Pełne zasady, dane szkoły i formularz odstąpienia znajdują się w przekazanym pakiecie.";
 
 export function getContractAcceptanceStatement(input: {
   title: string;
@@ -20,11 +20,18 @@ export function getContractAcceptanceStatement(input: {
   serviceEndDate?: string | null;
   cancellationSummary?: string | null;
   requiresEarlyStartRequest: boolean;
+  documentTitles?: string[];
+  installmentCount?: number | null;
+  installmentAmountCents?: number | null;
+  totalAmountCents?: number | null;
 }): string {
   const period = [input.serviceStartDate, input.serviceEndDate]
     .filter(Boolean)
     .join(" – ");
-  const base = `Potwierdzam, że przed złożeniem oświadczenia otrzymałem/am i przeczytałem/am umowę „${input.title}”, wersja ${input.version}, dotyczącą: ${input.serviceSummary}${period ? `, okres: ${period}` : ""}. Akceptuję dokładnie tę wersję dokumentu. Zasady czasu trwania i zakończenia: ${input.cancellationSummary || "opisane w umowie"}.`;
+  const packageStatement = input.documentTitles?.length
+    ? `otrzymałem/am i przeczytałem/am cały pakiet: ${input.documentTitles.join(", ")}`
+    : `otrzymałem/am i przeczytałem/am umowę „${input.title}”`;
+  const base = `Potwierdzam, że przed złożeniem oświadczenia ${packageStatement}, wersja ${input.version}, dotyczącą: ${input.serviceSummary}${period ? `, okres: ${period}` : ""}. Akceptuję dokładnie tę, niezmienną wersję dokumentów. Zasady czasu trwania i zakończenia są opisane w umowie${input.cancellationSummary ? `: ${input.cancellationSummary}` : "."}`;
 
   const earlyStartStatement = input.requiresEarlyStartRequest
     ? " Na moje wyraźne żądanie świadczenie może rozpocząć się przed upływem terminu na odstąpienie, z konsekwencjami opisanymi w informacji konsumenckiej."
@@ -32,7 +39,11 @@ export function getContractAcceptanceStatement(input: {
 
   if (!input.requiresPayment) return `${base}${earlyStartStatement}`;
 
+  const installmentTerms = input.installmentCount && input.installmentAmountCents
+    ? `${input.installmentCount} rat po ${(input.installmentAmountCents / 100).toFixed(2).replace(".", ",")} zł${input.totalAmountCents ? `, łącznie ${(input.totalAmountCents / 100).toFixed(2).replace(".", ",")} zł` : ""}`
+    : null;
   const structuredTerms = [
+    installmentTerms,
     input.paymentLabel,
     typeof input.paymentAmountCents === "number"
       ? `${(input.paymentAmountCents / 100).toFixed(2).replace(".", ",")} zł brutto`

@@ -35,12 +35,17 @@ type StoredPaymentStatus = "UNSET" | "PENDING" | "PAID" | "OVERDUE";
 type PaymentFilter = "ALL" | "ACTION" | "PAID" | "WAITING";
 
 type PaymentItem = {
+  itemId: string;
+  installmentId: string | null;
   assignmentId: string;
   parentId: string;
   parentName: string;
   studentName: string;
   contractTitle: string;
   contractVersion: number;
+  installmentNumber: number | null;
+  installmentCount: number | null;
+  totalAmountCents: number | null;
   contractStatus: "DRAFT" | "SENT" | "VIEWED" | "SIGNED_PENDING_REVIEW" | "ACCEPTED" | "EXPIRED";
   acceptedAt: string | null;
   paymentLabel: string;
@@ -93,11 +98,11 @@ export function PaymentList({
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   useEffect(() => {
     if (!initialSelectedId || !items.some((item) => item.assignmentId === initialSelectedId) || dialogRef.current?.open) return;
-    setSelectedAssignmentId(initialSelectedId);
+    setSelectedAssignmentId(items.find((item) => item.assignmentId === initialSelectedId)?.itemId ?? null);
     requestAnimationFrame(() => dialogRef.current?.showModal());
   }, [initialSelectedId, items]);
   const selected = useMemo(
-    () => items.find((item) => item.assignmentId === selectedAssignmentId) ?? null,
+    () => items.find((item) => item.itemId === selectedAssignmentId) ?? null,
     [items, selectedAssignmentId],
   );
   const [filter, setFilter] = useState<PaymentFilter>("ALL");
@@ -131,7 +136,7 @@ export function PaymentList({
 
   function open(item: PaymentItem, event: MouseEvent<HTMLButtonElement>) {
     lastTriggerRef.current = event.currentTarget;
-    setSelectedAssignmentId(item.assignmentId);
+    setSelectedAssignmentId(item.itemId);
     requestAnimationFrame(() => dialogRef.current?.showModal());
   }
 
@@ -182,7 +187,7 @@ export function PaymentList({
             ) : null}
             <div className="payment-list">
               {group.items.map((item) => (
-                <article key={item.assignmentId}>
+                <article key={item.itemId}>
                   <button
                     type="button"
                     className="payment-row-open"
@@ -225,7 +230,7 @@ export function PaymentList({
             <header className="stage4-preview-header stage4-dialog-drag-handle" onPointerDown={startDrag}>
               <GripHorizontal className="stage4-dialog-grip" aria-label="Przeciągnij, aby przesunąć okno" />
               <div>
-                <span className="section-kicker">Płatność z umowy · wersja {selected.contractVersion}</span>
+                <span className="section-kicker">{selected.installmentNumber ? `Rata ${selected.installmentNumber} z ${selected.installmentCount}` : "Płatność z umowy"} · wersja {selected.contractVersion}</span>
                 <h2 id="payment-preview-title">{selected.contractTitle}</h2>
                 <p>{selected.studentName}{isManagement ? ` · ${selected.parentName}` : ""}</p>
               </div>
@@ -239,9 +244,10 @@ export function PaymentList({
                 {paymentDisplayStatusLabels[selected.displayStatus]}
               </span>
               <dl className="stage4-preview-facts">
-                <div><dt>Kwota z umowy</dt><dd>{formatAmount(selected.paymentAmountCents)}</dd></div>
-                <div><dt>Termin z umowy</dt><dd>{formatDate(selected.dueDate)}</dd></div>
-                <div><dt>Opis</dt><dd>{selected.paymentLabel}</dd></div>
+                <div><dt>Kwota tej raty</dt><dd>{formatAmount(selected.paymentAmountCents)}</dd></div>
+                <div><dt>Termin raty</dt><dd>{formatDate(selected.dueDate)}</dd></div>
+                <div><dt>Plan</dt><dd>{selected.paymentLabel}</dd></div>
+                {selected.totalAmountCents ? <div><dt>Kwota całkowita</dt><dd>{formatAmount(selected.totalAmountCents)}</dd></div> : null}
                 <div><dt>Akceptacja rodzica</dt><dd>{formatDate(selected.acceptedAt, true)}</dd></div>
                 {selected.updatedAt ? <div><dt>Ostatnia zmiana statusu</dt><dd>{formatDate(selected.updatedAt, true)}</dd></div> : null}
                 {isManagement && selected.changedByName ? <div><dt>Zmienił/a</dt><dd>{selected.changedByName}</dd></div> : null}
@@ -292,6 +298,7 @@ function PaymentStatusEditor({ item }: { item: PaymentItem }) {
         <span>Zapis bezpośredni dyrektora</span>
       </div>
       <input type="hidden" name="contractAssignmentId" value={item.assignmentId} />
+      <input type="hidden" name="paymentInstallmentId" value={item.installmentId ?? ""} />
       <div className="payment-status-editor-grid">
         <label>
           Status rozliczenia

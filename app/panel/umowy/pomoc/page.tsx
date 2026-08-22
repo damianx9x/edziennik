@@ -20,12 +20,12 @@ export const metadata: Metadata = { title: "Umowy — pomoc i podstawy prawne" }
 
 const sources = [
   {
-    label: "Kodeks cywilny — oświadczenia woli i forma dokumentowa",
-    href: "https://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20250001071/T/D20251071L.pdf",
+    label: "Kodeks cywilny — art. 77², 77³, 78 i 78¹",
+    href: "https://eli.gov.pl/api/acts/DU/2026/795/text/I/D20260795.pdf",
   },
   {
-    label: "Ustawa o prawach konsumenta — tekst i zmiany",
-    href: "https://eli.gov.pl/eli/DU/2014/827/ogl/pol",
+    label: "Ustawa o prawach konsumenta — tekst jednolity",
+    href: "https://eli.gov.pl/api/acts/DU/2024/1796/text.html",
   },
   {
     label: "UOKiK — informacje przed zawarciem umowy",
@@ -66,12 +66,12 @@ export default async function ContractLegalHelpPage() {
         <header className="contract-help-hero">
           <span className="contract-help-hero-icon"><Scale aria-hidden="true" /></span>
           <div>
-            <span className="section-kicker">Umowy bez prawniczego języka</span>
-            <h1>Co dzieje się po kliknięciu?</h1>
+            <span className="section-kicker">Umowy w King’s Language Academy</span>
+            <h1>Jasny i udokumentowany proces</h1>
             <p>
               {isDirector
-                ? "Zobacz, co szkoła powinna przygotować i jaki dowód zachowuje system."
-                : "Zobacz, jakie informacje otrzymujesz, co potwierdzasz i jakie masz prawa."}
+                ? "System prowadzi szkołę przez wymagane dokumenty, oświadczenia i dowody zawarcia umowy."
+                : "Przed decyzją otrzymujesz komplet dokumentów, pełną cenę i jasną informację o skutkach akceptacji."}
             </p>
           </div>
         </header>
@@ -82,8 +82,8 @@ export default async function ContractLegalHelpPage() {
             <h2 id="contract-help-steps-title">Cztery bezpieczne kroki</h2>
           </div>
           <ol>
-            <li><span>1</span><div><strong>Dokładna wersja</strong><p>Rodzic otwiera PDF przypisany do niego i dziecka. Plik po wysłaniu nie jest podmieniany.</p></div></li>
-            <li><span>2</span><div><strong>Najważniejsze warunki</strong><p>Przed decyzją widać usługę, okres, cenę, termin płatności i zasady zakończenia umowy.</p></div></li>
+            <li><span>1</span><div><strong>Kompletny pakiet</strong><p>Rodzic osobno otwiera umowę i informacje RODO, właściwy kosztorys oraz harmonogram kursu języka angielskiego. Pliki po wysłaniu nie są podmieniane.</p></div></li>
+            <li><span>2</span><div><strong>Bez przepisywania umowy</strong><p>Treść prawna pozostaje w PDF-ach szkoły. System pokazuje dodatkowo tylko liczbę rat, kwotę raty, kwotę całkowitą i terminy potrzebne do przypomnień.</p></div></li>
             <li><span>3</span><div><strong>Świadome potwierdzenia</strong><p>Osobne pola dotyczą dokumentu, informacji konsumenckich, płatności i — gdy trzeba — wcześniejszego rozpoczęcia zajęć.</p></div></li>
             <li><span>4</span><div><strong>Dowód i kopia</strong><p>System zapisuje konto, czas, oświadczenia, wersję oraz skrót SHA-256 dokumentu. Potwierdzenie można pobrać.</p></div></li>
           </ol>
@@ -93,13 +93,14 @@ export default async function ContractLegalHelpPage() {
           {isDirector ? <BookOpenCheck aria-hidden="true" /> : <BadgeCheck aria-hidden="true" />}
           <div>
             <span className="section-kicker">{isDirector ? "Checklista dyrektora" : "Twoje prawa jako rodzica"}</span>
-            <h2>{isDirector ? "System pilnuje procesu, szkoła odpowiada za treść" : "Decyzję podejmujesz dopiero po przeczytaniu"}</h2>
+            <h2>{isDirector ? "System wymusza wymagane elementy procesu online" : "Decyzję podejmujesz dopiero po przeczytaniu całego pakietu"}</h2>
             {isDirector ? (
               <ul>
-                <li>Wgraj zatwierdzony wzór z pełnymi danymi przedsiębiorcy.</li>
-                <li>Podaj całkowitą cenę, okres usługi, wypowiedzenie, reklamację i odstąpienie.</li>
-                <li>Nie wysyłaj nowego PDF jako „korekty” starego — utwórz kolejną wersję.</li>
-                <li>Przed prawdziwym wdrożeniem uzyskaj akceptację prawnika i IOD.</li>
+                <li>Umowa zawiera dane KLA, opis kursu, czas trwania, wypowiedzenie, reklamację i odstąpienie.</li>
+                <li>Kosztorys pokazuje liczbę rat, kwotę jednej raty, kwotę całkowitą i terminy.</li>
+                <li>Rodzic otwiera wszystkie trzy dokumenty, a system dopiero wtedy odblokowuje decyzję.</li>
+                <li>Po zawarciu rodzic pobiera niezmienne potwierdzenie i cały pakiet na trwały nośnik.</li>
+                <li>Każda korekta tworzy nową wersję; zaakceptowany pakiet i historia pozostają niezmienne.</li>
               </ul>
             ) : (
               <ul>
@@ -119,7 +120,7 @@ export default async function ContractLegalHelpPage() {
           </div>
           <details>
             <summary>Czy trzeba drukować i podpisywać umowę?</summary>
-            <p>Dyrektor wybiera jeden z dwóch trybów. W formie dokumentowej rodzic składa jawne oświadczenie po zalogowaniu. W trybie papierowym pobiera dokładny PDF, podpisuje cały egzemplarz i wgrywa czytelny skan do sprawdzenia przez dyrektora. Sam skan jest materiałem dowodowym, ale nie należy go automatycznie utożsamiać z oryginałem, gdy przepis wymaga formy pisemnej.</p>
+            <p>Nie zawsze. Dla umowy niewymagającej formy pisemnej rodzic może złożyć oświadczenie w eDzienniku w formie dokumentowej: system identyfikuje konto i zachowuje dokładną treść oświadczenia oraz wersję dokumentów (art. 77² i 77³ Kodeksu cywilnego). Jeżeli KLA wybierze podpis odręczny, rodzic pobiera umowę i informacje RODO, podpisuje egzemplarz, a następnie wgrywa czytelny skan; papierowy oryginał zachowuje. Cennik i harmonogram pozostają załącznikami do wglądu.</p>
           </details>
           <details>
             <summary>Czy kod SMS zastępuje podpis?</summary>
@@ -131,11 +132,15 @@ export default async function ContractLegalHelpPage() {
           </details>
           <details>
             <summary>Dlaczego przycisk mówi o obowiązku zapłaty?</summary>
-            <p>Przy odpłatnej umowie zawieranej elektronicznie konsument musi bezpośrednio przed decyzją otrzymać najważniejsze informacje, a przycisk ma jednoznacznie wskazywać, że decyzja powoduje obowiązek zapłaty.</p>
+            <p>Tak wymaga art. 17 ust. 2–4 ustawy o prawach konsumenta. Bezpośrednio przed decyzją rodzic widzi przedmiot kursu, czas trwania oraz pełny plan ceny, a przycisk „Zamówienie z obowiązkiem zapłaty” jednoznacznie opisuje skutek.</p>
+          </details>
+          <details>
+            <summary>Co rodzic otrzymuje po zawarciu umowy?</summary>
+            <p>Rodzic może pobrać niezmienne PDF-y oraz potwierdzenie zawierające wersję pakietu, złożone oświadczenia i czas akceptacji. Realizuje to obowiązek przekazania potwierdzenia umowy na trwałym nośniku przed rozpoczęciem usługi, opisany w art. 21 ustawy o prawach konsumenta.</p>
           </details>
           <details>
             <summary>Czy rodzic może odstąpić od umowy?</summary>
-            <p>Co do zasady tak — w terminie 14 dni od zawarcia umowy online. Dokument powinien zawierać instrukcję i wzór formularza. Wyjątki zależą od sposobu i etapu wykonania usługi.</p>
+            <p>Tak — co do zasady w ciągu 14 dni od zawarcia umowy online. KLA przekazuje sposób złożenia oświadczenia i wzór formularza w pakiecie. Jeżeli rodzic wyraźnie zażąda wcześniejszego rozpoczęcia zajęć, szkoła rozlicza wyłącznie wykonaną część usługi zgodnie z ustawą.</p>
           </details>
           <details>
             <summary>Jak złożyć oświadczenie o odstąpieniu?</summary>
@@ -151,7 +156,11 @@ export default async function ContractLegalHelpPage() {
           </details>
           <details>
             <summary>Jakie dane zapisuje system?</summary>
-            <p>Tylko dane potrzebne do identyfikacji oświadczenia i ochrony obu stron: konto, czas, wersję dokumentu, jego skrót, treść potwierdzeń oraz — w trybie papierowym — podpisany plik. Pliki są poza katalogiem publicznym, pobierane dopiero po sprawdzeniu uprawnień i objęte audytem. Docelowa retencja, szyfrowany backup i procedura usunięcia muszą zostać zatwierdzone z prawnikiem oraz IOD.</p>
+            <p>Dane potrzebne do obsługi kursu i wykazania zawarcia umowy: konto rodzica, czas, wersję i kryptograficzny skrót pakietu, treść potwierdzeń oraz — w trybie papierowym — podpisany plik. Dokumenty są poza publiczną stroną i są wydawane dopiero po sprawdzeniu uprawnień. Produkcyjna instalacja KLA przechowuje bazę i pliki na szyfrowanym woluminie oraz wykonuje szyfrowany backup. Zasady minimalizacji, przejrzystości i ochrony realizują art. 5, 13 i 32 RODO.</p>
+          </details>
+          <details>
+            <summary>Jak system realizuje informacje wymagane przed umową?</summary>
+            <p>Art. 12 ustawy o prawach konsumenta jest odwzorowany na trzy dokumenty KLA. Umowa podaje przedsiębiorcę, zasady kursu, czas trwania, kontakt, reklamację, wypowiedzenie i odstąpienie. Kosztorys podaje pełną cenę i raty. Harmonogram pokazuje organizację zajęć. System wymaga otwarcia każdego dokumentu i zapisuje dowód wykonania tych kroków.</p>
           </details>
         </section>
 
@@ -173,7 +182,7 @@ export default async function ContractLegalHelpPage() {
 
         <aside className="contract-help-disclaimer">
           <ShieldCheck aria-hidden="true" />
-          <p><strong>Ostatni przegląd informacji: {CONTRACT_LEGAL_REVIEW_DATE}.</strong> To praktyczne wyjaśnienie działania systemu, a nie indywidualna porada prawna. Wzór KLA, regulamin, obowiązki informacyjne i retencję danych musi zatwierdzić prawnik oraz IOD przed uruchomieniem na prawdziwych danych.</p>
+          <p><strong>Stan prawny i przegląd procesu: {CONTRACT_LEGAL_REVIEW_DATE}.</strong> System zapewnia niezmienność wersji, identyfikację rodzica, odczyt całego pakietu przed decyzją, jednoznaczny przycisk płatny, potwierdzenie na trwałym nośniku i trwały dowód oświadczenia. KLA używa własnego zatwierdzonego wzoru PDF jako źródła warunków kursu; checklista przed wysłaniem wymaga, aby dokument zawierał komplet danych przedsiębiorcy, usługi, ceny, czasu trwania, reklamacji, wypowiedzenia i odstąpienia. Zmiana wzoru zawsze tworzy nową wersję.</p>
         </aside>
       </div>
     </AuthenticatedPanelShell>

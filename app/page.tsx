@@ -252,8 +252,7 @@ export default function Home() {
       <footer>
         <Brand />
         <p>
-          Wersja pilotażowa eDziennika · dane demonstracyjne · treści robocze do
-          akceptacji KLA
+          Bezpieczne środowisko demonstracyjne eDziennika · wyłącznie dane testowe
         </p>
         <Link href="/panel">eDziennik</Link>
       </footer>

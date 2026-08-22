@@ -274,7 +274,7 @@ export async function AuthenticatedPanelShell({
             <span className="status-dot" />
             <div>
               <strong>Bezpieczna sesja</strong>
-              <small>Etap 5 · dostęp wg roli</small>
+              <small>Dostęp chroniony według roli</small>
             </div>
           </div>
         </aside>

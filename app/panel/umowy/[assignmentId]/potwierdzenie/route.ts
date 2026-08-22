@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
@@ -14,6 +15,7 @@ type AcceptanceEvidence = {
   actionLabel?: string;
   confirmations?: {
     documentRead?: boolean;
+    packageDocumentsRead?: Array<{ id?: string; kind?: string; title?: string }>;
     consumerInformationReceived?: boolean;
     paymentObligationAcknowledged?: boolean;
     earlyStartRequested?: boolean;
@@ -26,6 +28,9 @@ export async function GET(
   context: { params: Promise<{ assignmentId: string }> },
 ) {
   const { assignmentId } = await context.params;
+  if (!z.string().uuid().safeParse(assignmentId).success) {
+    return NextResponse.json({ message: "Potwierdzenie nie jest dostępne." }, { status: 404 });
+  }
   const session = await requireActiveSession(
     `/panel/umowy/${assignmentId}/potwierdzenie`,
   );
@@ -101,6 +106,9 @@ export async function GET(
           "",
           "Potwierdzenia:",
           `- dokument przeczytany: ${evidence.confirmations?.documentRead ? "tak" : "brak danych"}`,
+          ...(evidence.confirmations?.packageDocumentsRead?.length
+            ? evidence.confirmations.packageDocumentsRead.map((document) => `- odczytano: ${document.title ?? document.kind ?? "dokument pakietu"}`)
+            : []),
           `- informacje konsumenckie otrzymane: ${evidence.confirmations?.consumerInformationReceived ? "tak" : "brak danych"}`,
           `- obowiązek zapłaty potwierdzony: ${evidence.confirmations?.paymentObligationAcknowledged ? "tak" : "nie dotyczy / brak danych"}`,
           `- wcześniejsze rozpoczęcie zażądane: ${evidence.confirmations?.earlyStartRequested ? "tak" : "nie dotyczy / brak danych"}`,

@@ -135,6 +135,13 @@ enum ContractAcceptanceMode {
   EXTERNAL_SIGNATURE
 }
 
+enum ContractDocumentKind {
+  AGREEMENT_RODO
+  PRICE_LIST
+  SCHEDULE
+  OTHER
+}
+
 enum PaymentStatus {
   UNSET
   PENDING
@@ -190,6 +197,9 @@ model School {
   contracts                Contract[]
   contractAssignments      ContractAssignment[]
   paymentRecords           PaymentRecord[]
+  contractDocuments        ContractDocument[]
+  contractDocumentViews    ContractDocumentView[]
+  paymentInstallments      PaymentInstallment[]
   conversations            Conversation[]
   conversationParticipants ConversationParticipant[]
   messages                 Message[]
@@ -272,8 +282,10 @@ model User {
   contractAssignmentsParent  ContractAssignment[]         @relation("ContractParent")
   contractAssignmentsChild   ContractAssignment[]         @relation("ContractStudent")
   contractAcceptances        ContractAcceptance[]         @relation("ContractAcceptor")
+  contractDocumentViews      ContractDocumentView[]
   paymentRecordsAsStudent    PaymentRecord[]              @relation("PaymentStudent")
   changedPaymentRecords      PaymentRecord[]              @relation("PaymentChangedBy")
+  changedPaymentInstallments PaymentInstallment[]         @relation("PaymentInstallmentChangedBy")
   authoredMessages           Message[]                    @relation("MessageAuthor")
   authoredAnnouncements      Announcement[]               @relation("AnnouncementAuthor")
   messageReads               MessageRead[]
@@ -918,12 +930,13 @@ model StoredFile {
   createdAt    DateTime          @default(now())
   archivedAt   DateTime?
 
-  school             School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  uploadedBy         User                @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
-  importBatches      ImportBatch[]       @relation("ImportSource")
-  contractVersions   ContractVersion[]   @relation("ContractFile")
+  school             School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  uploadedBy         User                 @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  importBatches      ImportBatch[]        @relation("ImportSource")
+  contractVersions   ContractVersion[]    @relation("ContractFile")
   messageAttachments MessageAttachment[]
-  signedAssignments   ContractAssignment[] @relation("SignedContractFile")
+  signedAssignments  ContractAssignment[] @relation("SignedContractFile")
+  contractDocuments  ContractDocument[]
 
   @@index([schoolId, purpose, createdAt])
   @@index([uploadedById, createdAt])
@@ -1002,12 +1015,16 @@ model ContractVersion {
   serviceEndDate            DateTime?              @db.Date
   cancellationSummary       String?
   requiresEarlyStartRequest Boolean                @default(false)
+  installmentCount          Int?
+  installmentAmountCents    Int?
+  totalAmountCents          Int?
   createdAt                 DateTime               @default(now())
 
   contract    Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
   storedFile  StoredFile           @relation("ContractFile", fields: [storedFileId], references: [id], onDelete: Restrict)
   createdBy   User                 @relation("ContractVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
   assignments ContractAssignment[]
+  documents   ContractDocument[]
 
   @@unique([contractId, version])
   @@index([storedFileId])
@@ -1016,34 +1033,96 @@ model ContractVersion {
 }
 
 model ContractAssignment {
-  id         String         @id @default(uuid()) @db.Uuid
-  schoolId   String         @db.Uuid
-  contractId String         @db.Uuid
-  versionId  String         @db.Uuid
-  parentId   String         @db.Uuid
-  studentId  String         @db.Uuid
-  status     ContractStatus @default(SENT)
-  sentAt     DateTime       @default(now())
-  viewedAt   DateTime?
-  signedFileId String?       @unique @db.Uuid
+  id               String         @id @default(uuid()) @db.Uuid
+  schoolId         String         @db.Uuid
+  contractId       String         @db.Uuid
+  versionId        String         @db.Uuid
+  parentId         String         @db.Uuid
+  studentId        String         @db.Uuid
+  status           ContractStatus @default(SENT)
+  sentAt           DateTime       @default(now())
+  viewedAt         DateTime?
+  signedFileId     String?        @unique @db.Uuid
   signedUploadedAt DateTime?
-  expiresAt  DateTime?
-  createdAt  DateTime       @default(now())
+  expiresAt        DateTime?
+  createdAt        DateTime       @default(now())
 
-  school        School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  contract      Contract            @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  version       ContractVersion     @relation(fields: [versionId], references: [id], onDelete: Restrict)
-  parent        User                @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
-  student       User                @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
-  acceptance    ContractAcceptance?
-  paymentRecord PaymentRecord?
-  signedFile    StoredFile?          @relation("SignedContractFile", fields: [signedFileId], references: [id], onDelete: Restrict)
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  contract            Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  version             ContractVersion      @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  parent              User                 @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
+  student             User                 @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  acceptance          ContractAcceptance?
+  paymentRecord       PaymentRecord?
+  paymentInstallments PaymentInstallment[]
+  documentViews       ContractDocumentView[]
+  signedFile          StoredFile?          @relation("SignedContractFile", fields: [signedFileId], references: [id], onDelete: Restrict)
 
   @@unique([versionId, parentId, studentId])
   @@index([schoolId, status, createdAt])
   @@index([parentId, status, createdAt])
   @@index([studentId, createdAt])
   @@index([signedFileId])
+}
+
+model ContractDocument {
+  id                    String               @id @default(uuid()) @db.Uuid
+  schoolId              String               @db.Uuid
+  versionId             String               @db.Uuid
+  storedFileId          String               @db.Uuid
+  kind                  ContractDocumentKind
+  title                 String
+  position              Int                  @default(0)
+  requiredForAcceptance Boolean              @default(true)
+  createdAt             DateTime             @default(now())
+
+  school     School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  version    ContractVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  storedFile StoredFile      @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+  views      ContractDocumentView[]
+
+  @@unique([versionId, kind])
+  @@index([schoolId, createdAt])
+  @@index([storedFileId])
+}
+
+model ContractDocumentView {
+  id           String   @id @default(uuid()) @db.Uuid
+  schoolId     String   @db.Uuid
+  assignmentId String   @db.Uuid
+  documentId   String   @db.Uuid
+  userId       String   @db.Uuid
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @updatedAt
+
+  school     School             @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  assignment ContractAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  document   ContractDocument   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, documentId, userId])
+  @@index([schoolId, userId, lastViewedAt])
+}
+
+model PaymentInstallment {
+  id                String        @id @default(uuid()) @db.Uuid
+  schoolId          String        @db.Uuid
+  assignmentId      String        @db.Uuid
+  changedById       String        @db.Uuid
+  installmentNumber Int
+  amountCents       Int
+  dueDate           DateTime      @db.Date
+  status            PaymentStatus @default(UNSET)
+  note              String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  school     School             @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  assignment ContractAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  changedBy  User               @relation("PaymentInstallmentChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, installmentNumber])
+  @@index([schoolId, status, dueDate])
 }
 
 model ContractAcceptance {

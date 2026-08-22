@@ -154,6 +154,7 @@ async function paymentAssignments(schoolId: string, parentId?: string) {
       student: { select: { name: true } },
       version: { select: { title: true, paymentDueDate: true } },
       paymentRecord: { select: { status: true, updatedAt: true } },
+      paymentInstallments: { orderBy: { installmentNumber: "asc" }, select: { id: true, installmentNumber: true, status: true, dueDate: true, updatedAt: true } },
     },
   });
 }
@@ -165,6 +166,23 @@ function addPaymentNotifications(
   management: boolean,
 ) {
   for (const item of assignments) {
+    if (item.paymentInstallments.length) {
+      for (const installment of item.paymentInstallments) {
+        const effective = getEffectivePaymentStatus({ contractStatus: item.status, storedStatus: installment.status, dueDate: installment.dueDate, now });
+        if (!["OVERDUE", "PENDING", "UNSET"].includes(effective)) continue;
+        const dueSoon = installment.dueDate.getTime() - now.getTime() <= 5 * 86_400_000;
+        if (effective !== "OVERDUE" && !dueSoon) continue;
+        target.push({
+          key: `payment-installment:${installment.id}:${effective}`,
+          kind: effective === "OVERDUE" ? "WARNING" : "INFO",
+          title: effective === "OVERDUE" ? `Rata ${installment.installmentNumber} jest po terminie` : `Zbliża się termin raty ${installment.installmentNumber}`,
+          description: management ? `${item.parent.name} · ${item.student.name} · ${item.version.title}` : item.version.title,
+          href: `/panel/platnosci?platnosc=${installment.id}`,
+          occurredAt: installment.updatedAt ?? installment.dueDate,
+        });
+      }
+      continue;
+    }
     const effective = getEffectivePaymentStatus({
       contractStatus: item.status,
       storedStatus: item.paymentRecord?.status ?? null,

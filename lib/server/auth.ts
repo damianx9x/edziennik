@@ -14,6 +14,25 @@ import {
 } from "@/modules/identity/email/email-provider";
 
 const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const localDemoOrigins = process.env.KLA_ALLOW_INSECURE_DEMO_CREDENTIALS === "1"
+  ? ["http://localhost:3000", "http://localhost:3100", "http://127.0.0.1:3000", "http://127.0.0.1:3100"]
+  : [];
+const trustedOrigins = [...new Set([
+  new URL(baseUrl).origin,
+  ...localDemoOrigins,
+  ...(process.env.KLA_AUTH_TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .flatMap((origin) => {
+      if (!origin) return [];
+      try {
+        const parsed = new URL(origin);
+        return ["http:", "https:"].includes(parsed.protocol) ? [parsed.origin] : [];
+      } catch {
+        return [];
+      }
+    }),
+])];
 const rateLimitStorage =
   process.env.KLA_AUTH_RATE_LIMIT_STORAGE === "memory"
     ? "memory"
@@ -25,7 +44,7 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
-  trustedOrigins: [baseUrl],
+  trustedOrigins,
   advanced: {
     database: {
       generateId: "uuid",

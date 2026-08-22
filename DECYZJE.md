@@ -821,3 +821,38 @@ Prisma jest przypięta przez `overrides` do poprawionej wersji 8.0.2. CI wykonuj
 **Dlaczego:** czekanie na wydanie zależności nadrzędnej pozostawiałoby znaną
 podatność w drzewie produkcyjnym. Każda aktualizacja nadal przechodzi pełne
 testy i build przed przyjęciem.
+
+## ADR-067 — pakiet dokumentów klientki i harmonogram rat
+
+**Data:** 2026-08-22
+**Decyzja:** źródłem treści prawnej pozostają niezmienne PDF-y przygotowane
+przez szkołę. Rodzic otrzymuje jeden pakiet z trzema pozycjami: umową i
+informacjami RODO,
+właściwym cennikiem lub kosztorysem oraz harmonogramem zajęć. System nie wymaga
+ponownego przepisywania okresu zajęć, wypowiedzenia ani treści RODO. Osobno
+zapisuje tylko liczbę rat, kwotę jednej raty, kwotę całkowitą i terminy, bo te
+dane służą do listy rozliczeń i przypomnień. Gotowy wariant można przypisać
+kolejnej rodzinie bez ponownego wgrywania plików.
+
+Każdy dokument ma prywatny plik i osobny, trwały zapis odczytu. Serwer odmawia
+akceptacji do czasu otwarcia wszystkich wymaganych pozycji, a oświadczenie
+odnosi się do skrótu całego pakietu. Dla trybu podpisu odręcznego podpisywana i ponownie
+wgrywana jest umowa; cennik i harmonogram są załącznikami do świadomego wglądu.
+
+**Dlaczego:** odpowiada to rzeczywistemu procesowi szkoły, usuwa pracę
+powtarzaną przy około 200 uczniach i nie pozwala, aby dane pomocnicze w panelu
+rozjechały się z treścią PDF.
+
+## ADR-068 — wymagania prawne pokazane jako mapa procesu KLA
+
+**Data:** 2026-08-22
+**Decyzja:** pomoc prawna nie używa ogólnych, niepewnych komunikatów. Pokazuje
+wprost, jak proces KLA realizuje art. 77² i 77³ Kodeksu cywilnego, art. 12,
+17 i przepisy o odstąpieniu z ustawy o prawach konsumenta oraz art. 5, 13 i 32
+RODO. Jednocześnie nie przypisuje kliknięciu skutku podpisu własnoręcznego ani
+kwalifikowanego. Treść zatwierdzonego wzoru szkoły pozostaje w PDF, a system
+odpowiada za jego niezmienność, komplet kroków i dowód oświadczenia.
+
+**Dlaczego:** dyrektor i rodzic potrzebują pewnej instrukcji dopasowanej do
+kursów języka angielskiego, ale interfejs nie może składać fałszywej obietnicy,
+że mechanizm techniczny naprawi brak wymaganej informacji w źródłowym PDF.

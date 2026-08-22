@@ -52,12 +52,23 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           serviceEndDate: true,
           cancellationSummary: true,
           requiresEarlyStartRequest: true,
+          installmentCount: true,
+          installmentAmountCents: true,
+          totalAmountCents: true,
+          documents: {
+            orderBy: { position: "asc" },
+            select: { id: true, kind: true, title: true, storedFile: { select: { originalName: true, sizeBytes: true } } },
+          },
           storedFile: { select: { originalName: true, sizeBytes: true } },
         },
       },
       parent: { select: { id: true, name: true } },
       student: { select: { name: true } },
       acceptance: { select: { acceptedAt: true } },
+      documentViews: {
+        where: { userId: session.user.id },
+        select: { documentId: true },
+      },
       signedFile: { select: { originalName: true, sizeBytes: true, sha256: true } },
     },
   });
@@ -79,12 +90,18 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
         },
       })
     : [];
+  const reusablePackages = isManagement ? await db.contractVersion.findMany({
+    where: { contract: { schoolId: session.user.schoolId, archivedAt: null }, documents: { some: {} } },
+    orderBy: { createdAt: "desc" },
+    distinct: ["contractId"],
+    select: { id: true, title: true, version: true, paymentSummary: true },
+  }) : [];
 
   return (
     <AuthenticatedPanelShell session={session} active="contracts">
       <header className="stage4-heading">
         <div>
-          <span className="section-kicker">Etap 4 · umowy online</span>
+          <span className="section-kicker">Dokumenty rodziców</span>
           <h1>{isManagement ? "Umowy bez papierowego chaosu" : "Dokumenty do sprawdzenia"}</h1>
           <p>
             {isManagement
@@ -102,6 +119,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
       {isManagement ? (
         <ContractCreateForm
+          packages={reusablePackages}
           parents={parents.map((parent) => ({
             id: parent.id,
             name: parent.name,
@@ -166,6 +184,15 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                 serviceEndDate: assignment.version.serviceEndDate?.toISOString() ?? null,
                 cancellationSummary: assignment.version.cancellationSummary,
                 requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
+                installmentCount: assignment.version.installmentCount,
+                installmentAmountCents: assignment.version.installmentAmountCents,
+                totalAmountCents: assignment.version.totalAmountCents,
+                documents: assignment.version.documents.map((document) => ({
+                  id: document.id, kind: document.kind, title: document.title,
+                  fileName: document.storedFile.originalName,
+                  sizeLabel: document.storedFile.sizeBytes < 1024 ? "mniej niż 1 KB" : `${(document.storedFile.sizeBytes / 1024).toFixed(0)} KB`,
+                })),
+                viewedDocumentIds: assignment.documentViews.map((view) => view.documentId),
                 acceptanceStatement: getContractAcceptanceStatement({
                   title: assignment.version.title,
                   version: assignment.version.version,
@@ -179,6 +206,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
                   serviceEndDate: assignment.version.serviceEndDate?.toLocaleDateString("pl-PL") ?? null,
                   cancellationSummary: assignment.version.cancellationSummary,
                   requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
+                  documentTitles: assignment.version.documents.map((document) => document.title),
+                  installmentCount: assignment.version.installmentCount,
+                  installmentAmountCents: assignment.version.installmentAmountCents,
+                  totalAmountCents: assignment.version.totalAmountCents,
                 }),
                 actionLabel: getContractActionLabel(assignment.version.requiresPayment),
               };
@@ -190,9 +221,10 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
       <p className="stage4-legal-note">
         <ShieldCheck aria-hidden="true" />
         <span>
-          System zapisuje osobę, czas, treść oświadczeń, wersję i skrót PDF.
-          Nie zastępuje podpisu kwalifikowanego, jeśli szczególny przepis albo
-          dokument wymagają formy pisemnej. <Link href="/panel/umowy/pomoc">Poznaj zasady i podstawy prawne</Link>.
+          System zapisuje osobę, czas, treść oświadczeń, wszystkie wymagane dokumenty,
+          wersję i kryptograficzny skrót pakietu. Forma dokumentowa spełnia art. 77²
+          i 77³ Kodeksu cywilnego; dla podpisu odręcznego zachowujemy osobny obieg skanu.
+          <Link href="/panel/umowy/pomoc"> Zobacz wymagania i konkretne podstawy prawne</Link>.
         </span>
       </p>
     </AuthenticatedPanelShell>

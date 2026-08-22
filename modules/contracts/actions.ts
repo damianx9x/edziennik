@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -14,6 +15,8 @@ import {
 import {
   contractAcceptanceSchema,
   contractAssignmentSchema,
+  contractPackageSchema,
+  reuseContractPackageSchema,
   contractVersionSchema,
   signedContractSchema,
   type ContractActionState,
@@ -36,6 +39,134 @@ function amountToCents(value: string): number | null {
 
 function isPdf(bytes: Uint8Array): boolean {
   return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
+}
+
+function buildInstallments(input: { count: number; installmentCents: number; totalCents: number; firstDueDate: string }) {
+  const first = new Date(`${input.firstDueDate}T12:00:00Z`);
+  return Array.from({ length: input.count }, (_, index) => {
+    const targetMonth = first.getUTCMonth() + index;
+    const lastDay = new Date(Date.UTC(first.getUTCFullYear(), targetMonth + 1, 0, 12)).getUTCDate();
+    const dueDate = new Date(Date.UTC(first.getUTCFullYear(), targetMonth, Math.min(first.getUTCDate(), lastDay), 12));
+    const regularSum = input.installmentCents * (input.count - 1);
+    return {
+      installmentNumber: index + 1,
+      amountCents: index === input.count - 1 ? input.totalCents - regularSum : input.installmentCents,
+      dueDate,
+    };
+  });
+}
+
+export async function createContractPackageAction(
+  _previous: ContractActionState,
+  formData: FormData,
+): Promise<ContractActionState> {
+  const session = await requireDirector(contractsPath);
+  if (session.user.role !== "DIRECTOR") return { status: "error", message: "Tylko dyrektor może wysłać pakiet." };
+  const parsed = contractPackageSchema.safeParse({
+    title: formData.get("title"), acceptanceMode: formData.get("acceptanceMode"),
+    requiresPayment: formData.get("requiresPayment"), installmentCount: formData.get("installmentCount"),
+    installmentAmount: formData.get("installmentAmount"), totalAmount: formData.get("totalAmount"),
+    firstPaymentDueDate: formData.get("firstPaymentDueDate"), parentId: formData.get("parentId"),
+    studentId: formData.get("studentId"), expiresAt: formData.get("expiresAt"), legalReadiness: formData.get("legalReadiness"),
+  });
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź dane pakietu." };
+
+  const documentInputs = [
+    { field: "agreementDocument", kind: "AGREEMENT_RODO" as const, title: "Umowa i informacje RODO", position: 1 },
+    { field: "priceListDocument", kind: "PRICE_LIST" as const, title: "Cennik / kosztorys", position: 2 },
+    { field: "scheduleDocument", kind: "SCHEDULE" as const, title: "Harmonogram zajęć", position: 3 },
+  ];
+  const files: Array<(typeof documentInputs)[number] & { file: File; bytes: Uint8Array }> = [];
+  for (const input of documentInputs) {
+    const file = formData.get(input.field);
+    if (!(file instanceof File) || file.size === 0) return { status: "error", message: `Dodaj plik: ${input.title}.` };
+    if (file.size > MAX_CONTRACT_BYTES) return { status: "error", message: `${input.title}: maksymalnie 10 MB.` };
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (file.type !== "application/pdf" || !isPdf(bytes)) return { status: "error", message: `${input.title}: wybierz prawidłowy PDF.` };
+    files.push({ ...input, file, bytes });
+  }
+  const relation = await db.parentChild.findFirst({
+    where: { schoolId: session.user.schoolId, parentId: parsed.data.parentId, childId: parsed.data.studentId, archivedAt: null,
+      parent: { role: "PARENT", status: "ACTIVE", archivedAt: null }, child: { role: "STUDENT", status: "ACTIVE", archivedAt: null } },
+    select: { parentId: true },
+  });
+  if (!relation) return { status: "error", message: "Wybrany rodzic nie jest powiązany z tym uczniem." };
+
+  const storage = getFileStorage();
+  const uploaded: Array<Awaited<ReturnType<typeof storage.put>> & { file: File; kind: "AGREEMENT_RODO" | "PRICE_LIST" | "SCHEDULE"; title: string; position: number }> = [];
+  try {
+    for (const item of files) uploaded.push({ ...(await storage.put({ schoolId: session.user.schoolId, bytes: item.bytes })), file: item.file, kind: item.kind, title: item.title, position: item.position });
+    const packageHash = createHash("sha256").update(uploaded.map((item) => `${item.kind}:${item.sha256}`).join("|")).digest("hex");
+    const installmentAmountCents = amountToCents(parsed.data.installmentAmount)!;
+    const totalAmountCents = amountToCents(parsed.data.totalAmount)!;
+    const requiresPayment = parsed.data.requiresPayment === "yes";
+    await db.$transaction(async (tx) => {
+      const storedFiles = [];
+      for (const item of uploaded) storedFiles.push({ item, record: await tx.storedFile.create({ data: {
+        schoolId: session.user.schoolId, uploadedById: session.user.id, storageKey: item.storageKey,
+        originalName: item.file.name.slice(0, 180), mimeType: "application/pdf", sizeBytes: item.sizeBytes, sha256: item.sha256, purpose: "CONTRACT",
+      } }) });
+      const agreement = storedFiles.find((entry) => entry.item.kind === "AGREEMENT_RODO")!;
+      const contract = await tx.contract.create({ data: {
+        schoolId: session.user.schoolId, title: parsed.data.title, acceptanceMode: parsed.data.acceptanceMode,
+        serviceSummary: "Pakiet dokumentów: umowa i informacje RODO, cennik lub kosztorys oraz harmonogram zajęć.", requiresPayment,
+        paymentSummary: requiresPayment ? `${parsed.data.installmentCount} rat; kwota całkowita ${(totalAmountCents / 100).toFixed(2)} PLN` : null,
+      } });
+      const version = await tx.contractVersion.create({ data: {
+        contractId: contract.id, storedFileId: agreement.record.id, createdById: session.user.id, version: 1, sha256: packageHash,
+        title: parsed.data.title, acceptanceMode: parsed.data.acceptanceMode,
+        serviceSummary: "Szczegóły świadczenia, RODO i harmonogram znajdują się w załączonych plikach PDF.", requiresPayment,
+        paymentSummary: requiresPayment ? `${parsed.data.installmentCount} rat po ${(installmentAmountCents / 100).toFixed(2)} PLN; łącznie ${(totalAmountCents / 100).toFixed(2)} PLN` : null,
+        paymentAmountCents: requiresPayment ? installmentAmountCents : null, paymentLabel: requiresPayment ? `Rata 1 z ${parsed.data.installmentCount}` : null,
+        paymentDueDate: requiresPayment ? new Date(`${parsed.data.firstPaymentDueDate}T12:00:00Z`) : null,
+        cancellationSummary: "Szczegóły znajdują się w umowie PDF.", installmentCount: requiresPayment ? parsed.data.installmentCount : null,
+        installmentAmountCents: requiresPayment ? installmentAmountCents : null, totalAmountCents: requiresPayment ? totalAmountCents : null,
+      } });
+      await tx.contractDocument.createMany({ data: storedFiles.map(({ item, record }) => ({ schoolId: session.user.schoolId, versionId: version.id, storedFileId: record.id, kind: item.kind, title: item.title, position: item.position })) });
+      const assignment = await tx.contractAssignment.create({ data: {
+        schoolId: session.user.schoolId, contractId: contract.id, versionId: version.id, parentId: parsed.data.parentId, studentId: parsed.data.studentId,
+        expiresAt: parsed.data.expiresAt ? new Date(`${parsed.data.expiresAt}T23:59:59`) : null,
+      } });
+      if (requiresPayment) await tx.paymentInstallment.createMany({ data: buildInstallments({ count: parsed.data.installmentCount, installmentCents: installmentAmountCents, totalCents: totalAmountCents, firstDueDate: parsed.data.firstPaymentDueDate }).map((item) => ({ ...item, schoolId: session.user.schoolId, assignmentId: assignment.id, changedById: session.user.id })) });
+      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "contracts.package.sent", entityType: "ContractAssignment", entityId: assignment.id,
+        metadata: { packageHash, documentKinds: uploaded.map((item) => item.kind), installmentCount: requiresPayment ? parsed.data.installmentCount : 0, legalChecklistVersion: CONTRACT_LEGAL_CHECKLIST_VERSION } } });
+    });
+  } catch {
+    await Promise.all(uploaded.map((item) => storage.remove(item.storageKey).catch(() => undefined)));
+    return { status: "error", message: "Nie udało się zapisać pakietu. Spróbuj ponownie." };
+  }
+  revalidatePath(contractsPath); revalidatePath("/panel/platnosci"); revalidatePath("/panel/rodzic");
+  return { status: "success", message: "Pakiet trzech dokumentów i harmonogram rat zostały wysłane rodzicowi." };
+}
+
+export async function reuseContractPackageAction(
+  _previous: ContractActionState,
+  formData: FormData,
+): Promise<ContractActionState> {
+  const session = await requireDirector(contractsPath);
+  if (session.user.role !== "DIRECTOR") return { status: "error", message: "Tylko dyrektor może wysłać pakiet." };
+  const parsed = reuseContractPackageSchema.safeParse({ sourceVersionId: formData.get("sourceVersionId"), parentId: formData.get("parentId"), studentId: formData.get("studentId"), expiresAt: formData.get("expiresAt") });
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź odbiorcę." };
+  const [source, relation] = await Promise.all([
+    db.contractVersion.findFirst({ where: { id: parsed.data.sourceVersionId, contract: { schoolId: session.user.schoolId, archivedAt: null }, documents: { some: {} } }, select: { id: true, contractId: true, requiresPayment: true, installmentCount: true, installmentAmountCents: true, totalAmountCents: true, paymentDueDate: true } }),
+    db.parentChild.findFirst({ where: { schoolId: session.user.schoolId, parentId: parsed.data.parentId, childId: parsed.data.studentId, archivedAt: null }, select: { parentId: true } }),
+  ]);
+  if (!source) return { status: "error", message: "Wybrany pakiet nie jest już dostępny." };
+  if (!relation) return { status: "error", message: "Wybrany rodzic nie jest powiązany z tym uczniem." };
+  try {
+    await db.$transaction(async (tx) => {
+      const assignment = await tx.contractAssignment.create({ data: { schoolId: session.user.schoolId, contractId: source.contractId, versionId: source.id, parentId: parsed.data.parentId, studentId: parsed.data.studentId, expiresAt: parsed.data.expiresAt ? new Date(`${parsed.data.expiresAt}T23:59:59`) : null } });
+      if (source.requiresPayment && source.installmentCount && source.installmentAmountCents && source.totalAmountCents && source.paymentDueDate) {
+        const first = source.paymentDueDate.toISOString().slice(0, 10);
+        await tx.paymentInstallment.createMany({ data: buildInstallments({ count: source.installmentCount, installmentCents: source.installmentAmountCents, totalCents: source.totalAmountCents, firstDueDate: first }).map((item) => ({ ...item, schoolId: session.user.schoolId, assignmentId: assignment.id, changedById: session.user.id })) });
+      }
+      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "contracts.package.reused", entityType: "ContractAssignment", entityId: assignment.id, metadata: { sourceVersionId: source.id } } });
+    });
+  } catch {
+    return { status: "error", message: "Ten pakiet został już wysłany temu rodzicowi dla tego ucznia albo zapis się nie udał." };
+  }
+  revalidatePath(contractsPath); revalidatePath("/panel/platnosci"); revalidatePath("/panel/rodzic");
+  return { status: "success", message: "Gotowy pakiet wysłano bez ponownego wpisywania danych." };
 }
 
 function signedFileMime(bytes: Uint8Array): "application/pdf" | "image/jpeg" | "image/png" | null {
@@ -470,6 +601,13 @@ export async function acceptContractAction(
           serviceEndDate: true,
           cancellationSummary: true,
           requiresEarlyStartRequest: true,
+          installmentCount: true,
+          installmentAmountCents: true,
+          totalAmountCents: true,
+          documents: {
+            where: { requiredForAcceptance: true },
+            select: { id: true, title: true, kind: true },
+          },
         },
       },
     },
@@ -486,6 +624,21 @@ export async function acceptContractAction(
   }
   if (assignment.status === "ACCEPTED") {
     return { status: "success", message: "Ta wersja umowy jest już zaakceptowana." };
+  }
+  if (assignment.version.documents.length > 0) {
+    const viewedRequiredDocuments = await db.contractDocumentView.count({
+      where: {
+        assignmentId: assignment.id,
+        userId: session.user.id,
+        documentId: { in: assignment.version.documents.map((document) => document.id) },
+      },
+    });
+    if (viewedRequiredDocuments !== assignment.version.documents.length) {
+      return {
+        status: "error",
+        message: "Najpierw otwórz wszystkie trzy dokumenty: umowę, kosztorys i harmonogram.",
+      };
+    }
   }
   if (assignment.version.acceptanceMode !== "DOCUMENTARY") {
     return {
@@ -536,6 +689,10 @@ export async function acceptContractAction(
       serviceEndDate: assignment.version.serviceEndDate?.toLocaleDateString("pl-PL") ?? null,
       cancellationSummary: assignment.version.cancellationSummary,
       requiresEarlyStartRequest: assignment.version.requiresEarlyStartRequest,
+      documentTitles: assignment.version.documents.map((document) => document.title),
+      installmentCount: assignment.version.installmentCount,
+      installmentAmountCents: assignment.version.installmentAmountCents,
+      totalAmountCents: assignment.version.totalAmountCents,
     });
     await db.$transaction(async (tx) => {
       const updated = await tx.contractAssignment.updateMany({
@@ -556,6 +713,11 @@ export async function acceptContractAction(
             consumerNoticeText: CONTRACT_CONSUMER_NOTICE,
             confirmations: {
               documentRead: true,
+              packageDocumentsRead: assignment.version.documents.map((document) => ({
+                id: document.id,
+                kind: document.kind,
+                title: document.title,
+              })),
               consumerInformationReceived: true,
               paymentObligationAcknowledged: assignment.version.requiresPayment,
               earlyStartRequested: assignment.version.requiresEarlyStartRequest,

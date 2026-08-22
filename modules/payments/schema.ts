@@ -16,6 +16,7 @@ export const paymentStatusLabels = {
 
 export const paymentRecordSchema = z.object({
   contractAssignmentId: z.uuid("Nie udało się rozpoznać umowy."),
+  paymentInstallmentId: z.union([z.uuid(), z.literal("")]).optional().default(""),
   status: z.enum(paymentStatusValues),
   note: z.string().trim().max(240, "Notatka może mieć do 240 znaków."),
 });

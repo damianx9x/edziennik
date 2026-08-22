@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
-import { requireActiveSession } from "@/modules/identity/auth/session";
+import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 
 export async function GET(_request: Request, context: { params: Promise<{ assignmentId: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
   const { assignmentId } = await context.params;
+  if (!z.string().uuid().safeParse(assignmentId).success) return new NextResponse("Nie znaleziono dokumentu.", { status: 404 });
+  if (session.user.role === "DIRECTOR") await requireDirector("/panel/umowy");
   const assignment = await db.contractAssignment.findFirst({
     where: {
       id: assignmentId,

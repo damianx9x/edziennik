@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
@@ -7,6 +8,7 @@ import { canUseConversation } from "@/modules/messaging/access";
 
 export async function GET(_request: Request, context: { params: Promise<{ attachmentId: string }> }) {
   const { attachmentId } = await context.params;
+  if (!z.string().uuid().safeParse(attachmentId).success) return NextResponse.json({ message: "Nie znaleziono załącznika." }, { status: 404 });
   const session = await requireActiveSession("/panel/wiadomosci");
   const attachment = await db.messageAttachment.findFirst({
     where: { id: attachmentId, schoolId: session.user.schoolId },

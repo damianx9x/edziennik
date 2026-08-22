@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
+import { createHash } from "node:crypto";
 
 import {
   CefrLevel,
@@ -605,6 +606,34 @@ function stableUuid(value: number) {
   return `10000000-0000-4000-8000-${String(value).padStart(12, "0")}`;
 }
 
+function createDemoPdf(title: string, lines: string[]): Uint8Array {
+  const escapePdf = (value: string) => value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
+  const text = [
+    "BT /F1 18 Tf 72 760 Td",
+    `(${escapePdf(title)}) Tj`,
+    ...lines.flatMap((line) => ["0 -30 Td", `(${escapePdf(line)}) Tj`]),
+    "ET",
+  ].join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${text.length} >>\nstream\n${text}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
+  pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new TextEncoder().encode(pdf);
+}
+
 async function seedDemoContracts(input: {
   schoolId: string;
   directorId: string;
@@ -612,44 +641,27 @@ async function seedDemoContracts(input: {
   studentIds: string[];
 }) {
   const storage = getFileStorage();
-  const pdfBytes = new TextEncoder().encode(
-    "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF",
-  );
-  let storedFile = await prisma.storedFile.findFirst({
-    where: {
-      schoolId: input.schoolId,
-      purpose: "CONTRACT",
-      originalName: "KLA-umowa-demo.pdf",
-      archivedAt: null,
-    },
-  });
-  const stored = storedFile
-    ? await storage.read(storedFile.storageKey).then(() => null).catch(() => storage.put({ schoolId: input.schoolId, bytes: pdfBytes }))
-    : await storage.put({ schoolId: input.schoolId, bytes: pdfBytes });
-  if (!storedFile && stored) {
-    storedFile = await prisma.storedFile.create({
-      data: {
-        schoolId: input.schoolId,
-        uploadedById: input.directorId,
-        storageKey: stored.storageKey,
-        originalName: "KLA-umowa-demo.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: stored.sizeBytes,
-        sha256: stored.sha256,
-        purpose: "CONTRACT",
-      },
-    });
-  } else if (storedFile && stored) {
-    storedFile = await prisma.storedFile.update({
-      where: { id: storedFile.id },
-      data: {
-        storageKey: stored.storageKey,
-        sizeBytes: stored.sizeBytes,
-        sha256: stored.sha256,
-      },
-    });
+  async function ensurePdf(originalName: string, bytes: Uint8Array) {
+    const expectedHash = createHash("sha256").update(bytes).digest("hex");
+    const existing = await prisma.storedFile.findFirst({ where: { schoolId: input.schoolId, purpose: "CONTRACT", originalName, archivedAt: null } });
+    if (existing?.sha256 === expectedHash) {
+      const readable = await storage.read(existing.storageKey).then(() => true).catch(() => false);
+      if (readable) return existing;
+    }
+    const uploaded = await storage.put({ schoolId: input.schoolId, bytes });
+    if (!existing) return prisma.storedFile.create({ data: { schoolId: input.schoolId, uploadedById: input.directorId, storageKey: uploaded.storageKey, originalName, mimeType: "application/pdf", sizeBytes: uploaded.sizeBytes, sha256: uploaded.sha256, purpose: "CONTRACT" } });
+    const updated = await prisma.storedFile.update({ where: { id: existing.id }, data: { storageKey: uploaded.storageKey, sizeBytes: uploaded.sizeBytes, sha256: uploaded.sha256 } });
+    if (existing.storageKey !== uploaded.storageKey) await storage.remove(existing.storageKey).catch(() => undefined);
+    return updated;
   }
-  if (!storedFile) throw new Error("Nie udało się przygotować pliku umowy demo.");
+  const storedFile = await ensurePdf("KLA-umowa-demo.pdf", createDemoPdf("UMOWA NA KURS JEZYKA ANGIELSKIEGO", ["Dokument demonstracyjny - bez danych prawdziwych dzieci.", "Zakres: zajecia w malej grupie King's Language Academy.", "Dane firmy, reklamacje, wypowiedzenie i odstapienie: wzor testowy.", "Informacje RODO: cel, podstawa, odbiorcy, retencja i prawa osoby."]));
+  const priceListFile = await ensurePdf("KLA-kosztorys-demo.pdf", createDemoPdf("INDYWIDUALNY KOSZTORYS", ["10 rat po 350,00 PLN.", "Kwota calkowita: 3500,00 PLN.", "Pierwszy termin platnosci: dane testowe.", "Brak platnosci internetowych - status oznacza dyrektor."]));
+  const scheduleFile = await ensurePdf("KLA-harmonogram-demo.pdf", createDemoPdf("HARMONOGRAM ZAJEC", ["Rok szkolny 2026/2027 - dokument demonstracyjny.", "Zajecia raz w tygodniu, 60 minut.", "Dokladne daty wynikaja z zalaczonego harmonogramu KLA.", "Zmiany opublikowane sa widoczne w kalendarzu eDziennika."]));
+  const packageHash = createHash("sha256").update([
+    `AGREEMENT_RODO:${storedFile.sha256}`,
+    `PRICE_LIST:${priceListFile.sha256}`,
+    `SCHEDULE:${scheduleFile.sha256}`,
+  ].join("|")).digest("hex");
 
   const dueOffsets = [-7, 5, 21];
   const paymentStatuses = ["OVERDUE", "PENDING", "PAID"] as const;
@@ -685,20 +697,23 @@ async function seedDemoContracts(input: {
       where: { contractId_version: { contractId: contract.id, version: 1 } },
       update: {
         storedFileId: storedFile.id,
-        sha256: storedFile.sha256,
+        sha256: packageHash,
         paymentDueDate: dueDate,
         serviceStartDate,
         serviceEndDate,
         cancellationSummary: "Miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca. Przykład demonstracyjny — szczegóły w PDF.",
         requiresEarlyStartRequest: index === 0,
         acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
+        installmentCount: 10,
+        installmentAmountCents: 35000 + index * 2500,
+        totalAmountCents: (35000 + index * 2500) * 10,
       },
       create: {
         contractId: contract.id,
         storedFileId: storedFile.id,
         createdById: input.directorId,
         version: 1,
-        sha256: storedFile.sha256,
+        sha256: packageHash,
         title: contract.title,
         acceptanceMode: index === 0 ? "EXTERNAL_SIGNATURE" : "DOCUMENTARY",
         serviceSummary: contract.serviceSummary,
@@ -711,8 +726,21 @@ async function seedDemoContracts(input: {
         serviceEndDate,
         cancellationSummary: "Miesięczny okres wypowiedzenia ze skutkiem na koniec miesiąca. Przykład demonstracyjny — szczegóły w PDF.",
         requiresEarlyStartRequest: index === 0,
+        installmentCount: 10,
+        installmentAmountCents: 35000 + index * 2500,
+        totalAmountCents: (35000 + index * 2500) * 10,
       },
     });
+    const demoDocuments = [
+      { storedFileId: storedFile.id, kind: "AGREEMENT_RODO" as const, title: "Umowa i informacje RODO", position: 1 },
+      { storedFileId: priceListFile.id, kind: "PRICE_LIST" as const, title: "Cennik / kosztorys", position: 2 },
+      { storedFileId: scheduleFile.id, kind: "SCHEDULE" as const, title: "Harmonogram zajęć", position: 3 },
+    ];
+    const contractDocuments = await Promise.all(demoDocuments.map((document) => prisma.contractDocument.upsert({
+      where: { versionId_kind: { versionId: version.id, kind: document.kind } },
+      update: { storedFileId: document.storedFileId, title: document.title, position: document.position },
+      create: { schoolId: input.schoolId, versionId: version.id, ...document },
+    })));
     if (index === 0) {
       const previousAssignment = await prisma.contractAssignment.findUnique({
         where: {
@@ -767,14 +795,19 @@ async function seedDemoContracts(input: {
         viewedAt: new Date(),
       },
     });
+    await Promise.all(contractDocuments.map((document) => prisma.contractDocumentView.upsert({
+      where: { assignmentId_documentId_userId: { assignmentId: assignment.id, documentId: document.id, userId: input.parentId } },
+      update: { lastViewedAt: new Date() },
+      create: { schoolId: input.schoolId, assignmentId: assignment.id, documentId: document.id, userId: input.parentId },
+    })));
     if (contractStatuses[index] === "ACCEPTED") {
       await prisma.contractAcceptance.upsert({
         where: { assignmentId: assignment.id },
-        update: { documentHash: storedFile.sha256 },
+        update: { documentHash: packageHash },
         create: {
           assignmentId: assignment.id,
           acceptedById: input.parentId,
-          documentHash: storedFile.sha256,
+          documentHash: packageHash,
           evidence: { synthetic: true, statementVersion: "demo" },
         },
       });
@@ -792,8 +825,18 @@ async function seedDemoContracts(input: {
           note: "Syntetyczny status do testów interfejsu.",
         },
       });
+      for (let installmentNumber = 1; installmentNumber <= 10; installmentNumber += 1) {
+        const installmentDueDate = new Date(dueDate);
+        installmentDueDate.setMonth(installmentDueDate.getMonth() + installmentNumber - 1);
+        await prisma.paymentInstallment.upsert({
+          where: { assignmentId_installmentNumber: { assignmentId: assignment.id, installmentNumber } },
+          update: { amountCents: 35000 + index * 2500, dueDate: installmentDueDate, changedById: input.directorId },
+          create: { schoolId: input.schoolId, assignmentId: assignment.id, changedById: input.directorId, installmentNumber, amountCents: 35000 + index * 2500, dueDate: installmentDueDate, status: installmentNumber === 1 ? paymentStatuses[index] : "UNSET", note: "Syntetyczna rata do testów interfejsu." },
+        });
+      }
     } else {
       await prisma.paymentRecord.deleteMany({ where: { contractAssignmentId: assignment.id } });
+      await prisma.paymentInstallment.deleteMany({ where: { assignmentId: assignment.id } });
       await prisma.contractAcceptance.deleteMany({ where: { assignmentId: assignment.id } });
     }
   }

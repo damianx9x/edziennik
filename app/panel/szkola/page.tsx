@@ -235,7 +235,7 @@ async function DirectorDashboard({
           <TrendingUp aria-hidden="true" />
           <span>
             <strong>Postępy uczniów</strong>
-            <small>Etap 6</small>
+            <small>Moduł nie jest jeszcze uruchomiony</small>
           </span>
         </article>
       </section>

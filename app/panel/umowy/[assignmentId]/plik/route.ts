@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
@@ -10,6 +11,9 @@ export async function GET(
   context: { params: Promise<{ assignmentId: string }> },
 ) {
   const { assignmentId } = await context.params;
+  if (!z.string().uuid().safeParse(assignmentId).success) {
+    return NextResponse.json({ message: "Dokument nie istnieje." }, { status: 404 });
+  }
   const session = await requireActiveSession(`/panel/umowy/${assignmentId}/plik`);
   if (session.user.role === "DIRECTOR") {
     await requireDirector(`/panel/umowy/${assignmentId}/plik`);

@@ -19,6 +19,7 @@ export async function savePaymentStatusAction(
   }
   const parsed = paymentRecordSchema.safeParse({
     contractAssignmentId: formData.get("contractAssignmentId"),
+    paymentInstallmentId: formData.get("paymentInstallmentId"),
     status: formData.get("status"),
     note: formData.get("note"),
   });
@@ -57,6 +58,13 @@ export async function savePaymentStatusAction(
 
   try {
     await db.$transaction(async (tx) => {
+      if (parsed.data.paymentInstallmentId) {
+        const previous = await tx.paymentInstallment.findFirst({ where: { id: parsed.data.paymentInstallmentId, assignmentId: assignment.id, schoolId: session.user.schoolId }, select: { id: true, status: true } });
+        if (!previous) throw new Error("MISSING_INSTALLMENT");
+        const record = await tx.paymentInstallment.update({ where: { id: previous.id }, data: { changedById: session.user.id, status: parsed.data.status, note: parsed.data.note || null } });
+        await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "payments.installment_status.changed", entityType: "PaymentInstallment", entityId: record.id, metadata: { previousStatus: previous.status, newStatus: parsed.data.status, contractAssignmentId: assignment.id, installmentNumber: record.installmentNumber } } });
+        return;
+      }
       const previous = await tx.paymentRecord.findUnique({
         where: { contractAssignmentId: assignment.id },
         select: { status: true },

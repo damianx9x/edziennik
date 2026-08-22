@@ -9,6 +9,10 @@ import {
 } from "@/modules/observability/page-visits";
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (!Number.isFinite(contentLength) || contentLength > 4096) {
+    return new NextResponse(null, { status: 413 });
+  }
   if (!isSameOriginPageVisit(request)) {
     return new NextResponse(null, { status: 403 });
   }

@@ -107,6 +107,47 @@ export const contractAssignmentSchema = contractTermsSchema.extend({
     ),
 }).superRefine(validateContractTerms);
 
+const moneySchema = z.string().trim().refine(
+  (value) => /^\d{1,7}([.,]\d{1,2})?$/.test(value) && Number(value.replace(",", ".")) > 0,
+  "Wpisz poprawną kwotę, np. 350,00.",
+);
+
+export const contractPackageSchema = z.object({
+  title: z.string().trim().min(3, "Wpisz nazwę pakietu.").max(120),
+  acceptanceMode: z.enum(["DOCUMENTARY", "EXTERNAL_SIGNATURE"]),
+  requiresPayment: z.enum(["yes", "no"]),
+  installmentCount: z.coerce.number().int().min(1).max(24),
+  installmentAmount: moneySchema,
+  totalAmount: moneySchema,
+  firstPaymentDueDate: z.string().trim().refine(
+    (value) => !Number.isNaN(Date.parse(`${value}T12:00:00`)),
+    "Ustaw termin pierwszej raty.",
+  ),
+  parentId: z.uuid("Wybierz rodzica."),
+  studentId: z.uuid("Wybierz ucznia."),
+  expiresAt: z.string().trim().refine(
+    (value) => value === "" || !Number.isNaN(Date.parse(`${value}T23:59:59`)),
+    "Wpisz poprawną datę ważności.",
+  ),
+  legalReadiness: z.literal("confirmed", {
+    error: "Potwierdź sprawdzenie trzech dokumentów i trybu zawarcia.",
+  }),
+}).superRefine((data, context) => {
+  if (data.requiresPayment === "no") return;
+  const installment = Math.round(Number(data.installmentAmount.replace(",", ".")) * 100);
+  const total = Math.round(Number(data.totalAmount.replace(",", ".")) * 100);
+  if (total < installment * (data.installmentCount - 1)) {
+    context.addIssue({ code: "custom", path: ["totalAmount"], message: "Kwota całkowita jest za mała dla podanej liczby rat." });
+  }
+});
+
+export const reuseContractPackageSchema = z.object({
+  sourceVersionId: z.uuid("Wybierz gotowy pakiet."),
+  parentId: z.uuid("Wybierz rodzica."),
+  studentId: z.uuid("Wybierz ucznia."),
+  expiresAt: z.string().trim().refine((value) => value === "" || !Number.isNaN(Date.parse(`${value}T23:59:59`)), "Wpisz poprawną datę ważności."),
+});
+
 export const contractVersionSchema = contractTermsSchema.superRefine(validateContractTerms);
 
 export const contractAcceptanceSchema = z.object({

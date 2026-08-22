@@ -7,12 +7,16 @@ Stan: 25 lipca 2026. Ten dokument definiuje podstawową wersję pilota na
 
 W pilocie:
 
-- dyrektor dodaje PDF i tworzy jego niezmienną wersję,
+- dyrektor dodaje niezmienny pakiet: umowę i informacje RODO, indywidualny
+  kosztorys oraz harmonogram zajęć,
 - przypisuje umowę do właściwego rodzica i ucznia,
-- rodzic widzi dokument, potwierdza zapoznanie i akceptuje wskazaną wersję,
+- rodzic otwiera każdą wymaganą pozycję; serwer nie przyjmuje akceptacji przed
+  zapoznaniem się z całym pakietem,
 - system zapisuje wersję, skrót pliku, czas, użytkownika i wymagane dowody,
 - korekta tworzy kolejną wersję; nie zmienia przyjętego dokumentu,
 - dyrektor widzi: robocza, wysłana, wyświetlona, zaakceptowana, wygasła.
+- system tworzy raty na podstawie liczby rat, kwoty raty, kwoty całkowitej i
+  pierwszego terminu; pozostałej treści umowy nie trzeba przepisywać.
 
 Nie w pilocie: kwalifikowany podpis elektroniczny, Autenti, pieczęć
 kwalifikowana, automatyczna ocena skutków prawnych. Treść i forma akceptacji
