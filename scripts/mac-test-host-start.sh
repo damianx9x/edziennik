@@ -337,7 +337,9 @@ bootstrap_launch_agent() {
 }
 
 bootstrap_launch_agent "$launch_domain" "$launch_agent_file"
-launchctl kickstart -k "$launch_domain"
+# RunAtLoad uruchamia usługę już podczas bootstrap. Natychmiastowy kickstart -k
+# potrafił ścigać się z pierwszym startem i zwracać błąd I/O mimo działającej
+# aplikacji, dlatego gotowość weryfikuje niżej bezpieczny health check.
 bootstrap_launch_agent "$watchdog_domain" "$watchdog_agent_file"
 
 for attempt in {1..45}; do
