@@ -73,6 +73,9 @@ function constraintClient(options?: {
     availabilityWindow: {
       findMany: vi.fn().mockResolvedValue(options?.availability ?? []),
     },
+    studentAvailabilityWindow: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     scheduleSlot: {
       findFirst: scheduleSlotFindFirst,
     },

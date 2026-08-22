@@ -85,6 +85,13 @@ produkcyjna dołączy wersjonowanie, bezpieczny magazyn i uprawnienie dyrektora.
 - Złożony formularz na desktopie ma minimum 500 px. Link i QR układają się
   pionowo, dzięki czemu kod nie jest ściskany; poniżej 1280 px cały obszar
   zaproszeń przechodzi w jedną kolumnę.
+- Powiązania edytuje się w karcie właściwego źródła: rodzic–dziecko,
+  osoba–grupa oraz grupa–preferowana sala. Relacje wynikowe są pokazane, ale
+  nie dublują formularza (np. wykładowcy ucznia wynikają z jego grup).
+- Edytor relacji używa wyszukiwalnej listy z dużymi polami wyboru, pokazuje
+  skutek zmiany i jeden przycisk zapisu. Na telefonie lista ma jedną kolumnę.
+- Preferencje godzin ucznia i wykładowcy są dzienne. Każdy dzień ma własne
+  włączenie oraz godziny „od–do”; brak zaznaczeń oznacza brak ograniczeń.
 
 ## Ruch i mikrointerakcje
 

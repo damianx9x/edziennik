@@ -33,6 +33,7 @@ export type SolverRequirement = {
 
 export type SolverAvailability = {
   teacherId: string | null;
+  studentId?: string | null;
   roomId: string | null;
   groupId: string | null;
   weekday: number;
@@ -131,7 +132,7 @@ function conflictsWith(
 
 function fitsAvailability(
   windows: SolverAvailability[],
-  resource: { teacherId?: string; roomId?: string; groupId?: string },
+  resource: { teacherId?: string; studentId?: string; roomId?: string; groupId?: string },
   weekday: number,
   startMinute: number,
   endMinute: number,
@@ -139,6 +140,7 @@ function fitsAvailability(
   const relevant = windows.filter(
     (window) =>
       ((resource.teacherId && window.teacherId === resource.teacherId) ||
+        (resource.studentId && window.studentId === resource.studentId) ||
         (resource.roomId && window.roomId === resource.roomId) ||
         (resource.groupId && window.groupId === resource.groupId)),
   );
@@ -239,7 +241,20 @@ function buildCandidates(input: {
         startMinute,
         endMinute,
       );
-      if (!teacherFit.allowed || !groupFit.allowed) continue;
+      const studentFits = requirement.studentIds.map((studentId) =>
+        fitsAvailability(
+          availability,
+          { studentId },
+          weekday,
+          startMinute,
+          endMinute,
+        ),
+      );
+      if (
+        !teacherFit.allowed ||
+        !groupFit.allowed ||
+        studentFits.some((fit) => !fit.allowed)
+      ) continue;
 
       for (const room of orderedRooms) {
         if (
@@ -258,8 +273,14 @@ function buildCandidates(input: {
         if (!roomFit.allowed) continue;
 
         let score =
-          teacherFit.preference + groupFit.preference + roomFit.preference;
+          teacherFit.preference +
+          groupFit.preference +
+          roomFit.preference +
+          studentFits.reduce((total, fit) => total + fit.preference, 0);
         const reasons: string[] = ["brak kolizji zasobów"];
+        if (studentFits.some((fit) => fit.preference > 0)) {
+          reasons.push("preferencje uczniów");
+        }
         if (requirement.preferredWeekdays.includes(weekday)) {
           score += 24;
           reasons.push("preferowany dzień");

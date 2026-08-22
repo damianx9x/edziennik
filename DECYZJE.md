@@ -878,3 +878,22 @@ urządzenia i infrastruktury PWA/VAPID w kolejnym etapie.
 godzin. Rozdzielenie samodzielnego check-inu od dokumentacji szkoły zapobiega
 sytuacji, w której uczeń sam ustala oficjalną frekwencję, a kalendarz telefonu
 daje proste i niezawodne przypomnienie bez pozorowania niewdrożonej funkcji.
+
+## ADR-070 — graf relacji kartotek i preferencje uczniów
+
+**Data:** 2026-08-22
+**Decyzja:** rodzic jest łączony z dziećmi, a uczeń i wykładowca z grupami.
+Grupa przechowuje swój skład, prowadzących i preferowaną salę. Sala nie ma
+osobnych przypisań osób: jej uczniowie i wykładowcy zawsze wynikają z grup oraz
+konkretnych lekcji. Dyrektor zapisuje relacje bezpośrednio, a wykładowca
+proponuje zmianę wyłącznie w swoim zakresie; propozycja wymaga zatwierdzenia.
+
+Każdy uczeń może mieć osobne okno preferowanych godzin dla każdego dnia.
+Generator odrzuca terminy poza dostępnością któregokolwiek ucznia grupy i
+premiuje terminy wspólne. Brak ustawień ucznia oznacza brak dodatkowego
+ograniczenia. Zmiana relacji lub dostępności unieważnia nieopublikowany szkic
+grafiku i zapisuje się w audycie.
+
+**Dlaczego:** jedno źródło prawdy zapobiega rozjechaniu kartotek, grafiku,
+obecności i komunikacji, a codzienna czynność pozostaje prosta: najpierw grupa,
+potem jej osoby i preferowana sala.

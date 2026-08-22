@@ -16,6 +16,11 @@ import {
 } from "@/modules/schedule/resource-lock";
 
 import type { RecordUpdateState } from "./state";
+import { relationshipRequestPayloadSchema } from "./relationship-schema";
+import {
+  applyRelationshipDelta,
+  applyStudentAvailability,
+} from "./relationship-service";
 
 const entityTypeSchema = z.enum(["USER", "ROOM", "GROUP"]);
 const cefrSchema = z.enum(["PRE_A1", "A1", "A2", "B1", "B2", "C1", "C2", "MIXED"]);
@@ -50,7 +55,7 @@ function nullableValue(value: FormDataEntryValue | null): string | null {
   return text || null;
 }
 
-async function canTeacherEdit(
+export async function canTeacherEdit(
   actorId: string,
   schoolId: string,
   entityType: EntityType,
@@ -392,33 +397,57 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
 
     let discardedGenerationCount = 0;
     if (decision === "approve") {
-      const payload = request.payload as Record<string, unknown>;
-      if (
-        request.entityType !== "USER" &&
-        !(await activeLocationExists(
-          transaction,
-          session.user.schoolId,
-          String(payload.locationId),
-        ))
-      ) {
-        throw new Error("Location no longer active.");
-      }
-      const result = await applyUpdate(
-        session.user.schoolId,
-        request.entityType,
-        request.entityId,
-        payload,
-        transaction,
+      const specialPayload = relationshipRequestPayloadSchema.safeParse(
+        request.payload,
       );
-      if (result.count !== 1) {
-        throw new Error("Record no longer active.");
-      }
-      if (request.entityType !== "USER") {
+      if (specialPayload.success) {
+        if (specialPayload.data.kind === "RELATIONSHIPS") {
+          await applyRelationshipDelta(transaction, {
+            schoolId: session.user.schoolId,
+            entityId: request.entityId,
+            relationKind: specialPayload.data.relationKind,
+            addIds: specialPayload.data.addIds,
+            removeIds: specialPayload.data.removeIds,
+          });
+        } else {
+          await applyStudentAvailability(transaction, {
+            schoolId: session.user.schoolId,
+            studentId: request.entityId,
+            windows: specialPayload.data.windows,
+          });
+        }
         discardedGenerationCount =
           await discardReadyScheduleGenerations(
             transaction,
             session.user.schoolId,
           );
+      } else {
+        const payload = request.payload as Record<string, unknown>;
+        if (
+          request.entityType !== "USER" &&
+          !(await activeLocationExists(
+            transaction,
+            session.user.schoolId,
+            String(payload.locationId),
+          ))
+        ) {
+          throw new Error("Location no longer active.");
+        }
+        const result = await applyUpdate(
+          session.user.schoolId,
+          request.entityType,
+          request.entityId,
+          payload,
+          transaction,
+        );
+        if (result.count !== 1) throw new Error("Record no longer active.");
+        if (request.entityType !== "USER") {
+          discardedGenerationCount =
+            await discardReadyScheduleGenerations(
+              transaction,
+              session.user.schoolId,
+            );
+        }
       }
     }
     await transaction.recordChangeRequest.update({

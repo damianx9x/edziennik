@@ -34,6 +34,11 @@ import {
   type RecordHistoryEntry,
 } from "@/modules/records/components/record-edit-form";
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
+import {
+  RelationshipEditor,
+  type RelationshipOption,
+} from "@/modules/records/components/relationship-editor";
+import { StudentAvailabilityEditor } from "@/modules/records/components/student-availability-editor";
 
 export type PersonDirectoryRecord = {
   id: string;
@@ -46,6 +51,11 @@ export type PersonDirectoryRecord = {
   hasAccount: boolean;
   relationLabel: string;
   relations: string[];
+  childIds: string[];
+  parentIds: string[];
+  groupIds: string[];
+  derivedTeachers: Array<{ id: string; name: string; groupName: string }>;
+  availabilityWindows: Array<{ weekday: number; startMinute: number; endMinute: number }>;
 };
 
 const filters = [
@@ -59,10 +69,16 @@ export function PersonDirectory({
   people,
   actorRole,
   historyById,
+  relationOptions,
 }: {
   people: PersonDirectoryRecord[];
   actorRole: "DIRECTOR" | "TEACHER";
   historyById: Record<string, RecordHistoryEntry[]>;
+  relationOptions: {
+    students: RelationshipOption[];
+    parents: RelationshipOption[];
+    groups: RelationshipOption[];
+  };
 }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<(typeof filters)[number]["value"]>("ALL");
@@ -223,6 +239,7 @@ export function PersonDirectory({
               <button
                 className="person-dialog-close"
                 type="button"
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={closeDialog}
                 aria-label="Zamknij kartę osoby"
               >
@@ -291,6 +308,63 @@ export function PersonDirectory({
                     Brak aktywnych powiązań. Dodasz je z kartoteki lub importu.
                   </p>
                 )}
+                <div className="relationship-editor-stack">
+                  {selected.role === "PARENT" ? (
+                    <RelationshipEditor
+                      key={`${selected.id}-children`}
+                      entityId={selected.id}
+                      relationKind="PARENT_CHILDREN"
+                      title="Dzieci pod opieką"
+                      description="Wybierz dzieci, których plan, umowy i płatności ma widzieć ten rodzic."
+                      options={relationOptions.students}
+                      selectedIds={selected.childIds}
+                      actorRole={actorRole}
+                    />
+                  ) : null}
+                  {selected.role === "STUDENT" ? (
+                    <>
+                      <RelationshipEditor
+                        key={`${selected.id}-parents`}
+                        entityId={selected.id}
+                        relationKind="STUDENT_PARENTS"
+                        title="Rodzice i opiekunowie"
+                        description="Te osoby otrzymują dostęp do spraw ucznia."
+                        options={relationOptions.parents}
+                        selectedIds={selected.parentIds}
+                        actorRole={actorRole}
+                      />
+                      <RelationshipEditor
+                        key={`${selected.id}-groups`}
+                        entityId={selected.id}
+                        relationKind="STUDENT_GROUPS"
+                        title="Grupy ucznia"
+                        description="Wykładowca i sala wynikają z grupy oraz konkretnej lekcji, dzięki czemu grafik nie ma sprzecznych przypisań."
+                        options={relationOptions.groups}
+                        selectedIds={selected.groupIds}
+                        actorRole={actorRole}
+                      />
+                      <DerivedTeachers teachers={selected.derivedTeachers} />
+                      <StudentAvailabilityEditor
+                        key={`${selected.id}-availability`}
+                        studentId={selected.id}
+                        windows={selected.availabilityWindows}
+                        actorRole={actorRole}
+                      />
+                    </>
+                  ) : null}
+                  {selected.role === "TEACHER" ? (
+                    <RelationshipEditor
+                      key={`${selected.id}-groups`}
+                      entityId={selected.id}
+                      relationKind="TEACHER_GROUPS"
+                      title="Prowadzone grupy"
+                      description="Przypisz grupy. Konkretne zajęcia nadal mogą wskazać innego dostępnego prowadzącego."
+                      options={relationOptions.groups}
+                      selectedIds={selected.groupIds}
+                      actorRole={actorRole}
+                    />
+                  ) : null}
+                </div>
               </section>
 
               <section aria-labelledby="person-edit-heading">
@@ -457,6 +531,32 @@ function PersonAvatar({
     >
       {initials || "K"}
     </span>
+  );
+}
+
+function DerivedTeachers({
+  teachers,
+}: {
+  teachers: Array<{ id: string; name: string; groupName: string }>;
+}) {
+  const unique = Array.from(
+    new Map(teachers.map((teacher) => [`${teacher.id}:${teacher.groupName}`, teacher])).values(),
+  );
+  return (
+    <div className="derived-relationship-note">
+      <strong>Wykładowcy wynikający z grup</strong>
+      {unique.length > 0 ? (
+        <ul>
+          {unique.map((teacher) => (
+            <li key={`${teacher.id}:${teacher.groupName}`}>
+              {teacher.name} <small>· {teacher.groupName}</small>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Najpierw przypisz ucznia do grupy, a potem prowadzących w karcie tej grupy.</p>
+      )}
+    </div>
   );
 }
 

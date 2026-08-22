@@ -450,6 +450,26 @@ async function main() {
     ),
   });
 
+  const demoStudentIds = [panelStudent.id, ...syntheticStudentIds];
+  await prisma.studentAvailabilityWindow.deleteMany({
+    where: { schoolId: school.id, studentId: { in: demoStudentIds } },
+  });
+  await prisma.studentAvailabilityWindow.createMany({
+    data: demoStudentIds.flatMap((studentId, studentIndex) =>
+      [1, 2, 3, 4, 5, 6]
+        .filter((weekday) => (weekday + studentIndex) % 4 !== 0)
+        .map((weekday) => ({
+          schoolId: school.id,
+          studentId,
+          weekday,
+          startMinute: (14 + ((weekday + studentIndex) % 2)) * 60,
+          endMinute: (19 + ((weekday + studentIndex) % 2)) * 60,
+          preference: 10,
+          note: "Preferencja ucznia z danych demonstracyjnych",
+        })),
+    ),
+  });
+
   const demoParents = [parent];
   for (let index = 1; index <= 6; index += 1) {
     const name = `Rodzic Demo ${String(index + 1).padStart(2, "0")}`;

@@ -140,8 +140,22 @@ export default async function NotificationsPage() {
                     <div key={field}>
                       <dt>{fieldLabels[field] ?? field}</dt>
                       <dd>
-                        <span><small>Było</small>{formatValue(currentValues.get(request.entityId)?.[field], field, locationNames)}</span>
-                        <span><small>Będzie</small>{formatValue(payload[field], field, locationNames)}</span>
+                        {payload.kind === "RELATIONSHIPS" ? (
+                          <>
+                            <span><small>Dodane</small>{formatCount(payload.addIds, "pozycji")}</span>
+                            <span><small>Usunięte</small>{formatCount(payload.removeIds, "pozycji")}</span>
+                          </>
+                        ) : payload.kind === "STUDENT_AVAILABILITY" ? (
+                          <>
+                            <span><small>Zakres</small>Preferowane godziny ucznia</span>
+                            <span><small>Nowe ustawienie</small>{formatCount(payload.windows, "dni")}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span><small>Było</small>{formatValue(currentValues.get(request.entityId)?.[field], field, locationNames)}</span>
+                            <span><small>Będzie</small>{formatValue(payload[field], field, locationNames)}</span>
+                          </>
+                        )}
                       </dd>
                     </div>
                   ))}
@@ -169,6 +183,10 @@ export default async function NotificationsPage() {
       )}
     </AuthenticatedPanelShell>
   );
+}
+
+function formatCount(value: unknown, noun: string) {
+  return `${Array.isArray(value) ? value.length : 0} ${noun}`;
 }
 
 function formatValue(value: unknown, field: string, locations: Map<string, string>) {

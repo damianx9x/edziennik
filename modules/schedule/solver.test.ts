@@ -187,4 +187,33 @@ describe("deterministic schedule solver", () => {
     expect(result.proposals).toHaveLength(0);
     expect(result.hardViolations[0]).toContain("brak terminu");
   });
+
+  it("respects individual student availability when generating a group plan", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      requirements: [{ ...baseRequirement, lessonsPerWeek: 1 }],
+      rooms,
+      teachers,
+      availability: [
+        {
+          teacherId: null,
+          studentId: "student-a",
+          roomId: null,
+          groupId: null,
+          weekday: 3,
+          startMinute: 16 * 60,
+          endMinute: 18 * 60,
+          isAvailable: true,
+          preference: 10,
+        },
+      ],
+      fixedSlots: [],
+    });
+
+    expect(result.proposals).toHaveLength(1);
+    expect(result.proposals[0]?.startAt.toISOString().slice(0, 10)).toBe(
+      "2026-07-29",
+    );
+    expect(result.proposals[0]?.explanation).toContain("preferencje uczniów");
+  });
 });

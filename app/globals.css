@@ -40,6 +40,126 @@
   --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Kartoteki: spójny edytor relacji i preferencji grafiku */
+.relationship-editor-stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.relationship-editor,
+.student-availability-editor,
+.derived-relationship-note {
+  border: 1px solid var(--color-border, #d8dce7);
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--color-surface, #fff) 94%, #edf3ff);
+  padding: 1rem;
+}
+
+.relationship-editor-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  margin-bottom: .9rem;
+}
+
+.relationship-editor-heading > span {
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: .8rem;
+  color: #173272;
+  background: #e8efff;
+}
+
+.relationship-editor-heading svg { width: 1.25rem; height: 1.25rem; }
+.relationship-editor-heading h4 { margin: 0; font-size: 1rem; color: #101f49; }
+.relationship-editor-heading p,
+.relationship-help,
+.derived-relationship-note p { margin: .25rem 0 0; color: #657087; font-size: .84rem; line-height: 1.45; }
+
+.relationship-search {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  min-height: 44px;
+  margin-bottom: .65rem;
+  padding: 0 .75rem;
+  border: 1px solid #d8dce7;
+  border-radius: .8rem;
+  background: #fff;
+}
+.relationship-search svg { width: 1rem; }
+.relationship-search input { width: 100%; min-height: 42px; border: 0; outline: 0; background: transparent; }
+
+.relationship-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+  max-height: 15rem;
+  overflow: auto;
+  padding: .1rem;
+}
+
+.relationship-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 52px;
+  padding: .55rem .65rem;
+  border: 1px solid #d8dce7;
+  border-radius: .8rem;
+  background: #fff;
+  cursor: pointer;
+}
+.relationship-option:has(input:checked) { border-color: #3159b7; background: #eef3ff; }
+.relationship-option input { position: absolute; opacity: 0; }
+.relationship-check {
+  display: grid;
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1px solid #aab3c6;
+  border-radius: .45rem;
+  color: transparent;
+}
+.relationship-option input[type="radio"] + .relationship-check { border-radius: 50%; }
+.relationship-option input:focus-visible + .relationship-check { outline: 3px solid #9ab6ff; outline-offset: 2px; }
+.relationship-option input:checked + .relationship-check { color: #fff; border-color: #244ba5; background: #244ba5; }
+.relationship-check svg { width: .9rem; height: .9rem; }
+.relationship-option strong,
+.relationship-option small { display: block; }
+.relationship-option strong { color: #152451; font-size: .87rem; }
+.relationship-option small { margin-top: .15rem; color: #6c7588; font-size: .72rem; }
+.relationship-save { width: 100%; min-height: 46px; margin-top: .8rem; }
+.relationship-empty { grid-column: 1 / -1; margin: 0; padding: .8rem; color: #69748a; }
+
+.student-availability-days { display: grid; gap: .5rem; }
+.student-availability-day {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 1fr) 6.4rem auto 6.4rem;
+  align-items: center;
+  gap: .45rem;
+  min-height: 48px;
+}
+.student-day-enabled { display: flex; align-items: center; gap: .55rem; min-height: 44px; font-weight: 700; color: #182650; }
+.student-day-enabled input { width: 1.25rem; height: 1.25rem; accent-color: #244ba5; }
+.student-availability-day select { width: 100%; min-height: 44px; border: 1px solid #d8dce7; border-radius: .7rem; background: #fff; padding: 0 .55rem; }
+.derived-relationship-note > strong { color: #152451; }
+.derived-relationship-note ul { display: flex; flex-wrap: wrap; gap: .45rem; margin: .65rem 0 0; padding: 0; list-style: none; }
+.derived-relationship-note li { padding: .45rem .65rem; border-radius: 999px; color: #173272; background: #e9f0ff; font-size: .82rem; font-weight: 700; }
+.derived-relationship-note small { color: #657087; font-weight: 500; }
+
+@media (max-width: 700px) {
+  .relationship-options { grid-template-columns: 1fr; max-height: 18rem; }
+  .student-availability-day { grid-template-columns: 1fr 5.4rem auto 5.4rem; gap: .3rem; }
+  .student-availability-day select { padding: 0 .3rem; }
+}
+
 html[data-theme="dark"] {
   --navy-950: #f5f7ff;
   --navy-900: #e4eaff;
@@ -14628,6 +14748,18 @@ html:has(dialog[open]) {
 
 .person-dialog-shell {
   min-height: 100%;
+  overflow-x: hidden;
+}
+
+.person-dialog-body,
+.relationship-editor,
+.student-availability-editor {
+  min-width: 0;
+}
+
+.person-contact-grid dd,
+.person-contact-grid a {
+  overflow-wrap: anywhere;
 }
 
 .person-dialog-drag-handle {

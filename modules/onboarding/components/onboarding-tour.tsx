@@ -42,11 +42,13 @@ const steps: Record<Role, Step[]> = {
 export function OnboardingTour({ role, openInitially }: { role: Role; openInitially: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState(0);
+  const [dismissedLocally, setDismissedLocally] = useState(false);
   const roleSteps = steps[role];
-  useEffect(() => { if (openInitially && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [openInitially]);
+  useEffect(() => { if (openInitially && !dismissedLocally && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [openInitially, dismissedLocally]);
   const current = roleSteps[step];
   const Icon = current.icon;
   function close() { dialogRef.current?.close(); setStep(0); }
+  function finishInitialTour() { setDismissedLocally(true); close(); }
   return <>
     <button className="app-panel-help" type="button" onClick={() => dialogRef.current?.showModal()} aria-label="Pokaż samouczek"><CircleHelp aria-hidden="true" /></button>
     <dialog ref={dialogRef} className="onboarding-dialog" aria-labelledby="onboarding-title">
@@ -54,9 +56,9 @@ export function OnboardingTour({ role, openInitially }: { role: Role; openInitia
         <header>
           <span>Krótki samouczek · {step + 1} z {roleSteps.length}</span>
           {openInitially ? (
-            <form action={finishOnboardingAction} onSubmit={close}>
+            <form action={finishOnboardingAction} onSubmit={finishInitialTour}>
               <input type="hidden" name="result" value="dismissed" />
-              <button type="submit" aria-label="Zamknij samouczek"><X /></button>
+              <button type="submit" onClick={finishInitialTour} aria-label="Zamknij samouczek"><X /></button>
             </form>
           ) : (
             <button type="button" onClick={close} aria-label="Zamknij samouczek"><X /></button>
@@ -66,9 +68,9 @@ export function OnboardingTour({ role, openInitially }: { role: Role; openInitia
         <main><span className="onboarding-icon"><Icon aria-hidden="true" /></span><h2 id="onboarding-title">{current.title}</h2><p>{current.description}</p><Link href={current.href} onClick={close}>{current.label} <ArrowRight /></Link></main>
         <footer>
           <button className="onboarding-back" type="button" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}><ArrowLeft /> Wstecz</button>
-          {step < roleSteps.length - 1 ? <button className="onboarding-next" type="button" onClick={() => setStep((value) => Math.min(roleSteps.length - 1, value + 1))}>Dalej <ArrowRight /></button> : <form action={finishOnboardingAction} onSubmit={close}><input type="hidden" name="result" value="completed" /><button className="onboarding-next" type="submit">Gotowe</button></form>}
+          {step < roleSteps.length - 1 ? <button className="onboarding-next" type="button" onClick={() => setStep((value) => Math.min(roleSteps.length - 1, value + 1))}>Dalej <ArrowRight /></button> : <form action={finishOnboardingAction} onSubmit={finishInitialTour}><input type="hidden" name="result" value="completed" /><button className="onboarding-next" type="submit" onClick={finishInitialTour}>Gotowe</button></form>}
         </footer>
-        {openInitially ? <form className="onboarding-dismiss" action={finishOnboardingAction} onSubmit={close}><input type="hidden" name="result" value="dismissed" /><button type="submit">Pomiń teraz — zawsze znajdziesz samouczek pod ikoną ?</button></form> : null}
+        {openInitially ? <form className="onboarding-dismiss" action={finishOnboardingAction} onSubmit={finishInitialTour}><input type="hidden" name="result" value="dismissed" /><button type="submit" onClick={finishInitialTour}>Pomiń teraz — zawsze znajdziesz samouczek pod ikoną ?</button></form> : null}
       </div>
     </dialog>
   </>;

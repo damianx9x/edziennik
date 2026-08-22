@@ -21,6 +21,10 @@ import {
   type RecordHistoryEntry,
 } from "@/modules/records/components/record-edit-form";
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
+import {
+  RelationshipEditor,
+  type RelationshipOption,
+} from "@/modules/records/components/relationship-editor";
 
 type GroupRecord = {
   id: string;
@@ -31,6 +35,11 @@ type GroupRecord = {
   teacherCount: number;
   locationId: string;
   locationName: string;
+  studentIds: string[];
+  teacherIds: string[];
+  studentNames: string[];
+  teacherNames: string[];
+  preferredRoomId: string | null;
 };
 
 type RoomRecord = {
@@ -41,6 +50,7 @@ type RoomRecord = {
   scheduleCount: number;
   locationId: string;
   locationName: string;
+  preferredGroupIds: string[];
 };
 
 type ResourceRecord = GroupRecord | RoomRecord;
@@ -51,6 +61,7 @@ export function ResourceDirectory({
   locations,
   actorRole,
   historyById,
+  relationOptions,
 }: {
   groups: Omit<GroupRecord, "kind">[];
   rooms: Omit<RoomRecord, "kind">[];
@@ -62,6 +73,12 @@ export function ResourceDirectory({
   }>;
   actorRole: "DIRECTOR" | "TEACHER";
   historyById: Record<string, RecordHistoryEntry[]>;
+  relationOptions: {
+    students: RelationshipOption[];
+    teachers: RelationshipOption[];
+    groups: RelationshipOption[];
+    rooms: RelationshipOption[];
+  };
 }) {
   const [selected, setSelected] = useState<ResourceRecord | null>(null);
   const [locationFilter, setLocationFilter] = useState(
@@ -209,6 +226,7 @@ export function ResourceDirectory({
               <button
                 className="person-dialog-close"
                 type="button"
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={closeDialog}
                 aria-label="Zamknij kartę"
               >
@@ -216,6 +234,62 @@ export function ResourceDirectory({
               </button>
             </header>
             <div className="person-dialog-body">
+              <section aria-labelledby="resource-relations-heading">
+                <div className="person-dialog-section-heading">
+                  <h3 id="resource-relations-heading">Organizacja i przypisania</h3>
+                  <span>{actorRole === "DIRECTOR" ? "Zapis bezpośredni" : "Wymaga zgody dyrektora"}</span>
+                </div>
+                <div className="relationship-editor-stack">
+                  {selected.kind === "GROUP" ? (
+                    <>
+                      <RelationshipEditor
+                        key={`${selected.id}-students`}
+                        entityId={selected.id}
+                        relationKind="GROUP_STUDENTS"
+                        title="Uczniowie w grupie"
+                        description="Skład grupy jest źródłem prawdy dla grafiku, obecności i komunikacji."
+                        options={relationOptions.students}
+                        selectedIds={selected.studentIds}
+                        actorRole={actorRole}
+                      />
+                      <RelationshipEditor
+                        key={`${selected.id}-teachers`}
+                        entityId={selected.id}
+                        relationKind="GROUP_TEACHERS"
+                        title="Wykładowcy grupy"
+                        description="Pierwszy aktywny wykładowca zostanie prowadzącym głównym, jeśli grupa nie ma prowadzącego."
+                        options={relationOptions.teachers}
+                        selectedIds={selected.teacherIds}
+                        actorRole={actorRole}
+                      />
+                      <RelationshipEditor
+                        key={`${selected.id}-room`}
+                        entityId={selected.id}
+                        relationKind="GROUP_PREFERRED_ROOM"
+                        title="Preferowana sala"
+                        description="Generator spróbuje użyć tej sali; konkretna lekcja może otrzymać inną wolną salę."
+                        options={relationOptions.rooms.filter((option) => option.meta === selected.locationName)}
+                        selectedIds={selected.preferredRoomId ? [selected.preferredRoomId] : []}
+                        actorRole={actorRole}
+                        single
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <RelationshipEditor
+                        key={`${selected.id}-groups`}
+                        entityId={selected.id}
+                        relationKind="ROOM_PREFERRED_GROUPS"
+                        title="Grupy preferujące tę salę"
+                        description="Sala nie przypisuje osób bezpośrednio. Uczniowie i wykładowcy wynikają z wybranych grup, co zapobiega sprzecznościom w grafiku."
+                        options={relationOptions.groups.filter((option) => option.meta === selected.locationName)}
+                        selectedIds={selected.preferredGroupIds}
+                        actorRole={actorRole}
+                      />
+                    </>
+                  )}
+                </div>
+              </section>
               <section aria-labelledby="resource-edit-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="resource-edit-heading">

@@ -85,6 +85,10 @@ export default async function RecordsPage() {
         capacity: true,
         locationId: true,
         location: { select: { name: true } },
+        schedulingRequirements: {
+          where: { isActive: true },
+          select: { group: { select: { id: true, name: true } } },
+        },
         _count: { select: { scheduleSlots: true } },
       },
     }),
@@ -107,6 +111,15 @@ export default async function RecordsPage() {
             teachers: { where: { archivedAt: null } },
           },
         },
+        teachers: {
+          where: { archivedAt: null },
+          select: { teacher: { select: { id: true, name: true } } },
+        },
+        enrollments: {
+          where: { status: "ACTIVE" },
+          select: { student: { select: { id: true, name: true } } },
+        },
+        schedulingRequirement: { select: { preferredRoomId: true } },
       },
     }),
     db.user.findMany({
@@ -129,15 +142,34 @@ export default async function RecordsPage() {
         accounts: { select: { id: true }, take: 1 },
         groupTeaching: {
           where: { archivedAt: null },
-          select: { group: { select: { name: true } } },
+          select: { group: { select: { id: true, name: true } } },
         },
         parentLinks: {
           where: { archivedAt: null },
-          select: { child: { select: { name: true } } },
+          select: { child: { select: { id: true, name: true } } },
+        },
+        childLinks: {
+          where: { archivedAt: null },
+          select: { parent: { select: { id: true, name: true } } },
         },
         enrollments: {
           where: { status: "ACTIVE" },
-          select: { group: { select: { name: true } } },
+          select: {
+            group: {
+              select: {
+                id: true,
+                name: true,
+                teachers: {
+                  where: { archivedAt: null },
+                  select: { teacher: { select: { id: true, name: true } } },
+                },
+              },
+            },
+          },
+        },
+        studentAvailabilityWindows: {
+          orderBy: [{ weekday: "asc" }, { startMinute: "asc" }],
+          select: { weekday: true, startMinute: true, endMinute: true },
         },
       },
     }),
@@ -174,6 +206,8 @@ export default async function RecordsPage() {
             "records.group.assigned",
             "records.student.assigned",
             "records.parent.linked",
+            "records.relationships.changed",
+            "records.student_availability.changed",
           ],
         },
       },
@@ -265,6 +299,19 @@ export default async function RecordsPage() {
       hasAccount: person.accounts.length > 0,
       relationLabel: formatRelationCount(role, relations.length),
       relations,
+      childIds: person.parentLinks.map((item) => item.child.id),
+      parentIds: person.childLinks.map((item) => item.parent.id),
+      groupIds:
+        role === "TEACHER"
+          ? person.groupTeaching.map((item) => item.group.id)
+          : person.enrollments.map((item) => item.group.id),
+      derivedTeachers: person.enrollments.flatMap((item) =>
+        item.group.teachers.map((teacher) => ({
+          id: teacher.teacher.id,
+          name: teacher.teacher.name,
+          groupName: item.group.name,
+        }))),
+      availabilityWindows: person.studentAvailabilityWindows,
     };
   });
   const personCounts = directoryPeople.reduce(
@@ -365,6 +412,11 @@ export default async function RecordsPage() {
           people={directoryPeople}
           actorRole={actorRole}
           historyById={historyById}
+          relationOptions={{
+            students: directoryPeople.filter((person) => person.role === "STUDENT").map((person) => ({ id: person.id, name: person.name })),
+            parents: directoryPeople.filter((person) => person.role === "PARENT").map((person) => ({ id: person.id, name: person.name })),
+            groups: groups.map((group) => ({ id: group.id, name: group.name, meta: group.location.name })),
+          }}
         />
       </div>
 
@@ -384,6 +436,11 @@ export default async function RecordsPage() {
             locationName: group.location.name,
             studentCount: group._count.enrollments,
             teacherCount: group._count.teachers,
+            studentIds: group.enrollments.map((item) => item.student.id),
+            teacherIds: group.teachers.map((item) => item.teacher.id),
+            studentNames: group.enrollments.map((item) => item.student.name),
+            teacherNames: group.teachers.map((item) => item.teacher.name),
+            preferredRoomId: group.schedulingRequirement?.preferredRoomId ?? null,
           }))}
           rooms={rooms.map((room) => ({
             id: room.id,
@@ -392,7 +449,14 @@ export default async function RecordsPage() {
             locationId: room.locationId,
             locationName: room.location.name,
             scheduleCount: room._count.scheduleSlots,
+            preferredGroupIds: room.schedulingRequirements.map((item) => item.group.id),
           }))}
+          relationOptions={{
+            students: directoryPeople.filter((person) => person.role === "STUDENT").map((person) => ({ id: person.id, name: person.name })),
+            teachers: directoryPeople.filter((person) => person.role === "TEACHER").map((person) => ({ id: person.id, name: person.name })),
+            groups: groups.map((group) => ({ id: group.id, name: group.name, meta: group.location.name })),
+            rooms: rooms.map((room) => ({ id: room.id, name: room.name, meta: room.location.name })),
+          }}
         />
       </div>
     </AuthenticatedPanelShell>

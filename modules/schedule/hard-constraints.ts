@@ -8,6 +8,7 @@ import { SCHOOL_TIME_ZONE } from "./schema";
 type ScheduleConstraintClient = Pick<
   Prisma.TransactionClient,
   | "availabilityWindow"
+  | "studentAvailabilityWindow"
   | "courseGroup"
   | "enrollment"
   | "room"
@@ -51,6 +52,7 @@ export type ScheduleConstraintCode =
   | "LOCATION_MISMATCH"
   | "ROOM_CAPACITY"
   | "TEACHER_UNAVAILABLE"
+  | "STUDENT_UNAVAILABLE"
   | "SCHEDULE_CONFLICT";
 
 export class ScheduleConstraintError extends Error {
@@ -291,6 +293,35 @@ async function assertActiveResources(
     throw new ScheduleConstraintError(
       "TEACHER_UNAVAILABLE",
       `Wykładowca ${teacher.name} nie jest dostępny w tym terminie. Wybierz termin zgodny z jego dostępnością.`,
+    );
+  }
+
+  const studentIds = group.enrollments.map((enrollment) => enrollment.studentId);
+  const studentAvailability = studentIds.length
+    ? await tx.studentAvailabilityWindow.findMany({
+        where: { schoolId: input.schoolId, studentId: { in: studentIds } },
+        select: {
+          studentId: true,
+          weekday: true,
+          startMinute: true,
+          endMinute: true,
+        },
+      })
+    : [];
+  const unavailableStudent = studentIds.some((studentId) => {
+    const windows = studentAvailability.filter(
+      (window) => window.studentId === studentId,
+    ).map((window) => ({ ...window, isAvailable: true }));
+    return !fitsConfiguredAvailability(windows, {
+      startAt: input.startAt,
+      endAt: input.endAt,
+      timeZone: input.timeZone,
+    });
+  });
+  if (unavailableStudent) {
+    throw new ScheduleConstraintError(
+      "STUDENT_UNAVAILABLE",
+      "Co najmniej jeden uczeń w tej grupie oznaczył ten termin jako niedostępny. Wybierz wspólny termin albo zmień jego preferencje w kartotece.",
     );
   }
 }

@@ -377,7 +377,7 @@ export async function generateScheduleAction(formData: FormData) {
     1,
   );
 
-  const [requirements, rooms, teachers, availability, fixedSlots, locations] =
+  const [requirements, rooms, teachers, availability, studentAvailability, fixedSlots, locations] =
     await Promise.all([
       db.schedulingRequirement.findMany({
         where: {
@@ -426,6 +426,16 @@ export async function generateScheduleAction(formData: FormData) {
           startMinute: true,
           endMinute: true,
           isAvailable: true,
+          preference: true,
+        },
+      }),
+      db.studentAvailabilityWindow.findMany({
+        where: { schoolId: session.user.schoolId },
+        select: {
+          studentId: true,
+          weekday: true,
+          startMinute: true,
+          endMinute: true,
           preference: true,
         },
       }),
@@ -553,7 +563,16 @@ export async function generateScheduleAction(formData: FormData) {
         .filter((requirement) => requirement.lessonsPerWeek > 0),
       rooms: scopedRooms,
       teachers,
-      availability,
+      availability: [
+        ...availability,
+        ...studentAvailability.map((window) => ({
+          ...window,
+          teacherId: null,
+          roomId: null,
+          groupId: null,
+          isAvailable: true,
+        })),
+      ],
       fixedSlots: weekFixedSlots.map((slot) => ({
         id: slot.id,
         groupId: slot.groupId,
