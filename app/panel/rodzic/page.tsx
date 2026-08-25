@@ -75,6 +75,14 @@ export default async function ParentPanelPage() {
           <span className="module-status module-status-empty">0 zadań</span>
           <h2>Materiały i zadania</h2>
           <p>Wszystko dla dziecka w jednym, prostym widoku.</p>
+          <Link href="/panel/nauka">Otwórz naukę</Link>
+        </article>
+        <article className="module-card-linked">
+          <CheckCircle2 aria-hidden="true" />
+          <span className="module-status module-status-ready">Gotowe</span>
+          <h2>Postępy dziecka</h2>
+          <p>Opisowe obserwacje, obecność i kolejne małe kroki.</p>
+          <Link href="/panel/postepy">Otwórz postępy</Link>
         </article>
         <article>
           <CreditCard aria-hidden="true" />

@@ -35,6 +35,17 @@ export type ScheduleSlotView = {
   topic: string | null;
   version: number;
   isLocked: boolean;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
+  canRequestChange: boolean;
+  canReviewChange: boolean;
+  pendingChangeRequest: {
+    id: string;
+    kind: "RESCHEDULE" | "CHANGE_TEACHER" | "CHANGE_ROOM" | "CANCEL" | "OTHER";
+    reason: string;
+    requestedByName: string;
+    createdAt: string;
+  } | null;
   canEditLesson: boolean;
   canConfirmArrival: boolean;
   checkInWindowOpen: boolean;
@@ -77,6 +88,8 @@ export type TeacherAvailabilityView = {
     weekday: number;
     startMinute: number;
     endMinute: number;
+    locationId: string;
+    locationName: string;
   }>;
   configured: boolean;
 };

@@ -10,6 +10,7 @@ import {
   type IdentityRole,
 } from "./access";
 import { isMfaRequiredForRole } from "./mfa-policy";
+import { isSchoolStaffRole } from "./staff-role";
 
 export type ActiveSession = AuthSession & {
   user: AuthSession["user"] & {
@@ -107,11 +108,7 @@ export async function requireSchoolStaff(
   returnPath = "/panel/szkola",
 ): Promise<ActiveSession> {
   const session = await requireActiveSession(returnPath);
-  if (
-    session.user.role !== "SYSTEM_OWNER" &&
-    session.user.role !== "DIRECTOR" &&
-    session.user.role !== "TEACHER"
-  ) {
+  if (!isSchoolStaffRole(session.user.role)) {
     redirect("/panel/brak-dostepu");
   }
   if (

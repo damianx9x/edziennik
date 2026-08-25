@@ -1,6 +1,6 @@
 # Stan projektu eDziennika KLA
 
-Aktualizacja: 22 sierpnia 2026. Wersja przedwydaniowa Etapu 5.
+Aktualizacja: 25 sierpnia 2026. Kandydat pre-release Etapu 6.
 
 ## Co działa
 
@@ -14,6 +14,9 @@ Aktualizacja: 22 sierpnia 2026. Wersja przedwydaniowa Etapu 5.
   Asystent oraz blokady kolizji sali, wykładowcy, grupy i ucznia,
 - temat lekcji i obecność zapisywane przez dyrektora lub przypisanego
   wykładowcę,
+- dzienna i lokalizacyjna dostępność wykładowcy, preferencje ucznia, minimalne
+  czasy przejazdu, powody odwołań oraz prośby wykładowcy zatwierdzane przez
+  dyrektora,
 - wersjonowane umowy PDF, akceptacja dokumentowa albo podpis poza systemem,
   kontrola podpisanego skanu i płatności wynikające z konkretnej wersji umowy,
 - kanały grupowe, rozmowy utworzone przez dyrektora, ogłoszenia masowe,
@@ -23,13 +26,14 @@ Aktualizacja: 22 sierpnia 2026. Wersja przedwydaniowa Etapu 5.
 - prywatne pliki poza katalogiem publicznym, sygnatury i limity plików,
   ClamAV w produkcyjnym profilu Raspberry oraz szyfrowany magazyn LUKS2,
 - instalator VPS, instalator Raspberry Pi, stałe demo z Maca, kontrola zdrowia,
-  szyfrowany backup Raspberry i prawdziwy test odtworzenia.
+  szyfrowany backup Raspberry i prawdziwy test odtworzenia,
+- materiały grup, zadania, stany oddania, informacja zwrotna oraz opisowe
+  obserwacje postępów bez diagnoz i automatycznych decyzji o dziecku.
 
-## Zweryfikowane w audycie przedwydaniowym
+## Zweryfikowane przed rozpoczęciem odbioru Etapu 6
 
-- `npm run check`: lint, TypeScript, schemat Prisma, 128 testów i kontrola
-  sekretów,
-- `npm run build`: pełny build Next.js 16,
+- aktualny kandydat przechodzi pełne `npm run check` (171 testów),
+  `npm audit --omit=dev` (0 znanych podatności) i `npm run build`,
 - izolacja ról podczas klikania na realnej bazie demonstracyjnej,
 - dyrektor: Start, Kartoteki, Grafik, Umowy, Płatności, Wiadomości,
   Powiadomienia, Ustawienia i Statystyki,
@@ -47,12 +51,14 @@ Aktualizacja: 22 sierpnia 2026. Wersja przedwydaniowa Etapu 5.
 - aktualizacja Raspberry i VPS ma blokadę równoległego uruchomienia, backup,
   kontrolę zdrowia i automatyczny powrót do poprzedniego kodu.
 
-Dowody ekranowe: `outputs/qa/pre-final/`. Pełny raport bezpieczeństwa:
+Dowody wcześniejszego zakresu: `outputs/qa/pre-final/`. Nowy odbiór należy
+zapisać oddzielnie. Pełny raport bezpieczeństwa:
 `security_best_practices_report.md`. Model zagrożeń: `wr-threat-model.md`.
 
 ## Co nie jest jeszcze gotowe do produkcji
 
-- materiały, zadania domowe, oddawanie prac i monitoring postępów (Etap 6),
+- formalne odhaczenie przez klientkę pełnej checklisty odbioru Etapu 6 na jej
+  telefonie i komputerze,
 - produkcyjny dostawca e-mail i SMS wraz z limitami kosztu,
 - zatwierdzone przez prawnika/IOD wzorce umów, regulamin komunikatora,
   informacje RODO, retencja i analiza DPIA,
@@ -78,7 +84,8 @@ Pełna procedura: `AKTUALIZACJE_I_ROLLBACK.md` oraz `CYKL_TESTOWY.md`.
 
 ## Następna kolejność
 
-1. Odbiór obecnego Etapu 5 wyłącznie na danych syntetycznych.
-2. Etap 6: materiały, zadania, prace ucznia i postępy.
-3. Zamknięcie prawne/RODO, konfiguracja dostawców i próba Raspberry.
-4. Oddzielne środowisko produkcyjne i dopiero import rzeczywistych danych.
+1. Odbiór pre-release Etapu 6 według `CHECKLISTA_ODBIORU_KLIENTKI.md` wyłącznie
+   na danych syntetycznych.
+2. Zamknięcie prawne/RODO, konfiguracja dostawców i próba fizycznego Raspberry.
+3. Wyzerowanie kont demo, MFA, restore drill i oddzielne środowisko produkcyjne.
+4. Dopiero po zamknięciu bramki import rzeczywistych danych.

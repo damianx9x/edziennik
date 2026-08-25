@@ -14,6 +14,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   AlertTriangle,
+  Ban,
   CalendarPlus,
   CheckCircle2,
   CheckCheck,
@@ -48,6 +49,7 @@ import {
   createScheduleSlotAction,
   moveScheduleSlotAction,
   moveScheduleSlotFormAction,
+  reviewScheduleChangeRequestAction,
   saveLessonJournalAction,
 } from "../actions";
 import type { LessonAttendanceStatus } from "../lesson-journal";
@@ -275,7 +277,8 @@ export function ScheduleWorkspace({
         (window) =>
           window.weekday === newWeekday &&
           window.startMinute <= newStartMinute &&
-          window.endMinute >= newEndMinute,
+          window.endMinute >= newEndMinute &&
+          (!window.locationId || window.locationId === selectedGroup?.locationId),
       );
       return fits
         ? []
@@ -904,10 +907,10 @@ function LessonCard({
     <article
       ref={setNodeRef}
       style={style}
-      className={`schedule-lesson schedule-tone-${getScheduleTone(slot.locationId)} ${isDragging ? "dragging" : ""}`}
+      className={`schedule-lesson schedule-tone-${getScheduleTone(slot.locationId)} ${isDragging ? "dragging" : ""} ${slot.status === "CANCELLED" ? "cancelled" : ""}`}
     >
       <div className="schedule-lesson-main">
-        {canManage ? (
+        {canManage && slot.status !== "CANCELLED" ? (
           <button
             type="button"
             className="schedule-drag-handle"
@@ -920,7 +923,7 @@ function LessonCard({
         ) : null}
         <LessonDetailsDialog slot={slot} />
       </div>
-      {canManage ? (
+      {(canManage || slot.canRequestChange) && slot.status !== "CANCELLED" ? (
         <details
           className={`schedule-lesson-actions align-${menuAlign} ${
             hour * 60 + minute >= 18 * 60 ? "align-up" : ""
@@ -930,7 +933,7 @@ function LessonCard({
         >
           <summary aria-label={`Opcje zajęć grupy ${slot.groupName}`}>•••</summary>
           <div>
-            <form action={moveAction}>
+            {canManage ? <form action={moveAction}>
               <input type="hidden" name="slotId" value={slot.id} />
               <label>
                 Nowy dzień
@@ -962,13 +965,18 @@ function LessonCard({
                 <Move aria-hidden="true" />{" "}
                 {movePending ? "Sprawdzam…" : "Zmień termin"}
               </button>
-            </form>
+            </form> : null}
             <form action={cancelAction} className="schedule-cancel-form">
               <input type="hidden" name="slotId" value={slot.id} />
               <label>
-                <input type="checkbox" required />
-                Potwierdzam odwołanie tych zajęć
+                <span>Powód odwołania</span>
+                <textarea name="reason" minLength={5} maxLength={500} rows={3} required placeholder="Np. choroba wykładowcy — napisz informację zrozumiałą dla rodziców i uczniów" />
               </label>
+              <label className="schedule-notify-toggle">
+                <input type="checkbox" name="notifyGroup" defaultChecked disabled={slot.canRequestChange} />
+                Powiadom grupę, rodziców i uczniów
+              </label>
+              {slot.pendingChangeRequest ? <p className="schedule-request-pending"><Clock3 aria-hidden="true" /> Wniosek już czeka na decyzję dyrektora.</p> : null}
               {cancelState.message ? (
                 <p
                   className={`assistant-form-message ${cancelState.status}`}
@@ -980,9 +988,9 @@ function LessonCard({
               <button
                 className="schedule-cancel"
                 type="submit"
-                disabled={cancelPending}
+                disabled={cancelPending || Boolean(slot.pendingChangeRequest)}
               >
-                {cancelPending ? "Odwołuję…" : "Odwołaj zajęcia"}
+                {cancelPending ? "Wysyłam…" : slot.canRequestChange ? "Wyślij wniosek do dyrektora" : "Odwołaj i powiadom"}
               </button>
             </form>
           </div>
@@ -1058,6 +1066,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
         onClick={openLessonDetails}
       >
         <span>{slot.startTime}–{slot.endTime}</span>
+        {slot.status === "CANCELLED" ? <em className="schedule-cancelled-label"><Ban aria-hidden="true" /> Odwołane</em> : null}
         <strong><UsersRound aria-hidden="true" /> {slot.groupName}</strong>
         <small>
           <MapPin aria-hidden="true" /> {slot.locationName}
@@ -1109,7 +1118,15 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
             <div><GraduationCap aria-hidden="true" /><span>Wykładowca<strong>{slot.teacherName}</strong></span></div>
           </section>
 
-          {slot.canEditLesson ? (
+          {slot.status === "CANCELLED" ? (
+            <section className="lesson-cancelled-notice" role="status">
+              <Ban aria-hidden="true" />
+              <div>
+                <strong>Te zajęcia są odwołane</strong>
+                <p>{slot.cancellationReason ?? "Skontaktuj się ze szkołą, jeśli potrzebujesz dodatkowych informacji."}</p>
+              </div>
+            </section>
+          ) : slot.canEditLesson ? (
             <form action={action} className="lesson-edit-form">
               <input type="hidden" name="slotId" value={slot.id} />
               <input type="hidden" name="version" value={slot.version} />
@@ -1190,6 +1207,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
               </footer>
             </>
           )}
+          {slot.pendingChangeRequest && slot.canReviewChange ? <ScheduleRequestReview slot={slot} /> : null}
         </div>
       </dialog>
     </>
@@ -1230,6 +1248,36 @@ function AttendanceEditor({
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+function ScheduleRequestReview({ slot }: { slot: ScheduleSlotView }) {
+  const [state, action, pending] = useActionState(
+    reviewScheduleChangeRequestAction,
+    initialActionState,
+  );
+  const request = slot.pendingChangeRequest;
+  if (!request) return null;
+  return (
+    <section className="schedule-request-review" aria-labelledby={`request-${request.id}`}>
+      <div>
+        <span className="section-kicker">Decyzja dyrektora</span>
+        <h3 id={`request-${request.id}`}>Wniosek o odwołanie zajęć</h3>
+        <p><strong>{request.requestedByName}</strong>: {request.reason}</p>
+      </div>
+      <form action={action}>
+        <input type="hidden" name="requestId" value={request.id} />
+        <label>
+          <span>Notatka do decyzji (opcjonalnie)</span>
+          <textarea name="reviewNote" maxLength={500} rows={2} placeholder="Np. uzgodniono termin odrobienia zajęć" />
+        </label>
+        {state.message ? <p className={`assistant-form-message ${state.status}`} role="status">{state.message}</p> : null}
+        <div>
+          <button className="button button-secondary" type="submit" name="decision" value="REJECT" disabled={pending}>Odrzuć wniosek</button>
+          <button className="button button-primary" type="submit" name="decision" value="APPROVE" disabled={pending}>{pending ? "Zapisuję…" : "Zatwierdź i powiadom"}</button>
+        </div>
+      </form>
     </section>
   );
 }

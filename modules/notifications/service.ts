@@ -20,7 +20,7 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   const role = session.user.role;
 
   if (role === "DIRECTOR") {
-    const [changes, failedDeliveries, assignments, signedContracts] = await Promise.all([
+    const [changes, failedDeliveries, assignments, signedContracts, scheduleChanges] = await Promise.all([
       db.recordChangeRequest.findMany({
         where: { schoolId: session.user.schoolId, status: "PENDING" },
         orderBy: { createdAt: "desc" },
@@ -48,6 +48,18 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
           version: { select: { title: true } },
         },
       }),
+      db.scheduleChangeRequest.findMany({
+        where: { schoolId: session.user.schoolId, status: "PENDING" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          kind: true,
+          createdAt: true,
+          requestedBy: { select: { name: true } },
+          scheduleSlot: { select: { group: { select: { name: true } } } },
+        },
+      }),
     ]);
     for (const item of changes) raw.push({
       key: `record-change:${item.id}`,
@@ -72,6 +84,14 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
       description: `${item.parent.name} · ${item.version.title}`,
       href: `/panel/umowy?umowa=${item.id}`,
       occurredAt: item.signedUploadedAt ?? now,
+    });
+    for (const item of scheduleChanges) raw.push({
+      key: `schedule-change:${item.id}`,
+      kind: "ACTION",
+      title: item.kind === "CANCEL" ? "Wniosek o odwołanie zajęć" : "Wniosek o zmianę grafiku",
+      description: `${item.requestedBy.name} · ${item.scheduleSlot.group.name}`,
+      href: "/panel/plan",
+      occurredAt: item.createdAt,
     });
     addPaymentNotifications(raw, assignments, now, true);
   }
@@ -147,6 +167,33 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
           description: `${lesson.group.name} · ${formatter.format(lesson.startAt)} · ${lesson.room.location.name}, ${lesson.room.name}`,
           href: "/panel/plan",
           occurredAt: lesson.startAt,
+        });
+      }
+      const cancellations = await db.lessonCancellation.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          scheduleSlot: { groupId: { in: groupIds } },
+          cancelledAt: { gte: new Date(now.getTime() - 30 * 86_400_000) },
+        },
+        orderBy: { cancelledAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          reason: true,
+          cancelledAt: true,
+          scheduleSlot: {
+            select: { id: true, startAt: true, group: { select: { name: true } } },
+          },
+        },
+      });
+      for (const item of cancellations) {
+        raw.push({
+          key: `lesson-cancelled:${item.id}`,
+          kind: "WARNING",
+          title: `Odwołane zajęcia · ${item.scheduleSlot.group.name}`,
+          description: `${formatter.format(item.scheduleSlot.startAt)} · ${item.reason}`,
+          href: "/panel/plan",
+          occurredAt: item.cancelledAt,
         });
       }
     }

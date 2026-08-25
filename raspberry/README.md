@@ -13,6 +13,9 @@ dokumenty, hasło bazy ani sekret sesji.
 - najlepiej UPS dla Raspberry Pi i SSD;
 - drugi komputer do zapisania klucza odzyskiwania;
 - opcjonalnie konto SFTP na innym urządzeniu lub u dostawcy backupu.
+- domenę dodaną do Cloudflare oraz utworzony tunel z publicznym adresem HTTPS;
+  w routingu tunelu ustaw usługę `http://localhost:8080` i skopiuj token
+  instalacyjny. Token traktuj jak hasło.
 
 ## 1. System z Raspberry Pi Imager
 
@@ -45,6 +48,8 @@ Podczas instalacji:
 4. instalator skonfiguruje PostgreSQL, Node.js, nginx, zaporę, aktualizacje,
    ClamAV, kontrolę działania, retencję i szyfrowane backupy;
 5. aplikacja przejdzie testy, migracje i produkcyjny build przed startem.
+6. `cloudflared` zostanie usługą systemową; nginx będzie słuchał wyłącznie na
+   `127.0.0.1:8080`, dlatego nieszyfrowany origin nie jest dostępny z sieci LAN.
 
 ## 3. Po restarcie
 
@@ -99,11 +104,14 @@ zarchiwizowane i zapisuje zdarzenie audytowe.
 
 ## Aktualizacja i awaria
 
-- Aktualizacja zaakceptowanej paczki: `sudo kla-update` (lub
-  `sudo ./raspberry/update.sh` przed pierwszą instalacją skrótu).
+- Aktualizacja zaakceptowanej, rozpakowanej paczki: wejdź do jej katalogu i
+  uruchom `sudo kla-update "$PWD"` (lub `sudo ./raspberry/update.sh` przed
+  pierwszą instalacją skrótu). Skrót nie zgaduje położenia plików aktualizacji.
 - Aktualizator blokuje równoległe uruchomienie, robi szyfrowaną kopię, wykonuje
   tylko bezpieczne migracje i automatycznie wraca do poprzedniego kodu, jeśli
   test zdrowia nowej wersji się nie powiedzie.
+- Aktualizator przyjmuje wyłącznie paczkę z konkretnym commitem i poprawnym
+  manifestem SHA-256. Nie aktualizuj z przypadkowego katalogu ani ZIP-a.
 - Ręczny backup: `sudo edziennik-kla-backup`.
 - Logi: `sudo journalctl -u edziennik-kla -n 200 --no-pager`.
 - Pełne odtworzenie wymaga wpisania dokładnego potwierdzenia:

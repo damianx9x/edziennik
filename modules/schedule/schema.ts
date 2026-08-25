@@ -76,19 +76,43 @@ export const teacherAvailabilitySchema = z.object({
     weekday: z.coerce.number().int().min(1).max(6),
     startMinute: z.coerce.number().int().min(780).max(1230),
     endMinute: z.coerce.number().int().min(810).max(1260),
+    locationId: z.string().uuid("Wybierz lokalizację."),
   }).refine((value) => value.startMinute < value.endMinute, {
     message: "Godzina końca musi być późniejsza niż początek.",
     path: ["endMinute"],
-  })).min(1, "Wybierz co najmniej jeden dzień dostępności.").max(6),
+  })).min(1, "Dodaj co najmniej jeden przedział dostępności.").max(24),
 }).superRefine((value, context) => {
-  const weekdays = value.windows.map((window) => window.weekday);
-  if (new Set(weekdays).size !== weekdays.length) {
-    context.addIssue({
-      code: "custom",
-      path: ["windows"],
-      message: "Każdy dzień może wystąpić tylko raz.",
-    });
+  const ordered = [...value.windows].sort(
+    (first, second) =>
+      first.weekday - second.weekday || first.startMinute - second.startMinute,
+  );
+  for (let index = 1; index < ordered.length; index += 1) {
+    const previous = ordered[index - 1];
+    const current = ordered[index];
+    if (
+      previous.weekday === current.weekday &&
+      previous.endMinute > current.startMinute
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["windows"],
+        message: "Przedziały dostępności w tym samym dniu nie mogą się nakładać.",
+      });
+      break;
+    }
   }
+});
+
+export const cancelScheduleSlotSchema = z.object({
+  slotId: z.string().uuid("Nie rozpoznano tej lekcji."),
+  reason: z.string().trim().min(5, "Napisz krótko, dlaczego zajęcia są odwołane.").max(500),
+  notifyGroup: z.boolean().default(true),
+});
+
+export const reviewScheduleChangeRequestSchema = z.object({
+  requestId: z.string().uuid("Nie rozpoznano tego wniosku."),
+  decision: z.enum(["APPROVE", "REJECT"]),
+  reviewNote: z.string().trim().max(500).optional(),
 });
 
 export const scheduleGenerationSchema = z

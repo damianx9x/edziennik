@@ -231,13 +231,13 @@ async function DirectorDashboard({
             <small>Otwórz moduł</small>
           </span>
         </Link>
-        <article id="postepy">
+        <Link href="/panel/postepy" className="module-ready" id="postepy">
           <TrendingUp aria-hidden="true" />
           <span>
             <strong>Postępy uczniów</strong>
-            <small>Moduł nie jest jeszcze uruchomiony</small>
+            <small>Obserwacje, obecność i rozwój umiejętności</small>
           </span>
-        </article>
+        </Link>
       </section>
     </>
   );

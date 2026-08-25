@@ -909,3 +909,44 @@ pośrednią. Statyczne zasoby Next.js zachowują własne reguły cache.
 **Dlaczego:** automatyczne maskowanie e-maili przez Cloudflare zmieniało drzewo
 dokumentu przed uruchomieniem Reacta i powodowało błąd hydratacji przy
 bezpośrednim otwarciu kartotek.
+
+## ADR-072 — postęp opisowy zamiast predykcji zachowania dziecka
+
+**Data:** 2026-08-25
+**Decyzja:** Etap 6 zapisuje obserwacje sześciu umiejętności językowych w skali
+1–5, autora, czas, opcjonalną lekcję i opis następnego kroku. Interfejs może
+pokazać historyczny trend i frekwencję jako kontekst. Nie tworzy rankingu,
+diagnozy, profilu psychologicznego ani automatycznej predykcji zachowania lub
+wyniku ucznia. Dostęp rodzica i ucznia pozostaje ograniczony do powiązanej
+osoby, a wykładowcy do aktywnie przypisanych grup.
+
+**Dlaczego:** szkoła potrzebuje użytecznej informacji o rozwoju, lecz mała
+liczba obserwacji nie daje rzetelnej podstawy do predykcji. Dane dzieci i
+decyzje pedagogiczne wymagają minimalizacji, wyjaśnialności i udziału człowieka.
+
+## ADR-073 — dwa odtwarzalne stany bazy demonstracyjnej
+
+**Data:** 2026-08-25
+**Decyzja:** środowisko demo ma tryb `clean` (konta ról, lokalizacje i puste
+kartoteki) oraz `rich` (syntetyczne dane potrzebne do testu całej aplikacji).
+Reset jest możliwy tylko po jawnym potwierdzeniu i gdy wszystkie szkoły oraz
+e-maile spełniają warunki danych demonstracyjnych. Przed usunięciem zawsze
+powstaje szyfrowany snapshot bazy i prywatnych plików. Klucz odzyskiwania jest
+przechowywany oddzielnie od snapshotu i repozytorium.
+
+**Dlaczego:** klientka musi móc powtarzać odbiór od zera oraz wrócić do bogatego
+demo bez ręcznego odtwarzania danych. Twarda blokada zapobiega przypadkowemu
+uruchomieniu destrukcyjnej komendy na produkcji.
+
+## ADR-074 — materiały, zadania i pliki jako osobne rekordy domenowe
+
+**Data:** 2026-08-25
+**Decyzja:** materiał i zadanie należą do grupy, a oddanie do zadania i ucznia.
+Prywatny plik jest opcjonalnym rekordem `StoredFile`, nigdy publicznym URL-em.
+Stany oddania są jawne: nieotwarte, otwarte, oddane, spóźnione i sprawdzone.
+Informacja zwrotna ma autora i czas. Reguły dostępu są takie same dla listy,
+zapisu i pobrania pliku.
+
+**Dlaczego:** jednoznaczny model zapobiega mieszaniu treści grupy z prywatną
+pracą ucznia, pozwala prowadzić audyt i później zmienić lokalny magazyn na
+S3-compatible bez przebudowy modułu nauki.

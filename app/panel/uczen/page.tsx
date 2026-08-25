@@ -72,7 +72,7 @@ export default async function StudentPanelPage() {
           </div>
           <h2>Materiały</h2>
           <p>Notatki i pliki od wykładowcy zawsze pod ręką.</p>
-          <span>Moduł nie jest jeszcze uruchomiony</span>
+          <Link href="/panel/nauka">Otwórz materiały</Link>
         </article>
         <article>
           <div className="student-action-icon student-action-red">
@@ -80,17 +80,15 @@ export default async function StudentPanelPage() {
           </div>
           <h2>Zadania</h2>
           <p>Krótka lista z jasnym terminem i statusem wykonania.</p>
-          <span>Moduł nie jest jeszcze uruchomiony</span>
+          <Link href="/panel/nauka">Otwórz zadania</Link>
         </article>
         <article>
           <div className="student-action-icon student-action-gold">
             <Trophy aria-hidden="true" />
           </div>
           <h2>Postępy</h2>
-          <p>Prosty wykres pokaże, jak rośnie Twoja pewność w angielskim.</p>
-          <span>
-            <CheckCircle2 aria-hidden="true" /> Zaplanowane
-          </span>
+          <p>Zobacz zapisane obserwacje i kolejny mały krok w nauce.</p>
+          <Link href="/panel/postepy"><CheckCircle2 aria-hidden="true" /> Otwórz postępy</Link>
         </article>
       </div>
     </AuthenticatedPanelShell>

@@ -68,7 +68,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
       <section className="stage4-list-section">
         <div className="stage4-section-title">
           <div><span className="section-kicker">Umowy odpłatne</span><h2>Lista rozliczeń</h2></div>
-          <span>{assignments.reduce((sum, item) => sum + Math.max(item.paymentInstallments.length, 1), 0)} pozycji</span>
+          <span>{assignments.length} {assignments.length === 1 ? "umowa" : "umów"}</span>
         </div>
         {parentId ? <a className="stage4-filter-reset" href="/panel/platnosci">Pokaż rozliczenia wszystkich rodziców</a> : null}
         {assignments.length === 0 ? (

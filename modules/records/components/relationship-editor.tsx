@@ -37,20 +37,22 @@ export function RelationshipEditor({
     initialRecordUpdateState,
   );
   const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
+  const ordered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pl-PL");
-    const matching = needle
-      ? options.filter((option) =>
-          `${option.name} ${option.meta ?? ""}`
-            .toLocaleLowerCase("pl-PL")
-            .includes(needle),
-        )
-      : options;
-
-    return [...matching].sort((left, right) => {
+    return [...options].sort((left, right) => {
       const selectedOrder = Number(selectedIds.includes(right.id)) - Number(selectedIds.includes(left.id));
-      return selectedOrder || left.name.localeCompare(right.name, "pl");
-    });
+      const visibleOrder = Number(
+        `${right.name} ${right.meta ?? ""}`.toLocaleLowerCase("pl-PL").includes(needle),
+      ) - Number(
+        `${left.name} ${left.meta ?? ""}`.toLocaleLowerCase("pl-PL").includes(needle),
+      );
+      return visibleOrder || selectedOrder || left.name.localeCompare(right.name, "pl");
+    }).map((option) => ({
+      ...option,
+      visible: !needle || `${option.name} ${option.meta ?? ""}`
+        .toLocaleLowerCase("pl-PL")
+        .includes(needle),
+    }));
   }, [options, query, selectedIds]);
 
   return (
@@ -78,11 +80,11 @@ export function RelationshipEditor({
           </label>
         ) : null}
         <div className="relationship-options" role={single ? "radiogroup" : "group"}>
-          {filtered.length === 0 ? (
+          {ordered.every((option) => !option.visible) ? (
             <p className="relationship-empty">Brak pasujących aktywnych kartotek.</p>
-          ) : (
-            filtered.map((option) => (
-              <label key={option.id} className="relationship-option">
+          ) : null}
+          {ordered.map((option) => (
+              <label key={`${option.id}:${selectedIds.includes(option.id)}`} className="relationship-option" hidden={!option.visible}>
                 <input
                   type={single ? "radio" : "checkbox"}
                   name="selectedId"
@@ -95,8 +97,7 @@ export function RelationshipEditor({
                   {option.meta ? <small>{option.meta}</small> : null}
                 </span>
               </label>
-            ))
-          )}
+            ))}
           {single ? (
             <label className="relationship-option relationship-option-none">
               <input

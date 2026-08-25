@@ -18,6 +18,11 @@ const connectionString = process.env.DATABASE_URL;
 const allowInsecureDemoCredentials =
   process.env.KLA_ALLOW_INSECURE_DEMO_CREDENTIALS === "1";
 const fallbackDemoPassword = process.env.KLA_DEMO_PASSWORD;
+const kingaDemoPassword =
+  process.env.KLA_DEMO_KINGA_PASSWORD ??
+  process.env.KLA_DEMO_DIRECTOR_PASSWORD ??
+  fallbackDemoPassword;
+const demoSeedMode = process.env.KLA_DEMO_SEED_MODE === "clean" ? "clean" : "rich";
 const demoPasswords: Record<IdentityRole, string | undefined> = {
   DIRECTOR: process.env.KLA_DEMO_DIRECTOR_PASSWORD ?? fallbackDemoPassword,
   TEACHER: process.env.KLA_DEMO_TEACHER_PASSWORD ?? fallbackDemoPassword,
@@ -36,7 +41,9 @@ if (
   ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"].some((role) => {
     const password = demoPasswords[role as IdentityRole];
     return !password || (!allowInsecureDemoCredentials && password.length < 12);
-  })
+  }) ||
+  !kingaDemoPassword ||
+  (!allowInsecureDemoCredentials && kingaDemoPassword.length < 12)
 ) {
   throw new Error(
     "Brak haseł kont demo (minimum 12 znaków poza jawnym trybem demonstracyjnym). Uzupełnij lokalny .env.",
@@ -52,8 +59,9 @@ async function ensureDemoAccount(input: {
   email: string;
   name: string;
   role: IdentityRole;
+  passwordOverride?: string;
 }) {
-  const password = demoPasswords[input.role];
+  const password = input.passwordOverride ?? demoPasswords[input.role];
   if (!password) throw new Error(`Brak hasła demo dla roli ${input.role}.`);
   const existing = await prisma.user.findUnique({
     where: { email: input.email },
@@ -116,6 +124,14 @@ async function main() {
     name: "Dyrektor Demo",
     role: "DIRECTOR",
   });
+  const kinga = await ensureDemoAccount({
+    schoolId: school.id,
+    email: "kinga.demo@invalid.example",
+    name: "Kinga — odbiór klientki",
+    role: "DIRECTOR",
+    passwordOverride: kingaDemoPassword,
+  });
+  await prisma.onboardingProgress.deleteMany({ where: { userId: kinga.id } });
   const teacher = await ensureDemoAccount({
     schoolId: school.id,
     email: "wykladowca.demo@invalid.example",
@@ -162,6 +178,13 @@ async function main() {
     ),
   );
   const primaryLocation = demoLocations[0];
+
+  if (demoSeedMode === "clean") {
+    console.log(
+      "Czysta baza odbiorowa gotowa: konta testowe, lokalizacje i puste kartoteki.",
+    );
+    return;
+  }
 
   let studentSequence = 1;
   let firstGroupId: string | null = null;
@@ -442,12 +465,32 @@ async function main() {
       [1, 2, 3, 4, 5].map((weekday) => ({
         schoolId: school.id,
         teacherId: item.id,
+        locationId:
+          demoLocations[(weekday + teacherIndex) % (demoLocations.length - 1)]
+            .id,
         weekday,
         startMinute: (14 + ((weekday + teacherIndex) % 3)) * 60,
         endMinute: (18 + ((weekday + teacherIndex) % 3)) * 60,
         isAvailable: true,
       })),
     ),
+  });
+
+  await prisma.locationTravelRule.deleteMany({ where: { schoolId: school.id } });
+  await prisma.locationTravelRule.createMany({
+    data: demoLocations
+      .filter((location) => !location.isOnline)
+      .flatMap((fromLocation, fromIndex, locations) =>
+        locations
+          .filter((toLocation) => toLocation.id !== fromLocation.id)
+          .map((toLocation) => ({
+            schoolId: school.id,
+            fromLocationId: fromLocation.id,
+            toLocationId: toLocation.id,
+            minutes: 20 + ((fromIndex + locations.indexOf(toLocation)) % 4) * 10,
+            note: "Syntetyczny czas przejazdu do testów asystenta grafiku",
+          })),
+      ),
   });
 
   const demoStudentIds = [panelStudent.id, ...syntheticStudentIds];
@@ -644,6 +687,71 @@ async function main() {
   });
   slotIds.push(reminderSlot.id);
 
+  const cancelledSlotId = stableUuid(140);
+  const cancelledSlot = await prisma.scheduleSlot.update({
+    where: { id: cancelledSlotId },
+    data: { status: "CANCELLED" },
+    select: { id: true },
+  });
+  await prisma.lessonCancellation.upsert({
+    where: { scheduleSlotId: cancelledSlot.id },
+    update: {
+      cancelledById: director.id,
+      reason: "Zajęcia demonstracyjne odwołane z powodu niedostępności sali.",
+      notifyGroup: true,
+    },
+    create: {
+      id: stableUuid(450),
+      schoolId: school.id,
+      scheduleSlotId: cancelledSlot.id,
+      cancelledById: director.id,
+      reason: "Zajęcia demonstracyjne odwołane z powodu niedostępności sali.",
+      notifyGroup: true,
+    },
+  });
+
+  const changeRequestSlotId = stableUuid(120);
+  await prisma.scheduleChangeRequest.upsert({
+    where: { id: stableUuid(451) },
+    update: {
+      status: "PENDING",
+      reason: "Prośba demonstracyjna: przesunięcie zajęć o 30 minut.",
+      reviewedById: null,
+      reviewedAt: null,
+    },
+    create: {
+      id: stableUuid(451),
+      schoolId: school.id,
+      scheduleSlotId: changeRequestSlotId,
+      requestedById: teacher.id,
+      kind: "RESCHEDULE",
+      reason: "Prośba demonstracyjna: przesunięcie zajęć o 30 minut.",
+      proposedStartAt: new Date(
+        (await prisma.scheduleSlot.findUniqueOrThrow({
+          where: { id: changeRequestSlotId },
+          select: { startAt: true },
+        })).startAt.getTime() +
+          30 * 60 * 1000,
+      ),
+      proposedEndAt: new Date(
+        (await prisma.scheduleSlot.findUniqueOrThrow({
+          where: { id: changeRequestSlotId },
+          select: { endAt: true },
+        })).endAt.getTime() +
+          30 * 60 * 1000,
+      ),
+    },
+  });
+
+  await seedDemoLearningAndProgress({
+    schoolId: school.id,
+    directorId: director.id,
+    teacherId: teacher.id,
+    groupId: demoGroupIds[0],
+    studentIds: [panelStudent.id, ...syntheticStudentIds.slice(0, 3)],
+    completedSlotId: stableUuid(100),
+  });
+
   await seedDemoContracts({
     schoolId: school.id,
     directorId: director.id,
@@ -711,6 +819,176 @@ function createDemoPdf(title: string, lines: string[]): Uint8Array {
   pdf += offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
   pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
   return new TextEncoder().encode(pdf);
+}
+
+async function seedDemoLearningAndProgress(input: {
+  schoolId: string;
+  directorId: string;
+  teacherId: string;
+  groupId: string;
+  studentIds: string[];
+  completedSlotId: string;
+}) {
+  const now = new Date();
+  const dueSoon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const overdue = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+
+  await prisma.learningMaterial.upsert({
+    where: { id: stableUuid(500) },
+    update: {
+      archivedAt: null,
+      publishedAt: now,
+      externalUrl:
+        "https://learnenglish.britishcouncil.org/grammar/a1-a2-grammar/present-simple",
+    },
+    create: {
+      id: stableUuid(500),
+      schoolId: input.schoolId,
+      groupId: input.groupId,
+      createdById: input.teacherId,
+      title: "Powtórka: Present Simple i codzienne czynności",
+      description:
+        "Krótki materiał demonstracyjny do powtórki przed kolejnymi zajęciami.",
+      externalUrl: "https://learnenglish.britishcouncil.org/grammar/a1-a2-grammar/present-simple",
+    },
+  });
+  await prisma.learningMaterial.upsert({
+    where: { id: stableUuid(501) },
+    update: {
+      archivedAt: null,
+      publishedAt: now,
+      externalUrl: "https://learnenglishkids.britishcouncil.org/category/topics/school",
+    },
+    create: {
+      id: stableUuid(501),
+      schoolId: input.schoolId,
+      groupId: input.groupId,
+      createdById: input.directorId,
+      title: "Słownictwo: moja szkoła",
+      description:
+        "Lista zagadnień do rozmowy na lekcji. Dane są w pełni syntetyczne.",
+      externalUrl: "https://learnenglishkids.britishcouncil.org/category/topics/school",
+    },
+  });
+
+  const currentHomework = await prisma.homeworkAssignment.upsert({
+    where: { id: stableUuid(510) },
+    update: { archivedAt: null, dueAt: dueSoon },
+    create: {
+      id: stableUuid(510),
+      schoolId: input.schoolId,
+      groupId: input.groupId,
+      createdById: input.teacherId,
+      title: "Napisz pięć zdań o swoim tygodniu",
+      instructions:
+        "Użyj Present Simple. Pracę możesz opisać w notatce albo dodać jako plik.",
+      dueAt: dueSoon,
+    },
+  });
+  const pastHomework = await prisma.homeworkAssignment.upsert({
+    where: { id: stableUuid(511) },
+    update: { archivedAt: null, dueAt: overdue },
+    create: {
+      id: stableUuid(511),
+      schoolId: input.schoolId,
+      groupId: input.groupId,
+      createdById: input.teacherId,
+      title: "Nagranie: przedstaw się po angielsku",
+      instructions:
+        "Przygotuj krótką wypowiedź. To zadanie demonstracyjne — nie używaj prawdziwych danych.",
+      dueAt: overdue,
+    },
+  });
+
+  const submissionStatuses = ["SUBMITTED", "REVIEWED", "LATE", "OPENED"] as const;
+  for (const [index, studentId] of input.studentIds.entries()) {
+    const status = submissionStatuses[index % submissionStatuses.length];
+    await prisma.homeworkSubmission.upsert({
+      where: {
+        assignmentId_studentId: {
+          assignmentId: currentHomework.id,
+          studentId,
+        },
+      },
+      update: {
+        status,
+        studentNote: "Syntetyczna odpowiedź ucznia do testu obiegu zadania.",
+        teacherFeedback:
+          status === "REVIEWED" ? "Dobra praca. Zwróć uwagę na końcówkę -s." : null,
+        reviewedById: status === "REVIEWED" ? input.teacherId : null,
+        reviewedAt: status === "REVIEWED" ? now : null,
+      },
+      create: {
+        schoolId: input.schoolId,
+        assignmentId: currentHomework.id,
+        studentId,
+        status,
+        studentNote: "Syntetyczna odpowiedź ucznia do testu obiegu zadania.",
+        openedAt: now,
+        submittedAt:
+          status === "SUBMITTED" || status === "REVIEWED" || status === "LATE"
+            ? now
+            : null,
+        teacherFeedback:
+          status === "REVIEWED" ? "Dobra praca. Zwróć uwagę na końcówkę -s." : null,
+        reviewedById: status === "REVIEWED" ? input.teacherId : null,
+        reviewedAt: status === "REVIEWED" ? now : null,
+      },
+    });
+    await prisma.homeworkSubmission.upsert({
+      where: {
+        assignmentId_studentId: {
+          assignmentId: pastHomework.id,
+          studentId,
+        },
+      },
+      update: { status: index === 0 ? "LATE" : "NOT_OPENED" },
+      create: {
+        schoolId: input.schoolId,
+        assignmentId: pastHomework.id,
+        studentId,
+        status: index === 0 ? "LATE" : "NOT_OPENED",
+      },
+    });
+
+    for (let point = 0; point < 4; point += 1) {
+      const observedAt = new Date(now);
+      observedAt.setMonth(observedAt.getMonth() - (3 - point));
+      const base = Math.min(5, 2 + point);
+      await prisma.studentProgressObservation.upsert({
+        where: { id: stableUuid(600 + index * 10 + point) },
+        update: {
+          speaking: base,
+          listening: Math.min(5, base + (index % 2)),
+          reading: Math.min(5, base + 1),
+          writing: Math.max(1, base - 1),
+          vocabulary: base,
+          grammar: Math.max(1, base - (point % 2)),
+          engagement: 3 + (point % 3),
+          observedAt,
+        },
+        create: {
+          id: stableUuid(600 + index * 10 + point),
+          schoolId: input.schoolId,
+          studentId,
+          recordedById: input.teacherId,
+          scheduleSlotId: point === 3 && index === 0 ? input.completedSlotId : null,
+          speaking: base,
+          listening: Math.min(5, base + (index % 2)),
+          reading: Math.min(5, base + 1),
+          writing: Math.max(1, base - 1),
+          vocabulary: base,
+          grammar: Math.max(1, base - (point % 2)),
+          engagement: 3 + (point % 3),
+          note:
+            point === 3
+              ? "Uczeń coraz swobodniej używa pełnych zdań. Następny krok: regularna powtórka słownictwa."
+              : "Syntetyczna obserwacja postępu do testu wykresu.",
+          observedAt,
+        },
+      });
+    }
+  }
 }
 
 async function seedDemoContracts(input: {

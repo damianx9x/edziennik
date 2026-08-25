@@ -59,6 +59,14 @@ type PaymentItem = {
   note: string | null;
 };
 
+type PaymentAssignmentSummary = {
+  assignmentId: string;
+  representative: PaymentItem;
+  installments: PaymentItem[];
+  paidCount: number;
+  totalCount: number;
+};
+
 function formatDate(value: string | null, includeTime = false): string {
   if (!value) return "Nie ustawiono";
   return new Intl.DateTimeFormat("pl-PL", {
@@ -97,42 +105,100 @@ export function PaymentList({
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   useEffect(() => {
-    if (!initialSelectedId || !items.some((item) => item.assignmentId === initialSelectedId) || dialogRef.current?.open) return;
-    setSelectedAssignmentId(items.find((item) => item.assignmentId === initialSelectedId)?.itemId ?? null);
+    const initialItem = items.find(
+      (item) =>
+        item.itemId === initialSelectedId ||
+        item.installmentId === initialSelectedId ||
+        item.assignmentId === initialSelectedId,
+    );
+    if (!initialItem || dialogRef.current?.open) return;
+    setSelectedAssignmentId(initialItem.itemId);
     requestAnimationFrame(() => dialogRef.current?.showModal());
   }, [initialSelectedId, items]);
   const selected = useMemo(
     () => items.find((item) => item.itemId === selectedAssignmentId) ?? null,
     [items, selectedAssignmentId],
   );
+  const selectedInstallments = useMemo(
+    () =>
+      selected
+        ? items
+            .filter((item) => item.assignmentId === selected.assignmentId)
+            .sort(
+              (first, second) =>
+                (first.installmentNumber ?? 0) -
+                (second.installmentNumber ?? 0),
+            )
+        : [],
+    [items, selected],
+  );
   const [filter, setFilter] = useState<PaymentFilter>("ALL");
-  const visibleItems = useMemo(() => items.filter((item) => {
-    if (filter === "ALL") return true;
-    if (filter === "PAID") return item.displayStatus === "PAID";
-    if (filter === "ACTION") return ["UNSET", "PENDING", "OVERDUE"].includes(item.displayStatus);
-    return ["WAITING_SIGNATURE", "CONTRACT_EXPIRED"].includes(item.displayStatus);
-  }), [filter, items]);
+  const [query, setQuery] = useState("");
+  const assignmentSummaries = useMemo(() => {
+    const grouped = new Map<string, PaymentItem[]>();
+    for (const item of items) {
+      const current = grouped.get(item.assignmentId) ?? [];
+      current.push(item);
+      grouped.set(item.assignmentId, current);
+    }
+    return [...grouped.entries()].map(([assignmentId, installments]) => {
+      const sorted = [...installments].sort(
+        (first, second) =>
+          (first.installmentNumber ?? 0) - (second.installmentNumber ?? 0),
+      );
+      const representative =
+        sorted.find((item) => item.displayStatus !== "PAID") ?? sorted[0];
+      return {
+        assignmentId,
+        representative,
+        installments: sorted,
+        paidCount: sorted.filter((item) => item.displayStatus === "PAID").length,
+        totalCount: sorted.length,
+      } satisfies PaymentAssignmentSummary;
+    });
+  }, [items]);
+  const visibleAssignments = useMemo(
+    () =>
+      assignmentSummaries.filter((assignment) => {
+        const needle = query.trim().toLocaleLowerCase("pl");
+        const person = assignment.representative;
+        if (needle && !`${person.parentName} ${person.studentName} ${person.contractTitle}`.toLocaleLowerCase("pl").includes(needle)) return false;
+        const statuses = assignment.installments.map((item) => item.displayStatus);
+        if (filter === "ALL") return true;
+        if (filter === "PAID") return statuses.every((status) => status === "PAID");
+        if (filter === "ACTION") {
+          return statuses.some((status) =>
+            ["UNSET", "PENDING", "OVERDUE"].includes(status),
+          );
+        }
+        return statuses.some((status) =>
+          ["WAITING_SIGNATURE", "CONTRACT_EXPIRED"].includes(status),
+        );
+      }),
+    [assignmentSummaries, filter, query],
+  );
   const groups = useMemo(() => {
-    if (!isManagement) return [{ id: "mine", name: "", items: visibleItems }];
-    const grouped = new Map<string, { id: string; name: string; items: PaymentItem[] }>();
-    for (const item of visibleItems) {
-      const group = grouped.get(item.parentId) ?? {
-        id: item.parentId,
-        name: item.parentName,
+    if (!isManagement) return [{ id: "mine", name: "", items: visibleAssignments }];
+    const grouped = new Map<string, { id: string; name: string; items: PaymentAssignmentSummary[] }>();
+    for (const item of visibleAssignments) {
+      const person = item.representative;
+      const group = grouped.get(person.parentId) ?? {
+        id: person.parentId,
+        name: person.parentName,
         items: [],
       };
       group.items.push(item);
-      grouped.set(item.parentId, group);
+      grouped.set(person.parentId, group);
     }
     return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
-  }, [isManagement, visibleItems]);
+  }, [isManagement, visibleAssignments]);
 
   const counts = useMemo(() => ({
-    ALL: items.length,
-    ACTION: items.filter((item) => ["UNSET", "PENDING", "OVERDUE"].includes(item.displayStatus)).length,
-    PAID: items.filter((item) => item.displayStatus === "PAID").length,
-    WAITING: items.filter((item) => ["WAITING_SIGNATURE", "CONTRACT_EXPIRED"].includes(item.displayStatus)).length,
-  }), [items]);
+    ALL: assignmentSummaries.length,
+    ACTION: assignmentSummaries.filter((assignment) => assignment.installments.some((item) => ["UNSET", "PENDING", "OVERDUE"].includes(item.displayStatus))).length,
+    PAID: assignmentSummaries.filter((assignment) => assignment.installments.every((item) => item.displayStatus === "PAID")).length,
+    WAITING: assignmentSummaries.filter((assignment) => assignment.installments.some((item) => ["WAITING_SIGNATURE", "CONTRACT_EXPIRED"].includes(item.displayStatus))).length,
+  }), [assignmentSummaries]);
 
   function open(item: PaymentItem, event: MouseEvent<HTMLButtonElement>) {
     lastTriggerRef.current = event.currentTarget;
@@ -152,6 +218,7 @@ export function PaymentList({
 
   return (
     <>
+      {isManagement ? <label className="payment-search"><span>Szukaj rodzica, ucznia lub umowy</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Np. Kowalska albo pakiet 2026/27" /></label> : null}
       <nav className="payment-filters" aria-label="Filtruj rozliczenia">
         {([
           ["ALL", "Wszystkie"],
@@ -186,8 +253,10 @@ export function PaymentList({
               </header>
             ) : null}
             <div className="payment-list">
-              {group.items.map((item) => (
-                <article key={item.itemId}>
+              {group.items.map((summary) => {
+                const item = summary.representative;
+                return (
+                <article key={summary.assignmentId}>
                   <button
                     type="button"
                     className="payment-row-open"
@@ -200,17 +269,21 @@ export function PaymentList({
                     </span>
                     <span className="payment-row-copy">
                       <strong>{item.contractTitle}</strong>
-                      <span>{item.studentName} · {item.paymentLabel}</span>
-                      <small>{formatAmount(item.paymentAmountCents)} · termin {formatDate(item.dueDate)}</small>
+                      <span>{item.studentName} · {summary.paidCount} z {summary.totalCount} rat opłaconych</span>
+                      <small>
+                        {item.displayStatus === "PAID"
+                          ? "Wszystkie raty rozliczone"
+                          : `Najbliższa pozycja: ${formatAmount(item.paymentAmountCents)} · ${formatDate(item.dueDate)}`}
+                      </small>
                     </span>
                     <Eye aria-hidden="true" />
                   </button>
                 </article>
-              ))}
+              );})}
             </div>
           </section>
         ))}
-        {visibleItems.length === 0 ? (
+        {visibleAssignments.length === 0 ? (
           <div className="payment-filter-empty">
             <CheckCircle2 aria-hidden="true" />
             <strong>Brak pozycji w tym widoku</strong>
@@ -243,6 +316,36 @@ export function PaymentList({
                 <StatusIcon status={selected.displayStatus} />
                 {paymentDisplayStatusLabels[selected.displayStatus]}
               </span>
+              {selectedInstallments.length > 1 ? (
+                <section className="payment-installment-overview" aria-labelledby="payment-installments-title">
+                  <div className="person-dialog-section-heading">
+                    <h3 id="payment-installments-title">Harmonogram rat</h3>
+                    <span>
+                      {selectedInstallments.filter((item) => item.displayStatus === "PAID").length} z {selectedInstallments.length} opłaconych
+                    </span>
+                  </div>
+                  <div className="payment-installment-list">
+                    {selectedInstallments.map((installment) => (
+                      <button
+                        key={installment.itemId}
+                        type="button"
+                        className={installment.itemId === selected.itemId ? "active" : ""}
+                        aria-pressed={installment.itemId === selected.itemId}
+                        onClick={() => setSelectedAssignmentId(installment.itemId)}
+                      >
+                        <span>
+                          <strong>Rata {installment.installmentNumber}</strong>
+                          <small>{formatDate(installment.dueDate)}</small>
+                        </span>
+                        <span>
+                          <strong>{formatAmount(installment.paymentAmountCents)}</strong>
+                          <small>{paymentDisplayStatusLabels[installment.displayStatus]}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               <dl className="stage4-preview-facts">
                 <div><dt>Kwota tej raty</dt><dd>{formatAmount(selected.paymentAmountCents)}</dd></div>
                 <div><dt>Termin raty</dt><dd>{formatDate(selected.dueDate)}</dd></div>

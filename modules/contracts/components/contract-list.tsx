@@ -22,6 +22,7 @@ import { ContractAcceptForm } from "./contract-accept-form";
 import { ContractVersionForm } from "./contract-version-form";
 import { SignedContractForm } from "./signed-contract-form";
 import { reviewSignedContractAction } from "../actions";
+import { remindContractParentAction } from "@/modules/messaging/actions";
 
 type ContractItem = {
   id: string;
@@ -103,6 +104,8 @@ export function ContractList({
   const [documentLoaded, setDocumentLoaded] = useState(false);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [openedDocumentIds, setOpenedDocumentIds] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   useEffect(() => {
     const item = initialSelectedId ? items.find((candidate) => candidate.id === initialSelectedId) : null;
     if (!item || dialogRef.current?.open) return;
@@ -114,9 +117,11 @@ export function ContractList({
   }, [initialSelectedId, items]);
 
   const groups = useMemo(() => {
-    if (!isManagement) return [{ id: "mine", name: "", items }];
+    const needle = query.trim().toLocaleLowerCase("pl");
+    const filtered = items.filter((item) => (statusFilter === "ALL" || item.status === statusFilter) && (!needle || `${item.title} ${item.parentName} ${item.studentName}`.toLocaleLowerCase("pl").includes(needle)));
+    if (!isManagement) return [{ id: "mine", name: "", items: filtered }];
     const grouped = new Map<string, { id: string; name: string; items: ContractItem[] }>();
-    for (const item of items) {
+    for (const item of filtered) {
       const group = grouped.get(item.parentId) ?? {
         id: item.parentId,
         name: item.parentName,
@@ -126,7 +131,7 @@ export function ContractList({
       grouped.set(item.parentId, group);
     }
     return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
-  }, [isManagement, items]);
+  }, [isManagement, items, query, statusFilter]);
 
   function open(item: ContractItem, event: MouseEvent<HTMLButtonElement>) {
     lastTriggerRef.current = event.currentTarget;
@@ -156,6 +161,7 @@ export function ContractList({
 
   return (
     <>
+      {isManagement ? <div className="contract-list-tools"><label><span>Szukaj umowy, rodzica lub ucznia</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Np. Kowalska albo Toronto" /></label><label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">Wszystkie statusy</option><option value="SENT">Do otwarcia</option><option value="VIEWED">Oczekuje na decyzję lub podpis</option><option value="SIGNED_PENDING_REVIEW">Podpis do sprawdzenia</option><option value="ACCEPTED">Zaakceptowane</option><option value="EXPIRED">Wygasłe</option></select></label></div> : null}
       <div className="contract-parent-groups">
         {groups.map((group) => (
           <section className="contract-parent-group" key={group.id}>
@@ -199,6 +205,7 @@ export function ContractList({
           </section>
         ))}
       </div>
+      {groups.length === 0 ? <div className="stage4-empty"><FileText aria-hidden="true" /><h3>Brak umów pasujących do filtrów</h3><p>Zmień wyszukiwanie albo wybierz inny status.</p></div> : null}
 
       <dialog
         ref={dialogRef}
@@ -238,6 +245,7 @@ export function ContractList({
                       : "Wydruk, podpis i bezpieczny upload"}
                   </span>
                 </div>
+                {isManagement && ["SENT", "VIEWED", "SIGNED_PENDING_REVIEW"].includes(selected.status) ? <form action={remindContractParentAction} className="contract-reminder-action"><input type="hidden" name="assignmentId" value={selected.id} /><button type="submit">Wyślij przypomnienie rodzicowi</button><small>Wiadomość trafi do prywatnej rozmowy i jako neutralne powiadomienie e-mail.</small></form> : null}
                 <h3>Pakiet przekazany rodzicowi</h3>
                 <p>{selected.documents.length ? "Umowa i informacje RODO, obowiązujący cennik lub kosztorys oraz harmonogram zajęć. Treść pozostaje w oryginalnych plikach szkoły." : selected.serviceSummary}</p>
                 <h3>{selected.requiresPayment ? "Cena i płatność" : "Bez obowiązku zapłaty"}</h3>

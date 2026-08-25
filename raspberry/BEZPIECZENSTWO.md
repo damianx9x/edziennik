@@ -5,7 +5,8 @@
 Sejf `/srv/kla-vault` zawiera bazę PostgreSQL, prywatne dokumenty, sekret sesji,
 hasło techniczne bazy, klucze backupów i lokalne kopie. Chroni je LUKS2. Aplikacja działa jako osobny
 użytkownik `kla`, PostgreSQL jako `postgres`, a usługi mają ograniczenia
-systemd. Port Node słucha wyłącznie na `127.0.0.1`; ruch przyjmuje nginx.
+systemd. Port Node i nginx słuchają wyłącznie na `127.0.0.1`; publiczny ruch
+HTTPS dociera wyjściowym tunelem Cloudflare, bez otwierania portu WWW w zaporze.
 
 ## Przed czym to chroni
 

@@ -20,6 +20,11 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:snapshot:create": "node --env-file=.env scripts/demo-database-snapshot.mjs create",
+    "db:snapshot:verify": "node --env-file=.env scripts/demo-database-snapshot.mjs verify",
+    "db:snapshot:restore": "node --env-file=.env scripts/demo-database-snapshot.mjs restore",
+    "db:demo:reset:clean": "node --env-file=.env scripts/reset-demo-database.mjs --clean --confirm=RESET_SYNTHETIC_DEMO",
+    "db:demo:reset:rich": "node --env-file=.env scripts/reset-demo-database.mjs --rich --confirm=RESET_SYNTHETIC_DEMO",
     "export:demo-school": "tsx scripts/export-demo-school.ts",
     "security:rotate-demo-password": "node --env-file=.env scripts/rotate-demo-password.mjs",
     "account:owner": "node --env-file=.env scripts/setup-system-owner.mjs",
@@ -33,7 +38,7 @@
     "package:vps": "./scripts/package-home-vps.sh",
     "package:preview": "./scripts/package-home-preview.sh",
     "check:raspberry": "./raspberry/test-package.sh",
-    "package:raspberry": "npm run check:raspberry && mkdir -p outputs && tar --exclude='./node_modules' --exclude='./.next' --exclude='./.git' --exclude='./.env' --exclude='./outputs' --exclude='./tmp' --exclude='./.data' --exclude='./work' --exclude='./out' --exclude='./.playwright-cli' --exclude='./.DS_Store' --exclude='*/.DS_Store' --exclude='./tsconfig.tsbuildinfo' -czf outputs/edziennik-kla-raspberry-source.tar.gz . && shasum -a 256 outputs/edziennik-kla-raspberry-source.tar.gz > outputs/edziennik-kla-raspberry-source.tar.gz.sha256"
+    "package:raspberry": "npm run check:raspberry && ./scripts/package-raspberry.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

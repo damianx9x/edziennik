@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Home,
   MessageCircleMore,
+  NotebookTabs,
   ScrollText,
   ShieldCheck,
   Wrench,
@@ -36,6 +37,8 @@ type PanelSection =
   | "contracts"
   | "payments"
   | "messages"
+  | "learning"
+  | "progress"
   | "logs";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
@@ -101,6 +104,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "schedule",
       },
       { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
+      { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
+      { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
       { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
@@ -139,6 +144,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: MessageCircleMore,
         key: "messages",
       },
+      { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
+      { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
       { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
     ] as const;
   }
@@ -153,10 +160,12 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
+      { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
+      { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
       {
         href: "/panel/wiadomosci",
         label: "Wiadomości",
-        icon: Bell,
+        icon: MessageCircleMore,
         key: "messages",
       },
       { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
@@ -171,11 +180,12 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       key: "schedule",
     },
     {
-      href: "/panel/uczen#zadania",
-      label: "Zadania",
+      href: "/panel/nauka",
+      label: "Nauka",
       icon: GraduationCap,
-      key: "tasks",
+      key: "learning",
     },
+    { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
     { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
     { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
   ] as const;
@@ -198,11 +208,13 @@ export async function AuthenticatedPanelShell({
         )
       : session.user.role === "DIRECTOR"
         ? navigation.filter((item) =>
-            ["home", "records", "schedule", "messages", "payments"].includes(item.key),
+            ["home", "records", "schedule", "messages", "learning"].includes(item.key),
           )
         : session.user.role === "PARENT"
-          ? navigation.filter((item) => item.key !== "notifications")
-          : navigation;
+          ? navigation.filter((item) => ["home", "schedule", "learning", "messages", "payments"].includes(item.key))
+          : session.user.role === "TEACHER"
+            ? navigation.filter((item) => ["home", "schedule", "learning", "messages", "progress"].includes(item.key))
+            : navigation.filter((item) => ["home", "schedule", "learning", "progress", "messages"].includes(item.key));
   const [notificationItems, onboarding] = session.user.role === "SYSTEM_OWNER"
     ? [[], null] as const
     : await Promise.all([

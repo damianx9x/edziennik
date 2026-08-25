@@ -35,16 +35,57 @@ fi
 read -r -p "To zastąpi bazę i dokumenty. Wpisz ODTWARZAM KLA: " CONFIRM
 [[ "$CONFIRM" == "ODTWARZAM KLA" ]] || { echo "Anulowano."; exit 1; }
 /usr/local/sbin/edziennik-kla-backup
+STAMP="$(date +%s)"
+CANDIDATE_DB="kla_restore_candidate_$STAMP"
+PREVIOUS_DB="kla_before_restore_$STAMP"
+RESTORE_FILES="$VAULT/private-files.restore-$STAMP"
+PREVIOUS_FILES="$VAULT/private-files.before-restore-$STAMP"
+switched=0
+
+rollback_restore() {
+  local exit_code=$?
+  if [[ "$switched" -eq 1 ]]; then
+    echo "Odtworzenie nie przeszło kontroli. Przywracam poprzedni stan..."
+    systemctl stop edziennik-kla >/dev/null 2>&1 || true
+    sudo -u postgres psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL || true
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname IN ('kla_edziennik', '$PREVIOUS_DB') AND pid <> pg_backend_pid();
+ALTER DATABASE kla_edziennik RENAME TO ${CANDIDATE_DB}_failed;
+ALTER DATABASE $PREVIOUS_DB RENAME TO kla_edziennik;
+SQL
+    if [[ -d "$PREVIOUS_FILES" ]]; then
+      rm -rf -- "$VAULT/private-files.failed-$STAMP"
+      [[ -d "$VAULT/private-files" ]] && mv "$VAULT/private-files" "$VAULT/private-files.failed-$STAMP"
+      mv "$PREVIOUS_FILES" "$VAULT/private-files"
+    fi
+    systemctl start edziennik-kla >/dev/null 2>&1 || true
+  fi
+  sudo -u postgres dropdb --if-exists "$CANDIDATE_DB" >/dev/null 2>&1 || true
+  rm -rf -- "$RESTORE_FILES"
+  exit "$exit_code"
+}
+trap rollback_restore ERR INT TERM
+
+# Najpierw pełne odtworzenie do odizolowanej bazy i osobnego katalogu.
+sudo -u postgres createdb --owner=kla_app "$CANDIDATE_DB"
+sudo -u postgres pg_restore --no-owner --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
+sudo -u postgres psql --dbname="$CANDIDATE_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
+install -d -m 700 -o kla -g kla "$RESTORE_FILES"
+tar -C "$RESTORE_FILES" --strip-components=1 -xzf "$TEMP_DIR/private-files.tar.gz"
+chown -R kla:kla "$RESTORE_FILES"
+
 systemctl stop edziennik-kla
-sudo -u postgres dropdb --if-exists kla_edziennik
-sudo -u postgres createdb --owner=kla_app kla_edziennik
-sudo -u postgres pg_restore --no-owner --dbname=kla_edziennik "$TEMP_DIR/database.dump"
-install -d -m 700 -o kla -g kla "$VAULT/private-files.restore"
-tar -C "$VAULT/private-files.restore" --strip-components=1 -xzf "$TEMP_DIR/private-files.tar.gz"
-mv "$VAULT/private-files" "$VAULT/private-files.before-restore-$(( $(date +%s) ))"
-mv "$VAULT/private-files.restore" "$VAULT/private-files"
-chown -R kla:kla "$VAULT/private-files"
+sudo -u postgres psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'kla_edziennik' AND pid <> pg_backend_pid();
+ALTER DATABASE kla_edziennik RENAME TO $PREVIOUS_DB;
+ALTER DATABASE $CANDIDATE_DB RENAME TO kla_edziennik;
+SQL
+mv "$VAULT/private-files" "$PREVIOUS_FILES"
+mv "$RESTORE_FILES" "$VAULT/private-files"
+switched=1
+
 sudo -u kla bash -lc "cd /opt/kla/current && set -a && source /etc/kla/edziennik.env && set +a && npm run db:migrate:deploy"
 systemctl start edziennik-kla
 /usr/local/sbin/edziennik-kla-health
-echo "Odtworzenie zakończone. Poprzednie dokumenty zachowano tymczasowo w sejfie."
+switched=0
+trap - ERR INT TERM
+echo "Odtworzenie zakończone. Poprzednia baza i dokumenty pozostają tymczasowo w szyfrowanym sejfie."

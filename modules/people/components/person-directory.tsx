@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import {
   type MouseEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -39,6 +40,7 @@ import {
   type RelationshipOption,
 } from "@/modules/records/components/relationship-editor";
 import { StudentAvailabilityEditor } from "@/modules/records/components/student-availability-editor";
+import { openPersonConversationAction } from "@/modules/messaging/actions";
 
 export type PersonDirectoryRecord = {
   id: string;
@@ -87,6 +89,14 @@ export function PersonDirectory({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!selected) return;
+    const refreshed = people.find((person) => person.id === selected.id);
+    if (refreshed && refreshed !== selected) {
+      const timer = window.setTimeout(() => setSelected(refreshed), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [people, selected]);
   const filteredPeople = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("pl-PL");
     return people.filter((person) => {
@@ -433,12 +443,16 @@ export function PersonDirectory({
                   <span>Skróty do powiązanych informacji</span>
                 </div>
                 <div className="person-module-grid">
-                  <FutureModule
-                    href="/panel/wiadomosci"
-                    icon={<MessageCircleMore aria-hidden="true" />}
-                    title="Wiadomości"
-                    status="Otwórz rozmowy"
-                  />
+                  {actorRole === "DIRECTOR" ? (
+                    <form action={openPersonConversationAction}>
+                      <input type="hidden" name="personId" value={selected.id} />
+                      <button type="submit" className="person-module-action">
+                        <MessageCircleMore aria-hidden="true" />
+                        <span><strong>Wiadomości</strong><small>Otwórz rozmowę z tą osobą</small></span>
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    </form>
+                  ) : null}
                   {selected.role === "PARENT" ? (
                     <FutureModule
                       href={`/panel/platnosci?rodzic=${selected.id}`}
@@ -455,12 +469,14 @@ export function PersonDirectory({
                       status="Otwórz dokumenty"
                     />
                   ) : null}
-                  <FutureModule
-                    href="/panel/szkola#postepy"
-                    icon={<TrendingUp aria-hidden="true" />}
-                    title="Postępy"
-                    status="Moduł nie jest jeszcze uruchomiony"
-                  />
+                  {selected.role === "STUDENT" ? (
+                    <FutureModule
+                      href={`/panel/postepy?uczen=${selected.id}`}
+                      icon={<TrendingUp aria-hidden="true" />}
+                      title="Postępy"
+                      status="Otwórz postępy ucznia"
+                    />
+                  ) : null}
                 </div>
               </section>
 

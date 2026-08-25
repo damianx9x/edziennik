@@ -55,29 +55,11 @@ export function can(
   action: Action,
   resource: Resource,
 ): boolean {
-  const protectedFamilyActions: readonly Action[] = [
-    "manage:contracts",
-    "view:contract",
-    "accept:contract",
-    "manage:payments",
-    "view:payment",
-    "view:conversation",
-    "send:group-message",
-    "send:announcement",
-    "audit:view-conversation",
-  ];
-
-  // Diagnostyka nie uzasadnia stałego dostępu do treści umów i rozliczeń.
-  // Ewentualny dostęp serwisowy wymaga osobnego mechanizmu break-glass.
-  if (
-    actor.role === "SYSTEM_OWNER" &&
-    protectedFamilyActions.includes(action)
-  ) {
-    return false;
-  }
-
+  // The technical account has a deliberately narrow, read-only surface.
+  // It never inherits school staff permissions. Any future access to business
+  // data must use a separate, time-limited and audited break-glass mechanism.
   if (actor.role === "SYSTEM_OWNER") {
-    return true;
+    return action === "view:owner-dashboard";
   }
 
   if (actor.schoolId !== resource.schoolId) {

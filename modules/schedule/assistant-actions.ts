@@ -252,13 +252,16 @@ export async function saveTeacherAvailabilityAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireActiveSession(schedulePath);
-  const windows = Array.from({ length: 6 }, (_, index) => index + 1)
-    .filter((weekday) => formData.get(`available:${weekday}`) === "on")
-    .map((weekday) => ({
-      weekday,
-      startMinute: minuteValue(formData.get(`startTime:${weekday}`)),
-      endMinute: minuteValue(formData.get(`endTime:${weekday}`)),
-    }));
+  const weekdays = formData.getAll("windowWeekday");
+  const starts = formData.getAll("windowStart");
+  const ends = formData.getAll("windowEnd");
+  const locationIds = formData.getAll("windowLocationId");
+  const windows = weekdays.map((weekday, index) => ({
+    weekday,
+    startMinute: minuteValue(starts[index] ?? null),
+    endMinute: minuteValue(ends[index] ?? null),
+    locationId: locationIds[index],
+  }));
   const parsed = teacherAvailabilitySchema.safeParse({
     teacherId: formData.get("teacherId"),
     windows,
@@ -277,23 +280,34 @@ export async function saveTeacherAvailabilityAction(
   ) {
     return { status: "error", message: "Możesz zmienić tylko własną dostępność." };
   }
-  if (!["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(session.user.role)) {
+  if (!["DIRECTOR", "TEACHER"].includes(session.user.role)) {
     return { status: "error", message: "Nie masz dostępu do tej operacji." };
   }
-  const teacher = await db.user.findFirst({
-    where: {
-      id: parsed.data.teacherId,
-      schoolId: session.user.schoolId,
-      role: "TEACHER",
-      status: "ACTIVE",
-      archivedAt: null,
-    },
-    select: { id: true },
-  });
-  if (!teacher) {
+  const [teacher, locations] = await Promise.all([
+    db.user.findFirst({
+      where: {
+        id: parsed.data.teacherId,
+        schoolId: session.user.schoolId,
+        role: "TEACHER",
+        status: "ACTIVE",
+        archivedAt: null,
+      },
+      select: { id: true },
+    }),
+    db.location.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        id: { in: parsed.data.windows.map((window) => window.locationId) },
+        isActive: true,
+        archivedAt: null,
+      },
+      select: { id: true },
+    }),
+  ]);
+  if (!teacher || locations.length !== new Set(parsed.data.windows.map((window) => window.locationId)).size) {
     return {
       status: "error",
-      message: "Ten wykładowca nie jest już aktywny.",
+      message: "Wykładowca albo jedna z lokalizacji nie są już aktywne.",
     };
   }
 
@@ -325,6 +339,7 @@ export async function saveTeacherAvailabilityAction(
         weekday: window.weekday,
         startMinute: window.startMinute,
         endMinute: window.endMinute,
+        locationId: window.locationId,
         isAvailable: true,
       })),
     });
@@ -377,7 +392,7 @@ export async function generateScheduleAction(formData: FormData) {
     1,
   );
 
-  const [requirements, rooms, teachers, availability, studentAvailability, fixedSlots, locations] =
+  const [requirements, rooms, teachers, availability, studentAvailability, fixedSlots, locations, travelRules] =
     await Promise.all([
       db.schedulingRequirement.findMany({
         where: {
@@ -427,6 +442,7 @@ export async function generateScheduleAction(formData: FormData) {
           endMinute: true,
           isAvailable: true,
           preference: true,
+          locationId: true,
         },
       }),
       db.studentAvailabilityWindow.findMany({
@@ -450,6 +466,7 @@ export async function generateScheduleAction(formData: FormData) {
         include: {
           group: {
             select: {
+              locationId: true,
               enrollments: {
                 where: { status: "ACTIVE" },
                 select: { studentId: true },
@@ -464,7 +481,11 @@ export async function generateScheduleAction(formData: FormData) {
           isActive: true,
           archivedAt: null,
         },
-        select: { id: true, name: true },
+        select: { id: true, name: true, isOnline: true },
+      }),
+      db.locationTravelRule.findMany({
+        where: { schoolId: session.user.schoolId, isActive: true },
+        select: { fromLocationId: true, toLocationId: true, minutes: true },
       }),
     ]);
 
@@ -583,7 +604,10 @@ export async function generateScheduleAction(formData: FormData) {
         studentIds: slot.group.enrollments.map(
           (enrollment) => enrollment.studentId,
         ),
+        locationId: slot.group.locationId,
       })),
+      travelRules,
+      onlineLocationIds: locations.filter((location) => location.isOnline).map((location) => location.id),
     });
     proposals.push(...result.proposals);
     hardViolations.push(

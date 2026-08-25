@@ -66,6 +66,8 @@ jednocześnie root, klucz LUKS i klucz backupu.
 | T08 | dyrektor czyta rozmowę | nadmierny nadzór | wysoki prawny | jawność i audit bez treści | regulamin, cel, retencja |
 | T09 | atak na zależności | podatny build | wysoki | lockfile, audit, Dependabot | review PR, MFA GitHub |
 | T10 | backup tylko lokalny | utrata wraz z serwerem | wysoki | age, adapter SFTP | uruchomić osobny cel |
+| T11 | konto dyrektora wywołuje globalne API tożsamości | eskalacja roli / inna szkoła | krytyczny | dyrektor bez `adminAc`, własne akcje z `schoolId`, testy negatywne | powtarzać test po każdej zmianie Better Auth |
+| T12 | dostawca e-mail przejmuje treść rozmów | ujawnienie komunikacji | wysoki | neutralny e-mail, HTTPS, allowlista hosta, brak redirectów, timeout | umowa powierzenia i review konfiguracji produkcyjnej |
 
 ## 7. Critical attack paths
 

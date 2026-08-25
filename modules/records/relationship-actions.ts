@@ -61,21 +61,21 @@ export async function updateRelationshipAction(
       };
     }
   }
-  const currentIds = await getRelationshipIds(
-    db,
-    session.user.schoolId,
-    parsed.data.relationKind,
-    parsed.data.entityId,
-  );
-  const addIds = parsed.data.selectedIds.filter((id) => !currentIds.includes(id));
-  const removeIds = currentIds.filter(
-    (id) => !parsed.data.selectedIds.includes(id),
-  );
-  if (addIds.length === 0 && removeIds.length === 0) {
-    return { status: "success", message: "Przypisania są już aktualne." };
-  }
   const changedField = relationshipKindLabels[parsed.data.relationKind];
   if (session.user.role === "TEACHER") {
+    const currentIds = await getRelationshipIds(
+      db,
+      session.user.schoolId,
+      parsed.data.relationKind,
+      parsed.data.entityId,
+    );
+    const addIds = parsed.data.selectedIds.filter((id) => !currentIds.includes(id));
+    const removeIds = currentIds.filter(
+      (id) => !parsed.data.selectedIds.includes(id),
+    );
+    if (addIds.length === 0 && removeIds.length === 0) {
+      return { status: "success", message: "Przypisania są już aktualne." };
+    }
     const request = await db.recordChangeRequest.create({
       data: {
         schoolId: session.user.schoolId,
@@ -108,8 +108,19 @@ export async function updateRelationshipAction(
     };
   }
   try {
-    await db.$transaction(async (tx) => {
+    const changed = await db.$transaction(async (tx) => {
       await lockScheduleResources(tx, session.user.schoolId);
+      const currentIds = await getRelationshipIds(
+        tx,
+        session.user.schoolId,
+        parsed.data.relationKind,
+        parsed.data.entityId,
+      );
+      const addIds = parsed.data.selectedIds.filter((id) => !currentIds.includes(id));
+      const removeIds = currentIds.filter(
+        (id) => !parsed.data.selectedIds.includes(id),
+      );
+      if (addIds.length === 0 && removeIds.length === 0) return false;
       await applyRelationshipDelta(tx, {
         schoolId: session.user.schoolId,
         ...parsed.data,
@@ -135,9 +146,13 @@ export async function updateRelationshipAction(
           },
         },
       });
+      return true;
     });
     refreshRecords();
-    return { status: "success", message: "Przypisania zostały zapisane." };
+    return {
+      status: "success",
+      message: changed ? "Przypisania zostały zapisane." : "Przypisania są już aktualne.",
+    };
   } catch (error) {
     return {
       status: "error",

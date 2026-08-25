@@ -2,8 +2,10 @@
 
 import { addMinutes, differenceInMinutes, subMinutes } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 
+import type { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { can, type Actor } from "@/modules/access-control/can";
 import {
@@ -19,12 +21,15 @@ import {
   lockScheduleResources,
 } from "./resource-lock";
 import {
+  cancelScheduleSlotSchema,
   createScheduleSlotSchema,
   moveScheduleSlotSchema,
+  reviewScheduleChangeRequestSchema,
   SCHOOL_TIME_ZONE,
   toUtcInterval,
 } from "./schema";
 import type { ScheduleActionState } from "./types";
+import { processEmailDeliveryQueue } from "@/modules/messaging/queue";
 
 const schedulePath = "/panel/plan";
 
@@ -485,42 +490,80 @@ export async function cancelScheduleSlotAction(
   _previous: ScheduleActionState,
   formData: FormData,
 ): Promise<ScheduleActionState> {
-  const session = await requireDirector(schedulePath);
-  const slotId = String(formData.get("slotId") ?? "");
-  const cancelled = await db.$transaction(async (transaction) => {
-    await lockScheduleResources(transaction, session.user.schoolId);
-    const existing = await transaction.scheduleSlot.findFirst({
+  const session = await requireActiveSession(schedulePath);
+  const parsed = cancelScheduleSlotSchema.safeParse({
+    slotId: formData.get("slotId"),
+    reason: formData.get("reason"),
+    notifyGroup: true,
+  });
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Sprawdź powód odwołania.",
+    };
+  }
+
+  if (session.user.role === "TEACHER") {
+    const slot = await db.scheduleSlot.findFirst({
       where: {
-        id: slotId,
+        id: parsed.data.slotId,
         schoolId: session.user.schoolId,
+        teacherId: session.user.id,
         archivedAt: null,
         status: { not: "CANCELLED" },
       },
-      select: { id: true },
+      select: { id: true, changeRequests: { where: { status: "PENDING" }, select: { id: true }, take: 1 } },
     });
-    if (!existing) {
-      return false;
+    if (!slot) {
+      return { status: "error", message: "Możesz zgłosić zmianę tylko dla swoich aktywnych zajęć." };
     }
-    await transaction.scheduleSlot.update({
-      where: { id: existing.id },
-      data: { status: "CANCELLED", version: { increment: 1 } },
+    if (slot.changeRequests.length > 0) {
+      return { status: "error", message: "Wniosek dotyczący tej lekcji już czeka na decyzję dyrektora." };
+    }
+    const request = await db.$transaction(async (transaction) => {
+      const created = await transaction.scheduleChangeRequest.create({
+        data: {
+          schoolId: session.user.schoolId,
+          scheduleSlotId: slot.id,
+          requestedById: session.user.id,
+          kind: "CANCEL",
+          reason: parsed.data.reason,
+        },
+        select: { id: true },
+      });
+      await transaction.auditLog.create({
+        data: {
+          schoolId: session.user.schoolId,
+          actorId: session.user.id,
+          action: "schedule.change-request.created",
+          entityType: "ScheduleChangeRequest",
+          entityId: created.id,
+          metadata: { kind: "CANCEL", scheduleSlotId: slot.id },
+        },
+      });
+      return created;
     });
-    const discardedGenerationCount =
-      await discardReadyScheduleGenerations(
-        transaction,
-        session.user.schoolId,
-      );
-    await transaction.auditLog.create({
-      data: {
-        schoolId: session.user.schoolId,
-        actorId: session.user.id,
-        action: "schedule.slot.cancelled",
-        entityType: "ScheduleSlot",
-        entityId: existing.id,
-        metadata: { discardedGenerationCount },
-      },
+    revalidateScheduleViews();
+    return {
+      status: "success",
+      message: "Wniosek trafił do dyrektora. Zajęcia pozostają w planie do czasu akceptacji.",
+      slotId: request.id,
+    };
+  }
+
+  if (session.user.role !== "DIRECTOR") {
+    return { status: "error", message: "Tylko wykładowca lub dyrektor może odwołać zajęcia." };
+  }
+
+  const cancelled = await db.$transaction(async (transaction) => {
+    await lockScheduleResources(transaction, session.user.schoolId);
+    return cancelSlotInTransaction(transaction, {
+      schoolId: session.user.schoolId,
+      slotId: parsed.data.slotId,
+      actorId: session.user.id,
+      reason: parsed.data.reason,
+      notifyGroup: parsed.data.notifyGroup,
     });
-    return true;
   });
   if (!cancelled) {
     return {
@@ -528,9 +571,181 @@ export async function cancelScheduleSlotAction(
       message: "Te zajęcia są już odwołane albo niedostępne.",
     };
   }
-  revalidatePath(schedulePath);
+  revalidateScheduleViews();
+  after(() => processEmailDeliveryQueue(session.user.schoolId));
   return {
     status: "success",
-    message: "Zajęcia zostały odwołane.",
+    message: "Zajęcia zostały odwołane, a grupa otrzymała wiadomość i prywatne powiadomienia.",
   };
+}
+
+async function cancelSlotInTransaction(
+  transaction: Prisma.TransactionClient,
+  input: {
+    schoolId: string;
+    slotId: string;
+    actorId: string;
+    reason: string;
+    notifyGroup: boolean;
+    requestId?: string;
+  },
+) {
+  const existing = await transaction.scheduleSlot.findFirst({
+    where: {
+      id: input.slotId,
+      schoolId: input.schoolId,
+      archivedAt: null,
+      status: { not: "CANCELLED" },
+    },
+    select: {
+      id: true,
+      startAt: true,
+      groupId: true,
+      group: {
+        select: {
+          name: true,
+          teachers: { where: { archivedAt: null }, select: { teacherId: true } },
+          enrollments: {
+            where: { status: "ACTIVE" },
+            select: {
+              studentId: true,
+              student: { select: { childLinks: { where: { archivedAt: null }, select: { parentId: true } } } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!existing) return false;
+
+  await transaction.scheduleSlot.update({
+    where: { id: existing.id },
+    data: { status: "CANCELLED", version: { increment: 1 } },
+  });
+  await transaction.lessonCancellation.create({
+    data: {
+      schoolId: input.schoolId,
+      scheduleSlotId: existing.id,
+      cancelledById: input.actorId,
+      reason: input.reason,
+      notifyGroup: input.notifyGroup,
+    },
+  });
+
+  let recipientCount = 0;
+  if (input.notifyGroup) {
+    const conversation = await transaction.conversation.upsert({
+      where: { groupId: existing.groupId },
+      create: { schoolId: input.schoolId, groupId: existing.groupId, kind: "GROUP" },
+      update: { updatedAt: new Date() },
+    });
+    const message = await transaction.message.create({
+      data: {
+        schoolId: input.schoolId,
+        conversationId: conversation.id,
+        authorId: input.actorId,
+        kind: "ANNOUNCEMENT",
+        subject: `Odwołane zajęcia · ${existing.group.name}`,
+        body: `Zajęcia zaplanowane na ${new Intl.DateTimeFormat("pl-PL", { dateStyle: "long", timeStyle: "short", timeZone: SCHOOL_TIME_ZONE }).format(existing.startAt)} zostały odwołane. Powód: ${input.reason}`,
+        clientRequestId: `lesson-cancel:${existing.id}`,
+        requiresAcknowledgement: true,
+      },
+    });
+    const recipientIds = [...new Set([
+      ...existing.group.teachers.map((item) => item.teacherId),
+      ...existing.group.enrollments.map((item) => item.studentId),
+      ...existing.group.enrollments.flatMap((item) => item.student.childLinks.map((link) => link.parentId)),
+    ])].filter((id) => id !== input.actorId);
+    recipientCount = recipientIds.length;
+    if (recipientIds.length > 0) {
+      await transaction.emailDelivery.createMany({
+        data: recipientIds.map((recipientId) => ({
+          schoolId: input.schoolId,
+          messageId: message.id,
+          recipientId,
+          idempotencyKey: `lesson-cancel:${existing.id}:recipient:${recipientId}`,
+        })),
+        skipDuplicates: true,
+      });
+    }
+    await transaction.messageRead.create({
+      data: { schoolId: input.schoolId, messageId: message.id, userId: input.actorId },
+    });
+  }
+
+  if (input.requestId) {
+    await transaction.scheduleChangeRequest.update({
+      where: { id: input.requestId },
+      data: {
+        status: "APPROVED",
+        reviewedById: input.actorId,
+        reviewedAt: new Date(),
+      },
+    });
+  }
+  const discardedGenerationCount = await discardReadyScheduleGenerations(transaction, input.schoolId);
+  await transaction.auditLog.create({
+    data: {
+      schoolId: input.schoolId,
+      actorId: input.actorId,
+      action: "schedule.slot.cancelled",
+      entityType: "ScheduleSlot",
+      entityId: existing.id,
+      metadata: { discardedGenerationCount, recipientCount, sourceRequestId: input.requestId ?? null },
+    },
+  });
+  return true;
+}
+
+export async function reviewScheduleChangeRequestAction(
+  _previous: ScheduleActionState,
+  formData: FormData,
+): Promise<ScheduleActionState> {
+  const session = await requireDirector(schedulePath);
+  const parsed = reviewScheduleChangeRequestSchema.safeParse({
+    requestId: formData.get("requestId"),
+    decision: formData.get("decision"),
+    reviewNote: formData.get("reviewNote") || undefined,
+  });
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź decyzję." };
+  }
+
+  const result = await db.$transaction(async (transaction) => {
+    await lockScheduleResources(transaction, session.user.schoolId);
+    const request = await transaction.scheduleChangeRequest.findFirst({
+      where: { id: parsed.data.requestId, schoolId: session.user.schoolId, status: "PENDING" },
+      select: { id: true, kind: true, reason: true, scheduleSlotId: true },
+    });
+    if (!request) return { ok: false, cancelled: false };
+    if (parsed.data.decision === "REJECT") {
+      await transaction.scheduleChangeRequest.update({
+        where: { id: request.id },
+        data: { status: "REJECTED", reviewedById: session.user.id, reviewedAt: new Date(), reviewNote: parsed.data.reviewNote },
+      });
+      await transaction.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "schedule.change-request.rejected", entityType: "ScheduleChangeRequest", entityId: request.id, metadata: { kind: request.kind } } });
+      return { ok: true, cancelled: false };
+    }
+    if (request.kind !== "CANCEL") return { ok: false, cancelled: false };
+    const cancelled = await cancelSlotInTransaction(transaction, {
+      schoolId: session.user.schoolId,
+      slotId: request.scheduleSlotId,
+      actorId: session.user.id,
+      reason: request.reason,
+      notifyGroup: true,
+      requestId: request.id,
+    });
+    return { ok: cancelled, cancelled };
+  });
+  if (!result.ok) return { status: "error", message: "Wniosek jest już rozpatrzony albo lekcja nie jest dostępna." };
+  revalidateScheduleViews();
+  if (result.cancelled) after(() => processEmailDeliveryQueue(session.user.schoolId));
+  return { status: "success", message: result.cancelled ? "Wniosek zaakceptowany. Zajęcia odwołano i wysłano powiadomienia." : "Wniosek został odrzucony." };
+}
+
+function revalidateScheduleViews() {
+  revalidatePath(schedulePath);
+  revalidatePath("/panel/wiadomosci");
+  revalidatePath("/panel/powiadomienia");
+  revalidatePath("/panel/szkola");
 }

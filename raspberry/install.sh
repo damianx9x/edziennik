@@ -15,14 +15,19 @@ SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Dostępne zewnętrzne dyski:"
 lsblk -dpo NAME,SIZE,MODEL,TRAN,TYPE | awk '$NF == "disk" {print}'
 read -r -p "Podaj dysk SSD na zaszyfrowany sejf (np. /dev/sda): " VAULT_DEVICE
-read -r -p "Adres aplikacji [http://adres-pi]: " APP_URL
-APP_URL="${APP_URL:-http://adres-pi}"
-[[ "$APP_URL" =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]] || { echo "Nieprawidłowy adres aplikacji."; exit 1; }
+read -r -p "Publiczny adres HTTPS aplikacji (np. https://edziennik.example.pl): " APP_URL
+[[ "$APP_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || { echo "Wymagany jest publiczny adres HTTPS bez ścieżki."; exit 1; }
+read -r -s -p "Token istniejącego tunelu Cloudflare dla tego adresu: " TUNNEL_TOKEN
+echo
+[[ "$TUNNEL_TOKEN" == eyJ* ]] || { echo "Nie rozpoznano tokenu tunelu Cloudflare."; exit 1; }
 read -r -p "Wgrać wyłącznie fikcyjne dane testowe? [t/N]: " INSTALL_DEMO
 
+install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
 apt-get update
 apt-get full-upgrade -y
-apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
+apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cloudflared cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
 if ! command -v node >/dev/null || [[ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 22 ]]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
@@ -141,14 +146,17 @@ sed 's|__SERVER_NAME__|_|g' "$SOURCE_DIR/raspberry/nginx/kla.conf" > /etc/nginx/
 ln -sfn /etc/nginx/sites-available/kla /etc/nginx/sites-enabled/kla
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
+cloudflared service uninstall >/dev/null 2>&1 || true
+cloudflared service install "$TUNNEL_TOKEN"
+unset TUNNEL_TOKEN
+systemctl enable cloudflared
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow OpenSSH
-ufw allow 'Nginx Full'
 ufw --force enable
 systemctl enable fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 systemctl daemon-reload
-systemctl restart nginx postgresql clamav-daemon
+systemctl restart nginx postgresql clamav-daemon cloudflared
 systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 
 echo

@@ -13,7 +13,7 @@ fi
 release_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/edziennik-kla-vps.XXXXXX")"
 release_root="$release_tmp_dir/edziennik-kla-home-vps"
 release_output_dir="$project_dir/outputs"
-release_zip="$release_output_dir/edziennik-kla-home-vps-stage-5.zip"
+release_zip="$release_output_dir/edziennik-kla-home-vps-stage-6-pre-release.zip"
 
 if [[ -z "$release_tmp_dir" || ! -d "$release_tmp_dir" ]]; then
   echo "Nie udało się utworzyć bezpiecznego katalogu tymczasowego."

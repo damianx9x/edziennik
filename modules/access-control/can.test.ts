@@ -26,10 +26,35 @@ describe("can", () => {
     ).toBe(false);
   });
 
-  it("allows the system owner to troubleshoot resources across schools", () => {
-    expect(
-      can(systemOwner, "manage:school", { schoolId: otherSchoolId }),
-    ).toBe(true);
+  it("keeps the system owner read-only and outside all school business data", () => {
+    const businessActions = [
+      "manage:school",
+      "view:director-dashboard",
+      "view:teacher-dashboard",
+      "view:parent-dashboard",
+      "view:student-dashboard",
+      "view:group",
+      "edit:group",
+      "view:schedule",
+      "manage:schedule",
+      "edit:lesson",
+      "view:student",
+      "edit:attendance",
+      "manage:contracts",
+      "view:contract",
+      "accept:contract",
+      "manage:payments",
+      "view:payment",
+      "view:conversation",
+      "send:group-message",
+      "send:announcement",
+      "audit:view-conversation",
+    ] as const;
+
+    for (const action of businessActions) {
+      expect(can(systemOwner, action, { schoolId })).toBe(false);
+      expect(can(systemOwner, action, { schoolId: otherSchoolId })).toBe(false);
+    }
   });
 
   it("allows a director to manage resources in their school", () => {

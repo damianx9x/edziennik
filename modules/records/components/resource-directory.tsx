@@ -11,7 +11,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { type MouseEvent, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 
 import { archiveRecordAction } from "@/modules/groups/actions";
 import { cefrLabels } from "@/modules/groups/schema";
@@ -93,6 +93,19 @@ export function ResourceDirectory({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
+
+  useEffect(() => {
+    if (!selected) return;
+    const refreshed = selected.kind === "GROUP"
+      ? groups.find((group) => group.id === selected.id)
+      : rooms.find((room) => room.id === selected.id);
+    if (!refreshed) return;
+    const next = { ...refreshed, kind: selected.kind } as ResourceRecord;
+    if (JSON.stringify(next) !== JSON.stringify(selected)) {
+      const timer = window.setTimeout(() => setSelected(next), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [groups, rooms, selected]);
 
   function openResource(
     resource: ResourceRecord,

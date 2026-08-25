@@ -169,6 +169,29 @@ enum ConversationAccessPurpose {
   OTHER
 }
 
+enum HomeworkSubmissionStatus {
+  NOT_OPENED
+  OPENED
+  SUBMITTED
+  LATE
+  REVIEWED
+}
+
+enum ScheduleChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ScheduleChangeRequestKind {
+  RESCHEDULE
+  CHANGE_TEACHER
+  CHANGE_ROOM
+  CANCEL
+  OTHER
+}
+
 model School {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -177,42 +200,49 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                    User[]
-  locations                Location[]
-  rooms                    Room[]
-  courseGroups             CourseGroup[]
-  parentLinks              ParentChild[]
-  scheduleSlots            ScheduleSlot[]
-  attendance               AttendanceRecord[]
-  lessonCheckIns            LessonCheckIn[]
-  availabilityWindows      AvailabilityWindow[]
+  users                      User[]
+  locations                  Location[]
+  rooms                      Room[]
+  courseGroups               CourseGroup[]
+  parentLinks                ParentChild[]
+  scheduleSlots              ScheduleSlot[]
+  attendance                 AttendanceRecord[]
+  lessonCheckIns             LessonCheckIn[]
+  availabilityWindows        AvailabilityWindow[]
   studentAvailabilityWindows StudentAvailabilityWindow[]
-  schedulingRequirements   SchedulingRequirement[]
-  scheduleGenerations      ScheduleGeneration[]
-  auditLogs                AuditLog[]
-  feedbackReports          FeedbackReport[]
-  invitations              Invitation[]
-  storedFiles              StoredFile[]
-  importBatches            ImportBatch[]
-  recordChanges            RecordChangeRequest[]
-  pageVisits               PageVisit[]
-  contracts                Contract[]
-  contractAssignments      ContractAssignment[]
-  paymentRecords           PaymentRecord[]
-  contractDocuments        ContractDocument[]
-  contractDocumentViews    ContractDocumentView[]
-  paymentInstallments      PaymentInstallment[]
-  conversations            Conversation[]
-  conversationParticipants ConversationParticipant[]
-  messages                 Message[]
-  announcements            Announcement[]
-  messageReads             MessageRead[]
-  emailDeliveries          EmailDelivery[]
-  conversationAccesses     DirectorConversationAccess[]
-  messageAcknowledgements  MessageAcknowledgement[]
-  messageAttachments       MessageAttachment[]
-  notificationStates       NotificationState[]
-  onboardingProgress       OnboardingProgress[]
+  schedulingRequirements     SchedulingRequirement[]
+  scheduleGenerations        ScheduleGeneration[]
+  auditLogs                  AuditLog[]
+  feedbackReports            FeedbackReport[]
+  invitations                Invitation[]
+  storedFiles                StoredFile[]
+  importBatches              ImportBatch[]
+  recordChanges              RecordChangeRequest[]
+  pageVisits                 PageVisit[]
+  contracts                  Contract[]
+  contractAssignments        ContractAssignment[]
+  paymentRecords             PaymentRecord[]
+  contractDocuments          ContractDocument[]
+  contractDocumentViews      ContractDocumentView[]
+  paymentInstallments        PaymentInstallment[]
+  conversations              Conversation[]
+  conversationParticipants   ConversationParticipant[]
+  messages                   Message[]
+  announcements              Announcement[]
+  messageReads               MessageRead[]
+  emailDeliveries            EmailDelivery[]
+  conversationAccesses       DirectorConversationAccess[]
+  messageAcknowledgements    MessageAcknowledgement[]
+  messageAttachments         MessageAttachment[]
+  notificationStates         NotificationState[]
+  onboardingProgress         OnboardingProgress[]
+  learningMaterials          LearningMaterial[]
+  homeworkAssignments        HomeworkAssignment[]
+  homeworkSubmissions        HomeworkSubmission[]
+  progressObservations       StudentProgressObservation[]
+  lessonCancellations        LessonCancellation[]
+  scheduleChangeRequests     ScheduleChangeRequest[]
+  locationTravelRules        LocationTravelRule[]
 }
 
 model Location {
@@ -226,9 +256,12 @@ model Location {
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
-  school       School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  rooms        Room[]
-  courseGroups CourseGroup[]
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  rooms               Room[]
+  courseGroups        CourseGroup[]
+  availabilityWindows AvailabilityWindow[]
+  travelRulesFrom     LocationTravelRule[] @relation("TravelFromLocation")
+  travelRulesTo       LocationTravelRule[] @relation("TravelToLocation")
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -254,53 +287,63 @@ model User {
   archivedAt       DateTime?
   pageVisits       PageVisit[]
 
-  school                     School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  sessions                   Session[]
-  accounts                   Account[]
-  twoFactors                 TwoFactor[]
-  teacherProfile             TeacherProfile?
-  studentProfile             StudentProfile?
-  parentLinks                ParentChild[]                @relation("ParentLinks")
-  childLinks                 ParentChild[]                @relation("ChildLinks")
-  groupTeaching              GroupTeacher[]
-  enrollments                Enrollment[]
-  teachingSlots              ScheduleSlot[]               @relation("ScheduleTeacher")
-  createdSlots               ScheduleSlot[]               @relation("ScheduleCreator")
-  attendanceAsStudent        AttendanceRecord[]           @relation("AttendanceStudent")
-  attendanceRecorded         AttendanceRecord[]           @relation("AttendanceRecorder")
-  lessonCheckIns              LessonCheckIn[]               @relation("LessonCheckInStudent")
-  availabilityWindows        AvailabilityWindow[]         @relation("AvailabilityTeacher")
-  studentAvailabilityWindows StudentAvailabilityWindow[]
-  schedulingRequirements     SchedulingRequirement[]      @relation("RequirementTeacher")
-  createdScheduleGenerations ScheduleGeneration[]         @relation("ScheduleGenerationCreator")
-  proposedScheduleSlots      ScheduleProposalSlot[]       @relation("ProposalTeacher")
-  auditEvents                AuditLog[]                   @relation("AuditActor")
-  feedbackReports            FeedbackReport[]             @relation("FeedbackReporter")
-  sentInvitations            Invitation[]                 @relation("InvitationSender")
-  usedInvitations            Invitation[]                 @relation("InvitationRecipient")
-  uploadedFiles              StoredFile[]                 @relation("FileUploader")
-  importBatches              ImportBatch[]                @relation("ImportCreator")
-  requestedRecordChanges     RecordChangeRequest[]        @relation("RecordChangeRequester")
-  reviewedRecordChanges      RecordChangeRequest[]        @relation("RecordChangeReviewer")
-  createdContractVersions    ContractVersion[]            @relation("ContractVersionCreator")
-  contractAssignmentsParent  ContractAssignment[]         @relation("ContractParent")
-  contractAssignmentsChild   ContractAssignment[]         @relation("ContractStudent")
-  contractAcceptances        ContractAcceptance[]         @relation("ContractAcceptor")
-  contractDocumentViews      ContractDocumentView[]
-  paymentRecordsAsStudent    PaymentRecord[]              @relation("PaymentStudent")
-  changedPaymentRecords      PaymentRecord[]              @relation("PaymentChangedBy")
-  changedPaymentInstallments PaymentInstallment[]         @relation("PaymentInstallmentChangedBy")
-  authoredMessages           Message[]                    @relation("MessageAuthor")
-  authoredAnnouncements      Announcement[]               @relation("AnnouncementAuthor")
-  messageReads               MessageRead[]
-  emailDeliveries            EmailDelivery[]              @relation("EmailRecipient")
-  directorConversationAccess DirectorConversationAccess[] @relation("ConversationAccessDirector")
-  createdConversations       Conversation[]               @relation("ConversationCreator")
-  conversationMemberships    ConversationParticipant[]    @relation("ConversationParticipantUser")
-  addedConversationMembers   ConversationParticipant[]    @relation("ConversationParticipantAdder")
-  messageAcknowledgements    MessageAcknowledgement[]
-  notificationStates         NotificationState[]
-  onboardingProgress         OnboardingProgress?
+  school                         School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  sessions                       Session[]
+  accounts                       Account[]
+  twoFactors                     TwoFactor[]
+  teacherProfile                 TeacherProfile?
+  studentProfile                 StudentProfile?
+  parentLinks                    ParentChild[]                @relation("ParentLinks")
+  childLinks                     ParentChild[]                @relation("ChildLinks")
+  groupTeaching                  GroupTeacher[]
+  enrollments                    Enrollment[]
+  teachingSlots                  ScheduleSlot[]               @relation("ScheduleTeacher")
+  createdSlots                   ScheduleSlot[]               @relation("ScheduleCreator")
+  attendanceAsStudent            AttendanceRecord[]           @relation("AttendanceStudent")
+  attendanceRecorded             AttendanceRecord[]           @relation("AttendanceRecorder")
+  lessonCheckIns                 LessonCheckIn[]              @relation("LessonCheckInStudent")
+  availabilityWindows            AvailabilityWindow[]         @relation("AvailabilityTeacher")
+  studentAvailabilityWindows     StudentAvailabilityWindow[]
+  schedulingRequirements         SchedulingRequirement[]      @relation("RequirementTeacher")
+  createdScheduleGenerations     ScheduleGeneration[]         @relation("ScheduleGenerationCreator")
+  proposedScheduleSlots          ScheduleProposalSlot[]       @relation("ProposalTeacher")
+  auditEvents                    AuditLog[]                   @relation("AuditActor")
+  feedbackReports                FeedbackReport[]             @relation("FeedbackReporter")
+  sentInvitations                Invitation[]                 @relation("InvitationSender")
+  usedInvitations                Invitation[]                 @relation("InvitationRecipient")
+  uploadedFiles                  StoredFile[]                 @relation("FileUploader")
+  importBatches                  ImportBatch[]                @relation("ImportCreator")
+  requestedRecordChanges         RecordChangeRequest[]        @relation("RecordChangeRequester")
+  reviewedRecordChanges          RecordChangeRequest[]        @relation("RecordChangeReviewer")
+  createdContractVersions        ContractVersion[]            @relation("ContractVersionCreator")
+  contractAssignmentsParent      ContractAssignment[]         @relation("ContractParent")
+  contractAssignmentsChild       ContractAssignment[]         @relation("ContractStudent")
+  contractAcceptances            ContractAcceptance[]         @relation("ContractAcceptor")
+  contractDocumentViews          ContractDocumentView[]
+  paymentRecordsAsStudent        PaymentRecord[]              @relation("PaymentStudent")
+  changedPaymentRecords          PaymentRecord[]              @relation("PaymentChangedBy")
+  changedPaymentInstallments     PaymentInstallment[]         @relation("PaymentInstallmentChangedBy")
+  authoredMessages               Message[]                    @relation("MessageAuthor")
+  authoredAnnouncements          Announcement[]               @relation("AnnouncementAuthor")
+  messageReads                   MessageRead[]
+  emailDeliveries                EmailDelivery[]              @relation("EmailRecipient")
+  directorConversationAccess     DirectorConversationAccess[] @relation("ConversationAccessDirector")
+  createdConversations           Conversation[]               @relation("ConversationCreator")
+  conversationMemberships        ConversationParticipant[]    @relation("ConversationParticipantUser")
+  addedConversationMembers       ConversationParticipant[]    @relation("ConversationParticipantAdder")
+  messageAcknowledgements        MessageAcknowledgement[]
+  notificationStates             NotificationState[]
+  onboardingProgress             OnboardingProgress?
+  createdLearningMaterials       LearningMaterial[]           @relation("LearningMaterialCreator")
+  createdHomeworkAssignments     HomeworkAssignment[]         @relation("HomeworkAssignmentCreator")
+  homeworkSubmissions            HomeworkSubmission[]         @relation("HomeworkSubmissionStudent")
+  reviewedHomeworkSubmissions    HomeworkSubmission[]         @relation("HomeworkSubmissionReviewer")
+  progressAsStudent              StudentProgressObservation[] @relation("ProgressObservationStudent")
+  recordedProgress               StudentProgressObservation[] @relation("ProgressObservationRecorder")
+  cancelledLessons               LessonCancellation[]         @relation("LessonCancellationActor")
+  requestedScheduleChanges       ScheduleChangeRequest[]      @relation("ScheduleChangeRequester")
+  reviewedScheduleChanges        ScheduleChangeRequest[]      @relation("ScheduleChangeReviewer")
+  proposedScheduleChangeTeaching ScheduleChangeRequest[]      @relation("ScheduleChangeProposedTeacher")
 
   @@unique([schoolId, externalId])
   @@index([schoolId, role, status])
@@ -468,12 +511,13 @@ model Room {
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
-  school                 School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  location               Location                @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  scheduleSlots          ScheduleSlot[]
-  availabilityWindows    AvailabilityWindow[]
-  schedulingRequirements SchedulingRequirement[] @relation("RequirementRoom")
-  proposedScheduleSlots  ScheduleProposalSlot[]
+  school                  School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  location                Location                @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  scheduleSlots           ScheduleSlot[]
+  availabilityWindows     AvailabilityWindow[]
+  schedulingRequirements  SchedulingRequirement[] @relation("RequirementRoom")
+  proposedScheduleSlots   ScheduleProposalSlot[]
+  proposedScheduleChanges ScheduleChangeRequest[] @relation("ScheduleChangeProposedRoom")
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -500,6 +544,8 @@ model CourseGroup {
   schedulingRequirement SchedulingRequirement?
   proposedScheduleSlots ScheduleProposalSlot[]
   conversation          Conversation?
+  learningMaterials     LearningMaterial[]
+  homeworkAssignments   HomeworkAssignment[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isActive])
@@ -556,14 +602,17 @@ model ScheduleSlot {
   isLocked       Boolean        @default(false)
   generationId   String?        @db.Uuid
 
-  school     School              @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  group      CourseGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  room       Room                @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  teacher    User                @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
-  createdBy  User                @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  attendance AttendanceRecord[]
-  checkIns   LessonCheckIn[]
-  generation ScheduleGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  school               School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group                CourseGroup                  @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  room                 Room                         @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  teacher              User                         @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  createdBy            User                         @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  attendance           AttendanceRecord[]
+  checkIns             LessonCheckIn[]
+  cancellation         LessonCancellation?
+  changeRequests       ScheduleChangeRequest[]
+  progressObservations StudentProgressObservation[]
+  generation           ScheduleGeneration?          @relation(fields: [generationId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, startAt, endAt])
   @@index([roomId, startAt, endAt])
@@ -579,6 +628,7 @@ model AvailabilityWindow {
   teacherId   String?  @db.Uuid
   roomId      String?  @db.Uuid
   groupId     String?  @db.Uuid
+  locationId  String?  @db.Uuid
   weekday     Int
   startMinute Int
   endMinute   Int
@@ -588,15 +638,17 @@ model AvailabilityWindow {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  school  School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  teacher User?        @relation("AvailabilityTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
-  room    Room?        @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  group   CourseGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  school   School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacher  User?        @relation("AvailabilityTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  room     Room?        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  group    CourseGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  location Location?    @relation(fields: [locationId], references: [id], onDelete: Restrict)
 
   @@index([schoolId, weekday, startMinute, endMinute])
   @@index([teacherId, weekday])
   @@index([roomId, weekday])
   @@index([groupId, weekday])
+  @@index([locationId, weekday])
 }
 
 model StudentAvailabilityWindow {
@@ -726,6 +778,186 @@ model LessonCheckIn {
   @@index([schoolId, studentId, checkedInAt])
 }
 
+/// Niezmienny zapis odwołania lekcji. Powód jest widoczny tylko dla osób,
+/// które mają dostęp do lekcji; wysyłka powiadomień korzysta z osobnego outboxu.
+model LessonCancellation {
+  id             String   @id @default(uuid()) @db.Uuid
+  schoolId       String   @db.Uuid
+  scheduleSlotId String   @unique @db.Uuid
+  cancelledById  String   @db.Uuid
+  reason         String
+  notifyGroup    Boolean  @default(true)
+  cancelledAt    DateTime @default(now())
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlot ScheduleSlot @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+  cancelledBy  User         @relation("LessonCancellationActor", fields: [cancelledById], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, cancelledAt])
+  @@index([cancelledById, cancelledAt])
+}
+
+/// Propozycja zmiany grafiku składana przez wykładowcę. Dopiero akceptacja
+/// dyrektora może zmienić opublikowany ScheduleSlot.
+model ScheduleChangeRequest {
+  id                String                      @id @default(uuid()) @db.Uuid
+  schoolId          String                      @db.Uuid
+  scheduleSlotId    String                      @db.Uuid
+  requestedById     String                      @db.Uuid
+  reviewedById      String?                     @db.Uuid
+  kind              ScheduleChangeRequestKind
+  status            ScheduleChangeRequestStatus @default(PENDING)
+  reason            String
+  proposedStartAt   DateTime?
+  proposedEndAt     DateTime?
+  proposedTeacherId String?                     @db.Uuid
+  proposedRoomId    String?                     @db.Uuid
+  reviewNote        String?
+  createdAt         DateTime                    @default(now())
+  reviewedAt        DateTime?
+  updatedAt         DateTime                    @updatedAt
+
+  school          School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  scheduleSlot    ScheduleSlot @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+  requestedBy     User         @relation("ScheduleChangeRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy      User?        @relation("ScheduleChangeReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  proposedTeacher User?        @relation("ScheduleChangeProposedTeacher", fields: [proposedTeacherId], references: [id], onDelete: Restrict)
+  proposedRoom    Room?        @relation("ScheduleChangeProposedRoom", fields: [proposedRoomId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, status, createdAt])
+  @@index([scheduleSlotId, status])
+  @@index([requestedById, createdAt])
+  @@index([proposedTeacherId])
+  @@index([proposedRoomId])
+}
+
+/// Minimalny czas przejazdu pomiędzy dwiema fizycznymi lokalizacjami.
+/// Reguła kierunkowa pozwala później uwzględnić różne czasy w obie strony.
+model LocationTravelRule {
+  id             String   @id @default(uuid()) @db.Uuid
+  schoolId       String   @db.Uuid
+  fromLocationId String   @db.Uuid
+  toLocationId   String   @db.Uuid
+  minutes        Int
+  note           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  fromLocation Location @relation("TravelFromLocation", fields: [fromLocationId], references: [id], onDelete: Restrict)
+  toLocation   Location @relation("TravelToLocation", fields: [toLocationId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, fromLocationId, toLocationId])
+  @@index([schoolId, isActive])
+  @@index([fromLocationId, toLocationId])
+}
+
+model LearningMaterial {
+  id           String    @id @default(uuid()) @db.Uuid
+  schoolId     String    @db.Uuid
+  groupId      String    @db.Uuid
+  createdById  String    @db.Uuid
+  storedFileId String?   @db.Uuid
+  title        String
+  description  String?
+  externalUrl  String?
+  publishedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  archivedAt   DateTime?
+
+  school     School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group      CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy  User        @relation("LearningMaterialCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  storedFile StoredFile? @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+
+  @@index([schoolId, publishedAt])
+  @@index([groupId, archivedAt, publishedAt])
+  @@index([createdById, createdAt])
+}
+
+model HomeworkAssignment {
+  id           String    @id @default(uuid()) @db.Uuid
+  schoolId     String    @db.Uuid
+  groupId      String    @db.Uuid
+  createdById  String    @db.Uuid
+  title        String
+  instructions String
+  dueAt        DateTime?
+  publishedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  archivedAt   DateTime?
+
+  school      School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group       CourseGroup          @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy   User                 @relation("HomeworkAssignmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submissions HomeworkSubmission[]
+
+  @@index([schoolId, publishedAt])
+  @@index([groupId, archivedAt, dueAt])
+  @@index([createdById, createdAt])
+}
+
+model HomeworkSubmission {
+  id              String                   @id @default(uuid()) @db.Uuid
+  schoolId        String                   @db.Uuid
+  assignmentId    String                   @db.Uuid
+  studentId       String                   @db.Uuid
+  reviewedById    String?                  @db.Uuid
+  storedFileId    String?                  @db.Uuid
+  status          HomeworkSubmissionStatus @default(NOT_OPENED)
+  studentNote     String?
+  teacherFeedback String?
+  openedAt        DateTime?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  school     School             @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  assignment HomeworkAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  student    User               @relation("HomeworkSubmissionStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  reviewedBy User?              @relation("HomeworkSubmissionReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  storedFile StoredFile?        @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, studentId])
+  @@index([schoolId, status, updatedAt])
+  @@index([studentId, status, updatedAt])
+  @@index([reviewedById, reviewedAt])
+}
+
+/// Opisowa obserwacja postępu z konkretnego dnia. Wartości 1-5 są pomocą
+/// pedagogiczną, nie diagnozą ani automatyczną decyzją o uczniu.
+model StudentProgressObservation {
+  id             String   @id @default(uuid()) @db.Uuid
+  schoolId       String   @db.Uuid
+  studentId      String   @db.Uuid
+  recordedById   String   @db.Uuid
+  scheduleSlotId String?  @db.Uuid
+  speaking       Int
+  listening      Int
+  reading        Int
+  writing        Int
+  vocabulary     Int
+  grammar        Int
+  engagement     Int?
+  note           String?
+  observedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student      User          @relation("ProgressObservationStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  recordedBy   User          @relation("ProgressObservationRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  scheduleSlot ScheduleSlot? @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+
+  @@unique([scheduleSlotId, studentId])
+  @@index([schoolId, studentId, observedAt])
+  @@index([recordedById, observedAt])
+}
+
 model AuditLog {
   id            String   @id @default(uuid()) @db.Uuid
   schoolId      String   @db.Uuid
@@ -749,6 +981,7 @@ model Conversation {
   id          String    @id @default(uuid()) @db.Uuid
   schoolId    String    @db.Uuid
   groupId     String?   @unique @db.Uuid
+  directKey   String?   @unique
   kind        String    @default("GROUP")
   title       String?
   createdById String?   @db.Uuid
@@ -973,13 +1206,15 @@ model StoredFile {
   createdAt    DateTime          @default(now())
   archivedAt   DateTime?
 
-  school             School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  uploadedBy         User                 @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
-  importBatches      ImportBatch[]        @relation("ImportSource")
-  contractVersions   ContractVersion[]    @relation("ContractFile")
-  messageAttachments MessageAttachment[]
-  signedAssignments  ContractAssignment[] @relation("SignedContractFile")
-  contractDocuments  ContractDocument[]
+  school              School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  uploadedBy          User                 @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  importBatches       ImportBatch[]        @relation("ImportSource")
+  contractVersions    ContractVersion[]    @relation("ContractFile")
+  messageAttachments  MessageAttachment[]
+  signedAssignments   ContractAssignment[] @relation("SignedContractFile")
+  contractDocuments   ContractDocument[]
+  learningMaterials   LearningMaterial[]
+  homeworkSubmissions HomeworkSubmission[]
 
   @@index([schoolId, purpose, createdAt])
   @@index([uploadedById, createdAt])
@@ -1090,16 +1325,16 @@ model ContractAssignment {
   expiresAt        DateTime?
   createdAt        DateTime       @default(now())
 
-  school              School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  contract            Contract             @relation(fields: [contractId], references: [id], onDelete: Restrict)
-  version             ContractVersion      @relation(fields: [versionId], references: [id], onDelete: Restrict)
-  parent              User                 @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
-  student             User                 @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  school              School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  contract            Contract               @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  version             ContractVersion        @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  parent              User                   @relation("ContractParent", fields: [parentId], references: [id], onDelete: Restrict)
+  student             User                   @relation("ContractStudent", fields: [studentId], references: [id], onDelete: Restrict)
   acceptance          ContractAcceptance?
   paymentRecord       PaymentRecord?
   paymentInstallments PaymentInstallment[]
   documentViews       ContractDocumentView[]
-  signedFile          StoredFile?          @relation("SignedContractFile", fields: [signedFileId], references: [id], onDelete: Restrict)
+  signedFile          StoredFile?            @relation("SignedContractFile", fields: [signedFileId], references: [id], onDelete: Restrict)
 
   @@unique([versionId, parentId, studentId])
   @@index([schoolId, status, createdAt])
@@ -1119,9 +1354,9 @@ model ContractDocument {
   requiredForAcceptance Boolean              @default(true)
   createdAt             DateTime             @default(now())
 
-  school     School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  version    ContractVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
-  storedFile StoredFile      @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+  school     School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  version    ContractVersion        @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  storedFile StoredFile             @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
   views      ContractDocumentView[]
 
   @@unique([versionId, kind])
@@ -1130,11 +1365,11 @@ model ContractDocument {
 }
 
 model ContractDocumentView {
-  id           String   @id @default(uuid()) @db.Uuid
-  schoolId     String   @db.Uuid
-  assignmentId String   @db.Uuid
-  documentId   String   @db.Uuid
-  userId       String   @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
+  schoolId      String   @db.Uuid
+  assignmentId  String   @db.Uuid
+  documentId    String   @db.Uuid
+  userId        String   @db.Uuid
   firstViewedAt DateTime @default(now())
   lastViewedAt  DateTime @updatedAt
 

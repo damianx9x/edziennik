@@ -1,4 +1,4 @@
-# Raport bezpieczeństwa przed finałem — 2026-08-22
+# Raport bezpieczeństwa przed finałem — aktualizacja 2026-08-25
 
 ## Wynik
 
@@ -9,6 +9,31 @@ znanych podatności produkcyjnych. Projekt nadaje się do odbioru na danych
 syntetycznych, lecz poniższe bramki nadal blokują prawdziwe dane dzieci.
 
 ## Poprawione ustalenia
+
+### AUTHZ-002 — globalne API administracyjne dla dyrektora (krytyczne)
+
+- **Reguła:** dyrektor zarządza wyłącznie własną szkołą i nie może używać
+  globalnych operacji Better Auth.
+- **Miejsce:** `modules/identity/auth/access.ts`, `lib/server/auth.ts`,
+  `modules/access-control/can.ts`.
+- **Dowód:** poprzednia mapa roli przekazywała dyrektorowi pełne uprawnienia
+  administracyjne dostawcy tożsamości, które nie miały filtra `schoolId`.
+- **Wpływ:** bezpośrednie wywołanie endpointu mogło listować lub zmieniać konta
+  poza szkołą i prowadzić do eskalacji roli.
+- **Naprawa:** dyrektor utracił globalne `adminAc`; biznesowe zarządzanie kontami
+  pozostaje we własnych, ograniczonych akcjach, a konto techniczne jest tylko
+  diagnostyczne. Dodano negatywne testy ról.
+- **Stan:** zamknięte przed pre-release.
+
+### PRIV-002 — treść rozmowy wysyłana do zewnętrznego e-maila (wysokie)
+
+- **Reguła:** dostawca e-mail dostaje minimum informacji.
+- **Miejsce:** `modules/messaging/notification-email.ts`,
+  `modules/messaging/email-provider.ts`, `modules/messaging/queue.ts`.
+- **Naprawa:** e-mail zawiera wyłącznie neutralne powiadomienie i link do
+  zalogowanego eDziennika. Endpoint wymaga HTTPS, ścisłej listy hostów, blokuje
+  przekierowania i ma timeout. Treść rozmowy pozostaje w prywatnej bazie.
+- **Stan:** zamknięte i objęte testami.
 
 ### SUPPLY-001 — podatna zależność pośrednia (wysokie)
 

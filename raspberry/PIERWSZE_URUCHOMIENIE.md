@@ -3,6 +3,7 @@
 - [ ] Raspberry Pi OS 64-bit z aktualnym systemem.
 - [ ] Własny użytkownik, mocne hasło i SSH; brak domyślnego `pi`.
 - [ ] Ethernet, oficjalny zasilacz, SSD USB 3.0 i UPS.
+- [ ] Tunel Cloudflare wskazuje `http://localhost:8080`, a domena działa po HTTPS.
 - [ ] Sprawdzony model oraz rozmiar SSD przed potwierdzeniem usunięcia.
 - [ ] Hasło sejfu zapisane w menedżerze haseł.
 - [ ] Klucz odzyskiwania zapisany poza Raspberry Pi w dwóch miejscach.

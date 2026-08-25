@@ -80,6 +80,7 @@ describe("deterministic schedule solver", () => {
           startAt: new Date("2026-07-27T13:00:00.000Z"),
           endAt: new Date("2026-07-27T14:00:00.000Z"),
           studentIds: ["student-b"],
+          locationId: "location-a",
         },
       ],
     });
@@ -188,6 +189,29 @@ describe("deterministic schedule solver", () => {
     expect(result.hardViolations[0]).toContain("brak terminu");
   });
 
+  it("does not use availability declared for another location", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      requirements: [{ ...baseRequirement, lessonsPerWeek: 1, allowedWeekdays: [1] }],
+      rooms,
+      teachers,
+      availability: [{
+        teacherId: "teacher-a",
+        roomId: null,
+        groupId: null,
+        weekday: 1,
+        startMinute: 13 * 60,
+        endMinute: 19 * 60,
+        isAvailable: true,
+        preference: 0,
+        locationId: "location-b",
+      }],
+      fixedSlots: [],
+    });
+
+    expect(result.proposals).toHaveLength(0);
+  });
+
   it("respects individual student availability when generating a group plan", () => {
     const result = deterministicScheduleSolver.solve({
       weekStart: "2026-07-27",
@@ -215,5 +239,34 @@ describe("deterministic schedule solver", () => {
       "2026-07-29",
     );
     expect(result.proposals[0]?.explanation).toContain("preferencje uczniów");
+  });
+
+  it("keeps the configured transfer time between a teacher's locations", () => {
+    const result = deterministicScheduleSolver.solve({
+      weekStart: "2026-07-27",
+      requirements: [{
+        ...baseRequirement,
+        lessonsPerWeek: 1,
+        allowedWeekdays: [1],
+        earliestStartMinute: 15 * 60,
+        latestEndMinute: 17 * 60 + 30,
+      }],
+      rooms,
+      teachers,
+      availability: [],
+      fixedSlots: [{
+        id: "other-location",
+        groupId: "group-b",
+        roomId: "room-c",
+        teacherId: "teacher-a",
+        startAt: new Date("2026-07-27T12:00:00.000Z"),
+        endAt: new Date("2026-07-27T13:45:00.000Z"),
+        studentIds: [],
+        locationId: "location-b",
+      }],
+      travelRules: [{ fromLocationId: "location-b", toLocationId: "location-a", minutes: 30 }],
+    });
+
+    expect(result.proposals[0]?.startAt.toISOString()).toBe("2026-07-27T14:30:00.000Z");
   });
 });

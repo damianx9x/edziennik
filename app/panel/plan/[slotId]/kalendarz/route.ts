@@ -70,7 +70,6 @@ export async function GET(
 
   const role = session.user.role;
   const allowed =
-    role === "SYSTEM_OWNER" ||
     role === "DIRECTOR" ||
     (role === "TEACHER" &&
       (slot.teacherId === session.user.id ||

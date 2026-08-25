@@ -1,5 +1,6 @@
 import { db } from "@/lib/server/db";
 import { emailProvider } from "./email-provider";
+import { buildGenericMessageEmail } from "./notification-email";
 import { getRetryDelayMinutes } from "./retry";
 
 export async function processEmailDeliveryQueue(schoolId: string, limit = 20) {
@@ -19,7 +20,7 @@ export async function processEmailDeliveryQueue(schoolId: string, limit = 20) {
       attempts: true,
       idempotencyKey: true,
       recipient: { select: { email: true } },
-      message: { select: { kind: true, subject: true, body: true, conversation: { select: { kind: true, title: true, group: { select: { name: true } } } } } },
+      message: { select: { kind: true } },
     },
   });
 
@@ -35,10 +36,12 @@ export async function processEmailDeliveryQueue(schoolId: string, limit = 20) {
       data: { status: "SENDING" },
     });
     if (claimed.count !== 1) continue;
-    const subject = job.message.kind === "ANNOUNCEMENT"
-      ? `KLA: ${job.message.subject ?? "Nowe ogłoszenie"}`
-      : `KLA: nowa wiadomość · ${job.message.conversation.kind === "DIRECT" ? job.message.conversation.title ?? "rozmowa prywatna" : job.message.conversation.group?.name ?? "grupa"}`;
-    const result = await emailProvider.send({ to: job.recipient.email, subject, text: job.message.body, idempotencyKey: job.idempotencyKey });
+    const notification = buildGenericMessageEmail(job.message.kind);
+    const result = await emailProvider.send({
+      to: job.recipient.email,
+      ...notification,
+      idempotencyKey: job.idempotencyKey,
+    });
     if (result.ok) {
       await db.emailDelivery.update({ where: { id: job.id }, data: { status: "SENT", attempts: { increment: 1 }, sentAt: new Date(), lastErrorCode: null } });
     } else {

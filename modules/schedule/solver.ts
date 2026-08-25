@@ -41,6 +41,7 @@ export type SolverAvailability = {
   endMinute: number;
   isAvailable: boolean;
   preference: number;
+  locationId?: string | null;
 };
 
 export type SolverFixedSlot = {
@@ -51,6 +52,7 @@ export type SolverFixedSlot = {
   startAt: Date;
   endAt: Date;
   studentIds: string[];
+  locationId: string;
 };
 
 export type SolverProposal = {
@@ -66,6 +68,7 @@ export type SolverProposal = {
   score: number;
   explanation: string;
   studentIds: string[];
+  locationId: string;
 };
 
 export type SolverResult = {
@@ -88,6 +91,8 @@ export interface ScheduleSolver {
     fixedSlots: SolverFixedSlot[];
     timeZone?: string;
     maxNodes?: number;
+    travelRules?: Array<{ fromLocationId: string; toLocationId: string; minutes: number }>;
+    onlineLocationIds?: string[];
   }): SolverResult;
 }
 
@@ -111,6 +116,8 @@ function sharesStudent(first: string[], second: string[]) {
 function conflictsWith(
   candidate: Candidate,
   other: SolverProposal | SolverFixedSlot,
+  travelRules: Array<{ fromLocationId: string; toLocationId: string; minutes: number }>,
+  onlineLocationIds: Set<string>,
 ) {
   if (
     candidate.groupId === other.groupId &&
@@ -120,6 +127,21 @@ function conflictsWith(
     return true;
   }
   if (!overlaps(candidate, other)) {
+    if (
+      candidate.teacherId === other.teacherId &&
+      candidate.locationId !== other.locationId &&
+      !onlineLocationIds.has(candidate.locationId) &&
+      !onlineLocationIds.has(other.locationId)
+    ) {
+      const candidateFirst = candidate.endAt <= other.startAt;
+      const fromLocationId = candidateFirst ? candidate.locationId : other.locationId;
+      const toLocationId = candidateFirst ? other.locationId : candidate.locationId;
+      const gap = candidateFirst
+        ? differenceInMinutes(other.startAt, candidate.endAt)
+        : differenceInMinutes(candidate.startAt, other.endAt);
+      const required = travelRules.find((rule) => rule.fromLocationId === fromLocationId && rule.toLocationId === toLocationId)?.minutes ?? 30;
+      if (gap >= 0 && gap < required) return true;
+    }
     return false;
   }
   return (
@@ -132,7 +154,7 @@ function conflictsWith(
 
 function fitsAvailability(
   windows: SolverAvailability[],
-  resource: { teacherId?: string; studentId?: string; roomId?: string; groupId?: string },
+  resource: { teacherId?: string; studentId?: string; roomId?: string; groupId?: string; locationId?: string },
   weekday: number,
   startMinute: number,
   endMinute: number,
@@ -148,6 +170,7 @@ function fitsAvailability(
     weekday,
     startMinute,
     endMinute,
+    locationId: resource.locationId,
   });
 }
 
@@ -229,7 +252,7 @@ function buildCandidates(input: {
       const endAt = addMinutes(startAt, requirement.durationMinutes);
       const teacherFit = fitsAvailability(
         availability,
-        { teacherId: teacher.id },
+        { teacherId: teacher.id, locationId: requirement.locationId },
         weekday,
         startMinute,
         endMinute,
@@ -310,6 +333,7 @@ function buildCandidates(input: {
           score,
           explanation: reasons.join(" · "),
           studentIds: requirement.studentIds,
+          locationId: requirement.locationId,
           weekday,
           startMinute,
         });
@@ -337,6 +361,8 @@ export const deterministicScheduleSolver: ScheduleSolver = {
     fixedSlots,
     timeZone = SCHOOL_TIME_ZONE,
     maxNodes = 50_000,
+    travelRules = [],
+    onlineLocationIds = [],
   }) {
     const tasks = requirements.flatMap((requirement) =>
       Array.from({ length: requirement.lessonsPerWeek }, (_, index) => ({
@@ -373,6 +399,7 @@ export const deterministicScheduleSolver: ScheduleSolver = {
     let exploredNodes = 0;
     let best: SolverProposal[] = [];
     let bestScore = Number.NEGATIVE_INFINITY;
+    const onlineLocations = new Set(onlineLocationIds);
 
     function visit(index: number, chosen: SolverProposal[], score: number) {
       if (exploredNodes >= maxNodes) return;
@@ -389,8 +416,8 @@ export const deterministicScheduleSolver: ScheduleSolver = {
       const task = prepared[index];
       for (const candidate of task.candidates) {
         if (
-          fixedSlots.some((slot) => conflictsWith(candidate, slot)) ||
-          chosen.some((slot) => conflictsWith(candidate, slot))
+          fixedSlots.some((slot) => conflictsWith(candidate, slot, travelRules, onlineLocations)) ||
+          chosen.some((slot) => conflictsWith(candidate, slot, travelRules, onlineLocations))
         ) {
           continue;
         }

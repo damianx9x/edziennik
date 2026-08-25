@@ -17,6 +17,7 @@ describe("system owner login", () => {
   });
 
   it.each([
+    ["kinga", "kinga.demo@invalid.example"],
     ["dyrektor", "dyrektor.demo@invalid.example"],
     ["wykladowca", "wykladowca.demo@invalid.example"],
     ["rodzic", "rodzic.demo@invalid.example"],

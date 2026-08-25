@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
+import { ArrowLeft, CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
 
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
 import { acknowledgeMessageAction, createDirectConversationAction, retryEmailQueueAction, sendAnnouncementAction, sendMessageAction } from "../actions";
@@ -25,6 +25,8 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const [announcementState, announcementAction, announcementPending] = useActionState(sendAnnouncementAction, initialMessagingState);
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("ALL");
+  const [recipientQuery, setRecipientQuery] = useState("");
+  const [recipientRole, setRecipientRole] = useState("ALL");
   const messageRequestId = useRef<HTMLInputElement>(null);
   const announcementRequestId = useRef<HTMLInputElement>(null);
   const announcementDialog = useRef<HTMLDialogElement>(null);
@@ -36,6 +38,10 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const locations = useMemo(() => [...new Set(groups.map((group) => group.locationName))].sort((a, b) => a.localeCompare(b, "pl")), [groups]);
   const visibleChannels = useMemo(() => channels.filter((channel) => (channel.kind === "DIRECT" || location === "ALL" || channel.locationName === location) && `${channel.name} ${channel.locationName} ${channel.participants.map((item) => item.name).join(" ")}`.toLocaleLowerCase("pl").includes(query.trim().toLocaleLowerCase("pl"))), [channels, location, query]);
   const unreadIds = useMemo(() => messages.filter((message) => message.authorId !== currentUserId && !message.readByCurrent).map((message) => message.id), [messages, currentUserId]);
+  const visibleRecipients = useMemo(() => {
+    const needle = recipientQuery.trim().toLocaleLowerCase("pl");
+    return recipientDirectory.filter((person) => (recipientRole === "ALL" || person.role === recipientRole) && (!needle || `${person.name} ${person.email}`.toLocaleLowerCase("pl").includes(needle)));
+  }, [recipientDirectory, recipientQuery, recipientRole]);
 
   function closeDialog(ref: React.RefObject<HTMLDialogElement | null>, reset: () => void) { ref.current?.close(); reset(); }
   function rotateRequestId(ref: React.RefObject<HTMLInputElement | null>) {
@@ -43,7 +49,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   }
 
   return (
-    <section className="messaging-workspace">
+    <section className={`messaging-workspace${selected ? " has-selection" : ""}`}>
       <MessageReadTracker messageIds={unreadIds} enabled={role !== "DIRECTOR" && canRead} />
       <aside className="messaging-groups" aria-label="Twoje grupy">
         <div className="messaging-groups-heading">
@@ -76,7 +82,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
           <div className="messaging-thread-empty"><Megaphone aria-hidden="true" /><h2>Wybierz rozmowę</h2><p>Otworzysz kanał grupy albo rozmowę z wybranymi osobami. Dostęp dyrektora zostanie zapisany automatycznie.</p></div>
         ) : (
           <>
-            <header className="messaging-thread-header"><div><span className="section-kicker">{selected.locationName}</span><h2>{selected.name}</h2><small><Users aria-hidden="true" /> {selected.kind === "DIRECT" ? selected.participants.map((item) => item.name).join(", ") : `${selected.studentCount} uczniów · ${selected.teacherCount} wykładowców · rodzice powiązani z uczniami`}</small></div><span><Clock3 aria-hidden="true" /> Historia rozmowy</span>{role === "DIRECTOR" && selected.kind === "GROUP" ? <Link className="messaging-members-link" href="/panel/szkola/kartoteki#grupy">Zarządzaj składem grupy</Link> : null}</header>
+            <header className="messaging-thread-header"><Link className="messaging-mobile-back" href="/panel/wiadomosci"><ArrowLeft aria-hidden="true" /> Rozmowy</Link><div><span className="section-kicker">{selected.locationName}</span><h2>{selected.name}</h2><small><Users aria-hidden="true" /> {selected.kind === "DIRECT" ? selected.participants.map((item) => item.name).join(", ") : `${selected.studentCount} uczniów · ${selected.teacherCount} wykładowców · rodzice powiązani z uczniami`}</small></div><span><Clock3 aria-hidden="true" /> Ostatnie 100 wiadomości</span>{role === "DIRECTOR" && selected.kind === "GROUP" ? <Link className="messaging-members-link" href="/panel/szkola/kartoteki#grupy">Zarządzaj składem grupy</Link> : null}</header>
             <p className="messaging-oversight-note"><ShieldCheck aria-hidden="true" /> Dyrektor ma służbowy wgląd w wiadomości; otwarcia są zapisywane w historii bezpieczeństwa.</p>
             <div className="messaging-message-list" aria-live="polite">
               {messages.length === 0 ? <div className="messaging-thread-empty"><Send aria-hidden="true" /><h3>Zacznij rozmowę</h3><p>Napisz krótką informację dla grupy. Powiadomienia e-mail trafią do kolejki.</p></div> : messages.map((message) => {
@@ -118,7 +124,11 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
           <div className="messaging-dialog-handle" onPointerDown={dragDirect}><GripHorizontal aria-hidden="true" /><span>Nowa rozmowa</span><button type="button" aria-label="Zamknij" onClick={() => closeDialog(directDialog, resetDirect)}><X aria-hidden="true" /></button></div>
           <form action={createDirectConversationAction} className="messaging-dialog-body"><MessageSquarePlus className="messaging-dialog-icon" aria-hidden="true" /><span className="section-kicker">Wybrani odbiorcy</span><h2>Utwórz prywatną rozmowę</h2><p>Tylko dodane osoby i dyrektor zobaczą tę rozmowę. Wykładowca może uczestniczyć, jeśli dodasz go tutaj.</p>
             <label>Nazwa rozmowy<input name="title" minLength={3} maxLength={80} placeholder="Np. Organizacja zajęć Ani" required /></label>
-            <fieldset><legend>Dodaj osoby</legend><div className="messaging-checkboxes messaging-recipient-list">{recipientDirectory.map((person) => <label key={person.id}><input type="checkbox" name="participantIds" value={person.id} /><span><strong>{person.name}</strong><small>{person.role === "PARENT" ? "Rodzic" : person.role === "STUDENT" ? "Uczeń" : "Wykładowca"} · {person.email}</small></span></label>)}</div></fieldset>
+            <fieldset><legend>Dodaj osoby</legend>
+              <div className="messaging-recipient-tools"><label><Search aria-hidden="true" /><span className="sr-only">Szukaj osoby</span><input type="search" value={recipientQuery} onChange={(event) => setRecipientQuery(event.target.value)} placeholder="Imię, nazwisko lub e-mail" /></label><select value={recipientRole} onChange={(event) => setRecipientRole(event.target.value)} aria-label="Filtr roli"><option value="ALL">Wszystkie role</option><option value="PARENT">Rodzice</option><option value="STUDENT">Uczniowie</option><option value="TEACHER">Wykładowcy</option></select></div>
+              <div className="messaging-checkboxes messaging-recipient-list">{recipientDirectory.map((person) => <label key={person.id} hidden={!visibleRecipients.some((visible) => visible.id === person.id)}><input type="checkbox" name="participantIds" value={person.id} /><span><strong>{person.name}</strong><small>{person.role === "PARENT" ? "Rodzic" : person.role === "STUDENT" ? "Uczeń" : "Wykładowca"} · {person.email}</small></span></label>)}</div>
+              {visibleRecipients.length === 0 ? <p className="messaging-status">Brak osób pasujących do filtra.</p> : null}
+            </fieldset>
             <p className="messaging-oversight-note"><ShieldCheck aria-hidden="true" /> Skład rozmowy ustala dyrektor. Uczestnicy nie mogą samodzielnie dodawać kolejnych osób.</p>
             <div className="messaging-dialog-actions"><button type="button" onClick={() => closeDialog(directDialog, resetDirect)}>Anuluj</button><button type="submit"><MessageSquarePlus aria-hidden="true" /> Utwórz rozmowę</button></div>
           </form>

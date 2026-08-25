@@ -144,6 +144,7 @@ export const auth = betterAuth({
       ac: identityAccessControl,
       roles: identityRoles,
       defaultRole: "PARENT",
+      adminRoles: ["SYSTEM_OWNER"],
     }),
     twoFactor({
       issuer: "King’s Language Academy",

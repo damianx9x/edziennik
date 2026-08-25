@@ -28,6 +28,8 @@ function constraintClient(options?: {
   resourceConflict?: object | null;
   studentIds?: string[];
   studentConflict?: object | null;
+  adjacentSlots?: object[];
+  travelMinutes?: number | null;
 }) {
   const scheduleSlotFindFirst = vi
     .fn()
@@ -78,6 +80,16 @@ function constraintClient(options?: {
     },
     scheduleSlot: {
       findFirst: scheduleSlotFindFirst,
+      findMany: vi.fn().mockResolvedValue(options?.adjacentSlots ?? []),
+    },
+    locationTravelRule: {
+      findFirst: vi.fn().mockResolvedValue(
+        options?.travelMinutes === undefined
+          ? null
+          : options.travelMinutes === null
+            ? null
+            : { minutes: options.travelMinutes },
+      ),
     },
     enrollment: {
       findMany: vi.fn().mockResolvedValue(
@@ -262,5 +274,55 @@ describe("server schedule hard constraints", () => {
       assertScheduleSlotCanBeSaved(studentClient.client, candidate),
       "SCHEDULE_CONFLICT",
     );
+  });
+
+  it("rejects an impossible transfer between two physical locations", async () => {
+    const { client } = constraintClient({
+      adjacentSlots: [
+        {
+          startAt: new Date("2026-07-27T11:30:00.000Z"),
+          endAt: new Date("2026-07-27T12:45:00.000Z"),
+          group: {
+            location: { id: "location-b", name: "Oddział B", isOnline: false },
+          },
+        },
+      ],
+      travelMinutes: 30,
+    });
+
+    await expectConstraint(
+      assertScheduleSlotCanBeSaved(client, candidate),
+      "TRAVEL_TIME",
+    );
+  });
+
+  it("allows a short transition when either lesson is online", async () => {
+    const { client } = constraintClient({
+      group: {
+        id: "group-a",
+        name: "Oxford",
+        locationId: "location-online",
+        location: { ...activeLocation, name: "Online", isOnline: true },
+        enrollments: [],
+      },
+      room: {
+        id: "room-a",
+        name: "Online",
+        capacity: null,
+        locationId: "location-online",
+        location: activeLocation,
+      },
+      adjacentSlots: [
+        {
+          startAt: new Date("2026-07-27T11:30:00.000Z"),
+          endAt: new Date("2026-07-27T12:55:00.000Z"),
+          group: {
+            location: { id: "location-b", name: "Oddział B", isOnline: false },
+          },
+        },
+      ],
+    });
+
+    await expect(assertScheduleSlotCanBeSaved(client, candidate)).resolves.toBeUndefined();
   });
 });

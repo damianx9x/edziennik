@@ -14,10 +14,12 @@ import {
   Lock,
   LoaderCircle,
   MapPin,
+  Plus,
   Sparkles,
   School,
   UserRoundCheck,
   Users,
+  Trash2,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -283,7 +285,7 @@ export function ScheduleAssistantPanel({
           <div className="assistant-config-list">
             {availability.length ? (
               availability.map((entry) => (
-                <AvailabilityForm key={entry.teacherId} entry={entry} />
+                <AvailabilityForm key={entry.teacherId} entry={entry} locations={locations} />
               ))
             ) : (
               <div className="assistant-empty">
@@ -811,18 +813,35 @@ function RequirementForm({
   );
 }
 
-export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) {
+type AvailabilityDraft = {
+  key: string;
+  weekday: number;
+  startMinute: number;
+  endMinute: number;
+  locationId: string;
+};
+
+export function AvailabilityForm({
+  entry,
+  locations,
+}: {
+  entry: TeacherAvailabilityView;
+  locations: ScheduleLocation[];
+}) {
   const [state, action, pending] = useActionState(
     saveTeacherAvailabilityAction,
     initialState,
   );
-  const [selectedDays, setSelectedDays] = useState<Set<number>>(
-    () =>
-      new Set(
-        entry.configured
-          ? entry.windows.map((window) => window.weekday)
-          : weekdayLabels.filter((day) => day.value <= 5).map((day) => day.value),
-      ),
+  const [windows, setWindows] = useState<AvailabilityDraft[]>(() =>
+    (entry.configured
+      ? entry.windows
+      : [{
+          weekday: 1,
+          startMinute: 15 * 60,
+          endMinute: 19 * 60,
+          locationId: locations[0]?.id ?? "",
+        }]
+    ).map((window, index) => ({ ...window, key: `availability-${index}` })),
   );
   const distinctHours = new Set(
     entry.windows.map(
@@ -843,10 +862,10 @@ export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) 
           <strong>{entry.teacherName}</strong>
           <small>
             {entry.configured
-              ? `${entry.windows.length} dni · ${
+              ? `${entry.windows.length} ${entry.windows.length === 1 ? "przedział" : "przedziały"} · ${
                   distinctHours > 1 ? "różne godziny" : "te same godziny"
                 }`
-              : "Ustaw osobne godziny dla każdego dnia"}
+              : "Dodaj dni, godziny i lokalizacje"}
           </small>
         </div>
         <ArrowRight aria-hidden="true" />
@@ -856,62 +875,35 @@ export function AvailabilityForm({ entry }: { entry: TeacherAvailabilityView }) 
         <fieldset className="availability-day-fieldset">
           <legend>Dostępność w tygodniu</legend>
           <p className="field-help">
-            Zaznacz dni, w których możesz prowadzić zajęcia, i ustaw godziny
-            osobno dla każdego dnia.
+            Każdy wiersz opisuje jeden przedział i miejsce. Możesz dodać kilka
+            przedziałów tego samego dnia, np. rano w jednym oddziale i później w drugim.
           </p>
           <div className="availability-day-list">
-            {weekdayLabels.map((day) => {
-              const window = entry.windows.find(
-                (candidate) => candidate.weekday === day.value,
-              );
-              const selected = selectedDays.has(day.value);
-              return (
-              <div className={`availability-day-row${selected ? " selected" : ""}`} key={day.value}>
-                <label className="availability-day-toggle">
-                <input
-                  type="checkbox"
-                  name={`available:${day.value}`}
-                  defaultChecked={selected}
-                  onChange={(event) => {
-                    setSelectedDays((current) => {
-                      const next = new Set(current);
-                      if (event.target.checked) next.add(day.value);
-                      else next.delete(day.value);
-                      return next;
-                    });
-                  }}
-                />
-                  <span>{day.full}</span>
-              </label>
+            {windows.map((window) => (
+              <div className="availability-day-row selected" key={window.key}>
+                <label>
+                  <span>Dzień</span>
+                  <select name="windowWeekday" value={window.weekday} onChange={(event) => setWindows((current) => current.map((item) => item.key === window.key ? { ...item, weekday: Number(event.target.value) } : item))}>
+                    {weekdayLabels.map((day) => <option key={day.value} value={day.value}>{day.full}</option>)}
+                  </select>
+                </label>
                 <div className="availability-day-hours">
-                  <label>
-                    <span>Od</span>
-                    <input
-                      type="time"
-                      name={`startTime:${day.value}`}
-                      step="1800"
-                      defaultValue={timeValue(window?.startMinute ?? 15 * 60)}
-                      disabled={!selected}
-                      required={selected}
-                    />
-                  </label>
+                  <label><span>Od</span><input type="time" name="windowStart" step="1800" value={timeValue(window.startMinute)} onChange={(event) => setWindows((current) => current.map((item) => item.key === window.key ? { ...item, startMinute: Number(event.target.value.slice(0, 2)) * 60 + Number(event.target.value.slice(3, 5)) } : item))} required /></label>
                   <span aria-hidden="true">–</span>
-                  <label>
-                    <span>Do</span>
-                    <input
-                      type="time"
-                      name={`endTime:${day.value}`}
-                      step="1800"
-                      defaultValue={timeValue(window?.endMinute ?? 19 * 60)}
-                      disabled={!selected}
-                      required={selected}
-                    />
-                  </label>
+                  <label><span>Do</span><input type="time" name="windowEnd" step="1800" value={timeValue(window.endMinute)} onChange={(event) => setWindows((current) => current.map((item) => item.key === window.key ? { ...item, endMinute: Number(event.target.value.slice(0, 2)) * 60 + Number(event.target.value.slice(3, 5)) } : item))} required /></label>
                 </div>
+                <label className="availability-location-field">
+                  <span>Lokalizacja</span>
+                  <select name="windowLocationId" value={window.locationId} onChange={(event) => setWindows((current) => current.map((item) => item.key === window.key ? { ...item, locationId: event.target.value } : item))} required>
+                    <option value="" disabled>Wybierz miejsce</option>
+                    {locations.map((location) => <option key={location.id} value={location.id}>{location.name}{location.isOnline ? " · online" : ""}</option>)}
+                  </select>
+                </label>
+                <button className="availability-remove" type="button" aria-label="Usuń ten przedział" disabled={windows.length === 1} onClick={() => setWindows((current) => current.filter((item) => item.key !== window.key))}><Trash2 aria-hidden="true" /></button>
               </div>
-              );
-            })}
+            ))}
           </div>
+          <button className="button button-secondary button-small availability-add" type="button" disabled={windows.length >= 24 || locations.length === 0} onClick={() => setWindows((current) => [...current, { key: `availability-${Date.now()}-${current.length}`, weekday: current.at(-1)?.weekday ?? 1, startMinute: 15 * 60, endMinute: 19 * 60, locationId: current.at(-1)?.locationId ?? locations[0]?.id ?? "" }])}><Plus aria-hidden="true" /> Dodaj kolejny przedział</button>
         </fieldset>
         {state.message ? (
           <p

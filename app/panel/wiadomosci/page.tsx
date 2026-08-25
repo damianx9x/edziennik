@@ -52,9 +52,9 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
       metadata: { conversationKind: selected.kind, groupId: selected.groupId },
     } });
   }
-  const messages = canRead && selected?.conversationId ? await db.message.findMany({
+  const latestMessages = canRead && selected?.conversationId ? await db.message.findMany({
     where: { conversationId: selected.conversationId, schoolId: session.user.schoolId },
-    orderBy: { createdAt: "asc" }, take: 100,
+    orderBy: { createdAt: "desc" }, take: 100,
     select: {
       id: true, kind: true, subject: true, body: true, createdAt: true, authorId: true, requiresAcknowledgement: true,
       author: { select: { name: true, role: true } }, reads: { where: { userId: session.user.id }, select: { userId: true } },
@@ -63,6 +63,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
       _count: { select: { reads: true, acknowledgements: true } }, deliveries: { select: { status: true } },
     },
   }) : [];
+  const messages = latestMessages.reverse();
   const queueStats = session.user.role === "DIRECTOR" ? await db.emailDelivery.groupBy({ by: ["status"], where: { schoolId: session.user.schoolId }, _count: { _all: true } }) : [];
 
   return <AuthenticatedPanelShell session={session} active="messages">

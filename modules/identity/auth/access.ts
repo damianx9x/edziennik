@@ -1,6 +1,5 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import {
-  adminAc,
   defaultStatements,
   userAc,
 } from "better-auth/plugins/admin/access";
@@ -8,11 +7,11 @@ import {
 export const identityAccessControl = createAccessControl(defaultStatements);
 
 const directorRole = identityAccessControl.newRole({
-  ...adminAc.statements,
+  ...userAc.statements,
 });
 
 const systemOwnerRole = identityAccessControl.newRole({
-  ...adminAc.statements,
+  ...userAc.statements,
 });
 
 const standardRole = identityAccessControl.newRole({

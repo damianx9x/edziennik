@@ -1,9 +1,10 @@
 # eDziennik KLA
 
-Mobilny eDziennik King’s Language Academy. Etapy 0–5 są funkcjonalne na danych
+Mobilny eDziennik King’s Language Academy. Etapy 0–6 są funkcjonalne na danych
 syntetycznych i przechodzą odbiór przedprodukcyjny. Działają role, kartoteki,
 zaproszenia, import/eksport, grafik z asystentem, obecności, wersjonowane umowy,
-ręczne płatności, komunikator, powiadomienia i prywatne pliki. Aktualny stan,
+ręczne płatności, komunikator, powiadomienia, materiały, zadania, postępy i
+prywatne pliki. Aktualny stan,
 blokery produkcyjne i bezpieczny rytm wydawania opisuje `STAN_PROJEKTU.md`.
 
 ## Start
@@ -42,6 +43,9 @@ Node.js; zwykłe FTP jej nie uruchomi.
 - `ETAP_1_INSTRUKCJA.md` — uruchomienie i odbiór logowania oraz ról,
 - `ETAP_2_INSTRUKCJA.md` — kartoteki, szablon importu i odbiór Etapu 2,
 - `ETAP_3_GRAFIK.md` — Asystent, ręczny grafik i checklista odbioru,
+- `ETAP_6_NAUKA_POSTEPY.md` — materiały, zadania, prace i opisowe postępy,
+- `CHECKLISTA_ODBIORU_KLIENTKI.md` — testy do odhaczenia dla każdej roli,
+- `TECHNICAL_HANDOFF_PRE_RELEASE.md` — architektura, ryzyka i handoff techniczny,
 - `PLAN_2026.md` — zakres i harmonogram,
 - `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
 - `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,

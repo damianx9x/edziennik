@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createHash, randomUUID } from "node:crypto";
 
 import { db } from "@/lib/server/db";
 import { can, type Actor } from "@/modules/access-control/can";
@@ -16,6 +17,46 @@ import { announcementSchema, directConversationSchema, messageSchema, type Messa
 const messagesPath = "/panel/wiadomosci";
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 const attachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
+
+function directConversationKey(schoolId: string, participantIds: string[]) {
+  return createHash("sha256")
+    .update(`${schoolId}:${[...new Set(participantIds)].sort().join(":")}`)
+    .digest("hex");
+}
+
+async function getOrCreateDirectConversation(input: {
+  schoolId: string;
+  actorId: string;
+  participantIds: string[];
+  title: string;
+}) {
+  const participantIds = [...new Set([...input.participantIds, input.actorId])];
+  const validUsers = await db.user.findMany({
+    where: { id: { in: participantIds }, schoolId: input.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"] } },
+    select: { id: true },
+  });
+  if (validUsers.length !== participantIds.length) return null;
+  const directKey = directConversationKey(input.schoolId, participantIds);
+  return db.$transaction(async (tx) => {
+    const conversation = await tx.conversation.upsert({
+      where: { directKey },
+      create: { schoolId: input.schoolId, kind: "DIRECT", title: input.title, directKey, createdById: input.actorId },
+      update: { archivedAt: null },
+    });
+    await tx.conversationParticipant.createMany({
+      data: validUsers.map((user) => ({ conversationId: conversation.id, userId: user.id, schoolId: input.schoolId, addedById: input.actorId })),
+      skipDuplicates: true,
+    });
+    await tx.conversationParticipant.updateMany({
+      where: { conversationId: conversation.id, userId: { in: participantIds } },
+      data: { archivedAt: null },
+    });
+    if (conversation.createdAt.getTime() === conversation.updatedAt.getTime()) {
+      await tx.auditLog.create({ data: { schoolId: input.schoolId, actorId: input.actorId, action: "messages.direct_conversation.created", entityType: "Conversation", entityId: conversation.id, metadata: { participantCount: validUsers.length } } });
+    }
+    return conversation;
+  });
+}
 
 async function prepareAttachment(formData: FormData) {
   const file = formData.get("attachment");
@@ -133,19 +174,54 @@ export async function createDirectConversationAction(formData: FormData) {
   if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
   const parsed = directConversationSchema.safeParse({ title: formData.get("title"), participantIds: formData.getAll("participantIds") });
   if (!parsed.success) redirect(`${messagesPath}?blad=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Sprawdź odbiorców.")}`);
-  const participantIds = [...new Set([...parsed.data.participantIds, session.user.id])];
-  const validUsers = await db.user.findMany({
-    where: { id: { in: participantIds }, schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"] } },
-    select: { id: true },
+  const conversation = await getOrCreateDirectConversation({ schoolId: session.user.schoolId, actorId: session.user.id, participantIds: parsed.data.participantIds, title: parsed.data.title });
+  if (!conversation) redirect(`${messagesPath}?blad=${encodeURIComponent("Co najmniej jeden odbiorca jest nieaktywny lub spoza szkoły.")}`);
+  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
+}
+
+export async function openPersonConversationAction(formData: FormData) {
+  const session = await requireActiveSession(messagesPath);
+  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  const personId = String(formData.get("personId") ?? "");
+  const person = await db.user.findFirst({
+    where: { id: personId, schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["TEACHER", "PARENT", "STUDENT"] } },
+    select: { id: true, name: true },
   });
-  if (validUsers.length !== participantIds.length) redirect(`${messagesPath}?blad=${encodeURIComponent("Co najmniej jeden odbiorca jest nieaktywny lub spoza szkoły.")}`);
-  const conversation = await db.$transaction(async (tx) => {
-    const created = await tx.conversation.create({ data: { schoolId: session.user.schoolId, kind: "DIRECT", title: parsed.data.title, createdById: session.user.id } });
-    await tx.conversationParticipant.createMany({ data: validUsers.map((user) => ({ conversationId: created.id, userId: user.id, schoolId: session.user.schoolId, addedById: session.user.id })) });
-    await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.direct_conversation.created", entityType: "Conversation", entityId: created.id, metadata: { participantCount: validUsers.length } } });
+  if (!person) redirect(`${messagesPath}?blad=${encodeURIComponent("Nie można otworzyć rozmowy z tą osobą.")}`);
+  const conversation = await getOrCreateDirectConversation({
+    schoolId: session.user.schoolId,
+    actorId: session.user.id,
+    participantIds: [person.id],
+    title: `Rozmowa: ${person.name}`,
+  });
+  if (!conversation) redirect(`${messagesPath}?blad=${encodeURIComponent("Nie można otworzyć rozmowy z tą osobą.")}`);
+  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
+}
+
+export async function remindContractParentAction(formData: FormData) {
+  const session = await requireActiveSession(messagesPath);
+  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const assignment = await db.contractAssignment.findFirst({
+    where: { id: assignmentId, schoolId: session.user.schoolId, status: { in: ["SENT", "VIEWED", "SIGNED_PENDING_REVIEW"] } },
+    select: { id: true, status: true, parent: { select: { id: true, name: true } }, student: { select: { name: true } }, version: { select: { title: true } } },
+  });
+  if (!assignment) redirect("/panel/umowy?blad=Nie%20można%20wysłać%20przypomnienia");
+  const conversation = await getOrCreateDirectConversation({ schoolId: session.user.schoolId, actorId: session.user.id, participantIds: [assignment.parent.id], title: `Rozmowa: ${assignment.parent.name}` });
+  if (!conversation) redirect("/panel/umowy?blad=Nie%20można%20otworzyć%20rozmowy");
+  const body = assignment.status === "SIGNED_PENDING_REVIEW"
+    ? `Dziękujemy za przesłanie podpisanego dokumentu „${assignment.version.title}” dla ${assignment.student.name}. Szkoła sprawdza plik i poinformuje o wyniku.`
+    : `Przypominamy o dokumencie „${assignment.version.title}” dla ${assignment.student.name}. Otwórz zakładkę Umowy w eDzienniku, aby sprawdzić dokumenty i wykonać kolejny krok.`;
+  const message = await db.$transaction(async (tx) => {
+    const created = await tx.message.create({ data: { schoolId: session.user.schoolId, conversationId: conversation.id, authorId: session.user.id, body, clientRequestId: randomUUID(), requiresAcknowledgement: false } });
+    await tx.messageRead.create({ data: { schoolId: session.user.schoolId, messageId: created.id, userId: session.user.id } });
+    await tx.emailDelivery.create({ data: { schoolId: session.user.schoolId, messageId: created.id, recipientId: assignment.parent.id, idempotencyKey: `contract-reminder:${assignment.id}:${created.id}` } });
+    await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "contracts.reminder.sent", entityType: "ContractAssignment", entityId: assignment.id, metadata: { conversationId: conversation.id, status: assignment.status } } });
+    await tx.conversation.update({ where: { id: conversation.id }, data: { updatedAt: new Date() } });
     return created;
   });
-  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
+  after(() => processEmailDeliveryQueue(session.user.schoolId));
+  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}&wyslano=${message.id}`);
 }
 
 export async function markMessagesReadAction(messageIds: string[]) {

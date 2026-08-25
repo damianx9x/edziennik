@@ -2,6 +2,7 @@ export const SYSTEM_OWNER_LOGIN = "bog";
 export const SYSTEM_OWNER_EMAIL = "bog@owner.kla.internal";
 
 const DEMO_LOGIN_ALIASES: Readonly<Record<string, string>> = {
+  kinga: "kinga.demo@invalid.example",
   dyrektor: "dyrektor.demo@invalid.example",
   wykladowca: "wykladowca.demo@invalid.example",
   rodzic: "rodzic.demo@invalid.example",

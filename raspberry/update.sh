@@ -6,7 +6,13 @@ if [[ ${EUID} -ne 0 ]]; then
   exit 1
 fi
 
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -f "$SCRIPT_PACKAGE_DIR/package-lock.json" ]]; then
+  SOURCE_DIR="$SCRIPT_PACKAGE_DIR"
+else
+  SOURCE_DIR="${1:-$(pwd)}"
+  SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
+fi
 APP_ROOT=/opt/kla
 CURRENT="$APP_ROOT/current"
 PREVIOUS="$APP_ROOT/previous"
@@ -23,6 +29,14 @@ fi
 
 [[ -d "$CURRENT" ]] || { echo "Brak działającej instalacji w $CURRENT."; exit 1; }
 [[ -f "$SOURCE_DIR/package-lock.json" ]] || { echo "Paczka nie zawiera package-lock.json."; exit 1; }
+[[ -f "$SOURCE_DIR/KLA_RELEASE_COMMIT" ]] || { echo "Paczka nie ma identyfikatora wydania."; exit 1; }
+[[ -f "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" ]] || { echo "Paczka nie ma manifestu integralności."; exit 1; }
+(
+  cd "$SOURCE_DIR"
+  sha256sum -c KLA_RELEASE_MANIFEST.sha256
+)
+EXPECTED_COMMIT="$(tr -d '\r\n' < "$SOURCE_DIR/KLA_RELEASE_COMMIT")"
+[[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Nieprawidłowy identyfikator wydania."; exit 1; }
 [[ -f /etc/kla/edziennik.env ]] || { echo "Brak prywatnej konfiguracji aplikacji."; exit 1; }
 
 cleanup() {

@@ -20,7 +20,8 @@ modules/notifications/       in-app, e-mail, SMS
 modules/contracts/           wersje i akceptacje
 modules/messaging/           rozmowy i audyt
 modules/payments/            ręczne statusy i historia
-modules/learning-content/    materiały i zadania
+modules/learning/            materiały, zadania i oddawanie prac
+modules/progress/            opisowy monitoring postępów
 modules/files/               metadane prywatnych plików
 modules/jobs/                Outbox i zadania kolejki
 lib/                         baza, auth, logi
@@ -173,11 +174,14 @@ kontrolowanym odświeżaniem. Interfejs `RealtimeProvider` pozwala później dod
 WebSocket bez zmiany reguł uprawnień. Ogłoszenie masowe tworzy osobną wiadomość
 w każdym kanale i osobne zadanie na odbiorcę, więc ma mierzalny status.
 
-### Płatności i zadania
+### Płatności, zadania i postępy
 
 `PaymentStatusChange` zachowuje historię ręcznych zmian bez obsługi kart lub
 rachunków bankowych. Materiały i zadania korzystają z tego samego
 `FileStorage`, ale mają odrębne reguły dostępu dla grupy, rodzica i ucznia.
+Obserwacje postępu przechowują datę, autora, opcjonalną lekcję, opis i oceny
+sześciu umiejętności w skali 1–5. Są pomocą pedagogiczną i źródłem opisowego
+trendu, nie automatyczną diagnozą, rankingiem ani predykcją zachowania dziecka.
 
 ## Obserwowalność
 

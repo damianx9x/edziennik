@@ -9,6 +9,7 @@ type ScheduleConstraintClient = Pick<
   Prisma.TransactionClient,
   | "availabilityWindow"
   | "studentAvailabilityWindow"
+  | "locationTravelRule"
   | "courseGroup"
   | "enrollment"
   | "room"
@@ -36,6 +37,7 @@ type AvailabilityWindow = {
   endMinute: number;
   isAvailable: boolean;
   preference?: number;
+  locationId?: string | null;
 };
 
 type Conflict = ScheduleResources & {
@@ -53,6 +55,7 @@ export type ScheduleConstraintCode =
   | "ROOM_CAPACITY"
   | "TEACHER_UNAVAILABLE"
   | "STUDENT_UNAVAILABLE"
+  | "TRAVEL_TIME"
   | "SCHEDULE_CONFLICT";
 
 export class ScheduleConstraintError extends Error {
@@ -90,6 +93,7 @@ export function evaluateConfiguredAvailability(
     weekday: number;
     startMinute: number;
     endMinute: number;
+    locationId?: string;
   },
 ) {
   if (windows.length === 0) {
@@ -97,7 +101,9 @@ export function evaluateConfiguredAvailability(
   }
 
   const windowsForDay = windows.filter(
-    (window) => window.weekday === input.weekday,
+    (window) =>
+      window.weekday === input.weekday &&
+      (!input.locationId || !window.locationId || window.locationId === input.locationId),
   );
   const overlapsBlockedWindow = windowsForDay.some(
     (window) =>
@@ -137,6 +143,7 @@ export function fitsConfiguredAvailability(
     startAt: Date;
     endAt: Date;
     timeZone?: string;
+    locationId?: string;
   },
 ) {
   const interval = localInterval(
@@ -148,7 +155,10 @@ export function fitsConfiguredAvailability(
     return false;
   }
 
-  return evaluateConfiguredAvailability(windows, interval).allowed;
+  return evaluateConfiguredAvailability(windows, {
+    ...interval,
+    locationId: input.locationId,
+  }).allowed;
 }
 
 function conflictMessage(
@@ -192,6 +202,8 @@ async function assertActiveResources(
             schoolId: true,
             isActive: true,
             archivedAt: true,
+            isOnline: true,
+            name: true,
           },
         },
         enrollments: {
@@ -241,6 +253,7 @@ async function assertActiveResources(
         startMinute: true,
         endMinute: true,
         isAvailable: true,
+        locationId: true,
       },
     }),
   ]);
@@ -288,6 +301,7 @@ async function assertActiveResources(
       startAt: input.startAt,
       endAt: input.endAt,
       timeZone: input.timeZone,
+      locationId: group.locationId,
     })
   ) {
     throw new ScheduleConstraintError(
@@ -323,6 +337,62 @@ async function assertActiveResources(
       "STUDENT_UNAVAILABLE",
       "Co najmniej jeden uczeń w tej grupie oznaczył ten termin jako niedostępny. Wybierz wspólny termin albo zmień jego preferencje w kartotece.",
     );
+  }
+
+  return {
+    locationId: group.locationId,
+    locationName: group.location.name,
+    locationIsOnline: group.location.isOnline,
+    teacherName: teacher.name,
+  };
+}
+
+async function assertTeacherTravelTime(
+  tx: ScheduleConstraintClient,
+  input: ScheduleConstraintInput,
+  resource: Awaited<ReturnType<typeof assertActiveResources>>,
+) {
+  const adjacent = await tx.scheduleSlot.findMany({
+    where: {
+      id: input.excludeId ? { not: input.excludeId } : undefined,
+      schoolId: input.schoolId,
+      teacherId: input.teacherId,
+      archivedAt: null,
+      status: { not: "CANCELLED" },
+      OR: [
+        { endAt: { lte: input.startAt } },
+        { startAt: { gte: input.endAt } },
+      ],
+    },
+    orderBy: { startAt: "asc" },
+    select: {
+      startAt: true,
+      endAt: true,
+      group: { select: { location: { select: { id: true, name: true, isOnline: true } } } },
+    },
+  });
+  const previous = adjacent.filter((slot) => slot.endAt <= input.startAt).at(-1);
+  const next = adjacent.find((slot) => slot.startAt >= input.endAt);
+  for (const [from, to, gap] of [
+    previous
+      ? [previous.group.location, { id: resource.locationId, name: resource.locationName, isOnline: resource.locationIsOnline }, Math.round((input.startAt.getTime() - previous.endAt.getTime()) / 60_000)]
+      : null,
+    next
+      ? [{ id: resource.locationId, name: resource.locationName, isOnline: resource.locationIsOnline }, next.group.location, Math.round((next.startAt.getTime() - input.endAt.getTime()) / 60_000)]
+      : null,
+  ].filter(Boolean) as Array<[{ id: string; name: string; isOnline: boolean }, { id: string; name: string; isOnline: boolean }, number]>) {
+    if (from.id === to.id || from.isOnline || to.isOnline) continue;
+    const rule = await tx.locationTravelRule.findFirst({
+      where: { schoolId: input.schoolId, fromLocationId: from.id, toLocationId: to.id, isActive: true },
+      select: { minutes: true },
+    });
+    const required = rule?.minutes ?? 30;
+    if (gap < required) {
+      throw new ScheduleConstraintError(
+        "TRAVEL_TIME",
+        `${resource.teacherName} potrzebuje co najmniej ${required} min na przejazd z „${from.name}” do „${to.name}”. Między lekcjami jest tylko ${gap} min.`,
+      );
+    }
   }
 }
 
@@ -415,7 +485,8 @@ export async function assertScheduleSlotCanBeSaved(
     );
   }
 
-  await assertActiveResources(tx, input);
+  const activeResource = await assertActiveResources(tx, input);
+  await assertTeacherTravelTime(tx, input, activeResource);
   const conflict = await findConflict(tx, input);
   if (conflict) {
     throw new ScheduleConstraintError(

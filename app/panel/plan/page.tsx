@@ -174,7 +174,6 @@ export default async function SchedulePage({
         schoolId: session.user.schoolId,
         groupId: { in: groupIds },
         archivedAt: null,
-        status: { not: "CANCELLED" },
         startAt: { lt: weekEndAt },
         endAt: { gt: weekStartAt },
       },
@@ -192,6 +191,19 @@ export default async function SchedulePage({
         },
         room: { select: { name: true } },
         teacher: { select: { name: true } },
+        cancellation: { select: { reason: true, cancelledAt: true } },
+        changeRequests: {
+          where: { status: "PENDING" },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            kind: true,
+            reason: true,
+            createdAt: true,
+            requestedBy: { select: { name: true } },
+          },
+        },
       },
       orderBy: { startAt: "asc" },
     }),
@@ -226,6 +238,7 @@ export default async function SchedulePage({
             weekday: true,
             startMinute: true,
             endMinute: true,
+            locationId: true,
           },
           orderBy: [{ teacherId: "asc" }, { weekday: "asc" }],
         })
@@ -391,6 +404,22 @@ export default async function SchedulePage({
       topic: slot.topic,
       version: slot.version,
       isLocked: slot.isLocked,
+      cancellationReason: slot.cancellation?.reason ?? null,
+      cancelledAt: slot.cancellation?.cancelledAt.toISOString() ?? null,
+      canRequestChange:
+        session.user.role === "TEACHER" &&
+        slot.status !== "CANCELLED" &&
+        slot.teacherId === session.user.id,
+      canReviewChange: isManagement,
+      pendingChangeRequest: slot.changeRequests[0]
+        ? {
+            id: slot.changeRequests[0].id,
+            kind: slot.changeRequests[0].kind,
+            reason: slot.changeRequests[0].reason,
+            requestedByName: slot.changeRequests[0].requestedBy.name,
+            createdAt: slot.changeRequests[0].createdAt.toISOString(),
+          }
+        : null,
       canEditLesson,
       canConfirmArrival,
       checkInWindowOpen,
@@ -455,6 +484,10 @@ export default async function SchedulePage({
         weekday: window.weekday,
         startMinute: window.startMinute,
         endMinute: window.endMinute,
+        locationId: window.locationId ?? "",
+        locationName:
+          locationsRaw.find((location) => location.id === window.locationId)?.name ??
+          "Bez lokalizacji",
       })),
       configured: windows.length > 0,
     };
@@ -595,7 +628,7 @@ export default async function SchedulePage({
             <p>Podaj swoje dni i godziny. To nie zmienia opublikowanego planu — pomaga dyrektorowi układać kolejne tygodnie.</p>
           </div>
           {ownAvailability ? (
-            <AvailabilityForm entry={ownAvailability} />
+            <AvailabilityForm entry={ownAvailability} locations={locations} />
           ) : null}
         </section>
       ) : null}
