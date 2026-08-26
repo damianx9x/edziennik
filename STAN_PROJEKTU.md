@@ -27,6 +27,9 @@ Aktualizacja: 25 sierpnia 2026. Kandydat pre-release Etapu 6.
   ClamAV w produkcyjnym profilu Raspberry oraz szyfrowany magazyn LUKS2,
 - instalator VPS, instalator Raspberry Pi, stałe demo z Maca, kontrola zdrowia,
   szyfrowany backup Raspberry i prawdziwy test odtworzenia,
+- profil `--local-demo` Raspberry: szyfrowany SSD, czysta syntetyczna baza i
+  test po prywatnym IP; profil jest celowo oddzielony od publicznej produkcji
+  HTTPS,
 - materiały grup, zadania, stany oddania, informacja zwrotna oraz opisowe
   obserwacje postępów bez diagnoz i automatycznych decyzji o dziecku.
 

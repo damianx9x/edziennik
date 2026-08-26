@@ -2,7 +2,17 @@
 set -Eeuo pipefail
 umask 077
 
-if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh"; exit 1; fi
+MODE="production"
+if [[ "${1:-}" == "--local-demo" ]]; then
+  MODE="local-demo"
+  shift
+fi
+[[ $# -eq 0 ]] || {
+  echo "Użycie: sudo ./raspberry/install.sh [--local-demo]"
+  exit 1
+}
+
+if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh [--local-demo]"; exit 1; fi
 [[ "$(dpkg --print-architecture)" == "arm64" ]] || { echo "Wymagany jest Raspberry Pi OS 64-bit (arm64)."; exit 1; }
 grep -qi 'Raspberry Pi' /proc/device-tree/model 2>/dev/null || { echo "Ten instalator jest przeznaczony dla Raspberry Pi."; exit 1; }
 
@@ -12,22 +22,44 @@ ENV_DIR=/etc/kla
 VAULT=/srv/kla-vault
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+local_ipv4() {
+  ip -o -4 addr show scope global \
+    | awk '$2 !~ /^(docker|br-|veth)/ {split($4, parts, "/"); print parts[1]; exit}'
+}
+
 echo "Dostępne zewnętrzne dyski:"
 lsblk -dpo NAME,SIZE,MODEL,TRAN,TYPE | awk '$NF == "disk" {print}'
 read -r -p "Podaj dysk SSD na zaszyfrowany sejf (np. /dev/sda): " VAULT_DEVICE
-read -r -p "Publiczny adres HTTPS aplikacji (np. https://edziennik.example.pl): " APP_URL
-[[ "$APP_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || { echo "Wymagany jest publiczny adres HTTPS bez ścieżki."; exit 1; }
-read -r -s -p "Token istniejącego tunelu Cloudflare dla tego adresu: " TUNNEL_TOKEN
-echo
-[[ "$TUNNEL_TOKEN" == eyJ* ]] || { echo "Nie rozpoznano tokenu tunelu Cloudflare."; exit 1; }
-read -r -p "Wgrać wyłącznie fikcyjne dane testowe? [t/N]: " INSTALL_DEMO
 
-install -d -m 0755 /usr/share/keyrings
-curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
-echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
+if [[ "$MODE" == "local-demo" ]]; then
+  LOCAL_IP="$(local_ipv4)"
+  [[ -n "$LOCAL_IP" ]] || { echo "Nie znaleziono adresu sieci lokalnej. Podłącz Ethernet lub Wi-Fi i spróbuj ponownie."; exit 1; }
+  APP_URL="http://${LOCAL_IP}:8080"
+  INSTALL_DEMO="t"
+  DEMO_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=')"
+  echo
+  echo "TRYB LOKALNEGO DEMO: powstanie nowa, fikcyjna baza danych."
+  echo "Adres do testów po instalacji: $APP_URL"
+  echo "Ten tryb nie nadaje się do prawdziwych danych ani dokumentów."
+else
+  read -r -p "Publiczny adres HTTPS aplikacji (np. https://edziennik.example.pl): " APP_URL
+  [[ "$APP_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || { echo "Wymagany jest publiczny adres HTTPS bez ścieżki."; exit 1; }
+  read -r -s -p "Token istniejącego tunelu Cloudflare dla tego adresu: " TUNNEL_TOKEN
+  echo
+  [[ "$TUNNEL_TOKEN" == eyJ* ]] || { echo "Nie rozpoznano tokenu tunelu Cloudflare."; exit 1; }
+  read -r -p "Wgrać wyłącznie fikcyjne dane testowe? [t/N]: " INSTALL_DEMO
+fi
+
 apt-get update
 apt-get full-upgrade -y
-apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cloudflared cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
+apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
+if [[ "$MODE" == "production" ]]; then
+  install -d -m 0755 /usr/share/keyrings
+  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
+  echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
+  apt-get update
+  apt-get install -y --no-install-recommends cloudflared
+fi
 if ! command -v node >/dev/null || [[ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 22 ]]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
@@ -64,6 +96,14 @@ systemctl start postgresql
 
 DB_PASSWORD="$(openssl rand -hex 24)"
 AUTH_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+if [[ "$MODE" == "local-demo" ]] && sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'kla_edziennik'" | grep -q 1; then
+  echo ""
+  echo "Na tym sejfie istnieje już baza kla_edziennik."
+  read -r -p "Aby utworzyć NOWE czyste demo wpisz: USUN STARE DEMO: " RESET_CONFIRM
+  [[ "$RESET_CONFIRM" == "USUN STARE DEMO" ]] || { echo "Odmowa: nie usuwam istniejącej bazy."; exit 1; }
+  sudo -u postgres psql -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'kla_edziennik' AND pid <> pg_backend_pid();"
+  sudo -u postgres dropdb kla_edziennik
+fi
 sudo -u postgres psql -v ON_ERROR_STOP=1 --set=db_password="$DB_PASSWORD" <<'SQL'
 SELECT format('CREATE ROLE kla_app LOGIN PASSWORD %L', :'db_password')
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'kla_app')\gexec
@@ -88,8 +128,10 @@ BETTER_AUTH_SECRET=${AUTH_SECRET}
 BETTER_AUTH_URL=${APP_URL}
 NEXT_PUBLIC_APP_URL=${APP_URL}
 NEXT_PUBLIC_APP_RELEASE=raspberry
-KLA_REQUIRE_DIRECTOR_MFA=1
+KLA_DEPLOYMENT_MODE=${MODE}
+KLA_REQUIRE_DIRECTOR_MFA=$([[ "$MODE" == "production" ]] && echo 1 || echo 0)
 KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=0
+KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "local-demo" ]] && echo 1 || echo 0)
 KLA_PUBLIC_SCHOOL_SLUG=kings-language-academy-demo
 KLA_PRIVATE_FILES_DIR=$VAULT/private-files
 FILE_STORAGE_PROVIDER=local
@@ -116,9 +158,8 @@ for _ in {1..30}; do [[ -S /run/clamav/clamd.ctl ]] && break; sleep 2; done
 [[ -S /run/clamav/clamd.ctl ]] || { echo "ClamAV nie uruchomił skanera. Instalacja zatrzymana."; exit 1; }
 
 sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && npm ci && npm run check && npm run db:migrate:deploy && npm run build"
-DEMO_PASSWORD=""
 if [[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
-  DEMO_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=')"
+  DEMO_PASSWORD="${DEMO_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=')}"
   sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_DEMO_PASSWORD='$DEMO_PASSWORD' npm run db:seed:demo"
 fi
 if [[ -d "$APP_DIR" ]]; then rm -rf "$APP_ROOT/previous"; mv "$APP_DIR" "$APP_ROOT/previous"; fi
@@ -134,6 +175,7 @@ install -m 755 "$SOURCE_DIR/raspberry/restore-test-latest.sh" /usr/local/sbin/ed
 install -m 755 "$SOURCE_DIR/raspberry/print-recovery-key.sh" /usr/local/sbin/edziennik-kla-print-recovery-key
 install -m 755 "$SOURCE_DIR/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
 install -m 755 "$SOURCE_DIR/raspberry/status.sh" /usr/local/bin/kla-status
+install -m 755 "$SOURCE_DIR/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 
@@ -142,21 +184,37 @@ if [[ ! -f "$VAULT/secrets/backup-age.key" ]]; then
   chmod 600 "$VAULT/secrets/backup-age.key" "$VAULT/secrets/backup-recipient.txt"
 fi
 
-sed 's|__SERVER_NAME__|_|g' "$SOURCE_DIR/raspberry/nginx/kla.conf" > /etc/nginx/sites-available/kla
+if [[ "$MODE" == "local-demo" ]]; then
+  sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|0.0.0.0:8080|g' -e 's|__FORWARDED_PROTO__|http|g' \
+    "$SOURCE_DIR/raspberry/nginx/kla.conf" > /etc/nginx/sites-available/kla
+else
+  sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|127.0.0.1:8080|g' -e 's|__FORWARDED_PROTO__|https|g' \
+    "$SOURCE_DIR/raspberry/nginx/kla.conf" > /etc/nginx/sites-available/kla
+fi
 ln -sfn /etc/nginx/sites-available/kla /etc/nginx/sites-enabled/kla
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
-cloudflared service uninstall >/dev/null 2>&1 || true
-cloudflared service install "$TUNNEL_TOKEN"
-unset TUNNEL_TOKEN
-systemctl enable cloudflared
+if [[ "$MODE" == "production" ]]; then
+  cloudflared service uninstall >/dev/null 2>&1 || true
+  cloudflared service install "$TUNNEL_TOKEN"
+  unset TUNNEL_TOKEN
+  systemctl enable cloudflared
+elif systemctl list-unit-files cloudflared.service --no-legend 2>/dev/null | grep -q cloudflared; then
+  systemctl disable --now cloudflared || true
+fi
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow OpenSSH
+if [[ "$MODE" == "local-demo" ]]; then
+  ufw allow from 10.0.0.0/8 to any port 8080 proto tcp
+  ufw allow from 172.16.0.0/12 to any port 8080 proto tcp
+  ufw allow from 192.168.0.0/16 to any port 8080 proto tcp
+fi
 ufw --force enable
 systemctl enable fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 systemctl daemon-reload
-systemctl restart nginx postgresql clamav-daemon cloudflared
+systemctl restart nginx postgresql clamav-daemon
+[[ "$MODE" == "production" ]] && systemctl restart cloudflared
 systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 
 echo
@@ -164,4 +222,11 @@ echo "GOTOWE. Otwórz: $APP_URL"
 echo "Po każdym restarcie: sudo kla-unlock"
 echo "Stan urządzenia: kla-status"
 echo "Backup SFTP: sudo kla-configure-sftp-backup"
-if [[ -n "$DEMO_PASSWORD" ]]; then echo "Jednorazowe hasło fikcyjnych kont demo: $DEMO_PASSWORD"; fi
+if [[ -n "${DEMO_PASSWORD:-}" ]]; then
+  echo "Konta demo: kinga, dyrektor, wykladowca, rodzic, uczen"
+  echo "Jednorazowe hasło fikcyjnych kont demo: $DEMO_PASSWORD"
+  echo "Zapisz je teraz w menedżerze haseł. Nie jest zapisywane w pakiecie ani repozytorium."
+fi
+if [[ "$MODE" == "local-demo" ]]; then
+  echo "Po zmianie adresu IP uruchom: sudo kla-local-url"
+fi

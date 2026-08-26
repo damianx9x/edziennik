@@ -1,9 +1,18 @@
 # KLA Server — Raspberry Pi 4B 8 GB
 
-Gotowy wariant pilota dla standardowego **Raspberry Pi OS 64-bit**. Baza
-PostgreSQL i wszystkie prywatne pliki są w jednym szyfrowanym sejfie LUKS2 na
-zewnętrznym SSD. Karta microSD zawiera system i aplikację, ale nie bazę,
-dokumenty, hasło bazy ani sekret sesji.
+Pakiet ma dwa wyraźnie rozdzielone warianty:
+
+- **lokalne demo** — proste testy po adresie `http://IP_RASPBERRY:8080` i
+  wyłącznie bogate, syntetyczne dane demonstracyjne;
+- **produkcja** — publiczny HTTPS przez Cloudflare Tunnel, 2FA dyrektora i
+  prawdziwe dane dopiero po zamknięciu odbioru/RODO.
+
+Baza PostgreSQL i wszystkie prywatne pliki są w jednym szyfrowanym sejfie
+LUKS2 na zewnętrznym SSD. Karta microSD zawiera system i aplikację, ale nie
+bazę, dokumenty, hasło bazy ani sekret sesji.
+
+> Lokalny tryb demo działa po HTTP tylko w prywatnej sieci. Nie wpisuj tam
+> prawdziwych danych dzieci, umów ani dokumentów.
 
 ## Co trzeba przygotować
 
@@ -13,26 +22,51 @@ dokumenty, hasło bazy ani sekret sesji.
 - najlepiej UPS dla Raspberry Pi i SSD;
 - drugi komputer do zapisania klucza odzyskiwania;
 - opcjonalnie konto SFTP na innym urządzeniu lub u dostawcy backupu.
-- domenę dodaną do Cloudflare oraz utworzony tunel z publicznym adresem HTTPS;
-  w routingu tunelu ustaw usługę `http://localhost:8080` i skopiuj token
-  instalacyjny. Token traktuj jak hasło.
+- dla produkcji: domenę dodaną do Cloudflare oraz utworzony tunel z publicznym
+  adresem HTTPS; w routingu tunelu ustaw usługę `http://localhost:8080` i
+  skopiuj token instalacyjny. Token traktuj jak hasło.
 
 ## 1. System z Raspberry Pi Imager
 
-1. Wybierz **Raspberry Pi OS Lite (64-bit)**. Wersja Desktop też zadziała, ale
-   Lite jest prostsza i bezpieczniejsza dla serwera.
+1. Przy monitorze, klawiaturze i myszy wybierz **Raspberry Pi OS (64-bit) z
+   Desktopem**. Lite też zadziała, ale Desktop ułatwi pierwsze testy w
+   przeglądarce na samym Raspberry.
 2. W ustawieniach Imagera ustaw nazwę `kla-server`, własnego użytkownika,
    mocne hasło, polską strefę czasową i włącz SSH.
 3. Najlepiej dodaj klucz SSH. Nie używaj domyślnego użytkownika `pi`.
 4. Uruchom Raspberry, podłącz Internet kablem i dopiero potem podłącz SSD.
 
-## 2. Jedna instalacja
+## 2. Jedna instalacja lokalnego demo
+
+Rozpakuj paczkę `edziennik-kla-raspberry-source.tar.gz` na Raspberry (np. do
+folderu `Downloads`) i wklej w Terminalu jedną linię:
+
+```bash
+cd ~/Downloads && tar -xzf edziennik-kla-raspberry-source.tar.gz && cd edziennik-kla && sudo ./raspberry/install-local-demo.sh
+```
+
+Jeśli folder nazywa się `Pobrane`, zastąp w poleceniu `Downloads` słowem
+`Pobrane`. Instalator pokaże dokładny lokalny adres i jednorazowe hasło dla
+kont `kinga`, `dyrektor`, `wykladowca`, `rodzic`, `uczen`.
+
+Szczegółową instrukcję dla osoby nietechnicznej zawiera
+[`START_LOCAL_DEMO_PI4B.md`](START_LOCAL_DEMO_PI4B.md).
+
+Jeśli router po restarcie poda nowy adres IP, uruchom:
+
+```bash
+sudo kla-local-url
+```
+
+Skrypt poda nowy adres i przebuduje aplikację pod niego. Docelowo ustaw w
+routerze rezerwację DHCP dla Raspberry Pi, aby adres lokalny był stały.
+
+## 3. Instalacja produkcyjna
 
 Skopiuj rozpakowaną paczkę na Raspberry, połącz się przez SSH i uruchom:
 
 ```bash
 cd ~/edziennik-kla
-chmod +x raspberry/*.sh
 sudo ./raspberry/install.sh
 ```
 
@@ -51,7 +85,7 @@ Podczas instalacji:
 6. `cloudflared` zostanie usługą systemową; nginx będzie słuchał wyłącznie na
    `127.0.0.1:8080`, dlatego nieszyfrowany origin nie jest dostępny z sieci LAN.
 
-## 3. Po restarcie
+## 4. Po restarcie
 
 Raspberry Pi 4B nie ma wbudowanego TPM. Klucz nie jest więc zapisywany obok
 danych, bo zniweczyłoby to szyfrowanie. Po pełnym restarcie połącz się przez SSH
@@ -70,7 +104,7 @@ kla-status
 Pełny automatyczny start bez hasła wymaga sprzętowego modułu TPM 2.0 lub
 fizycznego klucza USB. Nie zapisujemy klucza na karcie microSD.
 
-## 4. Backup SFTP
+## 5. Backup SFTP
 
 Uruchom:
 
@@ -94,7 +128,7 @@ bazy kontrolnej, po czym ją usuwa. Wynik musi zawierać `TEST ODTWORZENIA OK`.
 System powtarza go automatycznie raz w miesiącu. Uruchom go także po zmianie
 miejsca backupu. Datę ostatniego sukcesu pokazuje `kla-status`.
 
-## 5. Retencja
+## 6. Retencja
 
 Plik `/etc/kla/retention.env` zawiera zatwierdzone okresy. `0` oznacza brak
 automatycznego kasowania. Importy mają domyślnie 30 dni po archiwizacji.

@@ -950,3 +950,19 @@ zapisu i pobrania pliku.
 **Dlaczego:** jednoznaczny model zapobiega mieszaniu treści grupy z prywatną
 pracą ucznia, pozwala prowadzić audyt i później zmienić lokalny magazyn na
 S3-compatible bez przebudowy modułu nauki.
+
+## ADR-075 — Raspberry: lokalne demo jest osobnym profilem od produkcji
+
+**Data:** 2026-08-26
+**Decyzja:** instalator Raspberry ma dwa jawne profile. `--local-demo` zakłada
+nowy szyfrowany sejf LUKS2, czystą bazę i wyłącznie syntetyczne dane odbiorowe.
+nginx udostępnia go na porcie 8080 tylko z prywatnych zakresów sieciowych,
+bez tunelu i bez MFA dyrektora. Profil produkcyjny zachowuje origin na
+`127.0.0.1`, wymaga adresu HTTPS oraz tokenu Cloudflare Tunnel i egzekwuje MFA
+dyrektora. Zmiana lokalnego adresu jest obsługiwana tylko przez `kla-local-url`,
+który aktualizuje konfigurację i przebudowuje aplikację.
+
+**Dlaczego:** testowanie na telefonie w tej samej sieci ma być dostępne dla
+osoby nietechnicznej, ale HTTP i dynamiczne IP nie spełniają wymagań dla
+prawdziwych danych dzieci, dokumentów ani produkcyjnej sesji. Rozdzielenie
+profili usuwa ryzyko przypadkowego zamienienia wygodnego demo w serwer szkoły.

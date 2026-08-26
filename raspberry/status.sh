@@ -2,9 +2,12 @@
 set -Eeuo pipefail
 
 source /etc/kla/vault.conf
+DEPLOYMENT_MODE="$(awk -F= '$1 == "KLA_DEPLOYMENT_MODE" {print $2}' /etc/kla/edziennik.env 2>/dev/null || true)"
 echo "KLA — stan urządzenia"
 if mountpoint -q "$KLA_VAULT_MOUNT"; then echo "[OK] szyfrowany sejf jest otwarty"; else echo "[STOP] sejf zamknięty — uruchom: sudo kla-unlock"; fi
-for SERVICE in postgresql clamav-daemon edziennik-kla nginx cloudflared; do
+SERVICES=(postgresql clamav-daemon edziennik-kla nginx)
+[[ "$DEPLOYMENT_MODE" == "production" ]] && SERVICES+=(cloudflared)
+for SERVICE in "${SERVICES[@]}"; do
   if systemctl is-active --quiet "$SERVICE"; then echo "[OK] $SERVICE"; else echo "[STOP] $SERVICE"; fi
 done
 if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then echo "[OK] aplikacja odpowiada"; else echo "[STOP] aplikacja nie odpowiada"; fi
