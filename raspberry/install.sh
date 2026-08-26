@@ -74,6 +74,7 @@ apt-get install -y --no-install-recommends age ca-certificates clamav clamav-dae
 if [[ "$MODE" != "local-demo" ]]; then
   install -d -m 0755 /usr/share/keyrings
   curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
+  chmod 0644 /usr/share/keyrings/cloudflare-main.gpg
   echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
   apt-get update
   apt-get install -y --no-install-recommends cloudflared
