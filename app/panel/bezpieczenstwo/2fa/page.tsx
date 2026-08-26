@@ -12,6 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TwoFactorSetupPage() {
   const session = await requireActiveSession("/panel/bezpieczenstwo/2fa");
+  const accessAction =
+    session.user.role === "SYSTEM_OWNER"
+      ? "view:owner-dashboard"
+      : "view:director-dashboard";
 
   if (
     !isMfaRequiredForRole(session.user.role) ||
@@ -21,7 +25,7 @@ export default async function TwoFactorSetupPage() {
         role: session.user.role,
         schoolId: session.user.schoolId,
       },
-      "view:director-dashboard",
+      accessAction,
       { schoolId: session.user.schoolId },
     )
   ) {

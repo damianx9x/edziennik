@@ -5,6 +5,7 @@ const projectDir = process.cwd();
 const standaloneDir = path.join(projectDir, ".next", "standalone");
 
 await mkdir(path.join(standaloneDir, ".next"), { recursive: true });
+await mkdir(path.join(standaloneDir, ".next", "cache"), { recursive: true });
 await cp(
   path.join(projectDir, ".next", "static"),
   path.join(standaloneDir, ".next", "static"),

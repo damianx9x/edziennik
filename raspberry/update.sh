@@ -94,6 +94,8 @@ rm -rf -- "$PREVIOUS" "$FAILED"
 mv "$CURRENT" "$PREVIOUS"
 mv "$NEW" "$CURRENT"
 switched=1
+install -m 644 "$CURRENT/raspberry/systemd/edziennik-kla.service" /etc/systemd/system/edziennik-kla.service
+systemctl daemon-reload
 systemctl start edziennik-kla
 
 for attempt in {1..45}; do

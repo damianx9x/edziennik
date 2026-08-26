@@ -27,6 +27,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/srv/kla-vault/private-files
+ReadWritePaths=/opt/kla/current/.next/standalone/.next/cache
 UMask=0077
 ProtectKernelTunables=true
 ProtectKernelModules=true
