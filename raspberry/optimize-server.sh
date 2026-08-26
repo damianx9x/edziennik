@@ -88,6 +88,7 @@ printf '%s\n' \
   'log_connections = off' \
   'log_disconnections = off' \
   > "$PG_CONF_DIR/90-kla.conf"
+chmod 0644 "$PG_CONF_DIR/90-kla.conf"
 
 sed -i \
   -e 's/^#\?MaxThreads .*/MaxThreads 2/' \

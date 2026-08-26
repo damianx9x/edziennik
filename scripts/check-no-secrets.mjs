@@ -1,14 +1,45 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
-import { extname } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { extname, join } from "node:path";
 
-const fileList = execFileSync(
-  "git",
-  ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-  { encoding: "utf8" },
-)
-  .split("\0")
-  .filter(Boolean);
+function packageFileList() {
+  const excludedDirectories = new Set([
+    ".data",
+    ".git",
+    ".next",
+    "app/generated",
+    "node_modules",
+    "outputs",
+  ]);
+  const files = [];
+
+  function walk(directory = ".") {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = directory === "." ? entry.name : join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (!excludedDirectories.has(path)) walk(path);
+      } else if (entry.isFile()) {
+        files.push(path);
+      }
+    }
+  }
+
+  walk();
+  return files;
+}
+
+let fileList;
+try {
+  fileList = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+  )
+    .split("\0")
+    .filter(Boolean);
+} catch {
+  fileList = packageFileList();
+}
 
 const textExtensions = new Set([
   ".css",

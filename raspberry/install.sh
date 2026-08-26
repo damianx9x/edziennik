@@ -68,6 +68,9 @@ else
   read -r -p "Wgrać wyłącznie fikcyjne dane testowe? [t/N]: " INSTALL_DEMO
 fi
 
+if [[ "$MODE" != "local-demo" && -f /usr/share/keyrings/cloudflare-main.gpg ]]; then
+  chmod 0644 /usr/share/keyrings/cloudflare-main.gpg
+fi
 apt-get update
 apt-get full-upgrade -y
 apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
@@ -194,7 +197,7 @@ systemctl enable --now clamav-freshclam clamav-daemon
 for _ in {1..30}; do [[ -S /run/clamav/clamd.ctl ]] && break; sleep 2; done
 [[ -S /run/clamav/clamd.ctl ]] || { echo "ClamAV nie uruchomił skanera. Instalacja zatrzymana."; exit 1; }
 
-sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && npm ci && npm run check && npm run db:migrate:deploy && npm run build"
+sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && npm ci && npm run db:generate && npm run check && npm run db:migrate:deploy && npm run build"
 if [[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   DEMO_PASSWORD="${DEMO_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=')}"
   sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_DEMO_PASSWORD='$DEMO_PASSWORD' npm run db:seed:demo"
@@ -231,6 +234,7 @@ if [[ "$MODE" == "local-demo" ]]; then
 else
   sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|127.0.0.1:8080|g' -e 's|__FORWARDED_PROTO__|https|g' \
     "$SOURCE_DIR/raspberry/nginx/kla.conf" > /etc/nginx/sites-available/kla
+  sed -i '/listen 127\.0\.0\.1:8080 default_server;/a\  listen 127.0.0.1:3100;' /etc/nginx/sites-available/kla
 fi
 ln -sfn /etc/nginx/sites-available/kla /etc/nginx/sites-enabled/kla
 rm -f /etc/nginx/sites-enabled/default

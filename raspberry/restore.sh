@@ -18,6 +18,12 @@ mountpoint -q "$VAULT" || { echo "Najpierw: sudo kla-unlock"; exit 1; }
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 age -d -i "$VAULT/secrets/backup-age.key" "$BACKUP" | tar -C "$TEMP_DIR" -xf -
+# Katalog tymczasowy pozostaje prywatny dla roota. PostgreSQL dostaje tylko
+# prawo przejścia przez katalog i odczytu samego zrzutu bazy.
+chgrp postgres "$TEMP_DIR/database.dump"
+chgrp postgres "$TEMP_DIR"
+chmod 710 "$TEMP_DIR"
+chmod 640 "$TEMP_DIR/database.dump"
 pg_restore --list "$TEMP_DIR/database.dump" >/dev/null
 tar -tzf "$TEMP_DIR/private-files.tar.gz" >/dev/null
 

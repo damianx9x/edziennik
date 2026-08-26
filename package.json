@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build --webpack",
+    "build": "prisma generate && next build --webpack && node scripts/prepare-production.mjs",
     "build:preview": "./scripts/build-static-preview.sh",
     "start": "node scripts/start-production.mjs",
     "lint": "eslint .",
@@ -27,7 +27,7 @@
     "db:demo:reset:rich": "node --env-file=.env scripts/reset-demo-database.mjs --rich --confirm=RESET_SYNTHETIC_DEMO",
     "export:demo-school": "tsx scripts/export-demo-school.ts",
     "security:rotate-demo-password": "node --env-file=.env scripts/rotate-demo-password.mjs",
-    "account:owner": "node --env-file=.env scripts/setup-system-owner.mjs",
+    "account:owner": "node --env-file-if-exists=.env scripts/setup-system-owner.mjs",
     "pilot:mfa:sync": "node --env-file=.env scripts/apply-director-mfa-policy.mjs",
     "host:mac:start": "./scripts/mac-test-host-start.sh",
     "host:mac:status": "./scripts/mac-test-host-status.sh",

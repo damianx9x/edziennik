@@ -13,7 +13,7 @@ RECIPIENT="$(sed -n 's/^Public key: //p' "$VAULT/secrets/backup-recipient.txt")"
 [[ -n "$RECIPIENT" ]] || { echo "Brak klucza szyfrowania kopii."; exit 1; }
 install -d -m 700 "$BACKUP_DIR"
 
-sudo -u postgres pg_dump --format=custom --dbname=kla_edziennik --file="$TEMP_DIR/database.dump"
+sudo -u postgres pg_dump --format=custom --dbname=kla_edziennik > "$TEMP_DIR/database.dump"
 tar -C "$VAULT" -czf "$TEMP_DIR/private-files.tar.gz" private-files
 cat > "$TEMP_DIR/manifest.txt" <<EOF
 created_at=$STAMP
