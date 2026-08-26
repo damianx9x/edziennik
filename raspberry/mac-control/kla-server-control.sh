@@ -16,6 +16,65 @@ if [[ -f "$CONFIG_FILE" ]]; then
   source "$CONFIG_FILE"
 fi
 
+build_connection_options() {
+  SSH_OPTIONS=(
+    -i "$KLA_KEY"
+    -p "$KLA_PORT"
+    -o BatchMode=yes
+    -o ConnectTimeout=5
+    -o ServerAliveInterval=15
+    -o ServerAliveCountMax=3
+    -o StrictHostKeyChecking=accept-new
+  )
+  SCP_OPTIONS=(
+    -i "$KLA_KEY"
+    -P "$KLA_PORT"
+    -o BatchMode=yes
+    -o ConnectTimeout=5
+    -o ServerAliveInterval=15
+    -o ServerAliveCountMax=3
+    -o StrictHostKeyChecking=accept-new
+  )
+}
+
+is_kla_host() {
+  local candidate="$1"
+  ssh "${SSH_OPTIONS[@]}" "$KLA_USER@$candidate" '[[ "$(hostname)" == "kingslanguageacademy" ]]' >/dev/null 2>&1
+}
+
+discover_host() {
+  local configured_host="$KLA_HOST" interface local_ip subnet candidate
+  build_connection_options
+  if is_kla_host "$configured_host"; then
+    return 0
+  fi
+  if [[ "$configured_host" != "kingslanguageacademy.local" ]] && is_kla_host "kingslanguageacademy.local"; then
+    KLA_HOST="kingslanguageacademy.local"
+    build_connection_options
+    return 0
+  fi
+
+  interface="$(route -n get default 2>/dev/null | awk '/interface:/{print $2; exit}')"
+  local_ip="$(ipconfig getifaddr "$interface" 2>/dev/null || true)"
+  [[ "$local_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || {
+    echo "Nie mogę ustalić sieci lokalnej. Użyj w panelu: Ustaw połączenie."
+    exit 3
+  }
+  subnet="${local_ip%.*}"
+  echo "Szukam Raspberry w sieci $subnet.0/24…"
+  for candidate in $(jot 254 1 | xargs -P 32 -I % sh -c "/usr/bin/nc -z -G 1 '$subnet.%' '$KLA_PORT' >/dev/null 2>&1 && echo '$subnet.%'"); do
+    if is_kla_host "$candidate"; then
+      KLA_HOST="$candidate"
+      build_connection_options
+      save_config "$KLA_HOST" "$KLA_PORT" "$KLA_USER" "$KLA_KEY" >/dev/null
+      echo "Raspberry odnalezione pod adresem $KLA_HOST. Zapisałem nowy adres."
+      return 0
+    fi
+  done
+  echo "Nie znaleziono serwera KLA w tej sieci. Sprawdź zasilanie i kabel, potem spróbuj ponownie."
+  exit 3
+}
+
 save_config() {
   local host="$1" port="$2" user="$3" key="$4"
   [[ "$host" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "Niepoprawna nazwa hosta."; exit 2; }
@@ -28,27 +87,11 @@ save_config() {
   echo "Ustawienia zapisane."
 }
 
-SSH_OPTIONS=(
-  -i "$KLA_KEY"
-  -p "$KLA_PORT"
-  -o BatchMode=yes
-  -o ConnectTimeout=8
-  -o ServerAliveInterval=15
-  -o ServerAliveCountMax=3
-  -o StrictHostKeyChecking=accept-new
-)
-SCP_OPTIONS=(
-  -i "$KLA_KEY"
-  -P "$KLA_PORT"
-  -o BatchMode=yes
-  -o ConnectTimeout=8
-  -o ServerAliveInterval=15
-  -o ServerAliveCountMax=3
-  -o StrictHostKeyChecking=accept-new
-)
+build_connection_options
 
 remote() {
   [[ -f "$KLA_KEY" ]] || { echo "Brak klucza SSH: $KLA_KEY"; exit 2; }
+  discover_host
   ssh "${SSH_OPTIONS[@]}" "$KLA_USER@$KLA_HOST" "$@"
 }
 
@@ -64,9 +107,11 @@ case "$ACTION" in
     remote "sudo /usr/local/sbin/kla-control $ACTION"
     ;;
   unlock)
+    discover_host
     exec ssh -t "${SSH_OPTIONS[@]}" "$KLA_USER@$KLA_HOST" "sudo kla-unlock"
     ;;
   local-preview)
+    discover_host
     pkill -f "ssh.*127.0.0.1:3100.*$KLA_HOST" 2>/dev/null || true
     ssh -fN "${SSH_OPTIONS[@]}" -L 3100:127.0.0.1:3100 "$KLA_USER@$KLA_HOST"
     open "http://127.0.0.1:3100"
@@ -76,6 +121,7 @@ case "$ACTION" in
     open "https://demo.kingslanguageacademy.pl"
     ;;
   email-config)
+    discover_host
     echo "Wybierz dostawcę: 1 = zwykły SMTP, 2 = Resend"
     read -r -p "Wybór: " PROVIDER_CHOICE
     read -r -p "Nadawca (np. eDziennik King's <noreply@domena.pl>): " EMAIL_FROM_VALUE
@@ -118,6 +164,7 @@ case "$ACTION" in
     echo "Kod pierwszego uruchomienia skopiowano do schowka."
     ;;
   update)
+    discover_host
     PACKAGE="${2:-}"
     [[ -f "$PACKAGE" ]] || { echo "Wybierz istniejącą paczkę .tar.gz."; exit 2; }
     [[ "$PACKAGE" == *.tar.gz ]] || { echo "Aktualizacja wymaga paczki .tar.gz."; exit 2; }

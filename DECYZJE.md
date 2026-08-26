@@ -1024,3 +1024,19 @@ lub Resend jest wyraźnie pokazywany i blokuje funkcje zależne od poczty, ale n
 blokuje uruchomienia serwera. Jeśli dostawca jest skonfigurowany, zachowujemy
 standardową aktywację linkiem e-mail. Decyzja nie dotyczy kont tworzonych z
 zaproszeń.
+
+## ADR-080 — Wielowarstwowa samonaprawa Raspberry bez przechowywania klucza LUKS
+
+**Data:** 2026-08-26
+**Status:** przyjęta
+
+Każda usługa serwera ma własną politykę restartu systemd. Niezależny test co
+minutę sprawdza PostgreSQL, aplikację wraz z bazą, nginx, ClamAV oraz gotowość
+Cloudflare Tunnel i wykonuje najwyżej jeden restart niesprawnego elementu.
+Sprzętowy watchdog Raspberry restartuje całe urządzenie, gdy system przestanie
+odpowiadać. Panel na Macu odnajduje serwer ponownie po zmianie lokalnego IP.
+
+Klucz odblokowujący LUKS nie jest przechowywany na tym samym Raspberry. Po
+pełnym zaniku zasilania właściciel ręcznie odblokowuje sejf z panelu na Macu.
+Automatyczne odblokowanie kluczem zapisanym obok zaszyfrowanych danych
+zniwelowałoby ochronę dysku w przypadku kradzieży urządzenia.

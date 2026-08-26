@@ -1,9 +1,10 @@
 [Unit]
-Description=Kontrola KLA co 2 minuty
+Description=Kontrola i samonaprawa KLA co minutę
 
 [Timer]
-OnBootSec=3min
-OnUnitActiveSec=2min
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=5s
 Persistent=true
 
 [Install]
