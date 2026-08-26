@@ -197,7 +197,7 @@ systemctl enable --now clamav-freshclam clamav-daemon
 for _ in {1..30}; do [[ -S /run/clamav/clamd.ctl ]] && break; sleep 2; done
 [[ -S /run/clamav/clamd.ctl ]] || { echo "ClamAV nie uruchomił skanera. Instalacja zatrzymana."; exit 1; }
 
-sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && npm ci && npm run db:generate && npm run check && npm run db:migrate:deploy && npm run build"
+sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && npm ci --include=dev && npm run db:generate && npm run check && npm run db:migrate:deploy && npm run build"
 if [[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   DEMO_PASSWORD="${DEMO_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=')}"
   sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_DEMO_PASSWORD='$DEMO_PASSWORD' npm run db:seed:demo"

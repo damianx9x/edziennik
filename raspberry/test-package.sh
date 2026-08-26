@@ -56,6 +56,8 @@ grep -q 'MemoryMax=2700M' "$ROOT/raspberry/systemd/edziennik-kla.service"
 grep -q 'noatime,nodiratime' "$ROOT/raspberry/unlock.sh"
 grep -q 'NODE_OPTIONS=--max-old-space-size=2048' "$ROOT/raspberry/install.sh"
 grep -q 'npm run db:generate' "$ROOT/raspberry/install.sh"
+grep -q 'npm ci --include=dev' "$ROOT/raspberry/install.sh"
+grep -q 'npm ci --include=dev' "$ROOT/raspberry/update.sh"
 grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."
