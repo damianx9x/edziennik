@@ -67,7 +67,7 @@ grep -q 'npm run db:generate' "$ROOT/raspberry/install.sh"
 grep -q 'npm run db:generate' "$ROOT/raspberry/update.sh"
 grep -q 'systemctl daemon-reload' "$ROOT/raspberry/update.sh"
 grep -q 'npm ci --include=dev' "$ROOT/raspberry/install.sh"
-grep -q 'npm ci --include=dev' "$ROOT/raspberry/update.sh"
+grep -q 'npm install --no-save --package-lock=false' "$ROOT/raspberry/update.sh"
 grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'NOPASSWD: /usr/local/sbin/kla-control' "$ROOT/raspberry/install.sh"
 

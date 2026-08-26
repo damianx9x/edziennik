@@ -85,7 +85,7 @@ chown -R kla:kla "$NEW"
 
 echo "Sprawdzam i buduję nową wersję bez wyłączania aplikacji..."
 sudo -u kla bash -lc \
-  "cd '$NEW' && set -a && source /etc/kla/edziennik.env && set +a && env -u NODE_ENV -u NPM_CONFIG_PRODUCTION -u npm_config_production -u NPM_CONFIG_OMIT -u npm_config_omit npm ci --include=dev && npm run db:generate && npm run check && npm run build"
+  "cd '$NEW' && set -a && source /etc/kla/edziennik.env && set +a && npm ci && npm install --no-save --package-lock=false \$(node -e 'const p=require(\"./package.json\"); process.stdout.write(Object.entries(p.devDependencies ?? {}).map(([name, version]) => name + \"@\" + version).join(\" \"))') && npm run db:generate && npm run check && npm run build"
 
 echo "Tworzę szyfrowaną kopię przed migracją..."
 /usr/local/sbin/edziennik-kla-backup
