@@ -23,7 +23,7 @@ printf '%s\n' "$COMMIT" > "$STAGE/KLA_RELEASE_COMMIT"
     | sort -z \
     | xargs -0 sha256sum > KLA_RELEASE_MANIFEST.sha256
 )
-tar -C "$TEMP_DIR" -czf "$OUTPUT_DIR/edziennik-kla-raspberry-source.tar.gz" edziennik-kla
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$TEMP_DIR" -czf "$OUTPUT_DIR/edziennik-kla-raspberry-source.tar.gz" edziennik-kla
 shasum -a 256 "$OUTPUT_DIR/edziennik-kla-raspberry-source.tar.gz" \
   > "$OUTPUT_DIR/edziennik-kla-raspberry-source.tar.gz.sha256"
 echo "Gotowy pakiet Raspberry: $OUTPUT_DIR/edziennik-kla-raspberry-source.tar.gz"
