@@ -1,4 +1,7 @@
 import { z } from "zod";
+import nodemailer from "nodemailer";
+
+import { resolveEmailProvider } from "./provider-config";
 
 const authEmailSchema = z.object({
   to: z.email(),
@@ -33,10 +36,11 @@ export async function sendAuthEmail(
   message: AuthEmail,
 ): Promise<"sent" | "skipped"> {
   const parsed = authEmailSchema.parse(message);
+  const provider = resolveEmailProvider();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
 
-  if (!apiKey || !from) {
+  if (!provider || !from) {
     console.info(
       JSON.stringify({
         event: "auth.email.skipped",
@@ -45,6 +49,37 @@ export async function sendAuthEmail(
       }),
     );
     return "skipped";
+  }
+
+  if (provider === "smtp") {
+    const port = Number(process.env.SMTP_PORT);
+    if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+      throw new Error("Niepoprawny port SMTP.");
+    }
+    const user = process.env.SMTP_USER;
+    const password = process.env.SMTP_PASSWORD;
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: port === 465,
+      requireTLS: port !== 465,
+      auth: user && password ? { user, pass: password } : undefined,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+      tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
+    });
+    try {
+      await transport.sendMail({
+        from,
+        to: parsed.to,
+        subject: parsed.subject,
+        text: parsed.text,
+      });
+    } finally {
+      transport.close();
+    }
+    return "sent";
   }
 
   const response = await fetch("https://api.resend.com/emails", {

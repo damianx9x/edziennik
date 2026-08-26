@@ -4,8 +4,8 @@ Pakiet ma dwa wyraźnie rozdzielone warianty:
 
 - **lokalne demo** — proste testy po adresie `http://IP_RASPBERRY:8080` i
   wyłącznie bogate, syntetyczne dane demonstracyjne;
-- **publiczne demo** — `https://demo.kingslanguageacademy.pl`, syntetyczna
-  baza na osobnej partycji `KLA_DATA` i konto techniczne z wymuszonym MFA;
+- **publiczny pilot** — `https://demo.kingslanguageacademy.pl`, pusta baza na
+  osobnej partycji `KLA_DATA` i bezpieczny kreator pierwszego uruchomienia;
 - **produkcja** — publiczny HTTPS przez Cloudflare Tunnel, 2FA dyrektora i
   prawdziwe dane dopiero po zamknięciu odbioru/RODO.
 
@@ -27,6 +27,9 @@ bazę, dokumenty, hasło bazy ani sekret sesji.
 - dla produkcji: domenę dodaną do Cloudflare oraz utworzony tunel z publicznym
   adresem HTTPS; w routingu tunelu ustaw usługę `http://localhost:8080` i
   skopiuj token instalacyjny. Token traktuj jak hasło.
+- dane zwykłego serwera SMTP (host, port 465/587, login, hasło i nadawca) albo
+  opcjonalnie konto Resend. Możesz ustawić je później z panelu na Macu. Bez
+  działającego e-maila kreator celowo nie utworzy pierwszego konta.
 
 ## 1. System z Raspberry Pi Imager
 
@@ -63,7 +66,7 @@ sudo kla-local-url
 Skrypt poda nowy adres i przebuduje aplikację pod niego. Docelowo ustaw w
 routerze rezerwację DHCP dla Raspberry Pi, aby adres lokalny był stały.
 
-## 3. Instalacja produkcyjna
+## 3. Publiczny pilot i pierwsze konto
 
 Publiczne demo korzystające z istniejącego dysku uruchamiaj dopiero po
 utworzeniu na Macu osobnej partycji `KLA_DATA` (minimum 40 GiB):
@@ -71,6 +74,23 @@ utworzeniu na Macu osobnej partycji `KLA_DATA` (minimum 40 GiB):
 ```bash
 sudo ./raspberry/install-public-demo.sh
 ```
+
+Instalator poprosi o token Cloudflare i pozwoli wybrać SMTP, Resend albo
+konfigurację poczty później. Na końcu pokaże jednorazowy kod pierwszego uruchomienia. Zapisz go w
+menedżerze haseł — na Raspberry pozostaje wyłącznie jego hash.
+
+1. Otwórz `https://demo.kingslanguageacademy.pl/pierwsze-uruchomienie`.
+2. Wpisz kod instalacyjny, nazwę szkoły, imię i nazwisko, własny e-mail oraz
+   nowe hasło.
+3. Kliknij link aktywacyjny z poczty i zaloguj się swoim adresem.
+4. Zeskanuj kod MFA aplikacją na telefonie i zapisz kody awaryjne poza Pi.
+5. W centrum systemu wybierz **Zaproś pierwszą osobę**. Role dyrektora,
+   wykładowcy, rodzica i ucznia powstają wyłącznie przez zaproszenia.
+
+Baza przed tym procesem nie zawiera szkoły, kont, grup ani kartotek. Nie ma
+publicznej rejestracji i nie istnieje fabryczne hasło administratora.
+
+## 4. Instalacja produkcyjna
 
 Skrypt odmawia użycia całego dysku, partycji systemowej i partycji bez etykiety
 `KLA_DATA`. Formatuje wyłącznie wskazaną nową partycję po dokładnym
@@ -98,7 +118,7 @@ Podczas instalacji:
 6. `cloudflared` zostanie usługą systemową; nginx będzie słuchał wyłącznie na
    `127.0.0.1:8080`, dlatego nieszyfrowany origin nie jest dostępny z sieci LAN.
 
-## 4. Po restarcie
+## 5. Po restarcie
 
 Raspberry Pi 4B nie ma wbudowanego TPM. Klucz nie jest więc zapisywany obok
 danych, bo zniweczyłoby to szyfrowanie. Po pełnym restarcie połącz się przez SSH
@@ -117,7 +137,7 @@ sudo kla-status
 Pełny automatyczny start bez hasła wymaga sprzętowego modułu TPM 2.0 lub
 fizycznego klucza USB. Nie zapisujemy klucza na karcie microSD.
 
-## 5. Backup SFTP
+## 6. Backup SFTP
 
 Uruchom:
 
@@ -141,7 +161,7 @@ bazy kontrolnej, po czym ją usuwa. Wynik musi zawierać `TEST ODTWORZENIA OK`.
 System powtarza go automatycznie raz w miesiącu. Uruchom go także po zmianie
 miejsca backupu. Datę ostatniego sukcesu pokazuje `kla-status`.
 
-## 6. Retencja
+## 7. Retencja
 
 Plik `/etc/kla/retention.env` zawiera zatwierdzone okresy. `0` oznacza brak
 automatycznego kasowania. Importy mają domyślnie 30 dni po archiwizacji.

@@ -1,3 +1,5 @@
+import { resolveEmailProvider } from "../identity/email/provider-config";
+
 export type DiagnosticStatus = "ok" | "warning" | "error";
 
 export type DiagnosticCheck = {
@@ -17,9 +19,7 @@ export function buildConfigurationChecks(
   const isLocalUrl =
     appUrl.startsWith("http://localhost") ||
     appUrl.startsWith("http://127.0.0.1");
-  const emailReady = Boolean(
-    environment.RESEND_API_KEY && environment.EMAIL_FROM,
-  );
+  const emailProvider = resolveEmailProvider(environment);
   const storageProvider = environment.FILE_STORAGE_PROVIDER ?? "local";
   const storageReady =
     storageProvider === "local" ||
@@ -27,6 +27,9 @@ export function buildConfigurationChecks(
   const smsProvider = environment.SMS_PROVIDER ?? "disabled";
   const directorMfaRequired =
     environment.KLA_REQUIRE_DIRECTOR_MFA !== "0";
+  const monitoringProvider = environment.KLA_MONITORING_PROVIDER;
+  const backupProvider = environment.KLA_BACKUP_PROVIDER;
+  const malwareScanRequired = environment.KLA_MALWARE_SCAN_MODE === "required";
 
   return [
     {
@@ -58,10 +61,10 @@ export function buildConfigurationChecks(
     {
       key: "email",
       label: "Wysyłka e-mail",
-      detail: emailReady
-        ? "Dostawca i adres nadawcy są skonfigurowane."
-        : "Tryb demonstracyjny — link trzeba kopiować ręcznie.",
-      status: emailReady ? "ok" : "warning",
+      detail: emailProvider
+        ? `Skonfigurowany dostawca: ${emailProvider === "smtp" ? "SMTP" : "Resend"}.`
+        : "Wybierz SMTP albo Resend przed utworzeniem pierwszego konta.",
+      status: emailProvider ? "ok" : "warning",
     },
     {
       key: "storage",
@@ -75,9 +78,31 @@ export function buildConfigurationChecks(
       key: "monitoring",
       label: "Monitoring błędów",
       detail: environment.SENTRY_DSN
-        ? "Zewnętrzny monitoring jest podłączony."
-        : "Sentry nie jest jeszcze podłączone.",
-      status: environment.SENTRY_DSN ? "ok" : "warning",
+        ? "Zewnętrzny monitoring Sentry jest podłączony."
+        : monitoringProvider === "systemd"
+          ? "Lokalny watchdog i automatyczne ponowne uruchamianie są aktywne."
+          : "Nie skonfigurowano watchdoga ani Sentry.",
+      status:
+        environment.SENTRY_DSN || monitoringProvider === "systemd"
+          ? "ok"
+          : "warning",
+    },
+    {
+      key: "backup",
+      label: "Szyfrowany backup",
+      detail:
+        backupProvider === "age-local"
+          ? "Codzienna kopia age i cykliczny test odtworzenia są aktywne."
+          : "Miejsce i harmonogram kopii wymagają konfiguracji.",
+      status: backupProvider === "age-local" ? "ok" : "warning",
+    },
+    {
+      key: "malware-scan",
+      label: "Kontrola przesyłanych plików",
+      detail: malwareScanRequired
+        ? "Każdy prywatny plik wymaga skanu ClamAV."
+        : "Skanowanie antywirusowe nie jest wymagane przez konfigurację.",
+      status: malwareScanRequired ? "ok" : "error",
     },
     {
       key: "sms",

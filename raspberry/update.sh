@@ -39,6 +39,14 @@ EXPECTED_COMMIT="$(tr -d '\r\n' < "$SOURCE_DIR/KLA_RELEASE_COMMIT")"
 [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Nieprawidłowy identyfikator wydania."; exit 1; }
 [[ -f /etc/kla/edziennik.env ]] || { echo "Brak prywatnej konfiguracji aplikacji."; exit 1; }
 
+if ! dpkg-query -W -f='${Status}' avahi-daemon 2>/dev/null | grep -q 'install ok installed'; then
+  apt-get update
+  apt-get install -y --no-install-recommends avahi-daemon
+fi
+hostnamectl set-hostname kingslanguageacademy
+systemctl enable --now avahi-daemon
+if command -v ufw >/dev/null; then ufw allow 5353/udp >/dev/null; fi
+
 cleanup() {
   rm -rf -- "$NEW"
 }
@@ -95,6 +103,20 @@ mv "$CURRENT" "$PREVIOUS"
 mv "$NEW" "$CURRENT"
 switched=1
 install -m 644 "$CURRENT/raspberry/systemd/edziennik-kla.service" /etc/systemd/system/edziennik-kla.service
+if [[ ! -f /etc/kla/control-user && -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+  printf '%s\n' "$SUDO_USER" > /etc/kla/control-user
+  chmod 600 /etc/kla/control-user
+fi
+if [[ -f /etc/kla/control-user ]]; then
+  CONTROL_USER="$(cat /etc/kla/control-user)"
+  [[ "$CONTROL_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]] || { echo "Niepoprawny użytkownik panelu sterowania."; false; }
+  install -m 755 "$CURRENT/raspberry/control.sh" /usr/local/sbin/kla-control
+  printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
+  chmod 440 /etc/sudoers.d/kla-control
+  visudo -cf /etc/sudoers.d/kla-control >/dev/null
+  CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
+  install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" /srv/kla-vault/control-incoming
+fi
 systemctl daemon-reload
 systemctl start edziennik-kla
 

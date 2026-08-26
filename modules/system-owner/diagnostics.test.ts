@@ -11,6 +11,7 @@ describe("system owner diagnostics", () => {
       BETTER_AUTH_SECRET: "short",
       BETTER_AUTH_URL: "http://example.com",
       FILE_STORAGE_PROVIDER: "s3",
+      KLA_MALWARE_SCAN_MODE: "required",
     });
 
     expect(checks.find((check) => check.key === "auth-secret")?.status).toBe(

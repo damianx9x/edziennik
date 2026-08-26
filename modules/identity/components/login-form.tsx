@@ -39,11 +39,19 @@ function getErrorMessage(code: string | undefined, status: number): string {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const activationConfirmed = searchParams.get("aktywacja") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    activationConfirmed
+      ? "Adres e-mail został potwierdzony. Zaloguj się, aby skonfigurować MFA."
+      : "",
+  );
+  const [messageTone, setMessageTone] = useState<"error" | "success">(
+    activationConfirmed ? "success" : "error",
+  );
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
@@ -68,6 +76,7 @@ export function LoginForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setMessageTone("error");
     setIsPending(true);
 
     try {
@@ -217,7 +226,10 @@ export function LoginForm() {
             </div>
 
             {message ? (
-              <div className="auth-message auth-message-error" role="alert">
+              <div
+                className={`auth-message auth-message-${messageTone}`}
+                role="alert"
+              >
                 {message}
               </div>
             ) : null}

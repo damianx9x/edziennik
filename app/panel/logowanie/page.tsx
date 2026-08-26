@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { LoginPreview } from "./login-preview";
 import { LoginForm } from "@/modules/identity/components/login-form";
+import { db } from "@/lib/server/db";
 
 export const metadata: Metadata = { title: "Logowanie" };
 
-export default function LoginPreviewPage() {
+export default async function LoginPreviewPage() {
   const isStaticPreview = process.env.KLA_STATIC_PREVIEW === "1";
+
+  if (!isStaticPreview) {
+    const ownerExists = await db.user.count({ where: { role: "SYSTEM_OWNER" } });
+    if (ownerExists === 0) redirect("/pierwsze-uruchomienie");
+  }
 
   return (
     <Suspense fallback={<main className="panel-shell" />}>

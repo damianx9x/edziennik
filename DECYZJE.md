@@ -995,3 +995,19 @@ taktowanie i chłodzenie producenta.
 podkręcania, wyczerpania pamięci albo karty systemowej przez logi. Parametry
 można ponownie bezpiecznie zastosować poleceniem `kla-optimize-server` po
 zmianie pamięci lub wersji PostgreSQL.
+
+## ADR-078 — pierwsze konto wyłącznie przez zamknięty bootstrap
+
+**Data:** 2026-08-26
+**Decyzja:** czysta instalacja nie zawiera szkoły, kont ani danych startowych.
+Jedyny publiczny kreator pierwszego uruchomienia wymaga losowego kodu, którego
+serwer przechowuje wyłącznie jako SHA-256. Założenie szkoły, konta właściciela i
+poświadczenia odbywa się atomowo pod blokadą bazy. Konto wymaga potwierdzenia
+rzeczywistego e-maila, a przed dostępem do panelu obowiązkowo konfiguruje TOTP i
+kody awaryjne. Kreator zamyka się po aktywacji. Pozostałe role powstają tylko
+przez zaproszenia; `SYSTEM_OWNER` nigdy nie jest rolą zapraszalną.
+
+**Dlaczego:** otwarta rejestracja pustej instancji pozwoliłaby pierwszej osobie
+z Internetu przejąć serwer. Fabryczne konto lub hasło byłoby powtarzalnym
+sekretem. Jednorazowy bootstrap zachowuje prosty onboarding, a jednocześnie
+wiąże najwyższe uprawnienia z kontrolowanym adresem i drugim składnikiem.

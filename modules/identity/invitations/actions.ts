@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { isInvitableIdentityRole } from "@/modules/identity/auth/access";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { sendAuthEmail } from "@/modules/identity/email/email-provider";
+import { resolveEmailProvider } from "@/modules/identity/email/provider-config";
 
 import {
   acceptInvitationSchema,
@@ -612,9 +613,7 @@ export async function acceptInvitationAction(
   }
 
   if (!emailVerified) {
-    const emailProviderConfigured = Boolean(
-      process.env.RESEND_API_KEY && process.env.EMAIL_FROM,
-    );
+    const emailProviderConfigured = resolveEmailProvider() !== null;
     if (emailProviderConfigured) {
       try {
         await auth.api.sendVerificationEmail({

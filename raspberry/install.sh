@@ -18,12 +18,15 @@ fi
 if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh [--local-demo|--public-demo]"; exit 1; fi
 [[ "$(dpkg --print-architecture)" == "arm64" ]] || { echo "Wymagany jest Raspberry Pi OS 64-bit (arm64)."; exit 1; }
 grep -qi 'Raspberry Pi' /proc/device-tree/model 2>/dev/null || { echo "Ten instalator jest przeznaczony dla Raspberry Pi."; exit 1; }
+hostnamectl set-hostname kingslanguageacademy
 
 APP_ROOT=/opt/kla
 APP_DIR="$APP_ROOT/current"
 ENV_DIR=/etc/kla
 VAULT=/srv/kla-vault
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONTROL_USER="${SUDO_USER:-}"
+[[ -n "$CONTROL_USER" && "$CONTROL_USER" != "root" ]] || { echo "Uruchom instalator przez sudo ze zwykłego konta."; exit 1; }
 
 local_ipv4() {
   ip -o -4 addr show scope global \
@@ -50,11 +53,9 @@ if [[ "$MODE" == "local-demo" ]]; then
   echo "Ten tryb nie nadaje się do prawdziwych danych ani dokumentów."
 elif [[ "$MODE" == "public-demo" ]]; then
   APP_URL="https://demo.kingslanguageacademy.pl"
-  INSTALL_DEMO="t"
-  DEMO_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=')"
-  OWNER_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=')"
+  INSTALL_DEMO="n"
   echo
-  echo "PUBLICZNE DEMO: czysta, fikcyjna baza pod $APP_URL."
+  echo "PUBLICZNY PILOT: pusta baza i kreator pierwszego uruchomienia pod $APP_URL."
   echo "Ta konfiguracja nie jest przeznaczona do prawdziwych danych."
   read -r -s -p "Token istniejącego tunelu Cloudflare dla demo.kingslanguageacademy.pl: " TUNNEL_TOKEN
   echo
@@ -68,12 +69,41 @@ else
   read -r -p "Wgrać wyłącznie fikcyjne dane testowe? [t/N]: " INSTALL_DEMO
 fi
 
+if [[ "$MODE" != "local-demo" && ! "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
+  echo "Poczta może używać dowolnego SMTP albo Resend. Możesz ustawić ją później z panelu na Macu."
+  read -r -p "Poczta: [S]MTP / [R]esend / [P]óźniej: " EMAIL_CHOICE
+  case "${EMAIL_CHOICE,,}" in
+    s)
+      EMAIL_PROVIDER=smtp
+      read -r -p "Host SMTP: " SMTP_HOST
+      read -r -p "Port SMTP (465 albo 587): " SMTP_PORT
+      [[ "$SMTP_PORT" == "465" || "$SMTP_PORT" == "587" ]] || { echo "Dozwolony port: 465 lub 587."; exit 1; }
+      read -r -p "Login SMTP: " SMTP_USER
+      read -r -s -p "Hasło SMTP: " SMTP_PASSWORD
+      echo
+      read -r -p "Nadawca (np. eDziennik King's <noreply@domena.pl>): " EMAIL_FROM
+      ;;
+    r)
+      EMAIL_PROVIDER=resend
+      read -r -s -p "Klucz API Resend: " RESEND_API_KEY
+      echo
+      [[ "$RESEND_API_KEY" == re_* ]] || { echo "Nie rozpoznano klucza API Resend."; exit 1; }
+      read -r -p "Zweryfikowany nadawca: " EMAIL_FROM
+      ;;
+    p|"") EMAIL_PROVIDER="" ;;
+    *) echo "Nieznany wybór."; exit 1 ;;
+  esac
+  [[ -z "${EMAIL_PROVIDER:-}" || "${EMAIL_FROM:-}" == *"@"* ]] || { echo "Niepoprawny adres nadawcy."; exit 1; }
+  BOOTSTRAP_CODE="$(openssl rand -base64 32 | tr -d '/+=')"
+  BOOTSTRAP_TOKEN_HASH="$(printf '%s' "$BOOTSTRAP_CODE" | sha256sum | awk '{print $1}')"
+fi
+
 if [[ "$MODE" != "local-demo" && -f /usr/share/keyrings/cloudflare-main.gpg ]]; then
   chmod 0644 /usr/share/keyrings/cloudflare-main.gpg
 fi
 apt-get update
 apt-get full-upgrade -y
-apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
+apt-get install -y --no-install-recommends age avahi-daemon ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
 if [[ "$MODE" != "local-demo" ]]; then
   install -d -m 0755 /usr/share/keyrings
   curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
@@ -171,15 +201,22 @@ KLA_DEPLOYMENT_MODE=${MODE}
 KLA_REQUIRE_DIRECTOR_MFA=$([[ "$MODE" == "production" ]] && echo 1 || echo 0)
 KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=0
 KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "production" ]] && echo 0 || echo 1)
-KLA_PUBLIC_SCHOOL_SLUG=kings-language-academy-demo
+KLA_PUBLIC_SCHOOL_SLUG=$([[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]] && echo kings-language-academy-demo || echo kings-language-academy)
 KLA_PRIVATE_FILES_DIR=$VAULT/private-files
 FILE_STORAGE_PROVIDER=local
 KLA_MALWARE_SCAN_MODE=required
 KLA_CLAMAV_SOCKET=/run/clamav/clamd.ctl
+KLA_MONITORING_PROVIDER=systemd
+KLA_BACKUP_PROVIDER=age-local
 LOG_LEVEL=info
 MESSAGE_REFRESH_MS=8000
 SMS_PROVIDER=disabled
+KLA_BOOTSTRAP_TOKEN_HASH=${BOOTSTRAP_TOKEN_HASH:-}
 ENV
+printf 'EMAIL_PROVIDER=%q\nRESEND_API_KEY=%q\nEMAIL_FROM=%q\nSMTP_HOST=%q\nSMTP_PORT=%q\nSMTP_USER=%q\nSMTP_PASSWORD=%q\n' \
+  "${EMAIL_PROVIDER:-}" "${RESEND_API_KEY:-}" "${EMAIL_FROM:-}" \
+  "${SMTP_HOST:-}" "${SMTP_PORT:-}" "${SMTP_USER:-}" "${SMTP_PASSWORD:-}" \
+  >> "$VAULT/secrets/edziennik.env"
 chown root:kla "$VAULT/secrets/edziennik.env"
 chmod 640 "$VAULT/secrets/edziennik.env"
 ln -sfn "$VAULT/secrets/edziennik.env" "$ENV_DIR/edziennik.env"
@@ -202,9 +239,6 @@ if [[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   DEMO_PASSWORD="${DEMO_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=')}"
   sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_DEMO_PASSWORD='$DEMO_PASSWORD' npm run db:seed:demo"
 fi
-if [[ "$MODE" == "public-demo" ]]; then
-  sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_SYSTEM_OWNER_PASSWORD='$OWNER_PASSWORD' npm run account:owner"
-fi
 if [[ -d "$APP_DIR" ]]; then rm -rf "$APP_ROOT/previous"; mv "$APP_DIR" "$APP_ROOT/previous"; fi
 mv "$APP_DIR.new" "$APP_DIR"
 chown -R kla:kla "$APP_DIR"
@@ -222,6 +256,14 @@ install -m 755 "$SOURCE_DIR/raspberry/local-url.sh" /usr/local/sbin/kla-local-ur
 install -m 755 "$SOURCE_DIR/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
+install -m 755 "$SOURCE_DIR/raspberry/control.sh" /usr/local/sbin/kla-control
+printf '%s\n' "$CONTROL_USER" > /etc/kla/control-user
+chmod 600 /etc/kla/control-user
+printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
+chmod 440 /etc/sudoers.d/kla-control
+visudo -cf /etc/sudoers.d/kla-control >/dev/null
+CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
+install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" "$VAULT/control-incoming"
 
 if [[ ! -f "$VAULT/secrets/backup-age.key" ]]; then
   age-keygen -o "$VAULT/secrets/backup-age.key" 2> "$VAULT/secrets/backup-recipient.txt"
@@ -252,15 +294,17 @@ ufw default allow outgoing
 ufw allow from 10.0.0.0/8 to any port 22 proto tcp
 ufw allow from 172.16.0.0/12 to any port 22 proto tcp
 ufw allow from 192.168.0.0/16 to any port 22 proto tcp
+ufw allow 5353/udp
 if [[ "$MODE" == "local-demo" ]]; then
   ufw allow from 10.0.0.0/8 to any port 8080 proto tcp
   ufw allow from 172.16.0.0/12 to any port 8080 proto tcp
   ufw allow from 192.168.0.0/16 to any port 8080 proto tcp
 fi
 ufw --force enable
-systemctl enable fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
+systemctl enable avahi-daemon fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 systemctl daemon-reload
 systemctl restart nginx postgresql clamav-daemon
+systemctl restart avahi-daemon
 [[ "$MODE" != "local-demo" ]] && systemctl restart cloudflared
 systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 
@@ -274,10 +318,10 @@ if [[ -n "${DEMO_PASSWORD:-}" ]]; then
   echo "Jednorazowe hasło fikcyjnych kont demo: $DEMO_PASSWORD"
   echo "Zapisz je teraz w menedżerze haseł. Nie jest zapisywane w pakiecie ani repozytorium."
 fi
-if [[ -n "${OWNER_PASSWORD:-}" ]]; then
-  echo "Konto techniczne: bog"
-  echo "Jednorazowe hasło konta Bóg: $OWNER_PASSWORD"
-  echo "Przy pierwszym wejściu system wymusi skonfigurowanie MFA."
+if [[ -n "${BOOTSTRAP_CODE:-}" ]]; then
+  echo "Jednorazowy kod pierwszego uruchomienia: $BOOTSTRAP_CODE"
+  echo "Zapisz go teraz w menedżerze haseł. Serwer przechowuje wyłącznie jego hash."
+  echo "Otwórz: $APP_URL/pierwsze-uruchomienie"
 fi
 if [[ "$MODE" == "local-demo" ]]; then
   echo "Po zmianie adresu IP uruchom: sudo kla-local-url"

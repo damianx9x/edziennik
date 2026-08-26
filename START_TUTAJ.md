@@ -29,11 +29,11 @@ Grafik z Etapu 3:
 albo **Ułóż ręcznie**. Wykładowca, rodzic i uczeń otwierają ten sam adres, ale
 widzą wyłącznie swój plan. Odbiór opisuje `ETAP_3_GRAFIK.md`.
 
-Konto techniczne autora projektu:
-uzupełnij `KLA_SYSTEM_OWNER_PASSWORD` wyłącznie w prywatnym `.env`, wykonaj
-`npm run account:owner`, a następnie zaloguj się loginem `bog`. System wymusi
-MFA i otworzy `/panel/bog`. Pełna procedura oraz odzyskiwanie dostępu są w
-`ETAP_2_INSTRUKCJA.md`.
+Nowa pusta instalacja Raspberry:
+otwórz `/pierwsze-uruchomienie` i użyj jednorazowego kodu wygenerowanego przez
+instalator. Podaj własny e-mail, potwierdź go z wiadomości, zaloguj się i
+skonfiguruj MFA wraz z kodami awaryjnymi. Pozostałe role tworzy się później
+wyłącznie przez zaproszenia. Nie istnieje fabryczne konto ani wspólne hasło.
 
 Edycja strony bez kodowania:
 `panel dyrektora → Narzędzia → Treść publicznej strony`. W tej wersji zmiany

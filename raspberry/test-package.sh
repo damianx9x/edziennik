@@ -9,6 +9,9 @@ required_files=(
   raspberry/install-local-demo.sh
   raspberry/install-public-demo.sh
   raspberry/local-url.sh
+  raspberry/control.sh
+  raspberry/mac-control/kla-server-control.sh
+  raspberry/mac-control/KLA-Serwer.applescript
   raspberry/optimize-server.sh
   raspberry/START_LOCAL_DEMO_PI4B.md
   raspberry/vault-create.sh
@@ -33,7 +36,11 @@ grep -q -- '--local-demo' "$ROOT/raspberry/install.sh"
 grep -q -- '--public-demo' "$ROOT/raspberry/install.sh"
 grep -q 'KLA_DEPLOYMENT_MODE' "$ROOT/raspberry/install.sh"
 grep -q 'KLA_ALLOW_DEMO_RESET' "$ROOT/raspberry/install.sh"
+grep -q 'KLA_BOOTSTRAP_TOKEN_HASH' "$ROOT/raspberry/install.sh"
+grep -q 'RESEND_API_KEY' "$ROOT/raspberry/install.sh"
+grep -q 'Otwórz: \$APP_URL/pierwsze-uruchomienie' "$ROOT/raspberry/install.sh"
 grep -q '192.168.0.0/16' "$ROOT/raspberry/install.sh"
+grep -q 'avahi-daemon' "$ROOT/raspberry/install.sh"
 grep -q '__LISTEN__' "$ROOT/raspberry/nginx/kla.conf"
 grep -q '__FORWARDED_PROTO__' "$ROOT/raspberry/nginx/kla.conf"
 LOCAL_NGINX="$(sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|0.0.0.0:8080|g' -e 's|__FORWARDED_PROTO__|http|g' "$ROOT/raspberry/nginx/kla.conf")"
@@ -62,5 +69,6 @@ grep -q 'systemctl daemon-reload' "$ROOT/raspberry/update.sh"
 grep -q 'npm ci --include=dev' "$ROOT/raspberry/install.sh"
 grep -q 'npm ci --include=dev' "$ROOT/raspberry/update.sh"
 grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'NOPASSWD: /usr/local/sbin/kla-control' "$ROOT/raspberry/install.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."

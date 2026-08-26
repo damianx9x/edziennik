@@ -13,6 +13,7 @@ import {
   Settings2,
   ShieldCheck,
   Users,
+  UserPlus,
   Wrench,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -122,6 +123,23 @@ export default async function SystemOwnerPage() {
         </div>
         <small>{release}</small>
       </section>
+
+      {activeUserCount === 1 ? (
+        <section className="owner-first-step">
+          <span className="owner-status-icon"><UserPlus aria-hidden="true" /></span>
+          <div>
+            <span className="section-kicker">Instalacja jest czysta</span>
+            <h2>Zaproś pierwszą osobę</h2>
+            <p>
+              Wybierz dyrektora, wykładowcę, rodzica albo ucznia. Każde konto
+              otrzyma własne uprawnienia i bezpieczny link startowy.
+            </p>
+          </div>
+          <Link className="button button-primary" href="/panel/szkola/zaproszenia">
+            Otwórz zaproszenia <UserPlus aria-hidden="true" />
+          </Link>
+        </section>
+      ) : null}
 
       <section className="owner-metric-grid" aria-label="Stan systemu">
         <article>
