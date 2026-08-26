@@ -966,3 +966,16 @@ który aktualizuje konfigurację i przebudowuje aplikację.
 osoby nietechnicznej, ale HTTP i dynamiczne IP nie spełniają wymagań dla
 prawdziwych danych dzieci, dokumentów ani produkcyjnej sesji. Rozdzielenie
 profili usuwa ryzyko przypadkowego zamienienia wygodnego demo w serwer szkoły.
+
+## ADR-076 — istniejący dysk APFS nie jest zmniejszany przez Raspberry
+
+**Data:** 2026-08-26
+**Decyzja:** instalator publicznego demo nigdy nie zmienia rozmiaru istniejącej
+partycji APFS ani nie formatuje całego dysku. Miejsce wydziela się wcześniej na
+Macu jako osobną partycję `KLA_DATA` o rozmiarze co najmniej 40 GiB. Raspberry
+odmawia użycia partycji systemowej, zamontowanej albo bez tej etykiety i po
+dokładnym potwierdzeniu szyfruje wyłącznie wskazaną nową partycję LUKS2.
+
+**Dlaczego:** Linux nie zapewnia wspieranego, bezpiecznego zmniejszania APFS.
+Twarde rozdzielenie operacji zachowuje istniejące dane użytkownika i ogranicza
+destrukcyjną operację do jednoznacznie przygotowanej, pustej partycji.

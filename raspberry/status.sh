@@ -6,7 +6,7 @@ DEPLOYMENT_MODE="$(awk -F= '$1 == "KLA_DEPLOYMENT_MODE" {print $2}' /etc/kla/edz
 echo "KLA — stan urządzenia"
 if mountpoint -q "$KLA_VAULT_MOUNT"; then echo "[OK] szyfrowany sejf jest otwarty"; else echo "[STOP] sejf zamknięty — uruchom: sudo kla-unlock"; fi
 SERVICES=(postgresql clamav-daemon edziennik-kla nginx)
-[[ "$DEPLOYMENT_MODE" == "production" ]] && SERVICES+=(cloudflared)
+[[ "$DEPLOYMENT_MODE" != "local-demo" ]] && SERVICES+=(cloudflared)
 for SERVICE in "${SERVICES[@]}"; do
   if systemctl is-active --quiet "$SERVICE"; then echo "[OK] $SERVICE"; else echo "[STOP] $SERVICE"; fi
 done

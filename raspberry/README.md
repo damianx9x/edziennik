@@ -4,6 +4,8 @@ Pakiet ma dwa wyraźnie rozdzielone warianty:
 
 - **lokalne demo** — proste testy po adresie `http://IP_RASPBERRY:8080` i
   wyłącznie bogate, syntetyczne dane demonstracyjne;
+- **publiczne demo** — `https://demo.kingslanguageacademy.pl`, syntetyczna
+  baza na osobnej partycji `KLA_DATA` i konto techniczne z wymuszonym MFA;
 - **produkcja** — publiczny HTTPS przez Cloudflare Tunnel, 2FA dyrektora i
   prawdziwe dane dopiero po zamknięciu odbioru/RODO.
 
@@ -62,6 +64,17 @@ Skrypt poda nowy adres i przebuduje aplikację pod niego. Docelowo ustaw w
 routerze rezerwację DHCP dla Raspberry Pi, aby adres lokalny był stały.
 
 ## 3. Instalacja produkcyjna
+
+Publiczne demo korzystające z istniejącego dysku uruchamiaj dopiero po
+utworzeniu na Macu osobnej partycji `KLA_DATA` (minimum 40 GiB):
+
+```bash
+sudo ./raspberry/install-public-demo.sh
+```
+
+Skrypt odmawia użycia całego dysku, partycji systemowej i partycji bez etykiety
+`KLA_DATA`. Formatuje wyłącznie wskazaną nową partycję po dokładnym
+potwierdzeniu. Nie zmniejsza APFS na Linuksie.
 
 Skopiuj rozpakowaną paczkę na Raspberry, połącz się przez SSH i uruchom:
 

@@ -6,13 +6,16 @@ MODE="production"
 if [[ "${1:-}" == "--local-demo" ]]; then
   MODE="local-demo"
   shift
+elif [[ "${1:-}" == "--public-demo" ]]; then
+  MODE="public-demo"
+  shift
 fi
 [[ $# -eq 0 ]] || {
-  echo "Użycie: sudo ./raspberry/install.sh [--local-demo]"
+  echo "Użycie: sudo ./raspberry/install.sh [--local-demo|--public-demo]"
   exit 1
 }
 
-if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh [--local-demo]"; exit 1; fi
+if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh [--local-demo|--public-demo]"; exit 1; fi
 [[ "$(dpkg --print-architecture)" == "arm64" ]] || { echo "Wymagany jest Raspberry Pi OS 64-bit (arm64)."; exit 1; }
 grep -qi 'Raspberry Pi' /proc/device-tree/model 2>/dev/null || { echo "Ten instalator jest przeznaczony dla Raspberry Pi."; exit 1; }
 
@@ -28,8 +31,12 @@ local_ipv4() {
 }
 
 echo "Dostępne zewnętrzne dyski:"
-lsblk -dpo NAME,SIZE,MODEL,TRAN,TYPE | awk '$NF == "disk" {print}'
-read -r -p "Podaj dysk SSD na zaszyfrowany sejf (np. /dev/sda): " VAULT_DEVICE
+lsblk -o NAME,PATH,SIZE,TYPE,FSTYPE,LABEL,PARTLABEL,MODEL,TRAN
+if [[ "$MODE" == "public-demo" ]]; then
+  read -r -p "Podaj NOWĄ partycję KLA_DATA (np. /dev/sda3): " VAULT_PARTITION
+else
+  read -r -p "Podaj pusty dysk SSD na zaszyfrowany sejf (np. /dev/sda): " VAULT_DEVICE
+fi
 
 if [[ "$MODE" == "local-demo" ]]; then
   LOCAL_IP="$(local_ipv4)"
@@ -41,6 +48,17 @@ if [[ "$MODE" == "local-demo" ]]; then
   echo "TRYB LOKALNEGO DEMO: powstanie nowa, fikcyjna baza danych."
   echo "Adres do testów po instalacji: $APP_URL"
   echo "Ten tryb nie nadaje się do prawdziwych danych ani dokumentów."
+elif [[ "$MODE" == "public-demo" ]]; then
+  APP_URL="https://demo.kingslanguageacademy.pl"
+  INSTALL_DEMO="t"
+  DEMO_PASSWORD="$(openssl rand -base64 18 | tr -d '/+=')"
+  OWNER_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=')"
+  echo
+  echo "PUBLICZNE DEMO: czysta, fikcyjna baza pod $APP_URL."
+  echo "Ta konfiguracja nie jest przeznaczona do prawdziwych danych."
+  read -r -s -p "Token istniejącego tunelu Cloudflare dla demo.kingslanguageacademy.pl: " TUNNEL_TOKEN
+  echo
+  [[ "$TUNNEL_TOKEN" == eyJ* ]] || { echo "Nie rozpoznano tokenu tunelu Cloudflare."; exit 1; }
 else
   read -r -p "Publiczny adres HTTPS aplikacji (np. https://edziennik.example.pl): " APP_URL
   [[ "$APP_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || { echo "Wymagany jest publiczny adres HTTPS bez ścieżki."; exit 1; }
@@ -53,7 +71,7 @@ fi
 apt-get update
 apt-get full-upgrade -y
 apt-get install -y --no-install-recommends age ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
-if [[ "$MODE" == "production" ]]; then
+if [[ "$MODE" != "local-demo" ]]; then
   install -d -m 0755 /usr/share/keyrings
   curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg
   echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
@@ -66,7 +84,11 @@ if ! command -v node >/dev/null || [[ "$(node -p 'Number(process.versions.node.s
 fi
 
 systemctl stop edziennik-kla postgresql 2>/dev/null || true
-"$SOURCE_DIR/raspberry/vault-create.sh" "$VAULT_DEVICE"
+if [[ "$MODE" == "public-demo" ]]; then
+  "$SOURCE_DIR/raspberry/vault-create-partition.sh" "$VAULT_PARTITION"
+else
+  "$SOURCE_DIR/raspberry/vault-create.sh" "$VAULT_DEVICE"
+fi
 
 id -u kla >/dev/null 2>&1 || useradd --system --create-home --home-dir /var/lib/kla --shell /usr/sbin/nologin kla
 usermod -a -G clamav kla
@@ -131,7 +153,7 @@ NEXT_PUBLIC_APP_RELEASE=raspberry
 KLA_DEPLOYMENT_MODE=${MODE}
 KLA_REQUIRE_DIRECTOR_MFA=$([[ "$MODE" == "production" ]] && echo 1 || echo 0)
 KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=0
-KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "local-demo" ]] && echo 1 || echo 0)
+KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "production" ]] && echo 0 || echo 1)
 KLA_PUBLIC_SCHOOL_SLUG=kings-language-academy-demo
 KLA_PRIVATE_FILES_DIR=$VAULT/private-files
 FILE_STORAGE_PROVIDER=local
@@ -161,6 +183,9 @@ sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.
 if [[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   DEMO_PASSWORD="${DEMO_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=')}"
   sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_DEMO_PASSWORD='$DEMO_PASSWORD' npm run db:seed:demo"
+fi
+if [[ "$MODE" == "public-demo" ]]; then
+  sudo -u kla bash -lc "cd '$APP_DIR.new' && set -a && source '$ENV_DIR/edziennik.env' && set +a && KLA_SYSTEM_OWNER_PASSWORD='$OWNER_PASSWORD' npm run account:owner"
 fi
 if [[ -d "$APP_DIR" ]]; then rm -rf "$APP_ROOT/previous"; mv "$APP_DIR" "$APP_ROOT/previous"; fi
 mv "$APP_DIR.new" "$APP_DIR"
@@ -194,7 +219,7 @@ fi
 ln -sfn /etc/nginx/sites-available/kla /etc/nginx/sites-enabled/kla
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
-if [[ "$MODE" == "production" ]]; then
+if [[ "$MODE" != "local-demo" ]]; then
   cloudflared service uninstall >/dev/null 2>&1 || true
   cloudflared service install "$TUNNEL_TOKEN"
   unset TUNNEL_TOKEN
@@ -214,7 +239,7 @@ ufw --force enable
 systemctl enable fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 systemctl daemon-reload
 systemctl restart nginx postgresql clamav-daemon
-[[ "$MODE" == "production" ]] && systemctl restart cloudflared
+[[ "$MODE" != "local-demo" ]] && systemctl restart cloudflared
 systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
 
 echo
@@ -226,6 +251,11 @@ if [[ -n "${DEMO_PASSWORD:-}" ]]; then
   echo "Konta demo: kinga, dyrektor, wykladowca, rodzic, uczen"
   echo "Jednorazowe hasło fikcyjnych kont demo: $DEMO_PASSWORD"
   echo "Zapisz je teraz w menedżerze haseł. Nie jest zapisywane w pakiecie ani repozytorium."
+fi
+if [[ -n "${OWNER_PASSWORD:-}" ]]; then
+  echo "Konto techniczne: bog"
+  echo "Jednorazowe hasło konta Bóg: $OWNER_PASSWORD"
+  echo "Przy pierwszym wejściu system wymusi skonfigurowanie MFA."
 fi
 if [[ "$MODE" == "local-demo" ]]; then
   echo "Po zmianie adresu IP uruchom: sudo kla-local-url"

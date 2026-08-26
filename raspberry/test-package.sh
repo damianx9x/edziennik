@@ -7,9 +7,11 @@ bash -n "$ROOT"/raspberry/*.sh
 required_files=(
   raspberry/install.sh
   raspberry/install-local-demo.sh
+  raspberry/install-public-demo.sh
   raspberry/local-url.sh
   raspberry/START_LOCAL_DEMO_PI4B.md
   raspberry/vault-create.sh
+  raspberry/vault-create-partition.sh
   raspberry/unlock.sh
   raspberry/backup.sh
   raspberry/restore.sh
@@ -27,6 +29,7 @@ done
 grep -q 'cryptsetup luksFormat --type luks2' "$ROOT/raspberry/vault-create.sh"
 grep -q 'KLA_MALWARE_SCAN_MODE=required' "$ROOT/raspberry/install.sh"
 grep -q -- '--local-demo' "$ROOT/raspberry/install.sh"
+grep -q -- '--public-demo' "$ROOT/raspberry/install.sh"
 grep -q 'KLA_DEPLOYMENT_MODE' "$ROOT/raspberry/install.sh"
 grep -q 'KLA_ALLOW_DEMO_RESET' "$ROOT/raspberry/install.sh"
 grep -q '192.168.0.0/16' "$ROOT/raspberry/install.sh"
@@ -43,5 +46,7 @@ grep -q 'X-Forwarded-Proto https' <<<"$PRODUCTION_NGINX"
 grep -q 'RequiresMountsFor=/srv/kla-vault' "$ROOT/raspberry/systemd/edziennik-kla.service"
 grep -q 'edziennik-kla-restore --test' "$ROOT/raspberry/backup.sh"
 grep -q 'StrictHostKeyChecking=yes' "$ROOT/raspberry/backup.sh"
+grep -q 'SZYFRUJ \$PARTITION' "$ROOT/raspberry/vault-create-partition.sh"
+grep -q 'KLA_DATA' "$ROOT/raspberry/vault-create-partition.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."
