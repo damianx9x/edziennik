@@ -5,6 +5,7 @@ import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export async function GET(request: Request, context: { params: Promise<{ assignmentId: string; documentId: string }> }) {
   const { assignmentId, documentId } = await context.params;
@@ -12,8 +13,8 @@ export async function GET(request: Request, context: { params: Promise<{ assignm
     return NextResponse.json({ message: "Dokument nie istnieje." }, { status: 404 });
   }
   const session = await requireActiveSession(`/panel/umowy/${assignmentId}/dokument/${documentId}`);
-  if (session.user.role === "DIRECTOR") await requireDirector(`/panel/umowy/${assignmentId}/dokument/${documentId}`);
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) return NextResponse.json({ message: "Brak dostępu do dokumentu." }, { status: 403 });
+  if (isPrivilegedIdentityRole(session.user.role)) await requireDirector(`/panel/umowy/${assignmentId}/dokument/${documentId}`);
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) return NextResponse.json({ message: "Brak dostępu do dokumentu." }, { status: 403 });
   const assignment = await db.contractAssignment.findFirst({
     where: { id: assignmentId, schoolId: session.user.schoolId },
     select: { id: true, parentId: true, status: true, versionId: true },

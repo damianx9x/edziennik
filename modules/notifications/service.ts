@@ -19,7 +19,7 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   const raw: Omit<NotificationItem, "read" | "snoozedUntil">[] = [];
   const role = session.user.role;
 
-  if (role === "DIRECTOR") {
+  if (role === "SYSTEM_OWNER" || role === "DIRECTOR") {
     const [changes, failedDeliveries, assignments, signedContracts, scheduleChanges] = await Promise.all([
       db.recordChangeRequest.findMany({
         where: { schoolId: session.user.schoolId, status: "PENDING" },

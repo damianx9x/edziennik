@@ -55,11 +55,11 @@ export function can(
   action: Action,
   resource: Resource,
 ): boolean {
-  // The technical account has a deliberately narrow, read-only surface.
-  // It never inherits school staff permissions. Any future access to business
-  // data must use a separate, time-limited and audited break-glass mechanism.
+  // The system owner is the installation administrator. It inherits every
+  // school capability and additionally owns diagnostics. Server loaders still
+  // scope normal business queries to the account's schoolId and audit writes.
   if (actor.role === "SYSTEM_OWNER") {
-    return action === "view:owner-dashboard";
+    return action === "view:owner-dashboard" || actor.schoolId === resource.schoolId;
   }
 
   if (actor.schoolId !== resource.schoolId) {

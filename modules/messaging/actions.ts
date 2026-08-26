@@ -8,6 +8,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { db } from "@/lib/server/db";
 import { can, type Actor } from "@/modules/access-control/can";
 import { requireActiveSession } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import { getFileStorage } from "@/modules/files/storage";
 
 import { canUseConversation, canUseGroupConversation, getConversationRecipientIds, getGroupRecipientIds } from "./access";
@@ -32,7 +33,7 @@ async function getOrCreateDirectConversation(input: {
 }) {
   const participantIds = [...new Set([...input.participantIds, input.actorId])];
   const validUsers = await db.user.findMany({
-    where: { id: { in: participantIds }, schoolId: input.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["DIRECTOR", "TEACHER", "PARENT", "STUDENT"] } },
+    where: { id: { in: participantIds }, schoolId: input.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["SYSTEM_OWNER", "DIRECTOR", "TEACHER", "PARENT", "STUDENT"] } },
     select: { id: true },
   });
   if (validUsers.length !== participantIds.length) return null;
@@ -171,7 +172,7 @@ export async function sendAnnouncementAction(_previous: MessagingActionState, fo
 
 export async function createDirectConversationAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
-  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const parsed = directConversationSchema.safeParse({ title: formData.get("title"), participantIds: formData.getAll("participantIds") });
   if (!parsed.success) redirect(`${messagesPath}?blad=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Sprawdź odbiorców.")}`);
   const conversation = await getOrCreateDirectConversation({ schoolId: session.user.schoolId, actorId: session.user.id, participantIds: parsed.data.participantIds, title: parsed.data.title });
@@ -181,7 +182,7 @@ export async function createDirectConversationAction(formData: FormData) {
 
 export async function openPersonConversationAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
-  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const personId = String(formData.get("personId") ?? "");
   const person = await db.user.findFirst({
     where: { id: personId, schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, role: { in: ["TEACHER", "PARENT", "STUDENT"] } },
@@ -200,7 +201,7 @@ export async function openPersonConversationAction(formData: FormData) {
 
 export async function remindContractParentAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
-  if (session.user.role !== "DIRECTOR") redirect("/panel/brak-dostepu");
+  if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const assignment = await db.contractAssignment.findFirst({
     where: { id: assignmentId, schoolId: session.user.schoolId, status: { in: ["SENT", "VIEWED", "SIGNED_PENDING_REVIEW"] } },
@@ -250,7 +251,7 @@ export async function acknowledgeMessageAction(formData: FormData) {
 
 export async function retryEmailQueueAction() {
   const session = await requireActiveSession(messagesPath);
-  if (session.user.role !== "DIRECTOR") return;
+  if (!isPrivilegedIdentityRole(session.user.role)) return;
   await db.emailDelivery.updateMany({ where: { schoolId: session.user.schoolId, status: "FAILED", attempts: { lt: 5 } }, data: { nextAttemptAt: new Date() } });
   await processEmailDeliveryQueue(session.user.schoolId, 50);
   revalidatePath(messagesPath);

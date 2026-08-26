@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 type AcceptanceEvidence = {
   method?: string;
@@ -34,10 +35,10 @@ export async function GET(
   const session = await requireActiveSession(
     `/panel/umowy/${assignmentId}/potwierdzenie`,
   );
-  if (session.user.role === "DIRECTOR") {
+  if (isPrivilegedIdentityRole(session.user.role)) {
     await requireDirector(`/panel/umowy/${assignmentId}/potwierdzenie`);
   }
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     return NextResponse.json({ message: "Brak dostępu." }, { status: 403 });
   }
 

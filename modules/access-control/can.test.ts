@@ -26,7 +26,7 @@ describe("can", () => {
     ).toBe(false);
   });
 
-  it("keeps the system owner read-only and outside all school business data", () => {
+  it("lets the system owner perform every school and diagnostic action", () => {
     const businessActions = [
       "manage:school",
       "view:director-dashboard",
@@ -52,7 +52,7 @@ describe("can", () => {
     ] as const;
 
     for (const action of businessActions) {
-      expect(can(systemOwner, action, { schoolId })).toBe(false);
+      expect(can(systemOwner, action, { schoolId })).toBe(true);
       expect(can(systemOwner, action, { schoolId: otherSchoolId })).toBe(false);
     }
   });
@@ -124,14 +124,14 @@ describe("can", () => {
     expect(can(parent, "manage:payments", { schoolId })).toBe(false);
   });
 
-  it("keeps technical diagnostics away from family contracts and payments", () => {
+  it("allows the system owner to inspect family contracts and payments", () => {
     const familyRecord: Resource = { schoolId, parentIds: [parent.id] };
 
-    expect(can(systemOwner, "view:contract", familyRecord)).toBe(false);
-    expect(can(systemOwner, "manage:contracts", familyRecord)).toBe(false);
-    expect(can(systemOwner, "view:payment", familyRecord)).toBe(false);
-    expect(can(systemOwner, "manage:payments", familyRecord)).toBe(false);
-    expect(can(systemOwner, "accept:contract", familyRecord)).toBe(false);
+    expect(can(systemOwner, "view:contract", familyRecord)).toBe(true);
+    expect(can(systemOwner, "manage:contracts", familyRecord)).toBe(true);
+    expect(can(systemOwner, "view:payment", familyRecord)).toBe(true);
+    expect(can(systemOwner, "manage:payments", familyRecord)).toBe(true);
+    expect(can(systemOwner, "accept:contract", familyRecord)).toBe(true);
   });
 
   it("allows a student to open only their own profile", () => {
@@ -186,7 +186,7 @@ describe("can", () => {
     expect(can(director, "send:group-message", { schoolId })).toBe(true);
   });
 
-  it("keeps technical diagnostics away from message content", () => {
+  it("lets the system owner use and audit school conversations", () => {
     const conversation: Resource = {
       schoolId,
       teacherIds: [teacher.id],
@@ -194,10 +194,10 @@ describe("can", () => {
       studentIds: [student.id],
     };
 
-    expect(can(systemOwner, "view:conversation", conversation)).toBe(false);
-    expect(can(systemOwner, "send:group-message", conversation)).toBe(false);
-    expect(can(systemOwner, "send:announcement", conversation)).toBe(false);
-    expect(can(systemOwner, "audit:view-conversation", conversation)).toBe(false);
+    expect(can(systemOwner, "view:conversation", conversation)).toBe(true);
+    expect(can(systemOwner, "send:group-message", conversation)).toBe(true);
+    expect(can(systemOwner, "send:announcement", conversation)).toBe(true);
+    expect(can(systemOwner, "audit:view-conversation", conversation)).toBe(true);
   });
 
   it.each([

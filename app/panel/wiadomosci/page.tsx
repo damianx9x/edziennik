@@ -1,24 +1,24 @@
 import { ExternalLink, MessageCircleMore, Radio, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
 import { getAccessibleGroups, getDirectConversations } from "@/modules/messaging/access";
 import { MessagingWorkspace } from "@/modules/messaging/components/messaging-workspace";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export const metadata: Metadata = { title: "Wiadomości" };
 export const dynamic = "force-dynamic";
 
 export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ rozmowa?: string; blad?: string }> }) {
   const session = await requireActiveSession("/panel/wiadomosci");
-  if (session.user.role === "SYSTEM_OWNER") redirect("/panel/brak-dostepu");
+  const isManagement = isPrivilegedIdentityRole(session.user.role);
   const params = await searchParams;
   const [groups, directConversations, recipientDirectory] = await Promise.all([
     getAccessibleGroups(session),
     getDirectConversations(session),
-    session.user.role === "DIRECTOR" ? db.user.findMany({
+    isManagement ? db.user.findMany({
       where: { schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, id: { not: session.user.id }, role: { in: ["TEACHER", "PARENT", "STUDENT"] } },
       orderBy: [{ role: "asc" }, { name: "asc" }],
       select: { id: true, name: true, role: true, email: true },
@@ -41,11 +41,11 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   const requestedKey = params.rozmowa?.includes(":") ? params.rozmowa : params.rozmowa ? `group:${params.rozmowa}` : null;
   const selectedKey = requestedKey && channels.some((channel) => channel.key === requestedKey)
     ? requestedKey
-    : session.user.role === "DIRECTOR" ? null : channels[0]?.key ?? null;
+    : isManagement ? null : channels[0]?.key ?? null;
   const selected = channels.find((channel) => channel.key === selectedKey) ?? null;
   const canRead = Boolean(selected);
 
-  if (session.user.role === "DIRECTOR" && selected?.conversationId) {
+  if (isManagement && selected?.conversationId) {
     await db.auditLog.create({ data: {
       schoolId: session.user.schoolId, actorId: session.user.id, action: "messages.director_viewed",
       entityType: "Conversation", entityId: selected.conversationId,
@@ -64,13 +64,13 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
     },
   }) : [];
   const messages = latestMessages.reverse();
-  const queueStats = session.user.role === "DIRECTOR" ? await db.emailDelivery.groupBy({ by: ["status"], where: { schoolId: session.user.schoolId }, _count: { _all: true } }) : [];
+  const queueStats = isManagement ? await db.emailDelivery.groupBy({ by: ["status"], where: { schoolId: session.user.schoolId }, _count: { _all: true } }) : [];
 
   return <AuthenticatedPanelShell session={session} active="messages">
-    <header className="messaging-heading"><div><span className="section-kicker">Komunikacja szkoły</span><h1>{session.user.role === "DIRECTOR" ? "Wiadomości pod kontrolą" : "Rozmowy bez szukania czatu"}</h1><p>{session.user.role === "DIRECTOR" ? "Czytaj kanały szkoły bez dodatkowych formularzy. Twórz też rozmowy tylko z wybranymi osobami." : "Wybierz rozmowę, przeczytaj nowe informacje i odpowiedz w jednym miejscu."}</p></div><span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Dostęp według roli</span></header>
-    {session.user.role === "DIRECTOR" ? <aside className="messaging-meta-banner"><MessageCircleMore aria-hidden="true" /><span><strong>Potrzebujesz napisać na Facebooku?</strong><small>Otwórz zwykły Messenger w osobnej karcie. eDziennik nie przekazuje do niego danych uczniów.</small></span><a href="https://www.messenger.com/" target="_blank" rel="noreferrer">Otwórz Messenger <ExternalLink aria-hidden="true" /></a></aside> : null}
-    {channels.length === 0 && session.user.role !== "DIRECTOR" ? <section className="messaging-empty"><MessageCircleMore aria-hidden="true" /><h2>Nie masz jeszcze rozmowy</h2><p>Gdy szkoła przypisze Ci grupę lub doda do rozmowy, pojawi się tutaj automatycznie.</p></section> : <MessagingWorkspace
-      role={session.user.role} currentUserId={session.user.id} errorMessage={params.blad ?? null} channels={channels}
+    <header className="messaging-heading"><div><span className="section-kicker">Komunikacja szkoły</span><h1>{isManagement ? "Wiadomości pod kontrolą" : "Rozmowy bez szukania czatu"}</h1><p>{isManagement ? "Czytaj kanały szkoły bez dodatkowych formularzy. Twórz też rozmowy tylko z wybranymi osobami." : "Wybierz rozmowę, przeczytaj nowe informacje i odpowiedz w jednym miejscu."}</p></div><span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Dostęp według roli</span></header>
+    {isManagement ? <aside className="messaging-meta-banner"><MessageCircleMore aria-hidden="true" /><span><strong>Potrzebujesz napisać na Facebooku?</strong><small>Otwórz zwykły Messenger w osobnej karcie. eDziennik nie przekazuje do niego danych uczniów.</small></span><a href="https://www.messenger.com/" target="_blank" rel="noreferrer">Otwórz Messenger <ExternalLink aria-hidden="true" /></a></aside> : null}
+    {channels.length === 0 && !isManagement ? <section className="messaging-empty"><MessageCircleMore aria-hidden="true" /><h2>Nie masz jeszcze rozmowy</h2><p>Gdy szkoła przypisze Ci grupę lub doda do rozmowy, pojawi się tutaj automatycznie.</p></section> : <MessagingWorkspace
+      role={session.user.role === "SYSTEM_OWNER" ? "DIRECTOR" : session.user.role} currentUserId={session.user.id} errorMessage={params.blad ?? null} channels={channels}
       selectedKey={selectedKey} canRead={canRead} recipientDirectory={recipientDirectory}
       messages={messages.map((message) => ({ ...message, createdAt: message.createdAt.toISOString(), readByCurrent: message.reads.length > 0, acknowledgedByCurrent: message.acknowledgements.length > 0, delivery: { sent: message.deliveries.filter((item) => item.status === "SENT").length, pending: message.deliveries.filter((item) => ["QUEUED", "SENDING"].includes(item.status)).length, failed: message.deliveries.filter((item) => item.status === "FAILED").length } }))}
       queueStats={Object.fromEntries(queueStats.map((item) => [item.status, item._count._all]))}

@@ -5,6 +5,7 @@ import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export async function GET(
   request: Request,
@@ -15,10 +16,10 @@ export async function GET(
     return NextResponse.json({ message: "Dokument nie istnieje." }, { status: 404 });
   }
   const session = await requireActiveSession(`/panel/umowy/${assignmentId}/plik`);
-  if (session.user.role === "DIRECTOR") {
+  if (isPrivilegedIdentityRole(session.user.role)) {
     await requireDirector(`/panel/umowy/${assignmentId}/plik`);
   }
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     return NextResponse.json({ message: "Brak dostępu do dokumentu." }, { status: 403 });
   }
   const assignment = await db.contractAssignment.findFirst({

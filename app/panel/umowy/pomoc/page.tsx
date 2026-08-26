@@ -14,6 +14,7 @@ import {
   CONTRACT_LEGAL_REVIEW_DATE,
 } from "@/modules/contracts/legal";
 import { requireActiveSession } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 
 export const metadata: Metadata = { title: "Umowy — pomoc i podstawy prawne" };
@@ -51,10 +52,10 @@ const sources = [
 
 export default async function ContractLegalHelpPage() {
   const session = await requireActiveSession("/panel/umowy/pomoc");
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     redirect("/panel/brak-dostepu");
   }
-  const isDirector = session.user.role === "DIRECTOR";
+  const isDirector = isPrivilegedIdentityRole(session.user.role);
 
   return (
     <AuthenticatedPanelShell session={session} active="contracts">

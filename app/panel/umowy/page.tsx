@@ -16,17 +16,18 @@ import {
 } from "@/modules/contracts/legal";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export const metadata: Metadata = { title: "Umowy online" };
 export const dynamic = "force-dynamic";
 
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; umowa?: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) {
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     redirect("/panel/brak-dostepu");
   }
 
-  const isManagement = session.user.role === "DIRECTOR";
+  const isManagement = isPrivilegedIdentityRole(session.user.role);
   const params = await searchParams;
   const parentId = isManagement && params.rodzic ? params.rodzic : undefined;
   const assignments = await db.contractAssignment.findMany({

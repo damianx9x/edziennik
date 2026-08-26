@@ -20,8 +20,8 @@ describe("private learning file access", () => {
     expect(canViewLearningStoredFile({ ...base, role: "PARENT" })).toBe(false);
   });
 
-  it("denies business files to the technical account and unrelated groups", () => {
-    expect(canViewLearningStoredFile({ ...base, role: "SYSTEM_OWNER" })).toBe(false);
+  it("allows the system owner but denies unrelated groups", () => {
+    expect(canViewLearningStoredFile({ ...base, role: "SYSTEM_OWNER" })).toBe(true);
     expect(canViewLearningStoredFile({ ...base, role: "DIRECTOR", hasAccessibleGroup: false })).toBe(false);
   });
 });

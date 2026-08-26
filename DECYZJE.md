@@ -1040,3 +1040,20 @@ Klucz odblokowujący LUKS nie jest przechowywany na tym samym Raspberry. Po
 pełnym zaniku zasilania właściciel ręcznie odblokowuje sejf z panelu na Macu.
 Automatyczne odblokowanie kluczem zapisanym obok zaszyfrowanych danych
 zniwelowałoby ochronę dysku w przypadku kradzieży urządzenia.
+
+## ADR-081 — Właściciel systemu dziedziczy uprawnienia dyrektora
+
+**Data:** 2026-08-26
+**Status:** przyjęta; zastępuje ograniczenie opisane w ADR-033
+
+Jedyny `SYSTEM_OWNER` ma wszystkie możliwości dyrektora w swojej instalacji
+oraz dodatkowe centrum diagnostyczne. Obejmuje to zaproszenia, kartoteki,
+grafik, wiadomości, naukę, postępy, umowy, płatności, powiadomienia, ustawienia
+i statystyki. Operacje nadal są ograniczane do `schoolId`, przechodzą normalne
+reguły integralności i tworzą wpisy audytu. MFA pozostaje obowiązkowe, a roli
+nie można nadać przez zaproszenie ani edycję kartoteki.
+
+**Dlaczego:** właściciel pierwszej, samodzielnie utrzymywanej instalacji musi
+móc uruchomić szkołę od pustej bazy i zaprosić pierwszego dyrektora. Osobne
+blokady `SYSTEM_OWNER` w modułach tworzyły niespójny interfejs: centrum systemu
+pokazywało akcję, którą docelowa strona odrzucała.

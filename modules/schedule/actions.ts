@@ -13,6 +13,7 @@ import {
   requireDirector,
   requireSchoolStaff,
 } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 import { assertScheduleSlotCanBeSaved } from "./hard-constraints";
 import { parseLessonJournalFormData } from "./lesson-journal";
@@ -551,7 +552,7 @@ export async function cancelScheduleSlotAction(
     };
   }
 
-  if (session.user.role !== "DIRECTOR") {
+  if (!isPrivilegedIdentityRole(session.user.role)) {
     return { status: "error", message: "Tylko wykładowca lub dyrektor może odwołać zajęcia." };
   }
 

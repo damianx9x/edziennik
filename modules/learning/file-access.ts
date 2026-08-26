@@ -7,9 +7,9 @@ export function canViewLearningStoredFile(input: {
   isOwnSubmission: boolean;
   isLinkedChildSubmission: boolean;
 }): boolean {
-  if (input.role === "SYSTEM_OWNER" || !input.hasAccessibleGroup) return false;
+  if (!input.hasAccessibleGroup) return false;
   if (!input.containsHomeworkSubmission) return true;
-  if (input.role === "DIRECTOR" || input.role === "TEACHER") return true;
+  if (input.role === "SYSTEM_OWNER" || input.role === "DIRECTOR" || input.role === "TEACHER") return true;
   if (input.role === "STUDENT") return input.isOwnSubmission;
   if (input.role === "PARENT") return input.isLinkedChildSubmission;
   return false;

@@ -236,7 +236,7 @@ export async function updateRecordAction(
 ): Promise<RecordUpdateState> {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
   if (
-    !["DIRECTOR", "TEACHER"].includes(
+    !["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(
       session.user.role,
     )
   ) {

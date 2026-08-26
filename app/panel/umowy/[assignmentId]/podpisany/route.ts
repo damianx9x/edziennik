@@ -4,17 +4,18 @@ import { z } from "zod";
 import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export async function GET(_request: Request, context: { params: Promise<{ assignmentId: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
   const { assignmentId } = await context.params;
   if (!z.string().uuid().safeParse(assignmentId).success) return new NextResponse("Nie znaleziono dokumentu.", { status: 404 });
-  if (session.user.role === "DIRECTOR") await requireDirector("/panel/umowy");
+  if (isPrivilegedIdentityRole(session.user.role)) await requireDirector("/panel/umowy");
   const assignment = await db.contractAssignment.findFirst({
     where: {
       id: assignmentId,
       schoolId: session.user.schoolId,
-      ...(session.user.role === "DIRECTOR" ? {} : { parentId: session.user.id }),
+      ...(isPrivilegedIdentityRole(session.user.role) ? {} : { parentId: session.user.id }),
       signedFileId: { not: null },
     },
     select: { id: true, signedFile: { select: { storageKey: true, originalName: true, mimeType: true, sha256: true } } },

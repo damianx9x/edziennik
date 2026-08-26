@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
 import { getFileStorage } from "@/modules/files/storage";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import {
   requireActiveSession,
   requireDirector,
@@ -61,7 +62,7 @@ export async function createContractPackageAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
-  if (session.user.role !== "DIRECTOR") return { status: "error", message: "Tylko dyrektor może wysłać pakiet." };
+  if (!isPrivilegedIdentityRole(session.user.role)) return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać pakiet." };
   const parsed = contractPackageSchema.safeParse({
     title: formData.get("title"), acceptanceMode: formData.get("acceptanceMode"),
     requiresPayment: formData.get("requiresPayment"), installmentCount: formData.get("installmentCount"),
@@ -144,7 +145,7 @@ export async function reuseContractPackageAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
-  if (session.user.role !== "DIRECTOR") return { status: "error", message: "Tylko dyrektor może wysłać pakiet." };
+  if (!isPrivilegedIdentityRole(session.user.role)) return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać pakiet." };
   const parsed = reuseContractPackageSchema.safeParse({ sourceVersionId: formData.get("sourceVersionId"), parentId: formData.get("parentId"), studentId: formData.get("studentId"), expiresAt: formData.get("expiresAt") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź odbiorcę." };
   const [source, relation] = await Promise.all([
@@ -214,7 +215,7 @@ export async function uploadSignedContractAction(
 
 export async function reviewSignedContractAction(formData: FormData): Promise<void> {
   const session = await requireDirector(contractsPath);
-  if (session.user.role !== "DIRECTOR") return;
+  if (!isPrivilegedIdentityRole(session.user.role)) return;
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const decision = String(formData.get("decision") ?? "");
   const assignment = await db.contractAssignment.findFirst({ where: { id: assignmentId, schoolId: session.user.schoolId, status: "SIGNED_PENDING_REVIEW" }, select: { id: true, signedFileId: true, signedFile: { select: { sha256: true } } } });
@@ -225,7 +226,7 @@ export async function reviewSignedContractAction(formData: FormData): Promise<vo
     if (decision === "approve") {
       const updated = await tx.contractAssignment.updateMany({ where: { id: assignment.id, status: "SIGNED_PENDING_REVIEW" }, data: { status: "ACCEPTED" } });
       if (updated.count !== 1) throw new Error("STALE_ASSIGNMENT");
-      await tx.contractAcceptance.create({ data: { assignmentId: assignment.id, acceptedById: session.user.id, documentHash: signedFileHash, evidence: { method: "handwritten-signed-copy-reviewed", signedFileHash, reviewedByRole: "DIRECTOR" } } });
+      await tx.contractAcceptance.create({ data: { assignmentId: assignment.id, acceptedById: session.user.id, documentHash: signedFileHash, evidence: { method: "handwritten-signed-copy-reviewed", signedFileHash, reviewedByRole: session.user.role } } });
     } else if (decision === "reject") {
       const updated = await tx.contractAssignment.updateMany({
         where: { id: assignment.id, status: "SIGNED_PENDING_REVIEW" },
@@ -246,8 +247,8 @@ export async function createContractAssignmentAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
-  if (session.user.role !== "DIRECTOR") {
-    return { status: "error", message: "Tylko dyrektor może wysłać umowę." };
+  if (!isPrivilegedIdentityRole(session.user.role)) {
+    return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać umowę." };
   }
   const parsed = contractAssignmentSchema.safeParse({
     title: formData.get("title"),
@@ -414,8 +415,8 @@ export async function createContractVersionAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
-  if (session.user.role !== "DIRECTOR") {
-    return { status: "error", message: "Tylko dyrektor może utworzyć nową wersję." };
+  if (!isPrivilegedIdentityRole(session.user.role)) {
+    return { status: "error", message: "Tylko dyrektor lub właściciel systemu może utworzyć nową wersję." };
   }
   const contractId = String(formData.get("contractId") ?? "");
   const sourceAssignmentId = String(formData.get("sourceAssignmentId") ?? "");

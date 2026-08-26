@@ -39,6 +39,6 @@ export async function listStudentProgress(actor: ProgressActor) {
 }
 
 export async function canRecordStudentProgress(actor: ProgressActor, studentId: string): Promise<boolean> {
-  if (actor.role !== "DIRECTOR" && actor.role !== "TEACHER") return false;
+  if (!["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(actor.role)) return false;
   return Boolean(await db.user.findFirst({ where: { ...accessibleStudentWhere(actor), id: studentId }, select: { id: true } }));
 }

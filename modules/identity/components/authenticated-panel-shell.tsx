@@ -69,6 +69,18 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "records",
       },
       {
+        href: "/panel/szkola/zaproszenia",
+        label: "Zaproszenia",
+        icon: ContactRound,
+        key: "invitations",
+      },
+      { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
+      { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
+      { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
+      { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
+      { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
+      {
         href: "/panel/szkola/narzedzia",
         label: "Ustawienia",
         icon: Wrench,
@@ -215,9 +227,7 @@ export async function AuthenticatedPanelShell({
           : session.user.role === "TEACHER"
             ? navigation.filter((item) => ["home", "schedule", "learning", "messages", "progress"].includes(item.key))
             : navigation.filter((item) => ["home", "schedule", "learning", "progress", "messages"].includes(item.key));
-  const [notificationItems, onboarding] = session.user.role === "SYSTEM_OWNER"
-    ? [[], null] as const
-    : await Promise.all([
+  const [notificationItems, onboarding] = await Promise.all([
         getNotifications(session),
         db.onboardingProgress.findUnique({ where: { userId: session.user.id }, select: { version: true, completedAt: true, dismissedAt: true } }),
       ]);
@@ -241,8 +251,7 @@ export async function AuthenticatedPanelShell({
       <header className="app-panel-topbar">
         <Brand compact />
         <div className="app-panel-account">
-          {session.user.role !== "SYSTEM_OWNER" ? (
-            <Link
+          <Link
               className="app-panel-notifications"
               href="/panel/powiadomienia"
               aria-label={`Centrum powiadomień: ${pendingChangeCount} nowych`}
@@ -252,7 +261,6 @@ export async function AuthenticatedPanelShell({
                 <span>{pendingChangeCount > 99 ? "99+" : pendingChangeCount}</span>
               ) : null}
             </Link>
-          ) : null}
           {session.user.role !== "SYSTEM_OWNER" ? <OnboardingTour role={session.user.role} openInitially={!onboarding || (onboarding.version < 1 && !onboarding.completedAt)} /> : null}
           <div className="app-panel-avatar" aria-hidden="true">
             {initials || "K"}

@@ -49,12 +49,12 @@ export default async function InvitationsPage() {
           <h1>Zaproszenia i konta</h1>
           <p>
             Każde konto zaczyna się od jednorazowego linku lub czasowego kodu
-            QR utworzonego przez dyrektora.
+            QR utworzonego przez dyrektora lub właściciela systemu.
           </p>
         </div>
         <span className="role-security-chip">
           <ShieldCheck aria-hidden="true" />
-          Tylko dyrektor
+          Dyrektor i właściciel systemu
         </span>
       </header>
 

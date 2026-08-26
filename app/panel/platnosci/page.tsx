@@ -7,14 +7,15 @@ import { requireActiveSession, requireDirector } from "@/modules/identity/auth/s
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { PaymentList } from "@/modules/payments/components/payment-list";
 import { getEffectivePaymentStatus } from "@/modules/payments/schema";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 export const metadata: Metadata = { title: "Statusy płatności" };
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; platnosc?: string }> }) {
   const session = await requireActiveSession("/panel/platnosci");
-  if (!["DIRECTOR", "PARENT"].includes(session.user.role)) redirect("/panel/brak-dostepu");
-  const isManagement = session.user.role === "DIRECTOR";
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) redirect("/panel/brak-dostepu");
+  const isManagement = isPrivilegedIdentityRole(session.user.role);
   if (isManagement) await requireDirector("/panel/platnosci");
   const params = await searchParams;
   const parentId = isManagement && params.rodzic ? params.rodzic : undefined;

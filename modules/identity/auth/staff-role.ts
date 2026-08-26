@@ -2,6 +2,6 @@ import type { IdentityRole } from "./access";
 
 export function isSchoolStaffRole(
   role: IdentityRole,
-): role is "DIRECTOR" | "TEACHER" {
-  return role === "DIRECTOR" || role === "TEACHER";
+): role is "SYSTEM_OWNER" | "DIRECTOR" | "TEACHER" {
+  return role === "SYSTEM_OWNER" || role === "DIRECTOR" || role === "TEACHER";
 }

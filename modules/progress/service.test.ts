@@ -23,8 +23,8 @@ describe("descriptive student progress", () => {
     expect(result.message).toContain("Nie jest diagnozą ani prognozą");
   });
 
-  it("denies the technical account and scopes parents to linked children", () => {
-    expect(accessibleStudentWhere({ id: "owner", schoolId: "school", role: "SYSTEM_OWNER" })).toMatchObject({ id: { in: [] } });
+  it("allows the system owner and scopes parents to linked children", () => {
+    expect(accessibleStudentWhere({ id: "owner", schoolId: "school", role: "SYSTEM_OWNER" })).toMatchObject({ schoolId: "school", role: "STUDENT" });
     expect(accessibleStudentWhere({ id: "parent", schoolId: "school", role: "PARENT" })).toMatchObject({ childLinks: { some: { parentId: "parent", archivedAt: null } } });
   });
 });

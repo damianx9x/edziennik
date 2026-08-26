@@ -1,6 +1,5 @@
 import { BookOpenCheck, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
@@ -12,8 +11,6 @@ export const dynamic = "force-dynamic";
 
 export default async function LearningPage() {
   const session = await requireActiveSession("/panel/nauka");
-  if (session.user.role === "SYSTEM_OWNER") redirect("/panel/brak-dostepu");
-
   const groups = await listLearningOverview({
     id: session.user.id,
     schoolId: session.user.schoolId,
@@ -37,6 +34,7 @@ export default async function LearningPage() {
   }));
 
   const roleCopy = {
+    SYSTEM_OWNER: ["Widok całej szkoły", "Materiały i zadania", "Masz pełny dostęp do treści edukacyjnych i narzędzi publikacji."],
     DIRECTOR: ["Nauka w całej szkole", "Materiały i zadania", "Sprawdź pracę grup i publikuj treści bez szukania w rozmowach."],
     TEACHER: ["Twoje przypisane grupy", "Materiały i zadania", "Publikuj materiały, zadawaj pracę i przekazuj krótką informację zwrotną."],
     PARENT: ["Tylko powiązane dzieci", "Materiały i zadania dzieci", "W jednym miejscu zobaczysz zadania, terminy i informację od wykładowcy."],
@@ -54,7 +52,7 @@ export default async function LearningPage() {
         <span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Dostęp według przypisań</span>
       </header>
       <div className="learning-intro-note"><BookOpenCheck aria-hidden="true" /><p>Pliki są przechowywane prywatnie. Każda osoba widzi wyłącznie materiały swoich grup.</p></div>
-      <LearningWorkspace role={session.user.role} groups={view} />
+      <LearningWorkspace role={session.user.role === "SYSTEM_OWNER" ? "DIRECTOR" : session.user.role} groups={view} />
     </AuthenticatedPanelShell>
   );
 }

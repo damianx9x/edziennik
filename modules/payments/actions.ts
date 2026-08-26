@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 import { paymentRecordSchema, type PaymentActionState } from "./schema";
 
@@ -14,8 +15,8 @@ export async function savePaymentStatusAction(
   formData: FormData,
 ): Promise<PaymentActionState> {
   const session = await requireDirector(paymentsPath);
-  if (session.user.role !== "DIRECTOR") {
-    return { status: "error", message: "Tylko dyrektor może zmieniać statusy płatności." };
+  if (!isPrivilegedIdentityRole(session.user.role)) {
+    return { status: "error", message: "Tylko dyrektor lub właściciel systemu może zmieniać statusy płatności." };
   }
   const parsed = paymentRecordSchema.safeParse({
     contractAssignmentId: formData.get("contractAssignmentId"),

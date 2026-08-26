@@ -6,13 +6,10 @@ export type LearningActor = {
   role: "SYSTEM_OWNER" | "DIRECTOR" | "TEACHER" | "PARENT" | "STUDENT";
 };
 
-/**
- * Jedno źródło zakresu danych modułu nauki. SYSTEM_OWNER celowo nie otrzymuje
- * dostępu do danych edukacyjnych; jego panel pozostaje techniczny.
- */
+/** Jedno źródło zakresu danych modułu nauki. */
 export function accessibleGroupWhere(actor: LearningActor): Prisma.CourseGroupWhereInput {
   const base = { schoolId: actor.schoolId, archivedAt: null, isActive: true } satisfies Prisma.CourseGroupWhereInput;
-  if (actor.role === "DIRECTOR") return base;
+  if (actor.role === "SYSTEM_OWNER" || actor.role === "DIRECTOR") return base;
   if (actor.role === "TEACHER") {
     return { ...base, teachers: { some: { teacherId: actor.id, archivedAt: null } } };
   }
@@ -34,10 +31,9 @@ export function accessibleGroupWhere(actor: LearningActor): Prisma.CourseGroupWh
 }
 
 export function canPublishLearningContent(role: LearningActor["role"]): boolean {
-  return role === "DIRECTOR" || role === "TEACHER";
+  return role === "SYSTEM_OWNER" || role === "DIRECTOR" || role === "TEACHER";
 }
 
 export function canSubmitHomework(role: LearningActor["role"]): boolean {
   return role === "STUDENT";
 }
-

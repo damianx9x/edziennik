@@ -17,9 +17,6 @@ export async function GET(
   }
 
   const session = await requireActiveSession(`/panel/nauka/plik/${storedFileId}`);
-  if (session.user.role === "SYSTEM_OWNER") {
-    return NextResponse.json({ message: "Brak dostępu do pliku." }, { status: 403 });
-  }
   const actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
   const storedFile = await db.storedFile.findFirst({
     where: { id: storedFileId, schoolId: session.user.schoolId, archivedAt: null },

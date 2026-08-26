@@ -67,7 +67,7 @@ export async function listLearningOverview(actor: LearningActor) {
 }
 
 export async function canActorManageGroup(actor: LearningActor, groupId: string): Promise<boolean> {
-  if (actor.role !== "DIRECTOR" && actor.role !== "TEACHER") return false;
+  if (!["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(actor.role)) return false;
   return Boolean(
     await db.courseGroup.findFirst({
       where: { ...accessibleGroupWhere(actor), id: groupId },
@@ -75,4 +75,3 @@ export async function canActorManageGroup(actor: LearningActor, groupId: string)
     }),
   );
 }
-

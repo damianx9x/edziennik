@@ -1,6 +1,5 @@
 import { ShieldCheck, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ uczen?: string }> }) {
   const session = await requireActiveSession("/panel/postepy");
-  if (session.user.role === "SYSTEM_OWNER") redirect("/panel/brak-dostepu");
   const [students, params] = await Promise.all([
     listStudentProgress({ id: session.user.id, schoolId: session.user.schoolId, role: session.user.role }),
     searchParams,
@@ -30,6 +28,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
     })),
   }));
   const copy = {
+    SYSTEM_OWNER: ["Widok całej szkoły", "Postępy uczniów", "Masz pełny dostęp do obserwacji, obecności i narzędzi zapisu postępów."],
     DIRECTOR: ["Widok całej szkoły", "Postępy uczniów", "Przeglądaj opisowe obserwacje i wspieraj spójny sposób informacji zwrotnej."],
     TEACHER: ["Twoje przypisane grupy", "Postępy uczniów", "Zapisuj konkretne obserwacje i pokazuj kolejny mały krok w nauce angielskiego."],
     PARENT: ["Tylko powiązane dzieci", "Postępy dziecka", "Zobacz zapisane obserwacje, obecność i krótką informację od wykładowcy."],
@@ -42,7 +41,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Dane tylko właściwych uczniów</span>
       </header>
       <div className="progress-intro-note"><TrendingUp aria-hidden="true" /><p>Postęp opisujemy na podstawie rzeczywistych obserwacji. System nie ocenia automatycznie i nie przewiduje zachowania dziecka.</p></div>
-      <ProgressWorkspace role={session.user.role} students={view} initialStudentId={params.uczen} />
+      <ProgressWorkspace role={session.user.role === "SYSTEM_OWNER" ? "DIRECTOR" : session.user.role} students={view} initialStudentId={params.uczen} />
     </AuthenticatedPanelShell>
   );
 }

@@ -11,7 +11,7 @@ export const getAccessibleGroups = cache(async function getAccessibleGroups(sess
     archivedAt: null,
   } as const;
 
-  if (session.user.role === "DIRECTOR") {
+  if (session.user.role === "SYSTEM_OWNER" || session.user.role === "DIRECTOR") {
     return db.courseGroup.findMany({
       where: base,
       orderBy: [{ location: { name: "asc" } }, { name: "asc" }],
@@ -108,7 +108,7 @@ export async function canUseConversation(session: ActiveSession, conversationId:
   if (!conversation) return false;
   const actor: Actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
   if (conversation.kind === "DIRECT") return can(actor, "send:group-message", { schoolId: session.user.schoolId, participantIds: conversation.participants.map((item) => item.userId) });
-  if (session.user.role === "DIRECTOR") return can(actor, "send:group-message", { schoolId: session.user.schoolId });
+  if (session.user.role === "SYSTEM_OWNER" || session.user.role === "DIRECTOR") return can(actor, "send:group-message", { schoolId: session.user.schoolId });
   return Boolean(conversation.groupId && await canUseGroupConversation(session, conversation.groupId));
 }
 
@@ -134,7 +134,7 @@ export async function getDirectConversations(session: ActiveSession) {
       schoolId: session.user.schoolId,
       kind: "DIRECT",
       archivedAt: null,
-      ...(session.user.role === "DIRECTOR" ? {} : { participants: { some: { userId: session.user.id, archivedAt: null } } }),
+      ...(["SYSTEM_OWNER", "DIRECTOR"].includes(session.user.role) ? {} : { participants: { some: { userId: session.user.id, archivedAt: null } } }),
     },
     orderBy: { updatedAt: "desc" },
     select: {

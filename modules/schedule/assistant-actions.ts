@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
+import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 
 import {
   assertScheduleSlotCanBeSaved,
@@ -280,7 +281,7 @@ export async function saveTeacherAvailabilityAction(
   ) {
     return { status: "error", message: "Możesz zmienić tylko własną dostępność." };
   }
-  if (!["DIRECTOR", "TEACHER"].includes(session.user.role)) {
+  if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "TEACHER")) {
     return { status: "error", message: "Nie masz dostępu do tej operacji." };
   }
   const [teacher, locations] = await Promise.all([
