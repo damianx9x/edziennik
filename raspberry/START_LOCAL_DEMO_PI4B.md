@@ -72,7 +72,7 @@ sudo kla-unlock
 Następnie status:
 
 ```bash
-kla-status
+sudo kla-status
 ```
 
 ## 5. Gdy adres nie działa
@@ -80,7 +80,7 @@ kla-status
 1. Sprawdź, czy urządzenie testowe jest w tej samej sieci co Raspberry.
 2. Na Raspberry wykonaj `sudo kla-local-url`.
 3. Skopiuj wyświetlony adres do przeglądarki.
-4. Jeśli nadal nie działa, wykonaj `kla-status` i zapisz zdjęcie wyniku.
+4. Jeśli nadal nie działa, wykonaj `sudo kla-status` i zapisz zdjęcie wyniku.
 
 Po pomyślnym teście utwórz w routerze rezerwację DHCP dla Raspberry Pi. Dzięki
 niej lokalny adres nie będzie się zmieniał. Nie ustawiaj statycznego adresu

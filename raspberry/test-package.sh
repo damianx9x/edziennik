@@ -9,6 +9,7 @@ required_files=(
   raspberry/install-local-demo.sh
   raspberry/install-public-demo.sh
   raspberry/local-url.sh
+  raspberry/optimize-server.sh
   raspberry/START_LOCAL_DEMO_PI4B.md
   raspberry/vault-create.sh
   raspberry/vault-create-partition.sh
@@ -48,5 +49,10 @@ grep -q 'edziennik-kla-restore --test' "$ROOT/raspberry/backup.sh"
 grep -q 'StrictHostKeyChecking=yes' "$ROOT/raspberry/backup.sh"
 grep -q 'SZYFRUJ \$PARTITION' "$ROOT/raspberry/vault-create-partition.sh"
 grep -q 'KLA_DATA' "$ROOT/raspberry/vault-create-partition.sh"
+grep -q 'shared_buffers = 512MB' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'PermitRootLogin no' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'MemoryMax=2700M' "$ROOT/raspberry/systemd/edziennik-kla.service"
+grep -q 'noatime,nodiratime' "$ROOT/raspberry/unlock.sh"
+grep -q 'NODE_OPTIONS=--max-old-space-size=2048' "$ROOT/raspberry/install.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."

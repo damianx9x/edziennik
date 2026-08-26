@@ -111,7 +111,7 @@ sudo kla-unlock
 Potem całość działa automatycznie. Stan sprawdzisz przez:
 
 ```bash
-kla-status
+sudo kla-status
 ```
 
 Pełny automatyczny start bez hasła wymaga sprzętowego modułu TPM 2.0 lub

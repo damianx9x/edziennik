@@ -104,6 +104,18 @@ PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
 systemctl stop postgresql
 PG_SOURCE="/var/lib/postgresql/$PG_VERSION/main"
 PG_TARGET="$VAULT/postgresql/$PG_VERSION/main"
+PG_CHECKSUMS="/usr/lib/postgresql/$PG_VERSION/bin/pg_checksums"
+if [[ -x "$PG_CHECKSUMS" ]]; then
+  if ! CHECKSUM_RESULT="$("$PG_CHECKSUMS" --check -D "$PG_SOURCE" 2>&1)"; then
+    if grep -qi 'not enabled' <<<"$CHECKSUM_RESULT"; then
+      "$PG_CHECKSUMS" --enable -D "$PG_SOURCE"
+    else
+      echo "$CHECKSUM_RESULT"
+      echo "Nie udało się sprawdzić sum kontrolnych PostgreSQL."
+      exit 1
+    fi
+  fi
+fi
 install -d -m 700 -o postgres -g postgres "$PG_TARGET"
 rsync -aHAX "$PG_SOURCE/" "$PG_TARGET/"
 chown -R postgres:postgres "$VAULT/postgresql"
@@ -142,6 +154,7 @@ chown -R kla:kla "$APP_DIR.new"
 
 cat > "$VAULT/secrets/edziennik.env" <<ENV
 NODE_ENV=production
+NODE_OPTIONS=--max-old-space-size=2048
 PORT=3000
 HOSTNAME=127.0.0.1
 DATABASE_URL=postgresql://kla_app:${DB_PASSWORD}@127.0.0.1:5432/kla_edziennik?schema=public
@@ -174,6 +187,7 @@ KLA_RETENTION_MESSAGE_ATTACHMENT_DAYS=0
 ENV
 chmod 600 "$ENV_DIR/retention.env"
 
+"$SOURCE_DIR/raspberry/optimize-server.sh" "$PG_VERSION"
 sed -i 's/^#\?LocalSocket .*/LocalSocket \/run\/clamav\/clamd.ctl/' /etc/clamav/clamd.conf
 systemctl enable --now clamav-freshclam clamav-daemon
 for _ in {1..30}; do [[ -S /run/clamav/clamd.ctl ]] && break; sleep 2; done
@@ -201,6 +215,7 @@ install -m 755 "$SOURCE_DIR/raspberry/print-recovery-key.sh" /usr/local/sbin/edz
 install -m 755 "$SOURCE_DIR/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
 install -m 755 "$SOURCE_DIR/raspberry/status.sh" /usr/local/bin/kla-status
 install -m 755 "$SOURCE_DIR/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
+install -m 755 "$SOURCE_DIR/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 
@@ -229,7 +244,9 @@ elif systemctl list-unit-files cloudflared.service --no-legend 2>/dev/null | gre
 fi
 ufw default deny incoming
 ufw default allow outgoing
-ufw allow OpenSSH
+ufw allow from 10.0.0.0/8 to any port 22 proto tcp
+ufw allow from 172.16.0.0/12 to any port 22 proto tcp
+ufw allow from 192.168.0.0/16 to any port 22 proto tcp
 if [[ "$MODE" == "local-demo" ]]; then
   ufw allow from 10.0.0.0/8 to any port 8080 proto tcp
   ufw allow from 172.16.0.0/12 to any port 8080 proto tcp
@@ -245,7 +262,7 @@ systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-ba
 echo
 echo "GOTOWE. Otwórz: $APP_URL"
 echo "Po każdym restarcie: sudo kla-unlock"
-echo "Stan urządzenia: kla-status"
+echo "Stan urządzenia: sudo kla-status"
 echo "Backup SFTP: sudo kla-configure-sftp-backup"
 if [[ -n "${DEMO_PASSWORD:-}" ]]; then
   echo "Konta demo: kinga, dyrektor, wykladowca, rodzic, uczen"

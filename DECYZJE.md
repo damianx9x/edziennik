@@ -979,3 +979,19 @@ dokładnym potwierdzeniu szyfruje wyłącznie wskazaną nową partycję LUKS2.
 **Dlaczego:** Linux nie zapewnia wspieranego, bezpiecznego zmniejszania APFS.
 Twarde rozdzielenie operacji zachowuje istniejące dane użytkownika i ogranicza
 destrukcyjną operację do jednoznacznie przygotowanej, pustej partycji.
+
+## ADR-077 — konserwatywny profil serwera dla Raspberry Pi 4
+
+**Data:** 2026-08-26
+**Decyzja:** instalator dobiera ograniczenia Node.js, PostgreSQL, ClamAV,
+systemd i dziennika systemowego do wykrytej pamięci urządzenia. Dla Pi 4 z
+4 GiB RAM aplikacja ma twardy limit pamięci, PostgreSQL używa umiarkowanych
+buforów, a logi mają limit miejsca i czasu. Dane PostgreSQL otrzymują sumy
+kontrolne, zaszyfrowany wolumin jest montowany bez aktualizacji czasu odczytu,
+SSH jest dostępne wyłącznie z sieci prywatnych, a urządzenie zachowuje domyślne
+taktowanie i chłodzenie producenta.
+
+**Dlaczego:** profil ma zapewnić przewidywalną pracę 24/7 bez ryzykownego
+podkręcania, wyczerpania pamięci albo karty systemowej przez logi. Parametry
+można ponownie bezpiecznie zastosować poleceniem `kla-optimize-server` po
+zmianie pamięci lub wersji PostgreSQL.
