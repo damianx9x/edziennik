@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Pierwsze uruchomienie" };
 export const dynamic = "force-dynamic";
 
 export default async function FirstRunPage() {
+  const emailReady = isTransactionalEmailConfigured();
   const owner = await db.user.findFirst({
     where: { role: "SYSTEM_OWNER" },
     select: { email: true, emailVerified: true },
@@ -34,13 +35,13 @@ export default async function FirstRunPage() {
           </p>
           <ol className="security-steps" aria-label="Kroki pierwszego uruchomienia">
             <li className="active"><span>1</span><UserPlus aria-hidden="true" /> Konto i e-mail</li>
-            <li><span>2</span><Mail aria-hidden="true" /> Potwierdzenie adresu</li>
+            <li><span>2</span><Mail aria-hidden="true" /> {emailReady ? "Potwierdzenie adresu" : "Poczta później"}</li>
             <li><span>3</span><ShieldCheck aria-hidden="true" /> MFA i kody awaryjne</li>
             <li><span>4</span><Check aria-hidden="true" /> Pierwsze zaproszenia</li>
           </ol>
         </section>
         <FirstRunForm
-          emailReady={isTransactionalEmailConfigured()}
+          emailReady={emailReady}
           pendingActivationEmail={owner ? maskEmail(owner.email) : undefined}
         />
       </div>

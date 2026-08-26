@@ -26,6 +26,7 @@ export type FirstRunState = {
   status: "idle" | "error" | "success";
   message: string;
   email?: string;
+  activationMode?: "email" | "bootstrap";
   fieldErrors?: Record<string, string[]>;
 };
 

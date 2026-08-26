@@ -999,6 +999,7 @@ zmianie pamięci lub wersji PostgreSQL.
 ## ADR-078 — pierwsze konto wyłącznie przez zamknięty bootstrap
 
 **Data:** 2026-08-26
+**Status:** zastąpiona częściowo przez ADR-079 w zakresie aktywacji e-mail
 **Decyzja:** czysta instalacja nie zawiera szkoły, kont ani danych startowych.
 Jedyny publiczny kreator pierwszego uruchomienia wymaga losowego kodu, którego
 serwer przechowuje wyłącznie jako SHA-256. Założenie szkoły, konta właściciela i
@@ -1011,3 +1012,15 @@ przez zaproszenia; `SYSTEM_OWNER` nigdy nie jest rolą zapraszalną.
 z Internetu przejąć serwer. Fabryczne konto lub hasło byłoby powtarzalnym
 sekretem. Jednorazowy bootstrap zachowuje prosty onboarding, a jednocześnie
 wiąże najwyższe uprawnienia z kontrolowanym adresem i drugim składnikiem.
+# ADR-079 — Pierwszy właściciel nie wymaga gotowego serwera poczty
+
+**Data:** 2026-08-26
+**Status:** przyjęta
+
+W czystej instalacji jednorazowy kod bootstrap potwierdza kontrolę nad
+Raspberry Pi i może aktywować wyłącznie pierwsze konto `SYSTEM_OWNER` bez
+wysyłki e-mail. MFA nadal jest obowiązkowe po pierwszym logowaniu. Brak SMTP
+lub Resend jest wyraźnie pokazywany i blokuje funkcje zależne od poczty, ale nie
+blokuje uruchomienia serwera. Jeśli dostawca jest skonfigurowany, zachowujemy
+standardową aktywację linkiem e-mail. Decyzja nie dotyczy kont tworzonych z
+zaproszeń.

@@ -50,13 +50,7 @@ export async function createFirstOwner(
     };
   }
 
-  if (!isTransactionalEmailConfigured()) {
-    return {
-      status: "error",
-      message:
-        "Serwer poczty nie jest jeszcze skonfigurowany. Dane nie zostały zapisane. Uzupełnij ustawienia e-mail i spróbuj ponownie.",
-    };
-  }
+  const emailReady = isTransactionalEmailConfigured();
 
   const userId = randomUUID();
   const schoolId = randomUUID();
@@ -85,7 +79,11 @@ export async function createFirstOwner(
           name: parsed.data.ownerName,
           role: "SYSTEM_OWNER",
           status: "ACTIVE",
-          emailVerified: false,
+          // Jednorazowy kod instalacyjny potwierdza fizyczną kontrolę nad
+          // serwerem. Dzięki temu poczta nie blokuje uruchomienia nowej,
+          // pustej instalacji. Dostawca e-mail nadal jest wymagany przed
+          // wysyłaniem zaproszeń i odzyskiwaniem dostępu.
+          emailVerified: !emailReady,
           twoFactorEnabled: false,
         },
       });
@@ -106,7 +104,11 @@ export async function createFirstOwner(
           action: "system.first-run.owner-created",
           entityType: "User",
           entityId: userId,
-          metadata: { emailVerificationRequired: true, mfaRequired: true },
+          metadata: {
+            emailVerificationRequired: emailReady,
+            activationMode: emailReady ? "email" : "bootstrap-code",
+            mfaRequired: true,
+          },
         },
       });
     });
@@ -120,6 +122,16 @@ export async function createFirstOwner(
     return {
       status: "error",
       message: "Nie udało się utworzyć konta. Żadne dane nie zostały częściowo zapisane.",
+    };
+  }
+
+  if (!emailReady) {
+    return {
+      status: "success",
+      activationMode: "bootstrap",
+      message:
+        "Konto zostało utworzone kodem instalacyjnym. Zaloguj się i skonfiguruj MFA. Wysyłkę e-mail możesz podłączyć później w ustawieniach serwera.",
+      email: maskEmail(parsed.data.email),
     };
   }
 
@@ -141,6 +153,7 @@ export async function createFirstOwner(
 
   return {
     status: "success",
+    activationMode: "email",
     message:
       "Konto zostało utworzone. Otwórz wiadomość aktywacyjną, a następnie zaloguj się i skonfiguruj MFA.",
     email: maskEmail(parsed.data.email),

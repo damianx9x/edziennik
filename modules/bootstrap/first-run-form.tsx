@@ -53,23 +53,31 @@ export function FirstRunForm({
   }
 
   if (state.status === "success") {
+    const usesEmailActivation = state.activationMode === "email";
     return (
       <section className="security-setup-card first-run-success" aria-live="polite">
         <div className="auth-card-icon auth-card-icon-success">
           <MailCheck aria-hidden="true" />
         </div>
         <span className="auth-card-overline">Krok 1 zakończony</span>
-        <h2>Sprawdź pocztę</h2>
+        <h2>{usesEmailActivation ? "Sprawdź pocztę" : "Konto jest gotowe"}</h2>
         <p>{state.message}</p>
-        <div className="auth-message auth-message-success">
-          <CheckCircle2 aria-hidden="true" />
-          Wiadomość wysłaliśmy na: <strong>{state.email}</strong>
-        </div>
+        {usesEmailActivation ? (
+          <div className="auth-message auth-message-success">
+            <CheckCircle2 aria-hidden="true" />
+            Wiadomość wysłaliśmy na: <strong>{state.email}</strong>
+          </div>
+        ) : (
+          <div className="auth-message auth-message-success">
+            <CheckCircle2 aria-hidden="true" />
+            Konto zabezpieczono jednorazowym kodem instalacyjnym.
+          </div>
+        )}
         <ol className="first-run-next-steps">
-          <li>Kliknij „Potwierdź adres” w wiadomości.</li>
+          {usesEmailActivation ? <li>Kliknij „Potwierdź adres” w wiadomości.</li> : null}
           <li>Zaloguj się swoim e-mailem i hasłem.</li>
           <li>Zeskanuj kod MFA telefonem i zapisz kody awaryjne.</li>
-          <li>W centrum systemu wybierz „Zaproś pierwszą osobę”.</li>
+          <li>{usesEmailActivation ? "W centrum systemu wybierz „Zaproś pierwszą osobę”." : "Podłącz e-mail przed wysłaniem pierwszego zaproszenia."}</li>
         </ol>
         <Link className="button button-primary button-full" href="/panel/logowanie">
           Przejdź do logowania <ArrowRight aria-hidden="true" />
@@ -91,9 +99,9 @@ export function FirstRunForm({
       </p>
 
       {!emailReady ? (
-        <div className="auth-message auth-message-error" role="alert">
-          Najpierw trzeba podłączyć wysyłkę e-mail. Formularz nie zapisze konta,
-          dopóki wiadomość aktywacyjna nie może zostać wysłana.
+        <div className="auth-message auth-message-info" role="status">
+          Poczta nie jest jeszcze ustawiona. Możesz utworzyć konto teraz kodem
+          instalacyjnym, a SMTP lub Resend podłączyć później z panelu serwera.
         </div>
       ) : null}
 
@@ -203,12 +211,12 @@ export function FirstRunForm({
         <button
           className="button button-primary button-full"
           type="submit"
-          disabled={pending || !emailReady}
+          disabled={pending}
         >
           {pending ? (
             <><LoaderCircle className="spin" aria-hidden="true" /> Tworzę bezpieczne konto…</>
           ) : (
-            <>Wyślij e-mail aktywacyjny <ArrowRight aria-hidden="true" /></>
+            <>{emailReady ? "Wyślij e-mail aktywacyjny" : "Utwórz konto bez poczty"} <ArrowRight aria-hidden="true" /></>
           )}
         </button>
       </form>

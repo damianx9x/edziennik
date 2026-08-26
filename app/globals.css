@@ -4223,6 +4223,12 @@ body:has(.first-run-page) .theme-trigger {
   background: var(--red-100);
 }
 
+.auth-message-info {
+  color: var(--blue-800);
+  border: 1px solid rgb(45 86 174 / 18%);
+  background: var(--blue-100);
+}
+
 .auth-message-success {
   color: #145d4c;
   border: 1px solid rgb(31 122 100 / 18%);
