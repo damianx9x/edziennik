@@ -13,6 +13,11 @@ for SERVICE in "${SERVICES[@]}"; do
 done
 if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then echo "[OK] aplikacja odpowiada"; else echo "[STOP] aplikacja nie odpowiada"; fi
 if curl --fail --silent --max-time 10 http://127.0.0.1:8080/api/health >/dev/null; then echo "[OK] prywatny origin nginx odpowiada"; else echo "[STOP] prywatny origin nginx nie odpowiada"; fi
+if [[ -f /etc/kla/vault-auto-unlock.key ]] && grep -qE '^[[:space:]]*kla-data[[:space:]]' /etc/crypttab; then
+  echo "[OK] automatyczny start po zaniku prądu"
+else
+  echo "[UWAGA] automatyczny start sejfu nie jest jeszcze włączony"
+fi
 if command -v vcgencmd >/dev/null; then
   echo "Temperatura: $(vcgencmd measure_temp | cut -d= -f2)"
   THROTTLED="$(vcgencmd get_throttled | cut -d= -f2)"

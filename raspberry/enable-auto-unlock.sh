@@ -19,6 +19,13 @@ if [[ ! -f "$KEY_FILE" ]]; then
   openssl rand 64 > "$TEMP_KEY"
   chmod 600 "$TEMP_KEY"
   VOLUME_KEY_HEX="$(dmsetup table --showkeys "$MAPPER" | awk '$3 == "crypt" {print $5; exit}')"
+  if [[ ! "$VOLUME_KEY_HEX" =~ ^[0-9a-fA-F]{64,}$ ]]; then
+    # LUKS2 domyślnie trzyma klucz aktywnego mapowania w kernel keyring.
+    # Kontrolowane odświeżenie przenosi go do tabeli dm-crypt wyłącznie na czas
+    # utworzenia dodatkowego slotu auto-startu; plik tymczasowy pozostaje w RAM.
+    cryptsetup refresh --disable-keyring "$MAPPER"
+    VOLUME_KEY_HEX="$(dmsetup table --showkeys "$MAPPER" | awk '$3 == "crypt" {print $5; exit}')"
+  fi
   [[ "$VOLUME_KEY_HEX" =~ ^[0-9a-fA-F]{64,}$ && $((${#VOLUME_KEY_HEX} % 2)) -eq 0 ]] || {
     echo "Nie udało się bezpiecznie pobrać aktywnego klucza woluminu." >&2
     exit 1
