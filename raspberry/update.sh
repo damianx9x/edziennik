@@ -45,11 +45,10 @@ fi
 )
 EXPECTED_COMMIT="$(tr -d '\r\n' < "$SOURCE_DIR/KLA_RELEASE_COMMIT")"
 [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Nieprawidłowy identyfikator wydania."; exit 1; }
-[[ -f /etc/kla/edziennik.env ]] || { echo "Brak prywatnej konfiguracji aplikacji."; exit 1; }
-
 # Od tego wydania dyrektor zawsze kończy konfigurację MFA przed dostępem do
 # prawdziwych danych. Aktualizacja nie zmienia hasła ani istniejącego konta.
 ENV_FILE=/srv/kla-vault/secrets/edziennik.env
+[[ -r "$ENV_FILE" ]] || { echo "Brak prywatnej konfiguracji aplikacji."; exit 1; }
 MFA_ENV="$(mktemp /srv/kla-vault/secrets/mfa-policy.XXXXXX)"
 grep -vE '^(KLA_REQUIRE_DIRECTOR_MFA|KLA_BUG_REPORT_EMAIL|NEXT_PUBLIC_SUPPORT_EMAIL)=' "$ENV_FILE" > "$MFA_ENV"
 printf 'KLA_REQUIRE_DIRECTOR_MFA=1\nKLA_BUG_REPORT_EMAIL=damianx9x@me.com\nNEXT_PUBLIC_SUPPORT_EMAIL=damianx9x@me.com\n' >> "$MFA_ENV"
@@ -102,8 +101,14 @@ rsync -a --delete \
 chown -R kla:kla "$NEW"
 
 echo "Sprawdzam i buduję nową wersję bez wyłączania aplikacji..."
-sudo -u kla bash -lc \
-  "cd '$NEW' && npm ci --include=dev && set -a && source /etc/kla/edziennik.env && set +a && npm run db:generate && npm run check && npm run build"
+runuser -u kla -- bash -c "cd '$NEW' && npm ci --include=dev"
+# Plik sekretów pozostaje root-only. Root wczytuje go do środowiska tylko na
+# czas kompilacji i migracji, zamiast poluzowywać uprawnienia na dysku.
+set -a
+source "$ENV_FILE"
+set +a
+runuser -u kla --preserve-environment -- bash -c \
+  "cd '$NEW' && npm run db:generate && npm run check && npm run build"
 
 echo "Tworzę szyfrowaną kopię przed migracją..."
 /usr/local/sbin/edziennik-kla-backup
@@ -111,8 +116,8 @@ echo "Tworzę szyfrowaną kopię przed migracją..."
 # Migracje muszą być rozszerzające. Kontroluje je security:check, dzięki czemu
 # poprzedni kod może wrócić nawet wtedy, gdy nowa wersja nie wystartuje.
 echo "Stosuję migracje bazy..."
-sudo -u kla bash -lc \
-  "cd '$NEW' && set -a && source /etc/kla/edziennik.env && set +a && npm run db:migrate:deploy"
+runuser -u kla --preserve-environment -- bash -c \
+  "cd '$NEW' && npm run db:migrate:deploy"
 
 echo "Przełączam aplikację..."
 systemctl stop edziennik-kla
