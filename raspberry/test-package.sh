@@ -82,6 +82,7 @@ grep -q 'kla-enable-auto-unlock' "$ROOT/raspberry/update.sh"
 grep -q 'edziennik-kla-email-queue.timer' "$ROOT/raspberry/update.sh"
 grep -q 'Klucz kernela nie może zostać odczytany przez cryptsetup' "$ROOT/raspberry/enable-auto-unlock.sh"
 grep -q 'runuser -u kla --preserve-environment' "$ROOT/raspberry/update.sh"
+grep -q 'chmod 711 /srv/kla-vault' "$ROOT/raspberry/update.sh"
 grep -q 'refresh-operations' "$ROOT/raspberry/control.sh"
 grep -q 'continuity/edziennik.env' "$ROOT/raspberry/backup.sh"
 

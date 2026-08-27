@@ -158,6 +158,7 @@ if [[ -f /etc/kla/control-user ]]; then
   chmod 440 /etc/sudoers.d/kla-control
   visudo -cf /etc/sudoers.d/kla-control >/dev/null
   CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
+  chmod 711 /srv/kla-vault
   install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" /srv/kla-vault/control-incoming
   PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
   [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; false; }

@@ -52,10 +52,13 @@ printf '%s' "$PASSPHRASE" | cryptsetup luksFormat --type luks2 --batch-mode --ke
 printf '%s' "$PASSPHRASE" | cryptsetup luksOpen --key-file - "$PARTITION" kla-data
 printf '%s' "$PASSPHRASE" | cryptsetup luksAddKey --key-file - "$PARTITION" "$TEMP_KEY"
 mkfs.ext4 -L KLA_VAULT /dev/mapper/kla-data
-install -d -m 700 /srv/kla-vault
+# Rodzic katalogu pozwala przejść wyłącznie do znanej ścieżki. Nie pozwala go
+# listować; właściwe dane i sekrety pozostają w podkatalogach root-only 0700.
+install -d -m 711 /srv/kla-vault
 mount /dev/mapper/kla-data /srv/kla-vault
 install -d -m 700 /srv/kla-vault/{postgresql,private-files,backups,secrets,restore-tests}
 chown -R root:root /srv/kla-vault
+chmod 711 /srv/kla-vault
 
 UUID="$(cryptsetup luksUUID "$PARTITION")"
 install -d -m 700 /etc/kla

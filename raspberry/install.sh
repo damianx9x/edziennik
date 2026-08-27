@@ -271,6 +271,7 @@ printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER"
 chmod 440 /etc/sudoers.d/kla-control
 visudo -cf /etc/sudoers.d/kla-control >/dev/null
 CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
+chmod 711 "$VAULT"
 install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" "$VAULT/control-incoming"
 
 if [[ ! -f "$VAULT/secrets/backup-age.key" ]]; then
