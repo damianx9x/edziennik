@@ -13,6 +13,11 @@ RECIPIENT="$(sed -n 's/^Public key: //p' "$VAULT/secrets/backup-recipient.txt")"
 [[ -n "$RECIPIENT" ]] || { echo "Brak klucza szyfrowania kopii."; exit 1; }
 install -d -m 700 "$BACKUP_DIR"
 USB_TEST_BACKUP=""
+BACKUP_RETENTION_DAYS=30
+if [[ -f /etc/kla/backup-policy.env ]]; then
+  source /etc/kla/backup-policy.env
+fi
+[[ "$BACKUP_RETENTION_DAYS" =~ ^(14|30|90)$ ]] || { echo "Nieprawidłowy okres przechowywania backupu." >&2; exit 1; }
 
 sudo -u postgres pg_dump --format=custom --dbname=kla_edziennik > "$TEMP_DIR/database.dump"
 tar -C "$VAULT" -czf "$TEMP_DIR/private-files.tar.gz" private-files
@@ -33,7 +38,7 @@ tar -C "$TEMP_DIR" -cf - database.dump private-files.tar.gz continuity manifest.
   sha256sum "kla-$STAMP.tar.age" > "kla-$STAMP.tar.age.sha256"
 )
 
-find "$BACKUP_DIR" -maxdepth 1 -type f -mtime +30 -delete
+find "$BACKUP_DIR" -maxdepth 1 -type f -mtime +"$BACKUP_RETENTION_DAYS" -delete
 
 if [[ -f /etc/kla/backup-usb.env ]]; then
   source /etc/kla/backup-usb.env
@@ -42,7 +47,7 @@ if [[ -f /etc/kla/backup-usb.env ]]; then
     install -d -m 700 "$USB_BACKUP_DIR"
     install -m 600 "$BACKUP_DIR/kla-$STAMP.tar.age" "$BACKUP_DIR/kla-$STAMP.tar.age.sha256" "$USB_BACKUP_DIR/"
     USB_TEST_BACKUP="$USB_BACKUP_DIR/kla-$STAMP.tar.age"
-    find "$USB_BACKUP_DIR" -maxdepth 1 -type f -mtime +30 -delete
+    find "$USB_BACKUP_DIR" -maxdepth 1 -type f -mtime +"$BACKUP_RETENTION_DAYS" -delete
   else
     echo "Skonfigurowany dysk USB nie jest zamontowany. Kopia w sejfie została zachowana, ale kopia USB nie powstała." >&2
   fi

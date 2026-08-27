@@ -234,6 +234,7 @@ model School {
   emailDeliveries            EmailDelivery[]
   conversationAccesses       DirectorConversationAccess[]
   messageAcknowledgements    MessageAcknowledgement[]
+  messageReactions           MessageReaction[]
   messageAttachments         MessageAttachment[]
   notificationStates         NotificationState[]
   onboardingProgress         OnboardingProgress[]
@@ -334,6 +335,7 @@ model User {
   conversationMemberships        ConversationParticipant[]    @relation("ConversationParticipantUser")
   addedConversationMembers       ConversationParticipant[]    @relation("ConversationParticipantAdder")
   messageAcknowledgements        MessageAcknowledgement[]
+  messageReactions               MessageReaction[]
   notificationStates             NotificationState[]
   onboardingProgress             OnboardingProgress?
   createdLearningMaterials       LearningMaterial[]           @relation("LearningMaterialCreator")
@@ -1076,12 +1078,29 @@ model Message {
   reads            MessageRead[]
   deliveries       EmailDelivery[]
   acknowledgements MessageAcknowledgement[]
+  reactions        MessageReaction[]
   attachments      MessageAttachment[]
 
   @@unique([authorId, clientRequestId])
   @@index([schoolId, createdAt])
   @@index([conversationId, createdAt])
   @@index([announcementId])
+}
+
+model MessageReaction {
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  schoolId  String   @db.Uuid
+  emoji     String   @db.VarChar(8)
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@id([messageId, userId, emoji])
+  @@index([schoolId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model MessageAcknowledgement {

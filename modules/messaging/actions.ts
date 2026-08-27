@@ -13,7 +13,7 @@ import { getFileStorage } from "@/modules/files/storage";
 
 import { canUseConversation, canUseGroupConversation, getConversationRecipientIds, getGroupRecipientIds } from "./access";
 import { processEmailDeliveryQueue } from "./queue";
-import { announcementSchema, directConversationSchema, messageSchema, type MessagingActionState } from "./schema";
+import { announcementSchema, directConversationSchema, messageReactionSchema, messageSchema, type MessagingActionState } from "./schema";
 
 const messagesPath = "/panel/wiadomosci";
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
@@ -246,6 +246,25 @@ export async function acknowledgeMessageAction(formData: FormData) {
     db.messageAcknowledgement.upsert({ where: { messageId_userId: { messageId, userId: session.user.id } }, create: { messageId, userId: session.user.id, schoolId: session.user.schoolId }, update: {} }),
     db.messageRead.upsert({ where: { messageId_userId: { messageId, userId: session.user.id } }, create: { messageId, userId: session.user.id, schoolId: session.user.schoolId }, update: {} }),
   ]);
+  revalidatePath(messagesPath);
+}
+
+export async function toggleMessageReactionAction(formData: FormData) {
+  const session = await requireActiveSession(messagesPath);
+  const parsed = messageReactionSchema.safeParse({ messageId: formData.get("messageId"), emoji: formData.get("emoji") });
+  if (!parsed.success) return;
+  const message = await db.message.findFirst({
+    where: { id: parsed.data.messageId, schoolId: session.user.schoolId },
+    select: { id: true, conversationId: true },
+  });
+  if (!message || !(await canUseConversation(session, message.conversationId))) return;
+  const key = { messageId: message.id, userId: session.user.id, emoji: parsed.data.emoji };
+  const existing = await db.messageReaction.findUnique({ where: { messageId_userId_emoji: key }, select: { messageId: true } });
+  if (existing) {
+    await db.messageReaction.delete({ where: { messageId_userId_emoji: key } });
+  } else {
+    await db.messageReaction.create({ data: { ...key, schoolId: session.user.schoolId } });
+  }
   revalidatePath(messagesPath);
 }
 

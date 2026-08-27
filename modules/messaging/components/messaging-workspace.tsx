@@ -2,19 +2,20 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
+import { ArrowLeft, CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, Plus, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
 
 import { useMovableDialog } from "@/modules/records/components/use-movable-dialog";
-import { acknowledgeMessageAction, createDirectConversationAction, retryEmailQueueAction, sendAnnouncementAction, sendMessageAction } from "../actions";
-import { initialMessagingState } from "../schema";
+import { acknowledgeMessageAction, createDirectConversationAction, retryEmailQueueAction, sendAnnouncementAction, sendMessageAction, toggleMessageReactionAction } from "../actions";
+import { initialMessagingState, messageReactionEmojis } from "../schema";
 import { MessageReadTracker } from "./message-read-tracker";
 
 type ChannelItem = { key: string; kind: "GROUP" | "DIRECT"; groupId: string | null; name: string; locationName: string; conversationId: string | null; messageCount: number; lastActivity: string | null; teacherCount: number; studentCount: number; participants: { id: string; name: string; role: string }[] };
 type RecipientItem = { id: string; name: string; role: string; email: string; groupIds: string[] };
-type MessageItem = { id: string; kind: "CHAT" | "ANNOUNCEMENT"; subject: string | null; body: string; createdAt: string; authorId: string; author: { name: string; role: string }; readByCurrent: boolean; requiresAcknowledgement: boolean; acknowledgedByCurrent: boolean; attachments: { id: string; storedFile: { originalName: string; sizeBytes: number; mimeType: string } }[]; _count: { reads: number; acknowledgements: number }; delivery: { sent: number; pending: number; failed: number } };
+type MessageItem = { id: string; kind: "CHAT" | "ANNOUNCEMENT"; subject: string | null; body: string; createdAt: string; authorId: string; author: { name: string; role: string }; readByCurrent: boolean; requiresAcknowledgement: boolean; acknowledgedByCurrent: boolean; attachments: { id: string; storedFile: { originalName: string; sizeBytes: number; mimeType: string } }[]; reactionSummary: { emoji: string; count: number; reacted: boolean }[]; _count: { reads: number; acknowledgements: number }; delivery: { sent: number; pending: number; failed: number } };
 
 function newRequestId() { return crypto.randomUUID(); }
 function formatTime(value: string) { return new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value)); }
+function formatChannelTime(value: string | null) { return value ? new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value)) : "Nowa rozmowa"; }
 
 export function MessagingWorkspace({ role, currentUserId, channels, selectedKey, canRead, messages, queueStats, errorMessage, recipientDirectory }: {
   role: "DIRECTOR" | "TEACHER" | "PARENT" | "STUDENT";
@@ -24,11 +25,13 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const [messageState, messageAction, messagePending] = useActionState(sendMessageAction, initialMessagingState);
   const [announcementState, announcementAction, announcementPending] = useActionState(sendAnnouncementAction, initialMessagingState);
   const [query, setQuery] = useState("");
+  const [channelKind, setChannelKind] = useState<"ALL" | "GROUP" | "DIRECT">("ALL");
   const [location, setLocation] = useState("ALL");
   const [recipientQuery, setRecipientQuery] = useState("");
   const [recipientRole, setRecipientRole] = useState("ALL");
   const [recipientGroup, setRecipientGroup] = useState("ALL");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
   const messageRequestId = useRef<HTMLInputElement>(null);
   const announcementRequestId = useRef<HTMLInputElement>(null);
   const announcementDialog = useRef<HTMLDialogElement>(null);
@@ -38,7 +41,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const selected = channels.find((channel) => channel.key === selectedKey) ?? null;
   const groups = channels.filter((channel) => channel.kind === "GROUP");
   const locations = useMemo(() => [...new Set(groups.map((group) => group.locationName))].sort((a, b) => a.localeCompare(b, "pl")), [groups]);
-  const visibleChannels = useMemo(() => channels.filter((channel) => (channel.kind === "DIRECT" || location === "ALL" || channel.locationName === location) && `${channel.name} ${channel.locationName} ${channel.participants.map((item) => item.name).join(" ")}`.toLocaleLowerCase("pl").includes(query.trim().toLocaleLowerCase("pl"))), [channels, location, query]);
+  const visibleChannels = useMemo(() => channels.filter((channel) => (channelKind === "ALL" || channel.kind === channelKind) && (channel.kind === "DIRECT" || location === "ALL" || channel.locationName === location) && `${channel.name} ${channel.locationName} ${channel.participants.map((item) => item.name).join(" ")}`.toLocaleLowerCase("pl").includes(query.trim().toLocaleLowerCase("pl"))), [channelKind, channels, location, query]);
   const unreadIds = useMemo(() => messages.filter((message) => message.authorId !== currentUserId && !message.readByCurrent).map((message) => message.id), [messages, currentUserId]);
   const visibleRecipients = useMemo(() => {
     const needle = recipientQuery.trim().toLocaleLowerCase("pl");
@@ -50,24 +53,31 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   function rotateRequestId(ref: React.RefObject<HTMLInputElement | null>) {
     window.setTimeout(() => { if (ref.current) ref.current.value = newRequestId(); }, 0);
   }
+  function addEmoji(emoji: string) {
+    const field = draftRef.current;
+    if (!field) return;
+    field.value = `${field.value}${field.value && !field.value.endsWith(" ") ? " " : ""}${emoji}`;
+    field.focus();
+  }
 
   return (
     <section className={`messaging-workspace${selected ? " has-selection" : ""}`}>
       <MessageReadTracker messageIds={unreadIds} enabled={role !== "DIRECTOR" && canRead} />
       <aside className="messaging-groups" aria-label="Twoje grupy">
         <div className="messaging-groups-heading">
-          <div><span className="section-kicker">Grupy</span><h2>{role === "DIRECTOR" ? "Kanały szkoły" : "Twoje rozmowy"}</h2></div>
-          {role === "DIRECTOR" ? <div className="messaging-heading-actions"><button className="messaging-icon-button" type="button" aria-label="Nowa rozmowa z wybranymi osobami" onClick={() => directDialog.current?.showModal()}><MessageSquarePlus aria-hidden="true" /></button><button className="messaging-icon-button" type="button" aria-label="Utwórz ogłoszenie" onClick={() => announcementDialog.current?.showModal()}><Megaphone aria-hidden="true" /></button></div> : null}
+          <div><span className="section-kicker">Rozmowy</span><h2>{role === "DIRECTOR" ? "Skrzynka szkoły" : "Twoje wiadomości"}</h2></div>
+          {role === "DIRECTOR" ? <div className="messaging-heading-actions"><button className="messaging-icon-button" type="button" onClick={() => directDialog.current?.showModal()}><MessageSquarePlus aria-hidden="true" /><span>Nowa</span></button><button className="messaging-icon-button" type="button" onClick={() => announcementDialog.current?.showModal()}><Megaphone aria-hidden="true" /><span>Ogłoszenie</span></button></div> : null}
         </div>
-        <div className="messaging-group-tools"><label><Search aria-hidden="true" /><span className="sr-only">Szukaj grupy lub lokalizacji</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Szukaj grupy" /></label><select aria-label="Filtruj według lokalizacji" value={location} onChange={(event) => setLocation(event.target.value)}><option value="ALL">Wszystkie lokalizacje</option>{locations.map((item) => <option key={item}>{item}</option>)}</select></div>
+        <div className="messaging-group-tools"><label><Search aria-hidden="true" /><span className="sr-only">Szukaj rozmowy</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Szukaj osoby lub grupy" /></label><div className="messaging-kind-filter" aria-label="Rodzaj rozmowy">{(["ALL", "GROUP", "DIRECT"] as const).map((kind) => <button key={kind} type="button" className={channelKind === kind ? "active" : undefined} onClick={() => setChannelKind(kind)}>{kind === "ALL" ? "Wszystkie" : kind === "GROUP" ? "Grupy" : "Prywatne"}</button>)}</div>{channelKind !== "DIRECT" ? <select aria-label="Filtruj według lokalizacji" value={location} onChange={(event) => setLocation(event.target.value)}><option value="ALL">Wszystkie lokalizacje</option>{locations.map((item) => <option key={item}>{item}</option>)}</select> : null}</div>
         <div className="messaging-group-list">
           {visibleChannels.map((channel) => (
             <Link key={channel.key} href={`/panel/wiadomosci?rozmowa=${encodeURIComponent(channel.key)}`} className={channel.key === selectedKey ? "active" : undefined}>
               <span className="messaging-group-avatar">{channel.kind === "DIRECT" ? <Users aria-hidden="true" /> : channel.name.slice(0, 2).toUpperCase()}</span>
-              <span><strong>{channel.name}</strong><small>{channel.kind === "DIRECT" ? `${channel.participants.length} uczestników` : channel.locationName} · {channel.messageCount} wiad.</small></span>
-              <ChevronRight aria-hidden="true" />
+              <span><strong>{channel.name}</strong><small>{channel.kind === "DIRECT" ? `${channel.participants.length} uczestników` : channel.locationName}</small><em>{formatChannelTime(channel.lastActivity)}</em></span>
+              <span className="messaging-channel-tail">{channel.messageCount > 0 ? <b>{channel.messageCount}</b> : null}<ChevronRight aria-hidden="true" /></span>
             </Link>
           ))}
+          {visibleChannels.length === 0 ? <div className="messaging-list-empty"><Search aria-hidden="true" /><strong>Brak pasujących rozmów</strong><small>Zmień filtr albo wpisz inną nazwę.</small></div> : null}
         </div>
         {role === "DIRECTOR" ? (
           <div className="messaging-queue-card">
@@ -94,6 +104,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
                   <div className="messaging-message-meta"><strong>{message.kind === "ANNOUNCEMENT" ? "Ogłoszenie szkoły" : message.author.name}</strong><time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time></div>
                   {message.subject ? <h3>{message.subject}</h3> : null}<p>{message.body}</p>
                   {message.attachments.length ? <div className="messaging-attachments">{message.attachments.map((attachment) => <a key={attachment.id} href={`/panel/wiadomosci/zalacznik/${attachment.id}`}><Paperclip aria-hidden="true" /><span><strong>{attachment.storedFile.originalName}</strong><small>{Math.ceil(attachment.storedFile.sizeBytes / 1024)} KB</small></span><Download aria-hidden="true" /></a>)}</div> : null}
+                  <div className="messaging-reactions" aria-label="Reakcje na wiadomość">{messageReactionEmojis.map((emoji) => { const summary = message.reactionSummary.find((item) => item.emoji === emoji); return <form action={toggleMessageReactionAction} key={emoji}><input type="hidden" name="messageId" value={message.id} /><input type="hidden" name="emoji" value={emoji} /><button type="submit" className={summary?.reacted ? "active" : undefined} aria-label={`${summary?.reacted ? "Usuń" : "Dodaj"} reakcję ${emoji}`}>{emoji}{summary?.count ? <span>{summary.count}</span> : null}</button></form>; })}</div>
                   {message.requiresAcknowledgement && !own ? message.acknowledgedByCurrent ? <span className="messaging-acknowledged"><CheckCheck /> Potwierdzono</span> : <form action={acknowledgeMessageAction} className="messaging-ack-form"><input type="hidden" name="messageId" value={message.id} /><button type="submit"><CheckCheck /> Potwierdzam, że przeczytałem/am</button></form> : null}
                   {(own || role === "TEACHER" || role === "DIRECTOR") ? <footer><CheckCheck aria-hidden="true" /> {message._count.reads} odczyt. {message.requiresAcknowledgement ? `· ${message._count.acknowledgements} potwierdzeń` : ""} {message.delivery.failed ? `· ${message.delivery.failed} e-mail do ponowienia` : message.delivery.pending ? `· ${message.delivery.pending} e-mail oczekuje` : message.delivery.sent ? `· ${message.delivery.sent} e-mail wysłano` : ""}</footer> : null}
                 </article>;
@@ -101,8 +112,8 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
             </div>
             <form className="messaging-composer" action={messageAction} onSubmit={() => rotateRequestId(messageRequestId)}>
               {selected.kind === "GROUP" ? <input type="hidden" name="groupId" value={selected.groupId ?? ""} /> : <input type="hidden" name="conversationId" value={selected.conversationId ?? ""} />}<input ref={messageRequestId} type="hidden" name="clientRequestId" defaultValue={newRequestId()} />
-              <label htmlFor="message-body">{selected.kind === "DIRECT" ? "Wiadomość do wybranych osób" : "Wiadomość do całej grupy"}</label><div className="messaging-composer-main"><textarea id="message-body" name="body" maxLength={2000} rows={2} placeholder="Napisz krótko i konkretnie…" required /><button disabled={messagePending} type="submit" aria-label="Wyślij wiadomość"><Send aria-hidden="true" /></button></div>
-              <div className="messaging-composer-options"><label><Paperclip /><span>Dodaj PDF, JPG lub PNG</span><input type="file" name="attachment" accept="application/pdf,image/jpeg,image/png" /></label>{["DIRECTOR", "TEACHER"].includes(role) ? <label><input type="checkbox" name="requiresAcknowledgement" /><span>Poproś o świadome potwierdzenie przeczytania</span></label> : null}</div>
+              <label htmlFor="message-body">{selected.kind === "DIRECT" ? "Wiadomość do wybranych osób" : "Wiadomość do całej grupy"}</label><div className="messaging-composer-main"><textarea ref={draftRef} id="message-body" name="body" maxLength={2000} rows={2} placeholder="Napisz wiadomość…" required /><button disabled={messagePending} type="submit" aria-label="Wyślij wiadomość"><Send aria-hidden="true" /></button></div>
+              <div className="messaging-composer-toolbar"><div aria-label="Dodaj emoji">{["👋", "👍", "😊", "🎉"].map((emoji) => <button key={emoji} type="button" onClick={() => addEmoji(emoji)} aria-label={`Dodaj ${emoji}`}>{emoji}</button>)}</div><details><summary><Plus aria-hidden="true" /> Załącznik i opcje</summary><div className="messaging-composer-options"><label><Paperclip /><span>Dodaj PDF, JPG lub PNG</span><input type="file" name="attachment" accept="application/pdf,image/jpeg,image/png" /></label>{["DIRECTOR", "TEACHER"].includes(role) ? <label><input type="checkbox" name="requiresAcknowledgement" /><span>Poproś o świadome potwierdzenie przeczytania</span></label> : null}</div></details></div>
               {messageState.message ? <p className={`messaging-status ${messageState.status}`} role="status">{messageState.message}</p> : null}
             </form>
           </>

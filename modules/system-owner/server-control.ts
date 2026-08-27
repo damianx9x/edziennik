@@ -14,6 +14,11 @@ export type RaspberryStatus = {
   services?: Record<string, boolean>;
   latestBackupAt?: string;
   usbBackupPath?: string;
+  sftpConfigured?: boolean;
+  backupPolicy?: {
+    frequency: "daily" | "weekly" | "manual";
+    retentionDays: number;
+  };
   emailConfigured?: boolean;
   autoUnlockEnabled?: boolean;
   message?: string;
@@ -41,6 +46,23 @@ export type FullExport = {
   expiresAt: string;
 };
 
+export type SftpPreparation = {
+  host: string;
+  port: number;
+  username: string;
+  remotePath: string;
+  fingerprint: string;
+  publicKey: string;
+};
+
+export type ImportPreparation = {
+  id: string;
+  createdAt: string;
+  sourceCommit: string;
+  size: number;
+  sha256: string;
+};
+
 function runControl(action: string, args: string[] = [], input?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn("/usr/bin/sudo", ["-n", "/usr/local/sbin/kla-web-control", action, ...args], {
@@ -51,7 +73,7 @@ function runControl(action: string, args: string[] = [], input?: string): Promis
     let stderr = "";
     const timer = setTimeout(
       () => child.kill("SIGKILL"),
-      action === "backup-now" || action === "export-create" ? 120_000 : 20_000,
+      action === "import-prepare" ? 300_000 : ["backup-now", "export-create"].includes(action) ? 120_000 : 20_000,
     );
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
@@ -96,8 +118,44 @@ export async function runBackupNow(): Promise<string> {
   return runControl("backup-now");
 }
 
+export async function restartApplication(): Promise<string> {
+  return runControl("restart-app");
+}
+
+export async function setBackupPolicy(input: {
+  frequency: "daily" | "weekly" | "manual";
+  retentionDays: 14 | 30 | 90;
+}): Promise<string> {
+  return runControl("set-backup-policy", [], JSON.stringify(input));
+}
+
+export async function prepareSftpBackup(input: {
+  host: string;
+  port: number;
+  username: string;
+  remotePath: string;
+}): Promise<SftpPreparation> {
+  return JSON.parse(await runControl("sftp-prepare", [], JSON.stringify(input))) as SftpPreparation;
+}
+
+export async function confirmSftpBackup(input: SftpPreparation): Promise<string> {
+  return runControl("sftp-confirm", [], JSON.stringify(input));
+}
+
+export async function clearSftpBackup(): Promise<string> {
+  return runControl("sftp-clear");
+}
+
 export async function createFullExport(id: string): Promise<FullExport> {
   return JSON.parse(await runControl("export-create", [id])) as FullExport;
+}
+
+export async function prepareFullImport(id: string, recoveryKey: string): Promise<ImportPreparation> {
+  return JSON.parse(await runControl("import-prepare", [id], `${recoveryKey.trim()}\n`)) as ImportPreparation;
+}
+
+export async function restoreFullImport(id: string): Promise<string> {
+  return runControl("import-restore", [id]);
 }
 
 export async function readRecoveryKeyOnce(): Promise<string> {

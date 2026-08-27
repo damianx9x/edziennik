@@ -229,6 +229,11 @@ KLA_RETENTION_IMPORT_DAYS=30
 KLA_RETENTION_MESSAGE_ATTACHMENT_DAYS=0
 ENV
 chmod 600 "$ENV_DIR/retention.env"
+cat > "$ENV_DIR/backup-policy.env" <<'ENV'
+KLA_BACKUP_FREQUENCY=daily
+KLA_BACKUP_RETENTION_DAYS=30
+ENV
+chmod 600 "$ENV_DIR/backup-policy.env"
 
 "$SOURCE_DIR/raspberry/optimize-server.sh" "$PG_VERSION"
 sed -i 's/^#\?LocalSocket .*/LocalSocket \/run\/clamav\/clamd.ctl/' /etc/clamav/clamd.conf
@@ -273,6 +278,7 @@ visudo -cf /etc/sudoers.d/kla-control >/dev/null
 CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
 chmod 711 "$VAULT"
 install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" "$VAULT/control-incoming"
+install -d -m 700 -o kla -g kla "$VAULT/imports"
 
 if [[ ! -f "$VAULT/secrets/backup-age.key" ]]; then
   age-keygen -o "$VAULT/secrets/backup-age.key" 2> "$VAULT/secrets/backup-recipient.txt"

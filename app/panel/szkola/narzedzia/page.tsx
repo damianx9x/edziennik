@@ -20,13 +20,16 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { ImportWizard } from "@/modules/imports/components/import-wizard";
 import { IntegrationReadinessPanel } from "@/modules/settings/components/integration-readiness-panel";
+import { RaspberryBackupSettings } from "@/modules/system-owner/components/raspberry-control-panel";
+import { getRaspberryStatus, listMountedStorage } from "@/modules/system-owner/server-control";
 
 export const metadata: Metadata = { title: "Ustawienia szkoły" };
 export const dynamic = "force-dynamic";
 
 export default async function TransfersPage() {
   const session = await requireDirector("/panel/szkola/narzedzia");
-  const [recentImports, recordCounts] = await Promise.all([
+  const isSystemOwner = session.user.role === "SYSTEM_OWNER";
+  const [recentImports, recordCounts, raspberryStatus, storageDevices] = await Promise.all([
     db.importBatch.findMany({
       where: { schoolId: session.user.schoolId, archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -61,6 +64,8 @@ export default async function TransfersPage() {
         },
       }),
     ]),
+    isSystemOwner ? getRaspberryStatus() : Promise.resolve({ available: false as const }),
+    isSystemOwner ? listMountedStorage() : Promise.resolve([]),
   ]);
 
   return (
@@ -76,7 +81,7 @@ export default async function TransfersPage() {
         </div>
         <span className="role-security-chip">
           <ShieldCheck aria-hidden="true" />
-          Tylko dyrektor
+          {isSystemOwner ? "Dyrektor i obsługa systemu" : "Tylko dyrektor"}
         </span>
       </header>
 
@@ -149,11 +154,12 @@ export default async function TransfersPage() {
         <article>
           <span className="record-icon record-icon-green"><Server aria-hidden="true" /></span>
           <div><span className="section-kicker">Bezpieczeństwo danych</span><h2>Kopie zapasowe</h2><p>Wybierz lokalny folder, dysk lub bezpieczny serwer SFTP.</p></div>
-          <a className="button button-secondary" href="#kopie">Zaplanuj kopię</a>
+          <a className="button button-secondary" href={isSystemOwner ? "#backup-settings" : "#kopie"}>{isSystemOwner ? "Ustaw backup" : "Zaplanuj kopię"}</a>
         </article>
       </section>
 
-      <IntegrationReadinessPanel systemOwner={session.user.role === "SYSTEM_OWNER"} />
+      <IntegrationReadinessPanel showBackup={!isSystemOwner} />
+      {isSystemOwner ? <RaspberryBackupSettings status={raspberryStatus} storage={storageDevices} /> : null}
 
       <section
         className="transfer-choice-grid tools-data-section"

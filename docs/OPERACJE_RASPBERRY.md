@@ -142,6 +142,10 @@ docelowa może przenieść auto-start do TPM lub fizycznego klucza USB.
 
 ## 6. Backup SFTP
 
+Najprościej otworzyć w eDzienniku **Ustawienia serwera → Backup i eksport**.
+Panel przeprowadza przez porównanie odcisku serwera, dodanie klucza publicznego
+i test połączenia. Poniższe polecenie pozostaje drogą awaryjną dla technika.
+
 Uruchom:
 
 ```bash
@@ -186,6 +190,9 @@ zarchiwizowane i zapisuje zdarzenie audytowe.
 - Logi: `sudo journalctl -u edziennik-kla -n 200 --no-pager`.
 - Pełne odtworzenie wymaga wpisania dokładnego potwierdzenia:
   `sudo edziennik-kla-restore /srv/kla-vault/backups/kla-....tar.age`.
+- Pełną kopię można również pobrać albo wgrać w **Ustawieniach serwera**.
+  Import przesyła plik fragmentami, prosi o klucz instalacji źródłowej i przed
+  odtworzeniem wykonuje pełny test. Klucz nie jest zapisywany.
 - Utrata hasła i klucza odzyskiwania oznacza trwałą utratę danych.
 - Backup na tym samym SSD nie chroni przed awarią/kradzieżą; SFTP musi być poza
   Raspberry Pi i najlepiej poza lokalem szkoły.

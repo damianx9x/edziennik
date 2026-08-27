@@ -12,6 +12,7 @@ import {
   NotebookTabs,
   ScrollText,
   ShieldCheck,
+  Settings2,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,7 +40,8 @@ type PanelSection =
   | "messages"
   | "learning"
   | "progress"
-  | "logs";
+  | "logs"
+  | "server-settings";
 
 function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "SYSTEM_OWNER") {
@@ -63,6 +65,12 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "logs",
       },
       {
+        href: "/panel/bog/ustawienia",
+        label: "Ustawienia serwera",
+        icon: Settings2,
+        key: "server-settings",
+      },
+      {
         href: "/panel/szkola/kartoteki",
         label: "Kartoteki",
         icon: ContactRound,
@@ -82,7 +90,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
       {
         href: "/panel/szkola/narzedzia",
-        label: "Ustawienia",
+        label: "Ustawienia szkoły",
         icon: Wrench,
         key: "tools",
       },
@@ -298,7 +306,8 @@ export async function AuthenticatedPanelShell({
             </div>
           </div>
           <a className="app-sidebar-creator" href="mailto:damianx9x@me.com">
-            System: Damian Eron · damianx9x@me.com
+            <span>Projekt i opieka techniczna</span>
+            <strong>Damian Eron · damianx9x@me.com</strong>
           </a>
         </aside>
 

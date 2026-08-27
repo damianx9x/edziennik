@@ -27,8 +27,8 @@ import {
   buildConfigurationChecks,
   sanitizeDiagnosticValue,
 } from "@/modules/system-owner/diagnostics";
-import { RaspberryControlPanel } from "@/modules/system-owner/components/raspberry-control-panel";
-import { getRaspberryStatus, listMountedStorage } from "@/modules/system-owner/server-control";
+import { RaspberryStatusOverview } from "@/modules/system-owner/components/raspberry-control-panel";
+import { getRaspberryStatus } from "@/modules/system-owner/server-control";
 
 export const metadata: Metadata = { title: "Centrum właściciela systemu" };
 export const dynamic = "force-dynamic";
@@ -58,7 +58,6 @@ export default async function SystemOwnerPage() {
     openFeedbackCount,
     recentLogs,
     raspberryStatus,
-    storageDevices,
   ] = await Promise.all([
     db.school.count(),
     db.user.count({ where: { status: "ACTIVE", archivedAt: null } }),
@@ -85,7 +84,6 @@ export default async function SystemOwnerPage() {
       },
     }),
     getRaspberryStatus(),
-    listMountedStorage(),
   ]);
 
   const configurationChecks = buildConfigurationChecks(process.env);
@@ -107,12 +105,12 @@ export default async function SystemOwnerPage() {
           </p>
         </div>
         <div className="owner-heading-actions">
-          <a className="button button-secondary" href="#email-delivery">
+          <Link className="button button-secondary" href="/panel/bog/ustawienia#email-delivery">
             <Mail aria-hidden="true" /> Ustaw wysyłkę
-          </a>
-          <a className="button button-secondary" href="#backup-usb">
+          </Link>
+          <Link className="button button-secondary" href="/panel/bog/ustawienia#backup-usb">
             <HardDrive aria-hidden="true" /> Ustaw backup
-          </a>
+          </Link>
           <Link className="button button-secondary" href="/panel/bog/logi">
             <ScrollText aria-hidden="true" /> Otwórz logi
           </Link>
@@ -199,7 +197,7 @@ export default async function SystemOwnerPage() {
         </article>
       </section>
 
-      <RaspberryControlPanel status={raspberryStatus} storage={storageDevices} />
+      <RaspberryStatusOverview status={raspberryStatus} />
 
       <div className="owner-dashboard-grid">
         <section className="owner-panel-card">

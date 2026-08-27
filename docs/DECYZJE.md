@@ -1096,3 +1096,43 @@ danych nie może równocześnie stanowić jedynej kopii zapasowej.
 **Dlaczego:** konfiguracja musi być wykonalna przez osobę nietechniczną, ale
 nie może umożliwiać wysłania sekretów do przypadkowej usługi ani pozorować
 backupu przez kopiowanie pliku na ten sam uszkadzalny nośnik.
+
+## ADR-083 — Bezpieczne operacje serwera w panelu i przenośny pełny backup
+
+**Data:** 2026-08-27
+**Status:** przyjęta
+
+Codzienne ustawienia Raspberry są dostępne właścicielowi systemu w jednym
+panelu: SMTP, SMS, wykryty nośnik USB, harmonogram, SFTP, ręczny test kopii,
+pełny eksport i kontrolowane odtworzenie. Operacje przechodzą przez zamkniętą
+listę poleceń `kla-web-control`; formularz nie może wykonać dowolnej komendy.
+Wyłączenie urządzenia, klucz LUKS i uprzywilejowany shell pozostają poza WWW.
+
+Pełny eksport zawiera bazę, dokumenty i pliki ciągłości pracy, jest szyfrowany
+`age` oraz pobierany z obsługą zakresów HTTP. Import jest dzielony na małe
+fragmenty, dzięki czemu nie trafia w całości do pamięci Raspberry. Użytkownik
+podaje klucz instalacji źródłowej; klucz istnieje tylko w pamięci i `/dev/shm`.
+Przed pokazaniem przycisku odtworzenia system sprawdza archiwum, bazę,
+dokumenty, uruchamia ClamAV i wykonuje próbne odtworzenie. Faktyczna zmiana robi jeszcze kopię
+bieżącego stanu i zachowuje mechanizm automatycznego wycofania.
+
+**Dlaczego:** panel ma być obsługiwalny bez terminala, ale awaria formularza
+nie może ujawnić klucza ani pozwolić na częściowe, niesprawdzone nadpisanie
+danych. Kopia musi dać się przenieść również między dwiema instalacjami z
+różnymi kluczami szyfrowania.
+
+## ADR-084 — Mobilny komunikator jest przepływem rozmów, nie pulpitem kart
+
+**Data:** 2026-08-27
+**Status:** przyjęta
+
+Na telefonie ekran wiadomości pokazuje najpierw pełną listę rozmów, a po
+wyborze jedną rozmowę z przyciskiem powrotu i przyklejonym polem odpowiedzi.
+Filtry, wyszukiwanie, szybkie emoji i reakcje są bezpośrednie; załącznik i
+potwierdzenie przeczytania są schowane w opcjach dodatkowych. Reakcje mają
+zamknięty zestaw znaków i są kontrolowane tymi samymi uprawnieniami co odczyt
+rozmowy.
+
+**Dlaczego:** kilka równoległych paneli i zagnieżdżonych obszarów przewijania
+utrudniało obsługę na telefonie. Jeden bieżący kontekst jest czytelniejszy dla
+rodzica i ucznia, a jednocześnie zachowuje funkcje dyrektora i wykładowcy.

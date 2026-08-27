@@ -160,6 +160,7 @@ if [[ -f /etc/kla/control-user ]]; then
   CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
   chmod 711 /srv/kla-vault
   install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" /srv/kla-vault/control-incoming
+  install -d -m 700 -o kla -g kla /srv/kla-vault/imports
   PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
   [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; false; }
   SUDO_USER="$CONTROL_USER" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
@@ -167,6 +168,12 @@ fi
 systemctl daemon-reload
 systemctl enable edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 systemctl restart edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+if [[ -f /etc/kla/backup-policy.env ]]; then
+  source /etc/kla/backup-policy.env
+  if [[ "${KLA_BACKUP_FREQUENCY:-daily}" == "manual" ]]; then
+    systemctl disable --now edziennik-kla-backup.timer >/dev/null
+  fi
+fi
 systemctl start edziennik-kla
 
 for attempt in {1..45}; do

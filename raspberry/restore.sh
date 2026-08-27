@@ -4,7 +4,7 @@ umask 077
 
 VAULT=/srv/kla-vault
 MODE="${1:-}"
-if [[ "$MODE" == "--test" ]]; then BACKUP="${2:-}"; else BACKUP="$MODE"; fi
+if [[ "$MODE" == "--test" || "$MODE" == "--confirmed" ]]; then BACKUP="${2:-}"; else BACKUP="$MODE"; fi
 if [[ ${EUID} -ne 0 || ! -f "$BACKUP" ]]; then
   echo "Test: sudo edziennik-kla-restore --test /srv/kla-vault/backups/kla-....tar.age"
   echo "Odtworzenie: sudo edziennik-kla-restore /srv/kla-vault/backups/kla-....tar.age"
@@ -38,8 +38,10 @@ if [[ "$MODE" == "--test" ]]; then
   exit 0
 fi
 
-read -r -p "To zastąpi bazę i dokumenty. Wpisz ODTWARZAM KLA: " CONFIRM
-[[ "$CONFIRM" == "ODTWARZAM KLA" ]] || { echo "Anulowano."; exit 1; }
+if [[ "$MODE" != "--confirmed" ]]; then
+  read -r -p "To zastąpi bazę i dokumenty. Wpisz ODTWARZAM KLA: " CONFIRM
+  [[ "$CONFIRM" == "ODTWARZAM KLA" ]] || { echo "Anulowano."; exit 1; }
+fi
 /usr/local/sbin/edziennik-kla-backup
 STAMP="$(date +%s)"
 CANDIDATE_DB="kla_restore_candidate_$STAMP"

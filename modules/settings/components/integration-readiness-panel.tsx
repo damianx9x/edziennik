@@ -11,7 +11,6 @@ import {
   Server,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -26,7 +25,7 @@ const destinationIcons = {
   SFTP: Server,
 };
 
-export function IntegrationReadinessPanel({ systemOwner = false }: { systemOwner?: boolean }) {
+export function IntegrationReadinessPanel({ showBackup = true }: { showBackup?: boolean }) {
   const [destination, setDestination] = useState<BackupDestinationKind>("SFTP");
   const [frequency, setFrequency] = useState("codziennie");
   const [retention, setRetention] = useState("30 dni");
@@ -57,7 +56,7 @@ export function IntegrationReadinessPanel({ systemOwner = false }: { systemOwner
         </footer>
       </article>
 
-      <article id="kopie" className="integration-card backup-planner">
+      {showBackup ? <article id="kopie" className="integration-card backup-planner">
         <header>
           <span className="record-icon record-icon-green"><HardDrive aria-hidden="true" /></span>
           <div><span className="section-kicker">Plan bezpiecznej kopii</span><h2>Wybierz miejsce backupu</h2></div>
@@ -81,15 +80,9 @@ export function IntegrationReadinessPanel({ systemOwner = false }: { systemOwner
         <div className="backup-requirements"><strong>Do uruchomienia potrzebne będą:</strong><ul>{requirements.map((item) => <li key={item}>{item}</li>)}</ul></div>
         <p className="integration-limit compact"><CircleAlert aria-hidden="true" /><span><strong>Zwykłe FTP nie jest zalecane.</strong> Dla danych uczniów wybieramy szyfrowane SFTP, szyfrowaną kopię i osobny test odtworzenia.</span></p>
         <footer>
-          {systemOwner ? (
-            <Link className="button button-primary" href="/panel/bog#backup-usb">
-              <HardDrive aria-hidden="true" /> Wykryj dysk i włącz backup
-            </Link>
-          ) : (
-            <button className="button button-secondary" type="button" onClick={copyChecklist}><Copy aria-hidden="true" /> {copied === "backup" ? "Skopiowano" : "Skopiuj plan dla obsługi technicznej"}</button>
-          )}
+          <button className="button button-secondary" type="button" onClick={copyChecklist}><Copy aria-hidden="true" /> {copied === "backup" ? "Skopiowano" : "Skopiuj plan dla obsługi technicznej"}</button>
         </footer>
-      </article>
+      </article> : null}
     </section>
   );
 }

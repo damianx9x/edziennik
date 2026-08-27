@@ -21,6 +21,12 @@ export const announcementSchema = z.object({
   clientRequestId: z.string().uuid("Odśwież formularz i spróbuj ponownie."),
 });
 
+export const messageReactionEmojis = ["👍", "❤️", "😊", "🎉"] as const;
+export const messageReactionSchema = z.object({
+  messageId: z.string().uuid(),
+  emoji: z.enum(messageReactionEmojis),
+});
+
 export type MessagingActionState = {
   status: "idle" | "success" | "error";
   message?: string;
