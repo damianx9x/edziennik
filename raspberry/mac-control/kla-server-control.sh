@@ -103,8 +103,12 @@ case "$ACTION" in
   test)
     remote 'printf "Połączenie SSH działa. Host: "; hostname'
     ;;
-  status|start|stop|restart|backup|restore-test|logs|refresh-operations|optimize-now|auto-unlock-enable)
+  status|start|stop|restart|backup|restore-test|logs|refresh-operations|optimize-now)
     remote "sudo /usr/local/sbin/kla-control $ACTION"
+    ;;
+  auto-unlock-enable)
+    discover_host
+    exec ssh -t "${SSH_OPTIONS[@]}" "$KLA_USER@$KLA_HOST" "sudo /usr/local/sbin/kla-control auto-unlock-enable"
     ;;
   unlock)
     discover_host

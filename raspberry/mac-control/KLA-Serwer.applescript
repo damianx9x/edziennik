@@ -47,7 +47,11 @@ on run
         set resultText to do shell script quoted form of backend & " update " & quoted form of POSIX path of packageFile
       else if actionName is "Włącz automatyczny start po zaniku prądu" then
         display dialog "Raspberry będzie uruchamiać zaszyfrowany sejf i aplikację bez pytania o hasło. Chroni to ciągłość pracy, ale urządzenie i karta systemowa przechowywane razem są słabszą ochroną przed fizyczną kradzieżą. Kontynuować?" buttons {"Anuluj", "Włącz auto-start"} default button "Anuluj" with icon caution
-        set resultText to do shell script quoted form of backend & " auto-unlock-enable"
+        tell application "Terminal"
+          activate
+          do script quoted form of backend & " auto-unlock-enable"
+        end tell
+        set resultText to "Dokończ jednorazowe włączenie w Terminalu. Jeżeli system poprosi, wpisz dotychczasowe hasło sejfu; hasło nie zostanie zapisane."
       else if actionName is "Odblokuj po restarcie" then
         tell application "Terminal"
           activate

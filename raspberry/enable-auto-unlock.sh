@@ -18,25 +18,25 @@ if [[ ! -f "$KEY_FILE" ]]; then
   trap 'rm -f "${TEMP_KEY:-}" "${TEMP_VOLUME_KEY:-}"' EXIT
   openssl rand 64 > "$TEMP_KEY"
   chmod 600 "$TEMP_KEY"
-  VOLUME_KEY_HEX="$(dmsetup table --showkeys "$MAPPER" | awk '$3 == "crypt" {print $5; exit}')"
-  if [[ ! "$VOLUME_KEY_HEX" =~ ^[0-9a-fA-F]{64,}$ ]]; then
-    # LUKS2 domyślnie trzyma klucz aktywnego mapowania w kernel keyring.
-    # Kontrolowane odświeżenie przenosi go do tabeli dm-crypt wyłącznie na czas
-    # utworzenia dodatkowego slotu auto-startu; plik tymczasowy pozostaje w RAM.
-    cryptsetup refresh --disable-keyring "$MAPPER"
-    VOLUME_KEY_HEX="$(dmsetup table --showkeys "$MAPPER" | awk '$3 == "crypt" {print $5; exit}')"
-  fi
-  [[ "$VOLUME_KEY_HEX" =~ ^[0-9a-fA-F]{64,}$ && $((${#VOLUME_KEY_HEX} % 2)) -eq 0 ]] || {
-    echo "Nie udało się bezpiecznie pobrać aktywnego klucza woluminu." >&2
-    exit 1
-  }
-  python3 - "$VOLUME_KEY_HEX" "$TEMP_VOLUME_KEY" <<'PY'
+  ACTIVE_KEY="$(dmsetup table --showkeys "$MAPPER" | awk '$3 == "crypt" {print $5; exit}')"
+  if [[ "$ACTIVE_KEY" =~ ^[0-9a-fA-F]{64,}$ && $((${#ACTIVE_KEY} % 2)) -eq 0 ]]; then
+    python3 - "$ACTIVE_KEY" "$TEMP_VOLUME_KEY" <<'PY'
 import binascii, sys
 with open(sys.argv[2], "wb") as handle:
     handle.write(binascii.unhexlify(sys.argv[1]))
 PY
-  chmod 600 "$TEMP_VOLUME_KEY"
-  cryptsetup luksAddKey "$DEVICE" "$TEMP_KEY" --volume-key-file "$TEMP_VOLUME_KEY"
+    chmod 600 "$TEMP_VOLUME_KEY"
+    cryptsetup luksAddKey "$DEVICE" "$TEMP_KEY" --volume-key-file "$TEMP_VOLUME_KEY"
+  elif [[ "$ACTIVE_KEY" =~ ^:[0-9]+:([A-Za-z0-9_-]+):(.+)$ ]]; then
+    KEYRING_SPEC="%${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"
+    cryptsetup luksAddKey "$DEVICE" --volume-key-keyring "$KEYRING_SPEC" --new-keyfile "$TEMP_KEY"
+  elif [[ -t 0 ]]; then
+    echo "Jednorazowo wpisz dotychczasowe hasło sejfu. Nie będzie zapisane."
+    cryptsetup luksAddKey "$DEVICE" --new-keyfile "$TEMP_KEY"
+  else
+    echo "System wymaga jednorazowego potwierdzenia hasłem sejfu. Uruchom tę akcję w interaktywnym Terminalu." >&2
+    exit 1
+  fi
   install -m 600 -o root -g root "$TEMP_KEY" "$KEY_FILE"
 fi
 
