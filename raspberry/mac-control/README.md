@@ -13,13 +13,18 @@ celowo niedostępne bez osobno skonfigurowanego Cloudflare Access albo VPN.
 
 Klucz prywatny pozostaje w `~/.ssh/kla_raspberry_ed25519`, a nie w tym folderze
 ani repozytorium. Gdy zmieni się użytkownik, port SSH lub nazwa hosta, wybierz
-**Ustaw połączenie**. Po pełnym restarcie wybierz **Odblokuj po restarcie**,
-ponieważ klucz LUKS celowo nie jest zapisany na karcie Raspberry.
+**Ustaw połączenie**.
 
 Serwer ma trzy warstwy samonaprawy: restart każdej usługi przez systemd,
 kontrolę aplikacji, bazy, nginx, antywirusa i tunelu co minutę oraz sprzętowy
-watchdog restartujący Raspberry po zawieszeniu systemu. Pełny zanik zasilania
-nie otworzy sam szyfrowanego sejfu — po starcie użyj **Odblokuj po restarcie**.
+watchdog restartujący Raspberry po zawieszeniu systemu.
+
+Przed pierwszym przeniesieniem urządzenia wybierz **Włącz automatyczny start po
+zaniku prądu**. Jednorazowo wpiszesz dotychczasowe hasło sejfu. System zapisze
+na karcie Raspberry osobny klucz techniczny dostępny wyłącznie dla konta root,
+dzięki czemu po kolejnych restartach sam otworzy dysk i uruchomi aplikację.
+Jeśli auto-start nie został jeszcze włączony, po restarcie użyj **Odblokuj po
+restarcie**.
 
 Aktualizacja przyjmuje wyłącznie paczkę
 `edziennik-kla-raspberry-source.tar.gz` z identyfikatorem commita i manifestem
