@@ -1,8 +1,8 @@
 "use client";
 
-import { Activity, CheckCircle2, DatabaseBackup, HardDrive, LoaderCircle, Mail, MessageSquareText, Server, Thermometer, Usb } from "lucide-react";
+import { Activity, CheckCircle2, DatabaseBackup, Download, ExternalLink, HardDrive, LoaderCircle, Mail, MessageSquareText, Server, TerminalSquare, Thermometer, Usb } from "lucide-react";
 import { useActionState } from "react";
-import { backupNowAction, clearUsbBackupAction, configureSmsGateAction, configureSmtpAction, configureUsbBackupAction, type ServerActionState } from "../server-actions";
+import { backupNowAction, clearUsbBackupAction, configureSmsGateAction, configureSmtpAction, configureUsbBackupAction, prepareFullExportAction, type ServerActionState } from "../server-actions";
 import type { RaspberryStatus, StorageDevice } from "../server-control";
 
 const initialState: ServerActionState = { status: "idle" };
@@ -32,6 +32,8 @@ export function RaspberryControlPanel({ status, storage }: { status: RaspberrySt
   const [backupState, backupAction, backupPending] = useActionState(backupNowAction, initialState);
   const [smtpState, smtpAction, smtpPending] = useActionState(configureSmtpAction, initialState);
   const [smsState, smsAction, smsPending] = useActionState(configureSmsGateAction, initialState);
+  const [exportState, exportAction, exportPending] = useActionState(prepareFullExportAction, initialState);
+  const remoteSshUrl = process.env.NEXT_PUBLIC_KLA_SSH_URL;
   const externalPartitions = flatten(storage).filter(
     (item) =>
       item.type === "part" &&
@@ -57,7 +59,7 @@ export function RaspberryControlPanel({ status, storage }: { status: RaspberrySt
       <article><Server /><span>Pamięć RAM</span><strong>{bytes(memoryUsed)} / {bytes(status.memory?.total)}</strong></article>
       <article><HardDrive /><span>Sejf danych</span><strong>{bytes(status.vaultDisk?.used)} / {bytes(status.vaultDisk?.total)}</strong></article>
     </div>
-    <div className="raspberry-service-list">{Object.entries(status.services ?? {}).map(([name, ready]) => <span key={name} className={ready ? "ready" : "error"}><i /> {name}</span>)}</div>
+    <div className="raspberry-service-list">{Object.entries(status.services ?? {}).map(([name, ready]) => <span key={name} className={ready ? "ready" : "error"}><i /> {name}</span>)}<span className={status.autoUnlockEnabled ? "ready" : "error"}><i /> start po zaniku prądu</span></div>
     <div className="raspberry-config-grid">
       <article className="integration-card"><header><Usb /><div><span className="section-kicker">Wykrywanie USB</span><h3>Dodatkowy dysk backupu</h3></div></header>
         <p>Archiwum jest szyfrowane przed skopiowaniem. Wybranie nośnika nie formatuje go ani nie usuwa istniejących plików.</p>
@@ -74,6 +76,17 @@ export function RaspberryControlPanel({ status, storage }: { status: RaspberrySt
         <p>Zainstaluj bezpłatną aplikację SMS Gateway for Android na osobnym telefonie. System użyje jego karty SIM; koszt pojedynczych SMS-ów nadal zależy od taryfy operatora.</p>
         <ol className="backup-requirements"><li>W aplikacji wybierz Public Cloud i utwórz dane dostępu.</li><li>Telefon musi mieć Internet, aktywną kartę SIM i działać w tle.</li><li>Wpisz poniżej wygenerowany login oraz hasło — nie dane do eDziennika.</li></ol>
         <form action={smsAction} className="owner-config-form"><label>Login bramki<input name="username" autoComplete="username" required /></label><label>Hasło bramki<input name="password" type="password" autoComplete="new-password" required /></label><button className="button button-primary" disabled={smsPending}>{smsPending ? <LoaderCircle className="spin" /> : <MessageSquareText />} Włącz SMS</button></form><Feedback state={smsState} />
+      </article>
+      <article className="integration-card"><header><Download /><div><span className="section-kicker">Awaryjne przeniesienie szkoły</span><h3>Pełny eksport systemu</h3></div></header>
+        <p>Jedno szyfrowane archiwum zawiera bazę PostgreSQL oraz prywatne pliki: kartoteki, umowy, grafik, obecności, materiały, postępy, wiadomości, statystyki i historię zmian.</p>
+        <p className="integration-limit compact"><DatabaseBackup /><span>Do odtworzenia potrzebny jest klucz odzyskiwania zapisany poza Raspberry Pi. Pobieranie można wznowić po przerwaniu połączenia.</span></p>
+        <form action={exportAction} className="owner-config-form"><label>Potwierdź operację<input name="confirmation" required autoComplete="off" placeholder="Wpisz EKSPORTUJ" /></label><button className="button button-primary" disabled={exportPending}>{exportPending ? <LoaderCircle className="spin" /> : <DatabaseBackup />} Przygotuj pełny eksport</button></form>
+        <Feedback state={exportState} />
+        {exportState.downloadUrl ? <div className="owner-export-ready"><a className="button button-secondary" href={exportState.downloadUrl} download={exportState.downloadName}><Download /> Pobierz zaszyfrowane archiwum</a>{exportState.sha256 ? <small>SHA-256: <code>{exportState.sha256}</code></small> : null}</div> : null}
+      </article>
+      <article className="integration-card"><header><TerminalSquare /><div><span className="section-kicker">Administracja niezależna od lokalnego IP</span><h3>Bezpieczny terminal Cloudflare</h3></div></header>
+        <p>Terminal nie jest częścią eDziennika. Cloudflare Access uwierzytelnia administratora przed połączeniem SSH, a Raspberry nie otwiera portu w routerze.</p>
+        {remoteSshUrl ? <a className="button button-secondary" href={remoteSshUrl} target="_blank" rel="noreferrer"><ExternalLink /> Otwórz terminal administracyjny</a> : <p className="integration-limit compact"><TerminalSquare /><span>Adres terminala nie został jeszcze aktywowany w Cloudflare Access. Aplikacja pozostawia SSH niewystawione do Internetu.</span></p>}
       </article>
     </div>
   </section>;

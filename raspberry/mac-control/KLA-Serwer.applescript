@@ -3,7 +3,7 @@ on run
   set baseDir to do shell script "/usr/bin/dirname " & quoted form of appPath
   set backend to baseDir & "/kla-server-control.sh"
   repeat
-    set choices to {"Stan serwera", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Utwórz backup", "Test odtworzenia", "Pokaż logi", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Wgraj aktualizację", "Odblokuj po restarcie", "Ustaw połączenie", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry", "Zamknij panel"}
+    set choices to {"Stan serwera", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Utwórz backup", "Test odtworzenia", "Zapisz jedyny klucz odzyskiwania", "Pokaż logi", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Wgraj aktualizację", "Włącz automatyczny start po zaniku prądu", "Odblokuj po restarcie", "Ustaw połączenie", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry", "Zamknij panel"}
     set picked to choose from list choices with title "KLA — Raspberry Serwer" with prompt "Wybierz działanie:" default items {"Stan serwera"} OK button name "Wykonaj" cancel button name "Zamknij"
     if picked is false then return
     set actionName to item 1 of picked
@@ -26,6 +26,9 @@ on run
         set resultText to do shell script quoted form of backend & " backup"
       else if actionName is "Test odtworzenia" then
         set resultText to do shell script quoted form of backend & " restore-test"
+      else if actionName is "Zapisz jedyny klucz odzyskiwania" then
+        display dialog "Klucz zostanie pokazany przez serwer tylko raz i zapisany w pliku na tym Macu. Bez niego pełnego eksportu nie da się odtworzyć. Kontynuować?" buttons {"Anuluj", "Zapisz klucz"} default button "Anuluj" with icon caution
+        set resultText to do shell script quoted form of backend & " recovery-key-once"
       else if actionName is "Pokaż logi" then
         set resultText to do shell script quoted form of backend & " logs"
       else if actionName is "Skonfiguruj e-mail" then
@@ -42,6 +45,9 @@ on run
       else if actionName is "Wgraj aktualizację" then
         set packageFile to choose file with prompt "Wybierz edziennik-kla-raspberry-source.tar.gz"
         set resultText to do shell script quoted form of backend & " update " & quoted form of POSIX path of packageFile
+      else if actionName is "Włącz automatyczny start po zaniku prądu" then
+        display dialog "Raspberry będzie uruchamiać zaszyfrowany sejf i aplikację bez pytania o hasło. Chroni to ciągłość pracy, ale urządzenie i karta systemowa przechowywane razem są słabszą ochroną przed fizyczną kradzieżą. Kontynuować?" buttons {"Anuluj", "Włącz auto-start"} default button "Anuluj" with icon caution
+        set resultText to do shell script quoted form of backend & " auto-unlock-enable"
       else if actionName is "Odblokuj po restarcie" then
         tell application "Terminal"
           activate

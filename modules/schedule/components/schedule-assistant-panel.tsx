@@ -951,6 +951,9 @@ function GenerationPreview({
 }) {
   const complete = generation.hardViolations.length === 0;
   const nothingToAdd = complete && generation.proposals.length === 0;
+  const canPublish =
+    generation.status === "READY" && generation.proposals.length > 0;
+  const partialPublication = canPublish && !complete;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { startDrag, resetDialogPosition } = useMovableDialog(dialogRef);
   const [isOpen, setIsOpen] = useState(true);
@@ -1032,7 +1035,9 @@ function GenerationPreview({
                     ? "Plan jest już kompletny"
                     : complete
                       ? `Gotowe: ${generation.proposals.length} lekcji bez kolizji`
-                      : `Potrzebna decyzja: ${generation.hardViolations.length} braków`}
+                      : generation.proposals.length > 0
+                        ? `Gotowe do publikacji: ${generation.proposals.length} z ${generation.proposals.length + generation.hardViolations.length} lekcji`
+                        : `Potrzebna decyzja: ${generation.hardViolations.length} braków`}
                 </h2>
                 <p>
                   {nothingToAdd
@@ -1048,8 +1053,8 @@ function GenerationPreview({
               <div className="assistant-issues">
                 <strong>Co trzeba poprawić</strong>
                 <ul>
-                  {generation.hardViolations.map((issue) => (
-                    <li key={issue}>{issue}</li>
+                  {generation.hardViolations.map((issue, index) => (
+                    <li key={`${index}-${issue}`}>{issue}</li>
                   ))}
                 </ul>
                 <p>{generation.suggestions[0]}</p>
@@ -1079,20 +1084,6 @@ function GenerationPreview({
                 <CheckCircle2 aria-hidden="true" />
                 Nie ma nic do opublikowania.
               </div>
-            ) : complete && generation.status === "READY" ? (
-              <form
-                action={applyScheduleGenerationAction}
-                className="assistant-apply"
-              >
-                <input type="hidden" name="generationId" value={generation.id} />
-                <label>
-                  <input type="checkbox" required />
-                  <span>
-                    Sprawdziłem propozycję. Chcę opublikować te lekcje w planie.
-                  </span>
-                </label>
-                <ApplyGenerationButton />
-              </form>
             ) : generation.status === "APPLIED" ? (
               <div className="assistant-already-applied">
                 <CheckCircle2 aria-hidden="true" />
@@ -1100,13 +1091,32 @@ function GenerationPreview({
               </div>
             ) : null}
           </section>
+
+          {canPublish ? (
+            <form
+              action={applyScheduleGenerationAction}
+              className={`assistant-apply ${partialPublication ? "is-partial" : ""}`}
+            >
+              <input type="hidden" name="generationId" value={generation.id} />
+              {partialPublication ? <input type="hidden" name="allowPartial" value="yes" /> : null}
+              <label>
+                <input type="checkbox" required />
+                <span>
+                  {partialPublication
+                    ? `Zatwierdzam ${generation.proposals.length} gotową lekcję. Pozostałych ${generation.hardViolations.length} braków nie publikujemy.`
+                    : "Sprawdziłem propozycję. Chcę opublikować te lekcje w planie."}
+                </span>
+              </label>
+              <ApplyGenerationButton partial={partialPublication} count={generation.proposals.length} />
+            </form>
+          ) : null}
         </div>
       </dialog>
     </>
   );
 }
 
-function ApplyGenerationButton() {
+function ApplyGenerationButton({ partial, count }: { partial: boolean; count: number }) {
   const { pending } = useFormStatus();
 
   return (
@@ -1118,7 +1128,8 @@ function ApplyGenerationButton() {
         </>
       ) : (
         <>
-          <CheckCircle2 aria-hidden="true" /> Zatwierdź i opublikuj
+          <CheckCircle2 aria-hidden="true" />
+          {partial ? `Opublikuj gotowe lekcje (${count})` : "Zatwierdź i opublikuj"}
         </>
       )}
     </button>

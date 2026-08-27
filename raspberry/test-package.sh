@@ -13,7 +13,7 @@ required_files=(
   raspberry/mac-control/kla-server-control.sh
   raspberry/mac-control/KLA-Serwer.applescript
   raspberry/optimize-server.sh
-  raspberry/START_LOCAL_DEMO_PI4B.md
+  docs/OPERACJE_RASPBERRY.md
   raspberry/vault-create.sh
   raspberry/vault-create-partition.sh
   raspberry/unlock.sh
@@ -22,9 +22,13 @@ required_files=(
   raspberry/restore.sh
   raspberry/retention.sh
   raspberry/configure-sftp-backup.sh
+  raspberry/enable-auto-unlock.sh
   raspberry/systemd/edziennik-kla.service
   raspberry/systemd/edziennik-kla-backup.timer
   raspberry/systemd/edziennik-kla-restore-test.timer
+  raspberry/systemd/edziennik-kla-email-queue.service
+  raspberry/systemd/edziennik-kla-email-queue.timer
+  deployment/release-signing.pub
   raspberry/README.md
 )
 for file in "${required_files[@]}"; do
@@ -71,5 +75,12 @@ grep -q 'npm ci --include=dev' "$ROOT/raspberry/install.sh"
 grep -q "npm ci --include=dev && set -a" "$ROOT/raspberry/update.sh"
 grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'NOPASSWD: /usr/local/sbin/kla-control' "$ROOT/raspberry/install.sh"
+grep -q 'PasswordAuthentication no' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'KLA_RELEASE_MANIFEST.sha256.sig' "$ROOT/raspberry/update.sh"
+grep -q 'release-signing.pub' "$ROOT/raspberry/install.sh"
+grep -q 'kla-enable-auto-unlock' "$ROOT/raspberry/update.sh"
+grep -q 'edziennik-kla-email-queue.timer' "$ROOT/raspberry/update.sh"
+grep -q 'refresh-operations' "$ROOT/raspberry/control.sh"
+grep -q 'continuity/edziennik.env' "$ROOT/raspberry/backup.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."

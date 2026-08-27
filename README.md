@@ -1,72 +1,46 @@
-# eDziennik KLA
+# eDziennik King’s Language Academy · v1.0
 
-Mobilny eDziennik King’s Language Academy. Etapy 0–6 są funkcjonalne na danych
-syntetycznych i przechodzą odbiór przedprodukcyjny. Działają role, kartoteki,
-zaproszenia, import/eksport, grafik z asystentem, obecności, wersjonowane umowy,
-ręczne płatności, komunikator, powiadomienia, materiały, zadania, postępy i
-prywatne pliki. Aktualny stan,
-blokery produkcyjne i bezpieczny rytm wydawania opisuje `STAN_PROJEKTU.md`.
+Mobilna aplikacja jednej prywatnej szkoły języka angielskiego. Łączy grafik,
+kartoteki, umowy i raty, wiadomości, powiadomienia, materiały, zadania,
+obecności oraz postępy uczniów. Publiczny pilot działa na Raspberry Pi pod
+`https://demo.kingslanguageacademy.pl`.
 
-## Start
+## Najprościej
 
 ```bash
-./scripts/setup-macos.sh
+npm ci
+npm run db:generate
 npm run dev
 ```
 
-Otwórz `http://localhost:3000`.
-
-## Kontrola
+Otwórz `http://localhost:3000`. Pełna kontrola przed wydaniem:
 
 ```bash
 npm run check
 npm run build
 npm run package:release
-npm run package:preview
 npm run package:raspberry
-npm audit --omit=dev
-npm run db:migrate:dev
-npm run db:seed:demo
 ```
 
-`package:preview` tworzy gotowy do WebFTP plik
-`outputs/kla-szkielet-etap-0-5-home-pl.zip`. Instrukcja:
-`INSTRUKCJA_HOME_PL.md`.
+## Jak czytać dokumentację
 
-`package:release` tworzy aplikację Node.js
-Paczka w `outputs/` wymaga PostgreSQL i hostingu
-Node.js; zwykłe FTP jej nie uruchomi.
+- [Funkcje i role](docs/FUNKCJE_I_ROLE.md) — prosty opis tego, co działa.
+- [Odbiór i testy](docs/ODBIOR_I_TESTY.md) — lista dla klientki i telefonów.
+- [Operacje Raspberry](docs/OPERACJE_RASPBERRY.md) — instalacja, start, backup,
+  aktualizacja i awaria.
+- [Zakres produktu](docs/PRODUCT_SCOPE.md) — cele i granice wersji.
+- [System UI](docs/SYSTEM_UI.md) — zasady kolejnych ekranów.
+- [Architektura](docs/ARCHITEKTURA.md) — moduły i przepływy techniczne.
+- [Przekazanie inżynierskie](docs/ENGINEERING_HANDOFF.md) — głęboka ocena stosu,
+  ryzyka i skalowania.
+- [Bezpieczeństwo, prawo i RODO](docs/BEZPIECZENSTWO_PRAWO_RODO.md).
+- [Decyzje](docs/DECYZJE.md) i [notatki wydania](docs/RELEASE_NOTES.md).
 
-## Dokumenty
+## Zasady wydania
 
-- `START_TUTAJ.md` — instrukcja dla osoby nietechnicznej,
-- `ETAP_1_INSTRUKCJA.md` — uruchomienie i odbiór logowania oraz ról,
-- `ETAP_2_INSTRUKCJA.md` — kartoteki, szablon importu i odbiór Etapu 2,
-- `ETAP_3_GRAFIK.md` — Asystent, ręczny grafik i checklista odbioru,
-- `ETAP_6_NAUKA_POSTEPY.md` — materiały, zadania, prace i opisowe postępy,
-- `CHECKLISTA_ODBIORU_KLIENTKI.md` — testy do odhaczenia dla każdej roli,
-- `TECHNICAL_HANDOFF_PRE_RELEASE.md` — architektura, ryzyka i handoff techniczny,
-- `PLAN_2026.md` — zakres i harmonogram,
-- `ZAKRES_STARTOWY.md` — dokładne granice czterech modułów na start,
-- `USTALENIA_Z_KLIENTKA.md` — jeden zestaw pytań,
-- `ARCHITEKTURA.md` — moduły i dane,
-- `BEZPIECZENSTWO_I_RODO.md` — bramka przed prawdziwymi danymi,
-- `BRAND_I_UI.md` — marka, treści i kontrolowany system UI,
-- `OBSERVABILITY_I_ZGLOSZENIA.md` — logi, zrzuty i zgłoszenia,
-- `INSTRUKCJA_HOME_PL.md` — domeny, SSL, WebFTP i pokaz klientce,
-- `AGENTS.md` — zasady kolejnych sesji,
-- `DECYZJE.md` — historia decyzji,
-- `AKTUALIZACJE_I_ROLLBACK.md` — bezpieczne aktualizacje i cofanie,
-- `security_best_practices_report.md` — bieżący raport bezpieczeństwa,
-- `wr-threat-model.md` — model zagrożeń całego systemu,
-- `AUDYT_ETAPOW_2026-08-21.md` — wykonane funkcje, uwagi z PDF i zaległości,
-- `raspberry/README.md` — instalacja pilota na Raspberry Pi 4B 8 GB.
+`main` jest gałęzią stabilną, a bieżąca praca odbywa się na gałęzi etapu.
+Paczka Raspberry powstaje wyłącznie z czystego commita, ma manifest SHA-256 i
+podpis Ed25519. Sekrety, bazy, eksporty i backupy nigdy nie trafiają do Git.
 
-## Wymagania i środowisko
-
-Node.js 22.13–24 LTS, npm 11 i PostgreSQL. Skopiuj `.env.example` do `.env`;
-nigdy nie commituj `.env`. Puste klucze e-mail/SMS są celowe.
-
-Statyczny szkielet można pokazać na zwykłym hostingu home.pl. Pełny pilot z
-logowaniem i bazą wymaga serwera Node. Procedury: `INSTRUKCJA_HOME_PL.md`,
-`DEPLOYMENT_MYDEVIL.md` oraz `raspberry/README.md`.
+Produkcja wymaga odbioru klientki, zatwierdzonych dokumentów prawnych/RODO,
+MFA dyrektora, działającego SMTP, kopii poza Raspberry oraz testu odtworzenia.

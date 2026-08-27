@@ -11,7 +11,7 @@ Budujemy mobilny eDziennik prywatnej szkoły wyłącznie języka angielskiego.
 Największy problem biznesowy to grafik oparty na trzech zasobach: sala,
 wykładowca i grupa. Role: dyrektor,
 wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
-`PLAN_2026.md` i `ZAKRES_STARTOWY.md`: zawiera podstawowe umowy online,
+`docs/PRODUCT_SCOPE.md` i `docs/FUNKCJE_I_ROLE.md`: zawiera umowy online,
 komunikator z masowymi ogłoszeniami, ręczny status płatności oraz materiały i
 zadania. Nie jest to cała wizja produktu.
 
@@ -24,14 +24,14 @@ PostgreSQL.
 
 1. Bieżące polecenie użytkownika.
 2. `AGENTS.md`.
-3. `PLAN_2026.md`.
-4. `ZAKRES_STARTOWY.md`.
-5. `ARCHITEKTURA.md`.
-6. `BEZPIECZENSTWO_I_RODO.md`.
-7. `BRAND_I_UI.md`.
-8. `OBSERVABILITY_I_ZGLOSZENIA.md`.
-9. `DECYZJE.md`.
-10. `CYKL_TESTOWY.md`.
+3. `docs/PRODUCT_SCOPE.md`.
+4. `docs/FUNKCJE_I_ROLE.md`.
+5. `docs/ARCHITEKTURA.md`.
+6. `docs/BEZPIECZENSTWO_PRAWO_RODO.md`.
+7. `docs/SYSTEM_UI.md`.
+8. `docs/DECYZJE.md`.
+9. `docs/ODBIOR_I_TESTY.md`.
+10. `docs/OPERACJE_RASPBERRY.md`.
 
 Pierwotny RTF był materiałem wejściowym. Nie kopiuj z niego bezkrytycznie cen,
 uproszczeń prawnych ani decyzji technicznych.
@@ -44,7 +44,7 @@ uproszczeń prawnych ani decyzji technicznych.
 - UI i komunikacja: polski. Kod, nazwy zmiennych i commity: angielski.
 - Teksty UI trzymaj w obrębie modułu, gotowe do przyszłej lokalizacji.
 - Zależność dodawaj tylko dla konkretnej potrzeby; przypinaj wersję w lockfile.
-- Po decyzji architektonicznej dopisz wpis do `DECYZJE.md`.
+- Po decyzji architektonicznej dopisz wpis do `docs/DECYZJE.md`.
 - Każda zmiana obejmuje zależne pliki, migracje, testy, dokumentację i paczkę.
 - Nigdy nie używaj prawdziwych danych dzieci w kodzie, logach, seedach,
   zrzutach ani na stagingu.
@@ -70,14 +70,14 @@ Każdy fragment funkcji przechodzi zawsze w tej kolejności:
 3. lokalne klikanie na telefonie 375 × 812 i komputerze 1440 × 900,
 4. kontrola konsoli, logów i zrzutów QA,
 5. commit wyłącznie przechodzącego stanu,
-6. uruchomienie serwera testowego na Macu dokładnie z tego commita,
+6. uruchomienie serwera testowego na Raspberry dokładnie z tego commita,
 7. kontrola publicznego HTTPS, logowania i uprawnień,
 8. przekazanie klientce linku oraz kont demo,
 9. zapisanie jej uwag jako zakresu następnego commita.
 
 Nie udostępniaj klientce niezatwierdzonych lokalnie zmian ani brudnego
 worktree. Jeden publiczny odbiór wskazuje jeden konkretny commit. Szczegóły i
-komendy zawiera `CYKL_TESTOWY.md`.
+komendy zawiera `docs/ODBIOR_I_TESTY.md`.
 
 ## Stack
 
@@ -107,7 +107,7 @@ migrację danych.
   wstecz; usuwanie dopiero w późniejszym wydaniu.
 - Wrażliwe operacje zapisuj w audycie bez tokenów, haseł i nadmiarowych danych.
 - Diagnostyka i zgłoszenia zachowują kontrakt prywatności z
-  `OBSERVABILITY_I_ZGLOSZENIA.md`.
+  `docs/ARCHITEKTURA.md`.
 
 ## UI dla osób nietechnicznych
 
@@ -177,6 +177,6 @@ powtarzalność, zmianę czasu i równoległe zapisy.
 - [ ] Brak błędów konsoli.
 - [ ] Zrzuty QA zapisane.
 - [ ] Brak sekretów i prawdziwych danych.
-- [ ] README, `.env.example`, migracje i `DECYZJE.md` aktualne.
+- [ ] README, `.env.example`, migracje i `docs/DECYZJE.md` aktualne.
 - [ ] Paczka wydaniowa aktualna.
 - [ ] Użytkownik dostał prostą instrukcję sprawdzenia.

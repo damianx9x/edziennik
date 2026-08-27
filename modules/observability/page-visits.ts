@@ -14,6 +14,13 @@ export const trackedPagePaths = new Set([
   "/panel/szkola/powiadomienia",
   "/panel/szkola/statystyki",
   "/panel/plan",
+  "/panel/umowy",
+  "/panel/umowy/pomoc",
+  "/panel/platnosci",
+  "/panel/wiadomosci",
+  "/panel/nauka",
+  "/panel/postepy",
+  "/panel/powiadomienia",
   "/panel/rodzic",
   "/panel/uczen",
 ]);

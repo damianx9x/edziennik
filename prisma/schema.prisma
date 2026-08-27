@@ -199,6 +199,7 @@ model School {
   timeZone  String   @default("Europe/Warsaw")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  siteContent Json?
 
   users                      User[]
   locations                  Location[]

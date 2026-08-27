@@ -6,6 +6,33 @@ umask 077
 ACTION="${1:-status}"
 INCOMING=/srv/kla-vault/control-incoming
 ARCHIVE="$INCOMING/edziennik-kla-raspberry-source.tar.gz"
+CURRENT=/opt/kla/current
+
+refresh_operations() {
+  [[ -d "$CURRENT/raspberry/systemd" ]] || { echo "Brak plików operacyjnych bieżącego wydania."; exit 1; }
+  install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
+  install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+  install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
+  install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
+  install -m 755 "$CURRENT/raspberry/retention.sh" /usr/local/sbin/edziennik-kla-retention
+  install -m 755 "$CURRENT/raspberry/restore-test-latest.sh" /usr/local/sbin/edziennik-kla-restore-test-latest
+  install -m 755 "$CURRENT/raspberry/print-recovery-key.sh" /usr/local/sbin/edziennik-kla-print-recovery-key
+  install -m 755 "$CURRENT/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
+  install -m 755 "$CURRENT/raspberry/enable-auto-unlock.sh" /usr/local/sbin/kla-enable-auto-unlock
+  install -m 755 "$CURRENT/raspberry/status.sh" /usr/local/bin/kla-status
+  install -m 755 "$CURRENT/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
+  install -m 755 "$CURRENT/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
+  install -m 755 "$CURRENT/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
+  install -m 755 "$CURRENT/raspberry/update.sh" /usr/local/sbin/kla-update
+  install -m 755 "$CURRENT/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+  install -m 644 -o root -g root "$CURRENT/deployment/release-signing.pub" /etc/kla/release-signing.pub
+  systemctl daemon-reload
+  systemctl enable --now \
+    edziennik-kla-health.timer edziennik-kla-backup.timer \
+    edziennik-kla-retention.timer edziennik-kla-restore-test.timer \
+    edziennik-kla-email-queue.timer
+  echo "Usługi operacyjne wydania zostały zsynchronizowane."
+}
 
 case "$ACTION" in
   status)
@@ -31,6 +58,20 @@ case "$ACTION" in
     ;;
   restore-test)
     /usr/local/sbin/edziennik-kla-restore-test-latest
+    ;;
+  recovery-key-once)
+    exec /usr/local/sbin/edziennik-kla-print-recovery-key
+    ;;
+  auto-unlock-enable)
+    exec /usr/local/sbin/kla-enable-auto-unlock
+    ;;
+  refresh-operations)
+    refresh_operations
+    ;;
+  optimize-now)
+    PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
+    [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; exit 1; }
+    SUDO_USER="$(cat /etc/kla/control-user)" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
     ;;
   logs)
     journalctl -u edziennik-kla -u cloudflared --since "2 hours ago" --no-pager -n 400
@@ -85,15 +126,26 @@ case "$ACTION" in
   update)
     [[ -f "$ARCHIVE" ]] || { echo "Brak przesłanej paczki aktualizacji."; exit 1; }
     [[ "$(stat -c '%U' "$ARCHIVE")" == "$(cat /etc/kla/control-user)" ]] || { echo "Nieprawidłowy właściciel paczki."; exit 1; }
-    if tar -tzf "$ARCHIVE" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
-      echo "Paczka zawiera niedozwoloną ścieżkę."
-      exit 1
-    fi
+    python3 - "$ARCHIVE" <<'PY'
+import pathlib, sys, tarfile
+archive = pathlib.Path(sys.argv[1])
+with tarfile.open(archive, "r:gz") as package:
+    total = 0
+    for member in package.getmembers():
+        path = pathlib.PurePosixPath(member.name)
+        if path.is_absolute() or ".." in path.parts or not path.parts or path.parts[0] != "edziennik-kla":
+            raise SystemExit("Paczka zawiera niedozwoloną ścieżkę.")
+        if member.issym() or member.islnk() or member.isdev() or member.isfifo():
+            raise SystemExit("Paczka zawiera niedozwolony typ pliku.")
+        total += max(member.size, 0)
+        if total > 2 * 1024 * 1024 * 1024:
+            raise SystemExit("Paczka po rozpakowaniu jest za duża.")
+PY
     TEMP_UPDATE="$(mktemp -d "$INCOMING/update.XXXXXX")"
     trap 'rm -rf "$TEMP_UPDATE"' EXIT
     tar -xzf "$ARCHIVE" -C "$TEMP_UPDATE"
     SOURCE="$TEMP_UPDATE/edziennik-kla"
-    [[ -f "$SOURCE/KLA_RELEASE_MANIFEST.sha256" ]] || { echo "To nie jest podpisana paczka KLA."; exit 1; }
+    [[ -f "$SOURCE/KLA_RELEASE_MANIFEST.sha256" && -f "$SOURCE/KLA_RELEASE_MANIFEST.sha256.sig" ]] || { echo "To nie jest podpisana paczka KLA."; exit 1; }
     /usr/local/sbin/kla-update "$SOURCE"
     rm -f "$ARCHIVE"
     ;;
@@ -104,7 +156,7 @@ case "$ACTION" in
     systemctl poweroff
     ;;
   *)
-    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, logs, email-config, bootstrap-code, update, reboot, poweroff."
+    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, logs, email-config, bootstrap-code, update, reboot, poweroff."
     exit 2
     ;;
 esac

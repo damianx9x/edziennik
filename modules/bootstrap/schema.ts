@@ -27,6 +27,8 @@ export type FirstRunState = {
   message: string;
   email?: string;
   activationMode?: "email" | "bootstrap";
+  recoveryKey?: string;
+  recoveryKeyWarning?: string;
   fieldErrors?: Record<string, string[]>;
 };
 

@@ -47,6 +47,7 @@ print(json.dumps({
   "rootDisk": disk("/"), "vaultDisk": disk("/srv/kla-vault"),
   "services": {name: service(name) for name in ["edziennik-kla", "postgresql", "nginx", "cloudflared", "clamav-daemon"]},
   "latestBackupAt": latest, "usbBackupPath": usb_target,
+  "autoUnlockEnabled": os.path.isfile("/etc/kla/vault-auto-unlock.key"),
   "emailConfigured": any(line.startswith("EMAIL_PROVIDER=") and not line.endswith("=disabled") for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines())
 }, ensure_ascii=False))
 PY
@@ -72,6 +73,41 @@ PY
     ;;
   backup-now)
     exec /usr/local/sbin/edziennik-kla-backup --test-restore
+    ;;
+  recovery-key-once)
+    exec /usr/local/sbin/edziennik-kla-print-recovery-key
+    ;;
+  export-create)
+    EXPORT_ID="${2:-}"
+    [[ "$EXPORT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] || {
+      echo "Nieprawidłowy identyfikator eksportu." >&2
+      exit 2
+    }
+    exec 8>/run/lock/kla-full-export.lock
+    flock -n 8 || { echo "Inny pełny eksport jest już przygotowywany. Poczekaj kilka minut." >&2; exit 3; }
+    EXPORT_DIR=/srv/kla-vault/exports
+    install -d -m 750 -o root -g kla "$EXPORT_DIR"
+    find "$EXPORT_DIR" -maxdepth 1 -type f \( -name 'kla-full-export-*.tar.age' -o -name 'kla-full-export-*.sha256' \) -mmin +1440 -delete
+    RECENT_EXPORT="$(find "$EXPORT_DIR" -maxdepth 1 -type f -name 'kla-full-export-*.tar.age' -mmin -5 -print -quit)"
+    [[ -z "$RECENT_EXPORT" ]] || { echo "Pełny eksport utworzono przed chwilą. Pobierz poprzedni plik albo odczekaj 5 minut." >&2; exit 4; }
+    FREE_BYTES="$(df --output=avail -B1 /srv/kla-vault | tail -n1 | tr -d ' ')"
+    [[ "$FREE_BYTES" =~ ^[0-9]+$ && "$FREE_BYTES" -ge 1073741824 ]] || {
+      echo "Za mało wolnego miejsca na bezpieczne przygotowanie eksportu (wymagane 1 GB)." >&2
+      exit 5
+    }
+    /usr/local/sbin/edziennik-kla-backup >/dev/null
+    LATEST="$(find /srv/kla-vault/backups -maxdepth 1 -type f -name 'kla-*.tar.age' -print | sort | tail -n1)"
+    [[ -n "$LATEST" && -f "$LATEST" ]] || { echo "Nie znaleziono gotowej kopii." >&2; exit 1; }
+    EXPORT_NAME="kla-full-export-$EXPORT_ID.tar.age"
+    EXPORT_PATH="$EXPORT_DIR/$EXPORT_NAME"
+    install -m 440 -o root -g kla "$LATEST" "$EXPORT_PATH"
+    SHA256="$(sha256sum "$EXPORT_PATH" | awk '{print $1}')"
+    printf '%s  %s\n' "$SHA256" "$EXPORT_NAME" > "$EXPORT_DIR/kla-full-export-$EXPORT_ID.sha256"
+    chown root:kla "$EXPORT_DIR/kla-full-export-$EXPORT_ID.sha256"
+    chmod 440 "$EXPORT_DIR/kla-full-export-$EXPORT_ID.sha256"
+    SIZE="$(stat -c '%s' "$EXPORT_PATH")"
+    EXPIRES="$(date -u -d '+24 hours' +'%Y-%m-%dT%H:%M:%SZ')"
+    printf '{"id":"%s","filename":"%s","size":%s,"sha256":"%s","expiresAt":"%s"}\n' "$EXPORT_ID" "$EXPORT_NAME" "$SIZE" "$SHA256" "$EXPIRES"
     ;;
   set-smtp)
     PAYLOAD="$(mktemp)"

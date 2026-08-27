@@ -31,6 +31,14 @@ fi
 [[ -f "$SOURCE_DIR/package-lock.json" ]] || { echo "Paczka nie zawiera package-lock.json."; exit 1; }
 [[ -f "$SOURCE_DIR/KLA_RELEASE_COMMIT" ]] || { echo "Paczka nie ma identyfikatora wydania."; exit 1; }
 [[ -f "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" ]] || { echo "Paczka nie ma manifestu integralności."; exit 1; }
+[[ -f "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256.sig" ]] || { echo "Paczka nie ma podpisu wydania."; exit 1; }
+if [[ -f /etc/kla/release-signing.pub ]]; then
+  ALLOWED_SIGNERS="$(mktemp)"
+  printf 'kla-release %s\n' "$(cut -d' ' -f1-2 /etc/kla/release-signing.pub)" > "$ALLOWED_SIGNERS"
+  ssh-keygen -Y verify -f "$ALLOWED_SIGNERS" -I kla-release -n kla-release \
+    -s "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256.sig" < "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" >/dev/null
+  rm -f "$ALLOWED_SIGNERS"
+fi
 (
   cd "$SOURCE_DIR"
   sha256sum -c KLA_RELEASE_MANIFEST.sha256
@@ -112,7 +120,23 @@ rm -rf -- "$PREVIOUS" "$FAILED"
 mv "$CURRENT" "$PREVIOUS"
 mv "$NEW" "$CURRENT"
 switched=1
-install -m 644 "$CURRENT/raspberry/systemd/edziennik-kla.service" /etc/systemd/system/edziennik-kla.service
+install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
+install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
+install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
+install -m 755 "$CURRENT/raspberry/retention.sh" /usr/local/sbin/edziennik-kla-retention
+install -m 755 "$CURRENT/raspberry/restore-test-latest.sh" /usr/local/sbin/edziennik-kla-restore-test-latest
+install -m 755 "$CURRENT/raspberry/print-recovery-key.sh" /usr/local/sbin/edziennik-kla-print-recovery-key
+install -m 755 "$CURRENT/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
+install -m 755 "$CURRENT/raspberry/enable-auto-unlock.sh" /usr/local/sbin/kla-enable-auto-unlock
+install -m 755 "$CURRENT/raspberry/status.sh" /usr/local/bin/kla-status
+install -m 755 "$CURRENT/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
+install -m 755 "$CURRENT/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
+install -m 755 "$CURRENT/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
+install -m 755 "$CURRENT/raspberry/update.sh" /usr/local/sbin/kla-update
+if [[ ! -f /etc/kla/release-signing.pub ]]; then
+  install -m 644 -o root -g root "$CURRENT/deployment/release-signing.pub" /etc/kla/release-signing.pub
+fi
 if [[ ! -f /etc/kla/control-user && -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
   printf '%s\n' "$SUDO_USER" > /etc/kla/control-user
   chmod 600 /etc/kla/control-user
@@ -130,8 +154,13 @@ if [[ -f /etc/kla/control-user ]]; then
   visudo -cf /etc/sudoers.d/kla-control >/dev/null
   CONTROL_GROUP="$(id -gn "$CONTROL_USER")"
   install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" /srv/kla-vault/control-incoming
+  PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
+  [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; false; }
+  SUDO_USER="$CONTROL_USER" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
 fi
 systemctl daemon-reload
+systemctl enable edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+systemctl restart edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 systemctl start edziennik-kla
 
 for attempt in {1..45}; do

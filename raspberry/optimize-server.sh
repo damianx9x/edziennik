@@ -55,7 +55,8 @@ ADMIN_USER="${SUDO_USER:-}"
 install -d -m 0755 /etc/ssh/sshd_config.d
 printf '%s\n' \
   'PermitRootLogin no' \
-  'PasswordAuthentication yes' \
+  'PasswordAuthentication no' \
+  'PubkeyAuthentication yes' \
   'KbdInteractiveAuthentication no' \
   'X11Forwarding no' \
   'MaxAuthTries 4' \
@@ -65,6 +66,11 @@ printf '%s\n' \
   "AllowUsers $ADMIN_USER" \
   > /etc/ssh/sshd_config.d/50-kla.conf
 sshd -t
+
+install -d -m 0755 /etc/systemd/system.conf.d
+if [[ -c /dev/watchdog || -c /dev/watchdog0 ]]; then
+  printf '%s\n' '[Manager]' 'RuntimeWatchdogSec=30s' 'RebootWatchdogSec=5min' > /etc/systemd/system.conf.d/50-kla-watchdog.conf
+fi
 
 install -d -m 0755 "$PG_CONF_DIR"
 printf '%s\n' \

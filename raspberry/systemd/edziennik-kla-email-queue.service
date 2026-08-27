@@ -1,0 +1,20 @@
+[Unit]
+Description=KLA eDziennik - trwała kolejka e-mail
+After=postgresql.service network-online.target
+Requires=postgresql.service
+RequiresMountsFor=/srv/kla-vault
+ConditionPathIsMountPoint=/srv/kla-vault
+
+[Service]
+Type=oneshot
+User=kla
+Group=kla
+WorkingDirectory=/opt/kla/current
+EnvironmentFile=/etc/kla/edziennik.env
+ExecStart=/usr/bin/npx --no-install tsx scripts/process-email-delivery-queue.ts
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/kla-vault/private-files
+UMask=0077

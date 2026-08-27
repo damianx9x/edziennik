@@ -32,6 +32,7 @@ export function FirstRunForm({
     initialFirstRunState,
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [recoverySaved, setRecoverySaved] = useState(false);
 
   if (state.email && state.status === "error") {
     return (
@@ -62,6 +63,18 @@ export function FirstRunForm({
         <span className="auth-card-overline">Krok 1 zakończony</span>
         <h2>{usesEmailActivation ? "Sprawdź pocztę" : "Konto jest gotowe"}</h2>
         <p>{state.message}</p>
+        {state.recoveryKey ? (
+          <div className="auth-message auth-message-info recovery-key-once">
+            <KeyRound aria-hidden="true" />
+            <div>
+              <strong>Jedyny klucz pełnego odtworzenia</strong>
+              <p>Skopiuj go teraz do menedżera haseł i na zaszyfrowany nośnik poza Raspberry Pi. Po opuszczeniu ekranu serwer nie pokaże go ponownie. Bez niego eksportów nie da się odszyfrować.</p>
+              <code>{state.recoveryKey}</code>
+              <button className="button button-secondary" type="button" onClick={() => void navigator.clipboard.writeText(state.recoveryKey!)}>Kopiuj klucz</button>
+              <label className="auth-check auth-check-card"><input type="checkbox" checked={recoverySaved} onChange={(event) => setRecoverySaved(event.target.checked)} /><span>Zapisałem klucz w dwóch bezpiecznych miejscach</span></label>
+            </div>
+          </div>
+        ) : state.recoveryKeyWarning ? <div className="auth-message auth-message-error" role="alert">{state.recoveryKeyWarning}</div> : null}
         {usesEmailActivation ? (
           <div className="auth-message auth-message-success">
             <CheckCircle2 aria-hidden="true" />
@@ -79,7 +92,7 @@ export function FirstRunForm({
           <li>Zeskanuj kod MFA telefonem i zapisz kody awaryjne.</li>
           <li>{usesEmailActivation ? "W centrum systemu wybierz „Zaproś pierwszą osobę”." : "Podłącz e-mail przed wysłaniem pierwszego zaproszenia."}</li>
         </ol>
-        <Link className="button button-primary button-full" href="/panel/logowanie">
+        <Link className={`button button-primary button-full${state.recoveryKey && !recoverySaved ? " disabled" : ""}`} aria-disabled={Boolean(state.recoveryKey && !recoverySaved)} tabIndex={state.recoveryKey && !recoverySaved ? -1 : undefined} href={state.recoveryKey && !recoverySaved ? "#zapisz-klucz" : "/panel/logowanie"}>
           Przejdź do logowania <ArrowRight aria-hidden="true" />
         </Link>
       </section>

@@ -68,12 +68,14 @@ export function SiteContentProvider({
     }
 
     try {
+      const response = await fetch("/api/site-content", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(result.data) });
+      if (!response.ok) throw new Error("remote-save-failed");
       await writeIndexedContent(result.data);
       window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
       setContent(result.data);
       return {
         ok: true,
-        message: "Zmiany i zdjęcia zapisane w tej przeglądarce.",
+        message: "Zmiany i zdjęcia zapisane w systemie szkoły i objęte backupem.",
       };
     } catch {
       return {
@@ -85,6 +87,8 @@ export function SiteContentProvider({
   }, []);
 
   const resetContent = useCallback(async () => {
+    const response = await fetch("/api/site-content", { method: "DELETE" });
+    if (!response.ok) throw new Error("remote-reset-failed");
     await deleteIndexedContent();
     window.localStorage.removeItem(STORAGE_KEY);
     setContent(defaultSiteContent);
@@ -112,6 +116,14 @@ export function useSiteContent() {
 
 async function readStoredContent(): Promise<SiteContent | null> {
   try {
+    const response = await fetch("/api/site-content", { cache: "no-store" });
+    if (response.ok) {
+      const remote = siteContentSchema.safeParse(await response.json());
+      if (remote.success) {
+        await writeIndexedContent(remote.data);
+        return remote.data;
+      }
+    }
     const indexed = await readIndexedContent();
     if (indexed) return indexed;
 

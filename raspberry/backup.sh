@@ -12,16 +12,21 @@ mountpoint -q "$VAULT" || { echo "Sejf jest zamknięty. Kopia nie została wykon
 RECIPIENT="$(sed -n 's/^Public key: //p' "$VAULT/secrets/backup-recipient.txt")"
 [[ -n "$RECIPIENT" ]] || { echo "Brak klucza szyfrowania kopii."; exit 1; }
 install -d -m 700 "$BACKUP_DIR"
+USB_TEST_BACKUP=""
 
 sudo -u postgres pg_dump --format=custom --dbname=kla_edziennik > "$TEMP_DIR/database.dump"
 tar -C "$VAULT" -czf "$TEMP_DIR/private-files.tar.gz" private-files
+install -d -m 700 "$TEMP_DIR/continuity"
+install -m 600 "$VAULT/secrets/edziennik.env" "$TEMP_DIR/continuity/edziennik.env"
+if [[ -f /etc/kla/vault.conf ]]; then install -m 600 /etc/kla/vault.conf "$TEMP_DIR/continuity/vault.conf"; fi
 cat > "$TEMP_DIR/manifest.txt" <<EOF
 created_at=$STAMP
 app_commit=$(git -C /opt/kla/current rev-parse HEAD 2>/dev/null || echo packaged-release)
 database=kla_edziennik
 files=private-files
+continuity=encrypted-application-secrets-without-backup-private-key
 EOF
-tar -C "$TEMP_DIR" -cf - database.dump private-files.tar.gz manifest.txt \
+tar -C "$TEMP_DIR" -cf - database.dump private-files.tar.gz continuity manifest.txt \
   | age -r "$RECIPIENT" -o "$BACKUP_DIR/kla-$STAMP.tar.age"
 (
   cd "$BACKUP_DIR"
@@ -36,6 +41,7 @@ if [[ -f /etc/kla/backup-usb.env ]]; then
     USB_BACKUP_DIR="$KLA_USB_BACKUP_PATH/kla-encrypted-backups"
     install -d -m 700 "$USB_BACKUP_DIR"
     install -m 600 "$BACKUP_DIR/kla-$STAMP.tar.age" "$BACKUP_DIR/kla-$STAMP.tar.age.sha256" "$USB_BACKUP_DIR/"
+    USB_TEST_BACKUP="$USB_BACKUP_DIR/kla-$STAMP.tar.age"
     find "$USB_BACKUP_DIR" -maxdepth 1 -type f -mtime +30 -delete
   else
     echo "Skonfigurowany dysk USB nie jest zamontowany. Kopia w sejfie została zachowana, ale kopia USB nie powstała." >&2
@@ -56,6 +62,9 @@ fi
 
 if [[ "${1:-}" == "--test-restore" ]]; then
   TEST_BACKUP="$BACKUP_DIR/kla-$STAMP.tar.age"
+  if [[ -n "$USB_TEST_BACKUP" ]]; then
+    TEST_BACKUP="$USB_TEST_BACKUP"
+  fi
   if [[ -f /etc/kla/backup-sftp.env ]]; then
     REMOTE_TEST_DIR="$TEMP_DIR/sftp-download"
     install -d -m 700 "$REMOTE_TEST_DIR"

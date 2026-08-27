@@ -253,6 +253,7 @@ install -m 755 "$SOURCE_DIR/raspberry/retention.sh" /usr/local/sbin/edziennik-kl
 install -m 755 "$SOURCE_DIR/raspberry/restore-test-latest.sh" /usr/local/sbin/edziennik-kla-restore-test-latest
 install -m 755 "$SOURCE_DIR/raspberry/print-recovery-key.sh" /usr/local/sbin/edziennik-kla-print-recovery-key
 install -m 755 "$SOURCE_DIR/raspberry/unlock.sh" /usr/local/sbin/kla-unlock
+install -m 755 "$SOURCE_DIR/raspberry/enable-auto-unlock.sh" /usr/local/sbin/kla-enable-auto-unlock
 install -m 755 "$SOURCE_DIR/raspberry/status.sh" /usr/local/bin/kla-status
 install -m 755 "$SOURCE_DIR/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
 install -m 755 "$SOURCE_DIR/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
@@ -260,6 +261,7 @@ install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 install -m 755 "$SOURCE_DIR/raspberry/control.sh" /usr/local/sbin/kla-control
 install -m 755 "$SOURCE_DIR/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+install -m 644 -o root -g root "$SOURCE_DIR/deployment/release-signing.pub" /etc/kla/release-signing.pub
 printf 'kla ALL=(root) NOPASSWD: /usr/local/sbin/kla-web-control *\n' > /etc/sudoers.d/kla-web-control
 chmod 440 /etc/sudoers.d/kla-web-control
 visudo -cf /etc/sudoers.d/kla-web-control >/dev/null
@@ -307,16 +309,16 @@ if [[ "$MODE" == "local-demo" ]]; then
   ufw allow from 192.168.0.0/16 to any port 8080 proto tcp
 fi
 ufw --force enable
-systemctl enable avahi-daemon fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
+systemctl enable avahi-daemon fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 systemctl daemon-reload
 systemctl restart nginx postgresql clamav-daemon
 systemctl restart avahi-daemon
 [[ "$MODE" != "local-demo" ]] && systemctl restart cloudflared
-systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer
+systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 
 echo
 echo "GOTOWE. Otwórz: $APP_URL"
-echo "Po każdym restarcie: sudo kla-unlock"
+echo "Start bez obsługi po zaniku prądu: sudo kla-enable-auto-unlock (świadomie zapisuje klucz root-only na karcie systemowej)"
 echo "Stan urządzenia: sudo kla-status"
 echo "Backup SFTP: sudo kla-configure-sftp-backup"
 if [[ -n "${DEMO_PASSWORD:-}" ]]; then

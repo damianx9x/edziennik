@@ -8,13 +8,20 @@ import { db } from "@/lib/server/db";
 import { requireSystemOwner } from "@/modules/identity/auth/session";
 import {
   clearUsbBackupTarget,
+  createFullExport,
   runBackupNow,
   setSmtpConfiguration,
   setSmsGateConfiguration,
   setUsbBackupTarget,
 } from "./server-control";
 
-export type ServerActionState = { status: "idle" | "success" | "error"; message?: string };
+export type ServerActionState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+  downloadUrl?: string;
+  downloadName?: string;
+  sha256?: string;
+};
 const initialError = (message: string): ServerActionState => ({ status: "error", message });
 
 async function audit(actorId: string, schoolId: string, action: string, metadata?: Record<string, unknown>) {
@@ -52,6 +59,32 @@ export async function backupNowAction(previous: ServerActionState): Promise<Serv
     return { status: "success", message: "Kopia i test odtworzenia zakończyły się poprawnie." };
   } catch (error) {
     return initialError(error instanceof Error ? error.message : "Backup nie powiódł się.");
+  }
+}
+
+export async function prepareFullExportAction(previous: ServerActionState, formData: FormData): Promise<ServerActionState> {
+  void previous;
+  const session = await requireSystemOwner("/panel/bog");
+  if (formData.get("confirmation") !== "EKSPORTUJ") {
+    return initialError("Wpisz EKSPORTUJ, aby potwierdzić utworzenie pełnej kopii.");
+  }
+  try {
+    const id = crypto.randomUUID();
+    const prepared = await createFullExport(id);
+    await audit(session.user.id, session.user.schoolId, "system.export.full_prepared", {
+      exportId: prepared.id,
+      size: prepared.size,
+      sha256: prepared.sha256,
+    });
+    return {
+      status: "success",
+      message: "Pełny, zaszyfrowany eksport jest gotowy. Link działa przez 24 godziny i obsługuje wznowienie pobierania.",
+      downloadUrl: `/panel/bog/eksport/${prepared.id}`,
+      downloadName: prepared.filename,
+      sha256: prepared.sha256,
+    };
+  } catch (error) {
+    return initialError(error instanceof Error ? error.message : "Nie udało się przygotować pełnego eksportu.");
   }
 }
 

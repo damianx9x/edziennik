@@ -15,6 +15,7 @@ export type RaspberryStatus = {
   latestBackupAt?: string;
   usbBackupPath?: string;
   emailConfigured?: boolean;
+  autoUnlockEnabled?: boolean;
   message?: string;
 };
 
@@ -32,6 +33,14 @@ export type StorageDevice = {
   children?: StorageDevice[];
 };
 
+export type FullExport = {
+  id: string;
+  filename: string;
+  size: number;
+  sha256: string;
+  expiresAt: string;
+};
+
 function runControl(action: string, args: string[] = [], input?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn("/usr/bin/sudo", ["-n", "/usr/local/sbin/kla-web-control", action, ...args], {
@@ -40,7 +49,10 @@ function runControl(action: string, args: string[] = [], input?: string): Promis
     });
     let stdout = "";
     let stderr = "";
-    const timer = setTimeout(() => child.kill("SIGKILL"), action === "backup-now" ? 120_000 : 20_000);
+    const timer = setTimeout(
+      () => child.kill("SIGKILL"),
+      action === "backup-now" || action === "export-create" ? 120_000 : 20_000,
+    );
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => { stdout += chunk; });
@@ -82,6 +94,17 @@ export async function clearUsbBackupTarget(): Promise<string> {
 
 export async function runBackupNow(): Promise<string> {
   return runControl("backup-now");
+}
+
+export async function createFullExport(id: string): Promise<FullExport> {
+  return JSON.parse(await runControl("export-create", [id])) as FullExport;
+}
+
+export async function readRecoveryKeyOnce(): Promise<string> {
+  const output = await runControl("recovery-key-once");
+  const key = output.split(/\r?\n/).find((line) => line.startsWith("AGE-SECRET-KEY-"));
+  if (!key) throw new Error("Serwer nie zwrócił prawidłowego klucza odzyskiwania.");
+  return key;
 }
 
 export async function setSmtpConfiguration(input: {

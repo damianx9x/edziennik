@@ -103,7 +103,7 @@ case "$ACTION" in
   test)
     remote 'printf "Połączenie SSH działa. Host: "; hostname'
     ;;
-  status|start|stop|restart|backup|restore-test|logs)
+  status|start|stop|restart|backup|restore-test|logs|refresh-operations|optimize-now|auto-unlock-enable)
     remote "sudo /usr/local/sbin/kla-control $ACTION"
     ;;
   unlock)
@@ -162,6 +162,19 @@ case "$ACTION" in
   copy-bootstrap-code)
     security find-generic-password -s "KLA Raspberry First Run Code" -a "$KLA_USER" -w | pbcopy
     echo "Kod pierwszego uruchomienia skopiowano do schowka."
+    ;;
+  recovery-key-once)
+    discover_host
+    DESTINATION="${2:-$HOME/Desktop/rasbery serwer/KLA-KLUCZ-ODZYSKIWANIA.txt}"
+    install -d -m 700 "$(dirname "$DESTINATION")"
+    TEMP_RECOVERY="$(mktemp)"
+    trap 'rm -f "$TEMP_RECOVERY"' EXIT
+    chmod 600 "$TEMP_RECOVERY"
+    remote "sudo /usr/local/sbin/kla-control recovery-key-once" > "$TEMP_RECOVERY"
+    [[ "$(grep -c '^AGE-SECRET-KEY-' "$TEMP_RECOVERY")" -eq 1 ]] || { echo "Serwer nie zwrócił prawidłowego jednorazowego klucza."; exit 1; }
+    install -m 600 "$TEMP_RECOVERY" "$DESTINATION"
+    echo "Jedyna kopia klucza została zapisana: $DESTINATION"
+    echo "Skopiuj ten plik także do menedżera haseł i na zaszyfrowany nośnik poza Raspberry."
     ;;
   update)
     discover_host

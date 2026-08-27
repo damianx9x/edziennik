@@ -682,6 +682,7 @@ export async function generateScheduleAction(formData: FormData) {
 export async function applyScheduleGenerationAction(formData: FormData) {
   const session = await requireDirector(schedulePath);
   const generationId = String(formData.get("generationId") ?? "");
+  const allowPartial = formData.get("allowPartial") === "yes";
   const generation = await db.scheduleGeneration.findFirst({
     where: {
       id: generationId,
@@ -701,7 +702,7 @@ export async function applyScheduleGenerationAction(formData: FormData) {
     hardViolations?: unknown[];
     rangeStart?: string;
   };
-  if ((summary.hardViolations?.length ?? 0) > 0) {
+  if ((summary.hardViolations?.length ?? 0) > 0 && !allowPartial) {
     redirect(`${schedulePath}?blad=propozycja-niepelna`);
   }
 
@@ -754,7 +755,11 @@ export async function applyScheduleGenerationAction(formData: FormData) {
           action: "schedule.generation.applied",
           entityType: "ScheduleGeneration",
           entityId: generation.id,
-          metadata: { proposalCount: generation.proposals.length },
+          metadata: {
+            proposalCount: generation.proposals.length,
+            partial: allowPartial,
+            unresolvedCount: summary.hardViolations?.length ?? 0,
+          },
         },
       });
     });

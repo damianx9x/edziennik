@@ -6,6 +6,7 @@ import { hashPassword } from "better-auth/crypto";
 
 import { auth } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
+import { readRecoveryKeyOnce } from "@/modules/system-owner/server-control";
 
 import { firstRunSchema, type FirstRunState } from "./schema";
 import {
@@ -125,6 +126,14 @@ export async function createFirstOwner(
     };
   }
 
+  let recoveryKey: string | undefined;
+  let recoveryKeyWarning: string | undefined;
+  try {
+    recoveryKey = await readRecoveryKeyOnce();
+  } catch {
+    recoveryKeyWarning = "Klucz odzyskiwania nie został jeszcze pobrany. Po zalogowaniu zapisz go jednorazowo z panelu serwera przed dodaniem danych szkoły.";
+  }
+
   if (!emailReady) {
     return {
       status: "success",
@@ -132,6 +141,8 @@ export async function createFirstOwner(
       message:
         "Konto zostało utworzone kodem instalacyjnym. Zaloguj się i skonfiguruj MFA. Wysyłkę e-mail możesz podłączyć później w ustawieniach serwera.",
       email: maskEmail(parsed.data.email),
+      recoveryKey,
+      recoveryKeyWarning,
     };
   }
 
@@ -157,6 +168,8 @@ export async function createFirstOwner(
     message:
       "Konto zostało utworzone. Otwórz wiadomość aktywacyjną, a następnie zaloguj się i skonfiguruj MFA.",
     email: maskEmail(parsed.data.email),
+    recoveryKey,
+    recoveryKeyWarning,
   };
 }
 
