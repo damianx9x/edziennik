@@ -29,7 +29,16 @@ PY
     cryptsetup luksAddKey "$DEVICE" "$TEMP_KEY" --volume-key-file "$TEMP_VOLUME_KEY"
   elif [[ "$ACTIVE_KEY" =~ ^:[0-9]+:([A-Za-z0-9_-]+):(.+)$ ]]; then
     KEYRING_SPEC="%${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"
-    cryptsetup luksAddKey "$DEVICE" --volume-key-keyring "$KEYRING_SPEC" --new-keyfile "$TEMP_KEY"
+    if ! cryptsetup luksAddKey "$DEVICE" --volume-key-keyring "$KEYRING_SPEC" --new-keyfile "$TEMP_KEY"; then
+      if [[ -t 0 ]]; then
+        echo "Klucz kernela nie może zostać odczytany przez cryptsetup."
+        echo "Jednorazowo wpisz dotychczasowe hasło sejfu. Hasło nie zostanie zapisane."
+        cryptsetup luksAddKey "$DEVICE" --new-keyfile "$TEMP_KEY"
+      else
+        echo "System wymaga jednorazowego potwierdzenia hasłem sejfu. Uruchom tę akcję w interaktywnym Terminalu." >&2
+        exit 1
+      fi
+    fi
   elif [[ -t 0 ]]; then
     echo "Jednorazowo wpisz dotychczasowe hasło sejfu. Nie będzie zapisane."
     cryptsetup luksAddKey "$DEVICE" --new-keyfile "$TEMP_KEY"

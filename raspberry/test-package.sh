@@ -80,6 +80,7 @@ grep -q 'KLA_RELEASE_MANIFEST.sha256.sig' "$ROOT/raspberry/update.sh"
 grep -q 'release-signing.pub' "$ROOT/raspberry/install.sh"
 grep -q 'kla-enable-auto-unlock' "$ROOT/raspberry/update.sh"
 grep -q 'edziennik-kla-email-queue.timer' "$ROOT/raspberry/update.sh"
+grep -q 'Klucz kernela nie może zostać odczytany przez cryptsetup' "$ROOT/raspberry/enable-auto-unlock.sh"
 grep -q 'refresh-operations' "$ROOT/raspberry/control.sh"
 grep -q 'continuity/edziennik.env' "$ROOT/raspberry/backup.sh"
 
