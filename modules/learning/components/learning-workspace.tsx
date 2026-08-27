@@ -11,6 +11,8 @@ import {
   LoaderCircle,
   MessageSquareText,
   Send,
+  Search,
+  Users,
   Upload,
 } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
@@ -39,6 +41,8 @@ export type LearningGroupView = {
   id: string;
   name: string;
   location: { id: string; name: string; isOnline: boolean };
+  enrollments: { student: { id: string; name: string } }[];
+  teachers: { teacher: { id: string; name: string } }[];
   learningMaterials: {
     id: string;
     title: string;
@@ -46,6 +50,8 @@ export type LearningGroupView = {
     externalUrl: string | null;
     storedFileId: string | null;
     publishedAt: string;
+    audience: string;
+    recipients: { userId: string; user: { name: string } }[];
     createdBy: { id: string; name: string };
   }[];
   homeworkAssignments: {
@@ -114,7 +120,7 @@ export function LearningWorkspace({
         </div>
       </section>
 
-      {canPublish ? <PublisherPanel groupId={activeGroup.id} groupName={activeGroup.name} /> : null}
+      {canPublish ? <PublisherPanel group={activeGroup} /> : null}
 
       <div className="learning-columns">
         <section className="learning-section" aria-labelledby="materials-title">
@@ -133,6 +139,7 @@ export function LearningWorkspace({
                   <p>{material.description || "Materiał udostępniony grupie."}</p>
                 </div>
                 <small>{material.createdBy.name} · {formatDate(material.publishedAt)}</small>
+                <span className="learning-audience-chip"><Users aria-hidden="true" /> {material.audience === "GROUP" ? "Cała grupa" : material.recipients.map((item) => item.user.name).join(", ")}</span>
                 <div className="learning-card-actions">
                   {material.storedFileId ? (
                     <a className="button button-secondary" href={`/panel/nauka/plik/${material.storedFileId}`} target="_blank" rel="noreferrer">
@@ -169,8 +176,11 @@ export function LearningWorkspace({
   );
 }
 
-function PublisherPanel({ groupId, groupName }: { groupId: string; groupName: string }) {
+function PublisherPanel({ group }: { group: LearningGroupView }) {
   const [mode, setMode] = useState<"material" | "homework">("material");
+  const [audience, setAudience] = useState<"GROUP" | "STUDENTS" | "TEACHERS">("GROUP");
+  const [recipientQuery, setRecipientQuery] = useState("");
+  const [recipientIds, setRecipientIds] = useState<string[]>([]);
   const [materialState, materialAction, materialPending] = useActionState(createLearningMaterialAction, initialState);
   const [homeworkState, homeworkAction, homeworkPending] = useActionState(createHomeworkAssignmentAction, initialState);
 
@@ -178,7 +188,7 @@ function PublisherPanel({ groupId, groupName }: { groupId: string; groupName: st
     <section className="learning-publisher" aria-labelledby="learning-publisher-title">
       <header>
         <div>
-          <span className="section-kicker">Publikuj dla: {groupName}</span>
+          <span className="section-kicker">Publikuj dla: {group.name}</span>
           <h2 id="learning-publisher-title">Dodaj coś dla grupy</h2>
           <p>Wybierz jeden prosty formularz. Po zapisie treść od razu trafi do właściwych osób.</p>
         </div>
@@ -194,11 +204,13 @@ function PublisherPanel({ groupId, groupName }: { groupId: string; groupName: st
 
       {mode === "material" ? (
         <form action={materialAction} className="learning-form">
-          <input type="hidden" name="groupId" value={groupId} />
+          <input type="hidden" name="groupId" value={group.id} />
           <label><span>Tytuł</span><input name="title" required minLength={2} maxLength={140} placeholder="np. Powtórka: Past Simple" /></label>
           <label className="learning-wide"><span>Krótki opis <small>(opcjonalnie)</small></span><textarea name="description" rows={3} maxLength={2000} placeholder="Napisz, co warto zrobić z tym materiałem." /></label>
           <label><span>Plik PDF, JPG lub PNG</span><input name="file" type="file" accept="application/pdf,image/jpeg,image/png" /></label>
           <label><span>albo bezpieczny link</span><input name="externalUrl" type="url" inputMode="url" placeholder="https://…" /></label>
+          <label className="learning-wide"><span>Odbiorcy</span><select name="audience" value={audience} onChange={(event) => { setAudience(event.target.value as typeof audience); setRecipientIds([]); setRecipientQuery(""); }}><option value="GROUP">Cała grupa</option><option value="STUDENTS">Wybrani uczniowie</option><option value="TEACHERS">Wybrani wykładowcy</option></select></label>
+          {audience !== "GROUP" ? <RecipientPicker audience={audience} group={group} query={recipientQuery} onQuery={setRecipientQuery} selectedIds={recipientIds} onSelected={setRecipientIds} /> : null}
           <p className="learning-form-help learning-wide">Dodaj plik albo link — nie oba jednocześnie. Maksymalny rozmiar pliku: 15 MB.</p>
           <ActionFeedback state={materialState} />
           <button className="button button-primary learning-submit" type="submit" disabled={materialPending}>
@@ -208,7 +220,7 @@ function PublisherPanel({ groupId, groupName }: { groupId: string; groupName: st
         </form>
       ) : (
         <form action={homeworkAction} className="learning-form">
-          <input type="hidden" name="groupId" value={groupId} />
+          <input type="hidden" name="groupId" value={group.id} />
           <label><span>Tytuł</span><input name="title" required minLength={2} maxLength={140} placeholder="np. Ćwiczenia 1–4" /></label>
           <label><span>Termin <small>(opcjonalnie)</small></span><input name="dueAt" type="datetime-local" /></label>
           <label className="learning-wide"><span>Instrukcja dla ucznia</span><textarea name="instructions" required minLength={3} maxLength={5000} rows={4} placeholder="Napisz dokładnie, co trzeba zrobić." /></label>
@@ -221,6 +233,38 @@ function PublisherPanel({ groupId, groupName }: { groupId: string; groupName: st
       )}
     </section>
   );
+}
+
+function RecipientPicker({
+  audience,
+  group,
+  query,
+  onQuery,
+  selectedIds,
+  onSelected,
+}: {
+  audience: "STUDENTS" | "TEACHERS";
+  group: LearningGroupView;
+  query: string;
+  onQuery: (value: string) => void;
+  selectedIds: string[];
+  onSelected: (value: string[]) => void;
+}) {
+  const options = audience === "STUDENTS"
+    ? group.enrollments.map(({ student }) => student)
+    : group.teachers.map(({ teacher }) => teacher);
+  const needle = query.trim().toLocaleLowerCase("pl-PL");
+  const visible = options
+    .filter((item) => !needle || item.name.toLocaleLowerCase("pl-PL").includes(needle))
+    .sort((left, right) => Number(selectedIds.includes(right.id)) - Number(selectedIds.includes(left.id)) || left.name.localeCompare(right.name, "pl"))
+    .slice(0, needle ? 12 : 5);
+  return <fieldset className="learning-recipient-picker learning-wide">
+    <legend>{audience === "STUDENTS" ? "Wybierz uczniów" : "Wybierz wykładowców"}</legend>
+    {selectedIds.map((id) => <input key={id} type="hidden" name="recipientIds" value={id} />)}
+    {options.length > 5 ? <label className="relationship-search"><Search aria-hidden="true" /><span className="sr-only">Szukaj odbiorcy</span><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Wpisz imię lub nazwisko" /></label> : null}
+    <div className="learning-recipient-options">{visible.map((item) => <label key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={(event) => onSelected(event.target.checked ? [...new Set([...selectedIds, item.id])] : selectedIds.filter((id) => id !== item.id))} /><span>{item.name}</span></label>)}</div>
+    <small>{selectedIds.length ? `Wybrano: ${selectedIds.length}` : "Wybierz co najmniej jedną osobę."}{!needle && options.length > 5 ? " Pokazujemy 5 propozycji — użyj wyszukiwarki, aby znaleźć pozostałe." : ""}</small>
+  </fieldset>;
 }
 
 function HomeworkCard({ assignment, role }: { assignment: LearningGroupView["homeworkAssignments"][number]; role: Role }) {

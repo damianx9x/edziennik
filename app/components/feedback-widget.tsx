@@ -27,7 +27,7 @@ import {
 import { sanitizeDiagnosticText } from "../../modules/observability/sanitize";
 
 const supportEmail =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "kingsjezykiobce@gmail.com";
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "damianx9x@me.com";
 const appRelease =
   process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.4.0-stage-1";
 
@@ -278,6 +278,14 @@ export function FeedbackWidget() {
     const shareText = createMessage(reference, role, cleanDescription);
 
     try {
+      if (role !== "guest") {
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference, description: cleanDescription, route: window.location.pathname, platform: feedbackPlatform(diagnostics.context.platform), browser: diagnostics.context.browser, diagnostics }),
+        });
+        if (!response.ok) throw new Error("Nie udało się zapisać zgłoszenia.");
+      }
       if (
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
@@ -612,6 +620,15 @@ function detectPlatform(userAgent: string) {
   if (/Macintosh|Mac OS X/i.test(userAgent)) return "macOS";
   if (/Linux/i.test(userAgent)) return "Linux";
   return "inne";
+}
+
+function feedbackPlatform(value: string): "IOS" | "ANDROID" | "WINDOWS" | "MACOS" | "LINUX" | "OTHER" {
+  if (value === "iOS/iPadOS") return "IOS";
+  if (value === "Android") return "ANDROID";
+  if (value === "Windows") return "WINDOWS";
+  if (value === "macOS") return "MACOS";
+  if (value === "Linux") return "LINUX";
+  return "OTHER";
 }
 
 function detectBrowser(userAgent: string) {

@@ -76,11 +76,12 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
   const parents = isManagement
     ? await db.user.findMany({
-        where: { schoolId: session.user.schoolId, role: "PARENT", status: "ACTIVE", archivedAt: null },
+        where: { schoolId: session.user.schoolId, role: "PARENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null },
         orderBy: { name: "asc" },
         select: {
           id: true,
           name: true,
+          status: true,
           parentLinks: {
             where: {
               archivedAt: null,
@@ -124,6 +125,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           parents={parents.map((parent) => ({
             id: parent.id,
             name: parent.name,
+            status: parent.status,
             children: parent.parentLinks.map((link) => link.child),
           }))}
         />

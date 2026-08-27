@@ -31,6 +31,7 @@ import {
 } from "./schema";
 import type { ScheduleActionState } from "./types";
 import { processEmailDeliveryQueue } from "@/modules/messaging/queue";
+import { sendCancellationSms } from "./cancellation-sms";
 
 const schedulePath = "/panel/plan";
 
@@ -573,7 +574,7 @@ export async function cancelScheduleSlotAction(
     };
   }
   revalidateScheduleViews();
-  after(() => processEmailDeliveryQueue(session.user.schoolId));
+  after(async () => { await Promise.allSettled([processEmailDeliveryQueue(session.user.schoolId), sendCancellationSms(parsed.data.slotId, session.user.schoolId)]); });
   return {
     status: "success",
     message: "Zajęcia zostały odwołane, a grupa otrzymała wiadomość i prywatne powiadomienia.",
@@ -718,16 +719,16 @@ export async function reviewScheduleChangeRequestAction(
       where: { id: parsed.data.requestId, schoolId: session.user.schoolId, status: "PENDING" },
       select: { id: true, kind: true, reason: true, scheduleSlotId: true },
     });
-    if (!request) return { ok: false, cancelled: false };
+    if (!request) return { ok: false, cancelled: false, slotId: null };
     if (parsed.data.decision === "REJECT") {
       await transaction.scheduleChangeRequest.update({
         where: { id: request.id },
         data: { status: "REJECTED", reviewedById: session.user.id, reviewedAt: new Date(), reviewNote: parsed.data.reviewNote },
       });
       await transaction.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "schedule.change-request.rejected", entityType: "ScheduleChangeRequest", entityId: request.id, metadata: { kind: request.kind } } });
-      return { ok: true, cancelled: false };
+      return { ok: true, cancelled: false, slotId: request.scheduleSlotId };
     }
-    if (request.kind !== "CANCEL") return { ok: false, cancelled: false };
+    if (request.kind !== "CANCEL") return { ok: false, cancelled: false, slotId: request.scheduleSlotId };
     const cancelled = await cancelSlotInTransaction(transaction, {
       schoolId: session.user.schoolId,
       slotId: request.scheduleSlotId,
@@ -736,11 +737,11 @@ export async function reviewScheduleChangeRequestAction(
       notifyGroup: true,
       requestId: request.id,
     });
-    return { ok: cancelled, cancelled };
+    return { ok: cancelled, cancelled, slotId: request.scheduleSlotId };
   });
   if (!result.ok) return { status: "error", message: "Wniosek jest już rozpatrzony albo lekcja nie jest dostępna." };
   revalidateScheduleViews();
-  if (result.cancelled) after(() => processEmailDeliveryQueue(session.user.schoolId));
+  if (result.cancelled && result.slotId) after(async () => { await Promise.allSettled([processEmailDeliveryQueue(session.user.schoolId), sendCancellationSms(result.slotId!, session.user.schoolId)]); });
   return { status: "success", message: result.cancelled ? "Wniosek zaakceptowany. Zajęcia odwołano i wysłano powiadomienia." : "Wniosek został odrzucony." };
 }
 

@@ -18,6 +18,7 @@ required_files=(
   raspberry/vault-create-partition.sh
   raspberry/unlock.sh
   raspberry/backup.sh
+  raspberry/web-control.sh
   raspberry/restore.sh
   raspberry/retention.sh
   raspberry/configure-sftp-backup.sh

@@ -60,18 +60,21 @@ describe("invitation validation", () => {
       createRoleQrInvitationSchema.safeParse({
         role: "TEACHER",
         validity: "1h",
+        usageLimit: "once",
       }).success,
     ).toBe(true);
     expect(
       createRoleQrInvitationSchema.safeParse({
         role: "ADMIN",
         validity: "forever",
+        usageLimit: "once",
       }).success,
     ).toBe(false);
     expect(
       createRoleQrInvitationSchema.safeParse({
         role: "SYSTEM_OWNER",
         validity: "1h",
+        usageLimit: "unlimited",
       }).success,
     ).toBe(false);
   });

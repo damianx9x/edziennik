@@ -88,7 +88,7 @@ export async function createContractPackageAction(
   }
   const relation = await db.parentChild.findFirst({
     where: { schoolId: session.user.schoolId, parentId: parsed.data.parentId, childId: parsed.data.studentId, archivedAt: null,
-      parent: { role: "PARENT", status: "ACTIVE", archivedAt: null }, child: { role: "STUDENT", status: "ACTIVE", archivedAt: null } },
+      parent: { role: "PARENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null }, child: { role: "STUDENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null } },
     select: { parentId: true },
   });
   if (!relation) return { status: "error", message: "Wybrany rodzic nie jest powiązany z tym uczniem." };

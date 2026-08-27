@@ -46,10 +46,26 @@ export async function createLearningMaterialAction(
     title: formData.get("title"),
     description: formData.get("description"),
     externalUrl: formData.get("externalUrl"),
+    audience: formData.get("audience"),
+    recipientIds: formData.getAll("recipientIds"),
   });
   if (!parsed.success) return error(parsed.error.issues[0]?.message ?? "Sprawdź dane materiału.");
   const actor = actorFromSession(session);
   if (!(await canActorManageGroup(actor, parsed.data.groupId))) return error("Nie masz dostępu do tej grupy.");
+
+  if (parsed.data.audience !== "GROUP" && parsed.data.recipientIds.length === 0) return error("Wybierz co najmniej jednego odbiorcę.");
+  const recipientRole = parsed.data.audience === "STUDENTS" ? "STUDENT" : "TEACHER";
+  const allowedRecipients = parsed.data.audience === "GROUP" ? [] : await db.user.findMany({
+    where: {
+      id: { in: parsed.data.recipientIds }, schoolId: session.user.schoolId,
+      role: recipientRole, status: "ACTIVE", archivedAt: null,
+      ...(recipientRole === "STUDENT"
+        ? { enrollments: { some: { groupId: parsed.data.groupId, status: "ACTIVE" } } }
+        : { groupTeaching: { some: { groupId: parsed.data.groupId, archivedAt: null } } }),
+    },
+    select: { id: true },
+  });
+  if (allowedRecipients.length !== new Set(parsed.data.recipientIds).size) return error("Co najmniej jedna wybrana osoba nie należy już do tej grupy.");
 
   const file = formData.get("file");
   const hasFile = file instanceof File && file.size > 0;
@@ -75,17 +91,22 @@ export async function createLearningMaterialAction(
           })
         : undefined;
       const material = await tx.learningMaterial.create({
-        data: { schoolId: session.user.schoolId, groupId: parsed.data.groupId, createdById: session.user.id, storedFileId: storedFile?.id, title: parsed.data.title, description: parsed.data.description, externalUrl: parsed.data.externalUrl },
+        data: {
+          schoolId: session.user.schoolId, groupId: parsed.data.groupId, createdById: session.user.id,
+          storedFileId: storedFile?.id, title: parsed.data.title, description: parsed.data.description,
+          externalUrl: parsed.data.externalUrl, audience: parsed.data.audience,
+          recipients: allowedRecipients.length ? { create: allowedRecipients.map(({ id }) => ({ userId: id, schoolId: session.user.schoolId })) } : undefined,
+        },
         select: { id: true },
       });
-      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "learning.material.published", entityType: "LearningMaterial", entityId: material.id } });
+      await tx.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "learning.material.published", entityType: "LearningMaterial", entityId: material.id, metadata: { audience: parsed.data.audience, recipientCount: allowedRecipients.length } } });
     });
   } catch {
     if (uploaded) await storage.remove(uploaded.storageKey).catch(() => undefined);
     return error("Nie udało się opublikować materiału. Spróbuj ponownie.");
   }
   refreshLearningPages();
-  return { status: "success", message: "Materiał jest już widoczny dla grupy." };
+  return { status: "success", message: parsed.data.audience === "GROUP" ? "Materiał jest już widoczny dla grupy." : `Materiał trafił do ${allowedRecipients.length} wybranych osób.` };
 }
 
 export async function createHomeworkAssignmentAction(

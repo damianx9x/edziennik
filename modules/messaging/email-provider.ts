@@ -1,3 +1,6 @@
+import { sendAuthEmail } from "../identity/email/email-provider";
+import { resolveEmailProvider } from "../identity/email/provider-config";
+
 export type EmailPayload = {
   to: string;
   subject: string;
@@ -89,6 +92,19 @@ export class HttpEmailProvider implements EmailProvider {
   ) {}
 
   async send(payload: EmailPayload): Promise<EmailResult> {
+    if (resolveEmailProvider(this.environment as NodeJS.ProcessEnv)) {
+      try {
+        const result = await sendAuthEmail({
+          to: payload.to,
+          subject: payload.subject,
+          text: payload.text,
+          category: "message",
+        });
+        return result === "sent" ? { ok: true } : { ok: false, code: "PROVIDER_NOT_CONFIGURED" };
+      } catch {
+        return { ok: false, code: "SMTP_ERROR" };
+      }
+    }
     const resolved = resolveEmailProviderEndpoint(this.environment);
     if (!resolved.ok) return resolved;
 

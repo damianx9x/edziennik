@@ -11,6 +11,7 @@ import {
   Server,
   ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -25,7 +26,7 @@ const destinationIcons = {
   SFTP: Server,
 };
 
-export function IntegrationReadinessPanel() {
+export function IntegrationReadinessPanel({ systemOwner = false }: { systemOwner?: boolean }) {
   const [destination, setDestination] = useState<BackupDestinationKind>("SFTP");
   const [frequency, setFrequency] = useState("codziennie");
   const [retention, setRetention] = useState("30 dni");
@@ -79,7 +80,15 @@ export function IntegrationReadinessPanel() {
         </div>
         <div className="backup-requirements"><strong>Do uruchomienia potrzebne będą:</strong><ul>{requirements.map((item) => <li key={item}>{item}</li>)}</ul></div>
         <p className="integration-limit compact"><CircleAlert aria-hidden="true" /><span><strong>Zwykłe FTP nie jest zalecane.</strong> Dla danych uczniów wybieramy szyfrowane SFTP, szyfrowaną kopię i osobny test odtworzenia.</span></p>
-        <footer><button className="button button-secondary" type="button" onClick={copyChecklist}><Copy aria-hidden="true" /> {copied === "backup" ? "Skopiowano" : "Skopiuj plan konfiguracji"}</button></footer>
+        <footer>
+          {systemOwner ? (
+            <Link className="button button-primary" href="/panel/bog#raspberry-title">
+              <HardDrive aria-hidden="true" /> Wykryj dysk i włącz backup
+            </Link>
+          ) : (
+            <button className="button button-secondary" type="button" onClick={copyChecklist}><Copy aria-hidden="true" /> {copied === "backup" ? "Skopiowano" : "Skopiuj plan dla obsługi technicznej"}</button>
+          )}
+        </footer>
       </article>
     </section>
   );

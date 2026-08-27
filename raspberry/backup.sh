@@ -30,6 +30,18 @@ tar -C "$TEMP_DIR" -cf - database.dump private-files.tar.gz manifest.txt \
 
 find "$BACKUP_DIR" -maxdepth 1 -type f -mtime +30 -delete
 
+if [[ -f /etc/kla/backup-usb.env ]]; then
+  source /etc/kla/backup-usb.env
+  if [[ -n "${KLA_USB_BACKUP_PATH:-}" ]] && mountpoint -q -- "$KLA_USB_BACKUP_PATH"; then
+    USB_BACKUP_DIR="$KLA_USB_BACKUP_PATH/kla-encrypted-backups"
+    install -d -m 700 "$USB_BACKUP_DIR"
+    install -m 600 "$BACKUP_DIR/kla-$STAMP.tar.age" "$BACKUP_DIR/kla-$STAMP.tar.age.sha256" "$USB_BACKUP_DIR/"
+    find "$USB_BACKUP_DIR" -maxdepth 1 -type f -mtime +30 -delete
+  else
+    echo "Skonfigurowany dysk USB nie jest zamontowany. Kopia w sejfie została zachowana, ale kopia USB nie powstała." >&2
+  fi
+fi
+
 if [[ -f /etc/kla/backup-sftp.env ]]; then
   source /etc/kla/backup-sftp.env
   KEY="$VAULT/secrets/sftp-backup-key"

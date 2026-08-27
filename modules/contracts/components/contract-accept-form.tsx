@@ -44,14 +44,14 @@ export function ContractAcceptForm({
       <div className="contract-decision-heading">
         <ShieldCheck aria-hidden="true" />
         <div>
-          <strong>Ostatni krok — sprawdź i zdecyduj</strong>
-          <span>Każde pole dotyczy innej, ważnej informacji.</span>
+          <strong>Ostatni krok — zawarcie umowy</strong>
+          <span>Akceptacja składa i utrwala Twoje oświadczenie woli. Przy umowie odpłatnej oznacza także obowiązek zapłaty.</span>
         </div>
         <Link href="/panel/umowy/pomoc"><CircleHelp aria-hidden="true" /> Jak to działa prawnie?</Link>
       </div>
       <label className="stage4-check">
         <input type="checkbox" name="documentConfirmation" value="accepted" required />
-        <span>Otrzymałem/am i przeczytałem/am dokument PDF. Akceptuję dokładnie wyświetloną wersję umowy.</span>
+        <span>Otrzymałem/am i przeczytałem/am dokument PDF. Chcę zawrzeć umowę i akceptuję dokładnie wyświetloną, niezmienną wersję.</span>
       </label>
       <label className="stage4-check">
         <input type="checkbox" name="consumerInformationConfirmation" value="accepted" required />
@@ -88,7 +88,7 @@ export function ContractAcceptForm({
         {pending ? "Zapisuję akceptację…" : actionLabel}
       </button>
       {requiresPayment ? (
-        <small className="contract-action-explanation">Kliknięcie tego przycisku kończy zawarcie odpłatnej umowy.</small>
+        <small className="contract-action-explanation">Kliknięcie składa oświadczenie woli, zawiera odpłatną umowę w formie dokumentowej i uruchamia obowiązek zapłaty na pokazanych warunkach.</small>
       ) : null}
     </form>
   );

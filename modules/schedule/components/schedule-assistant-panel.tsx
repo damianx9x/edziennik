@@ -848,6 +848,29 @@ export function AvailabilityForm({
       (window) => `${window.startMinute}-${window.endMinute}`,
     ),
   ).size;
+  function addAvailabilityWindow() {
+    setWindows((current) => {
+      const previous = current.at(-1);
+      if (!previous) {
+        return [{
+          key: `availability-${crypto.randomUUID()}`,
+          weekday: 1,
+          startMinute: 15 * 60,
+          endMinute: 19 * 60,
+          locationId: locations[0]?.id ?? "",
+        }];
+      }
+      const canContinueSameDay = previous.endMinute + 30 < 21 * 60;
+      const startMinute = canContinueSameDay ? previous.endMinute + 30 : 15 * 60;
+      return [...current, {
+        key: `availability-${crypto.randomUUID()}`,
+        weekday: canContinueSameDay ? previous.weekday : previous.weekday >= 6 ? 1 : previous.weekday + 1,
+        startMinute,
+        endMinute: canContinueSameDay ? Math.min(startMinute + 60, 21 * 60) : 19 * 60,
+        locationId: previous.locationId || locations[0]?.id || "",
+      }];
+    });
+  }
   return (
     <details className="assistant-config-item">
       <summary>
@@ -903,7 +926,7 @@ export function AvailabilityForm({
               </div>
             ))}
           </div>
-          <button className="button button-secondary button-small availability-add" type="button" disabled={windows.length >= 24 || locations.length === 0} onClick={() => setWindows((current) => [...current, { key: `availability-${Date.now()}-${current.length}`, weekday: current.at(-1)?.weekday ?? 1, startMinute: 15 * 60, endMinute: 19 * 60, locationId: current.at(-1)?.locationId ?? locations[0]?.id ?? "" }])}><Plus aria-hidden="true" /> Dodaj kolejny przedział</button>
+          <button className="button button-secondary button-small availability-add" type="button" disabled={windows.length >= 24 || locations.length === 0} onClick={addAvailabilityWindow}><Plus aria-hidden="true" /> Dodaj kolejny przedział</button>
         </fieldset>
         {state.message ? (
           <p

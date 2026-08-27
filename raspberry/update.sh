@@ -39,6 +39,16 @@ EXPECTED_COMMIT="$(tr -d '\r\n' < "$SOURCE_DIR/KLA_RELEASE_COMMIT")"
 [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Nieprawidłowy identyfikator wydania."; exit 1; }
 [[ -f /etc/kla/edziennik.env ]] || { echo "Brak prywatnej konfiguracji aplikacji."; exit 1; }
 
+# Od tego wydania dyrektor zawsze kończy konfigurację MFA przed dostępem do
+# prawdziwych danych. Aktualizacja nie zmienia hasła ani istniejącego konta.
+ENV_FILE=/srv/kla-vault/secrets/edziennik.env
+MFA_ENV="$(mktemp /srv/kla-vault/secrets/mfa-policy.XXXXXX)"
+grep -vE '^(KLA_REQUIRE_DIRECTOR_MFA|KLA_BUG_REPORT_EMAIL|NEXT_PUBLIC_SUPPORT_EMAIL)=' "$ENV_FILE" > "$MFA_ENV"
+printf 'KLA_REQUIRE_DIRECTOR_MFA=1\nKLA_BUG_REPORT_EMAIL=damianx9x@me.com\nNEXT_PUBLIC_SUPPORT_EMAIL=damianx9x@me.com\n' >> "$MFA_ENV"
+chown root:kla "$MFA_ENV"
+chmod 640 "$MFA_ENV"
+mv "$MFA_ENV" "$ENV_FILE"
+
 if ! dpkg-query -W -f='${Status}' avahi-daemon 2>/dev/null | grep -q 'install ok installed'; then
   apt-get update
   apt-get install -y --no-install-recommends avahi-daemon
@@ -111,6 +121,10 @@ if [[ -f /etc/kla/control-user ]]; then
   CONTROL_USER="$(cat /etc/kla/control-user)"
   [[ "$CONTROL_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]] || { echo "Niepoprawny użytkownik panelu sterowania."; false; }
   install -m 755 "$CURRENT/raspberry/control.sh" /usr/local/sbin/kla-control
+  install -m 755 "$CURRENT/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+  printf 'kla ALL=(root) NOPASSWD: /usr/local/sbin/kla-web-control *\n' > /etc/sudoers.d/kla-web-control
+  chmod 440 /etc/sudoers.d/kla-web-control
+  visudo -cf /etc/sudoers.d/kla-web-control >/dev/null
   printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
   chmod 440 /etc/sudoers.d/kla-control
   visudo -cf /etc/sudoers.d/kla-control >/dev/null

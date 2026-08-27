@@ -253,6 +253,7 @@ export default function Home() {
         <Brand />
         <p>
           Bezpieczne środowisko demonstracyjne eDziennika · wyłącznie dane testowe
+          <br />System zaprojektował Damian Eron · damianx9x@me.com
         </p>
         <Link href="/panel">eDziennik</Link>
       </footer>

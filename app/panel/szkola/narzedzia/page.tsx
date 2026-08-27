@@ -153,7 +153,7 @@ export default async function TransfersPage() {
         </article>
       </section>
 
-      <IntegrationReadinessPanel />
+      <IntegrationReadinessPanel systemOwner={session.user.role === "SYSTEM_OWNER"} />
 
       <section
         className="transfer-choice-grid tools-data-section"

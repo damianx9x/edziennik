@@ -26,6 +26,8 @@ import {
   buildConfigurationChecks,
   sanitizeDiagnosticValue,
 } from "@/modules/system-owner/diagnostics";
+import { RaspberryControlPanel } from "@/modules/system-owner/components/raspberry-control-panel";
+import { getRaspberryStatus, listMountedStorage } from "@/modules/system-owner/server-control";
 
 export const metadata: Metadata = { title: "Centrum właściciela systemu" };
 export const dynamic = "force-dynamic";
@@ -54,6 +56,8 @@ export default async function SystemOwnerPage() {
     failedImportCount,
     openFeedbackCount,
     recentLogs,
+    raspberryStatus,
+    storageDevices,
   ] = await Promise.all([
     db.school.count(),
     db.user.count({ where: { status: "ACTIVE", archivedAt: null } }),
@@ -79,6 +83,8 @@ export default async function SystemOwnerPage() {
         school: { select: { name: true } },
       },
     }),
+    getRaspberryStatus(),
+    listMountedStorage(),
   ]);
 
   const configurationChecks = buildConfigurationChecks(process.env);
@@ -185,6 +191,8 @@ export default async function SystemOwnerPage() {
           </small>
         </article>
       </section>
+
+      <RaspberryControlPanel status={raspberryStatus} storage={storageDevices} />
 
       <div className="owner-dashboard-grid">
         <section className="owner-panel-card">

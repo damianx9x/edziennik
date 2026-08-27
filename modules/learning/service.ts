@@ -23,7 +23,16 @@ export async function listLearningOverview(actor: LearningActor) {
       name: true,
       location: { select: { id: true, name: true, isOnline: true } },
       learningMaterials: {
-        where: { archivedAt: null },
+        where: {
+          archivedAt: null,
+          ...(actor.role === "SYSTEM_OWNER" || actor.role === "DIRECTOR" ? {} : {
+            OR: [
+              { audience: "GROUP" },
+              { createdById: actor.id },
+              { recipients: { some: { userId: { in: actor.role === "PARENT" ? (studentIds ?? []) : [actor.id] } } } },
+            ],
+          }),
+        },
         orderBy: { publishedAt: "desc" },
         select: {
           id: true,
@@ -32,9 +41,13 @@ export async function listLearningOverview(actor: LearningActor) {
           externalUrl: true,
           storedFileId: true,
           publishedAt: true,
+          audience: true,
+          recipients: { select: { userId: true, user: { select: { name: true } } } },
           createdBy: { select: { id: true, name: true } },
         },
       },
+      enrollments: { where: { status: "ACTIVE" }, select: { student: { select: { id: true, name: true } } } },
+      teachers: { where: { archivedAt: null }, select: { teacher: { select: { id: true, name: true } } } },
       homeworkAssignments: {
         where: { archivedAt: null },
         orderBy: [{ dueAt: "asc" }, { publishedAt: "desc" }],

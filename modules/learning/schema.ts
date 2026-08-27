@@ -16,6 +16,8 @@ export const learningMaterialSchema = z
       (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
       z.string().url("Wpisz pełny adres https://.").max(2_000).optional(),
     ),
+    audience: z.enum(["GROUP", "STUDENTS", "TEACHERS"]).default("GROUP"),
+    recipientIds: z.array(id).max(50).default([]),
   })
   .superRefine((value, context) => {
     if (value.externalUrl && !value.externalUrl.startsWith("https://")) {
@@ -47,4 +49,3 @@ export type LearningActionState = {
   status: "idle" | "success" | "error";
   message?: string;
 };
-

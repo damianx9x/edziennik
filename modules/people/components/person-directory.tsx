@@ -41,6 +41,7 @@ import {
 } from "@/modules/records/components/relationship-editor";
 import { StudentAvailabilityEditor } from "@/modules/records/components/student-availability-editor";
 import { openPersonConversationAction } from "@/modules/messaging/actions";
+import { PasswordResetButton } from "@/modules/identity/components/password-reset-button";
 
 export type PersonDirectoryRecord = {
   id: string;
@@ -452,6 +453,9 @@ export function PersonDirectory({
                         <ChevronRight aria-hidden="true" />
                       </button>
                     </form>
+                  ) : null}
+                  {actorRole === "DIRECTOR" && selected.hasAccount && selected.email ? (
+                    <PasswordResetButton userId={selected.id} />
                   ) : null}
                   {selected.role === "PARENT" ? (
                     <FutureModule

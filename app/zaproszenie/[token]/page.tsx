@@ -38,6 +38,8 @@ export default async function InvitationPage({
       role: true,
       expiresAt: true,
       acceptedAt: true,
+      maxUses: true,
+      useCount: true,
       revokedAt: true,
     },
   });
@@ -84,7 +86,7 @@ export default async function InvitationPage({
         <Brand compact />
         <span className="invitation-expiry">
           <Clock3 aria-hidden="true" />
-          Link jednorazowy
+          {invitation.maxUses === null ? "Kod wielokrotnego użytku" : "Link jednorazowy"}
         </span>
       </div>
       <AcceptInvitationForm

@@ -38,6 +38,8 @@ export default async function InvitationsPage() {
       expiresAt: true,
       acceptedAt: true,
       revokedAt: true,
+      maxUses: true,
+      useCount: true,
     },
   });
 
@@ -118,6 +120,8 @@ export default async function InvitationsPage() {
                     <InvitationStatus
                       availability={availability}
                       expiresAt={invitation.expiresAt}
+                      maxUses={invitation.maxUses}
+                      useCount={invitation.useCount}
                     />
                     {availability === "ready" ? (
                       <RevokeInvitationForm
@@ -141,9 +145,13 @@ export default async function InvitationsPage() {
 function InvitationStatus({
   availability,
   expiresAt,
+  maxUses,
+  useCount,
 }: {
   availability: ReturnType<typeof getInvitationAvailability>;
   expiresAt: Date;
+  maxUses: number | null;
+  useCount: number;
 }) {
   if (availability === "accepted") {
     return (
@@ -169,7 +177,7 @@ function InvitationStatus({
   return (
     <span className="invitation-status status-ready">
       <Clock3 aria-hidden="true" />
-      Do{" "}
+      {maxUses === null ? `${useCount} użyć · ważny do ` : "Do "}
       {new Intl.DateTimeFormat("pl-PL", {
         day: "2-digit",
         month: "short",

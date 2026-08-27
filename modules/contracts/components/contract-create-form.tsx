@@ -1,20 +1,35 @@
 "use client";
 
-import { CircleHelp, FileStack, LoaderCircle, Send } from "lucide-react";
+import { CircleHelp, FileStack, LoaderCircle, Search, Send } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { createContractPackageAction, reuseContractPackageAction } from "../actions";
 
-type ParentOption = { id: string; name: string; children: { id: string; name: string }[] };
+type ParentOption = { id: string; name: string; status: string; children: { id: string; name: string }[] };
 
 type PackageOption = { id: string; title: string; version: number; paymentSummary: string | null };
 
 export function ContractCreateForm({ parents, packages }: { parents: ParentOption[]; packages: PackageOption[] }) {
   const [selectedParentId, setSelectedParentId] = useState("");
+  const [parentQuery, setParentQuery] = useState("");
   const [requiresPayment, setRequiresPayment] = useState(true);
   const [count, setCount] = useState(10);
   const [amount, setAmount] = useState("350,00");
   const children = parents.find((parent) => parent.id === selectedParentId)?.children ?? [];
+  const visibleParents = useMemo(() => {
+    const normalized = parentQuery.trim().toLocaleLowerCase("pl-PL");
+    const matching = normalized
+      ? parents.filter((parent) =>
+          `${parent.name} ${parent.children.map((child) => child.name).join(" ")}`
+            .toLocaleLowerCase("pl-PL")
+            .includes(normalized),
+        )
+      : parents.slice(0, 5);
+    const selected = parents.find((parent) => parent.id === selectedParentId);
+    return selected && !matching.some((parent) => parent.id === selected.id)
+      ? [selected, ...matching]
+      : matching;
+  }, [parentQuery, parents, selectedParentId]);
   const calculatedTotal = useMemo(() => {
     const value = Number(amount.replace(",", "."));
     return Number.isFinite(value) ? (value * count).toFixed(2).replace(".", ",") : "";
@@ -24,10 +39,11 @@ export function ContractCreateForm({ parents, packages }: { parents: ParentOptio
 
   return (
     <div className="contract-create-stack">
+    {parents.length > 5 ? <label className="relationship-search contract-parent-search"><Search aria-hidden="true" /><span className="sr-only">Szukaj rodzica lub ucznia</span><input type="search" value={parentQuery} onChange={(event) => setParentQuery(event.target.value)} placeholder="Szukaj rodzica albo dziecka" /><small>Na liście pokazujemy kilka podpowiedzi. Wpisz nazwisko, aby znaleźć pozostałe osoby.</small></label> : null}
     {packages.length ? <form action={reuseAction} className="stage4-form contract-package-reuse">
       <div className="stage4-form-heading"><span className="stage4-icon"><FileStack aria-hidden="true" /></span><div><span className="section-kicker">Najszybsza opcja</span><h2>Wyślij gotowy wariant ponownie</h2><p>Umowę, cennik, harmonogram i raty wgrywasz tylko raz.</p></div></div>
       <label>Gotowy pakiet<select name="sourceVersionId" required defaultValue=""><option value="" disabled>Wybierz wariant</option>{packages.map((item) => <option key={item.id} value={item.id}>{item.title} · wersja {item.version}{item.paymentSummary ? ` · ${item.paymentSummary}` : ""}</option>)}</select></label>
-      <div className="stage4-form-row"><label>Rodzic<select name="parentId" required value={selectedParentId} onChange={(event) => setSelectedParentId(event.target.value)}><option value="" disabled>Wybierz rodzica</option>{parents.map((parent) => <option key={parent.id} value={parent.id}>{parent.name}</option>)}</select></label><label>Uczeń<select name="studentId" required defaultValue="" disabled={!selectedParentId}><option value="" disabled>{selectedParentId ? "Wybierz ucznia" : "Najpierw wybierz rodzica"}</option>{children.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}</select></label><label>Termin odpowiedzi (opcjonalnie)<input name="expiresAt" type="date" /></label></div>
+      <div className="stage4-form-row"><label>Rodzic<select name="parentId" required value={selectedParentId} onChange={(event) => setSelectedParentId(event.target.value)}><option value="" disabled>Wybierz rodzica</option>{visibleParents.map((parent) => <option key={parent.id} value={parent.id}>{parent.name}{parent.status === "INVITED" ? " · konto oczekuje" : ""}</option>)}</select></label><label>Uczeń<select name="studentId" required defaultValue="" disabled={!selectedParentId || children.length === 0}><option value="" disabled>{!selectedParentId ? "Najpierw wybierz rodzica" : children.length ? "Wybierz ucznia" : "Najpierw przypisz dziecko w Kartotekach"}</option>{children.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}</select></label><label>Termin odpowiedzi (opcjonalnie)<input name="expiresAt" type="date" /></label></div>
       {reuseState.message ? <p className={`stage4-feedback ${reuseState.status}`} role="status">{reuseState.message}</p> : null}
       <button className="stage4-primary" type="submit" disabled={reusePending}>{reusePending ? <LoaderCircle className="spin" /> : <Send />}{reusePending ? "Wysyłam…" : "Wyślij gotowy pakiet"}</button>
     </form> : null}
@@ -44,8 +60,8 @@ export function ContractCreateForm({ parents, packages }: { parents: ParentOptio
         <label><strong>3. Harmonogram zajęć</strong><input name="scheduleDocument" type="file" required accept="application/pdf,.pdf" /><small>Może zawierać kilka stron.</small></label>
       </div>
       <div className="stage4-form-row">
-        <label>Rodzic<select name="parentId" required value={selectedParentId} onChange={(event) => setSelectedParentId(event.target.value)}><option value="" disabled>Wybierz rodzica</option>{parents.map((parent) => <option key={parent.id} value={parent.id}>{parent.name}</option>)}</select></label>
-        <label>Uczeń<select name="studentId" required defaultValue="" disabled={!selectedParentId}><option value="" disabled>{selectedParentId ? "Wybierz ucznia" : "Najpierw wybierz rodzica"}</option>{children.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}</select></label>
+        <label>Rodzic<select name="parentId" required value={selectedParentId} onChange={(event) => setSelectedParentId(event.target.value)}><option value="" disabled>Wybierz rodzica</option>{visibleParents.map((parent) => <option key={parent.id} value={parent.id}>{parent.name}{parent.status === "INVITED" ? " · konto oczekuje" : ""}</option>)}</select></label>
+        <label>Uczeń<select name="studentId" required defaultValue="" disabled={!selectedParentId || children.length === 0}><option value="" disabled>{!selectedParentId ? "Najpierw wybierz rodzica" : children.length ? "Wybierz ucznia" : "Najpierw przypisz dziecko w Kartotekach"}</option>{children.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}</select></label>
       </div>
       <fieldset className="stage4-payment-terms">
         <legend>Rozliczenie — tylko dane potrzebne do rat i przypomnień</legend>
@@ -64,7 +80,8 @@ export function ContractCreateForm({ parents, packages }: { parents: ParentOptio
         <label>Jak rodzic ma zakończyć formalność?<select name="acceptanceMode" defaultValue="EXTERNAL_SIGNATURE" required><option value="EXTERNAL_SIGNATURE">Pobiera, podpisuje i wgrywa skan</option><option value="DOCUMENTARY">Akceptuje w eDzienniku — forma dokumentowa</option></select><small>Domyślny jest prosty wariant z podpisanym egzemplarzem.</small></label>
         <label>Termin odpowiedzi (opcjonalnie)<input name="expiresAt" type="date" /></label>
       </div>
-      <label className="stage4-check stage4-legal-check"><input type="checkbox" name="legalReadiness" value="confirmed" required /><span>Sprawdziłem/am trzy PDF-y i sposób zawarcia. Wiem, że kliknięcie dokumentuje oświadczenie, ale nie jest automatycznie podpisem odręcznym ani kwalifikowanym.</span></label>
+      <label className="stage4-check stage4-legal-check"><input type="checkbox" name="legalReadiness" value="confirmed" required /><span>Sprawdziłem/am trzy PDF-y i sposób zawarcia. W trybie elektronicznym przycisk składa i utrwala oświadczenie woli oraz zawiera umowę w formie dokumentowej; nie jest podpisem odręcznym ani kwalifikowanym.</span></label>
+      {parents.length === 0 ? <p className="stage4-feedback error" role="status">Nie ma jeszcze rodzica w Kartotekach. Dodaj lub zaproś rodzica, przypisz mu dziecko i wróć tutaj.</p> : selectedParentId && children.length === 0 ? <p className="stage4-feedback error" role="status">Ten rodzic nie ma przypisanego dziecka. Powiąż osoby w Kartotekach — wtedy uczeń pojawi się tutaj automatycznie.</p> : null}
       {state.message ? <p className={`stage4-feedback ${state.status}`} role="status">{state.message}</p> : null}
       <button className="stage4-primary" type="submit" disabled={pending || parents.length === 0}>{pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Send aria-hidden="true" />}{pending ? "Bezpiecznie zapisuję…" : "Wyślij komplet rodzicowi"}</button>
     </form></div>

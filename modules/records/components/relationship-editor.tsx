@@ -47,11 +47,11 @@ export function RelationshipEditor({
         `${left.name} ${left.meta ?? ""}`.toLocaleLowerCase("pl-PL").includes(needle),
       );
       return visibleOrder || selectedOrder || left.name.localeCompare(right.name, "pl");
-    }).map((option) => ({
+    }).map((option, index) => ({
       ...option,
-      visible: !needle || `${option.name} ${option.meta ?? ""}`
-        .toLocaleLowerCase("pl-PL")
-        .includes(needle),
+      visible: needle
+        ? `${option.name} ${option.meta ?? ""}`.toLocaleLowerCase("pl-PL").includes(needle)
+        : selectedIds.includes(option.id) || index < 5,
     }));
   }, [options, query, selectedIds]);
 
@@ -79,6 +79,7 @@ export function RelationshipEditor({
             />
           </label>
         ) : null}
+        {options.length > 5 && !query.trim() ? <p className="relationship-hint">Pokazujemy 5 propozycji i obecne przypisania. Pozostałe znajdziesz przez wyszukiwarkę.</p> : null}
         <div className="relationship-options" role={single ? "radiogroup" : "group"}>
           {ordered.every((option) => !option.visible) ? (
             <p className="relationship-empty">Brak pasujących aktywnych kartotek.</p>

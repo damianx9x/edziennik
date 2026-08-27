@@ -21,7 +21,12 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
     isManagement ? db.user.findMany({
       where: { schoolId: session.user.schoolId, status: "ACTIVE", archivedAt: null, id: { not: session.user.id }, role: { in: ["TEACHER", "PARENT", "STUDENT"] } },
       orderBy: [{ role: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, role: true, email: true },
+      select: {
+        id: true, name: true, role: true, email: true,
+        groupTeaching: { where: { archivedAt: null }, select: { groupId: true } },
+        enrollments: { where: { status: "ACTIVE" }, select: { groupId: true } },
+        parentLinks: { where: { archivedAt: null }, select: { child: { select: { enrollments: { where: { status: "ACTIVE" }, select: { groupId: true } } } } } },
+      },
     }) : Promise.resolve([]),
   ]);
   const channels = [
@@ -71,7 +76,17 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
     {isManagement ? <aside className="messaging-meta-banner"><MessageCircleMore aria-hidden="true" /><span><strong>Potrzebujesz napisać na Facebooku?</strong><small>Otwórz zwykły Messenger w osobnej karcie. eDziennik nie przekazuje do niego danych uczniów.</small></span><a href="https://www.messenger.com/" target="_blank" rel="noreferrer">Otwórz Messenger <ExternalLink aria-hidden="true" /></a></aside> : null}
     {channels.length === 0 && !isManagement ? <section className="messaging-empty"><MessageCircleMore aria-hidden="true" /><h2>Nie masz jeszcze rozmowy</h2><p>Gdy szkoła przypisze Ci grupę lub doda do rozmowy, pojawi się tutaj automatycznie.</p></section> : <MessagingWorkspace
       role={session.user.role === "SYSTEM_OWNER" ? "DIRECTOR" : session.user.role} currentUserId={session.user.id} errorMessage={params.blad ?? null} channels={channels}
-      selectedKey={selectedKey} canRead={canRead} recipientDirectory={recipientDirectory}
+      selectedKey={selectedKey} canRead={canRead} recipientDirectory={recipientDirectory.map((person) => ({
+        id: person.id,
+        name: person.name,
+        role: person.role,
+        email: person.email,
+        groupIds: [...new Set([
+          ...person.groupTeaching.map((item) => item.groupId),
+          ...person.enrollments.map((item) => item.groupId),
+          ...person.parentLinks.flatMap((link) => link.child.enrollments.map((item) => item.groupId)),
+        ])],
+      }))}
       messages={messages.map((message) => ({ ...message, createdAt: message.createdAt.toISOString(), readByCurrent: message.reads.length > 0, acknowledgedByCurrent: message.acknowledgements.length > 0, delivery: { sent: message.deliveries.filter((item) => item.status === "SENT").length, pending: message.deliveries.filter((item) => ["QUEUED", "SENDING"].includes(item.status)).length, failed: message.deliveries.filter((item) => item.status === "FAILED").length } }))}
       queueStats={Object.fromEntries(queueStats.map((item) => [item.status, item._count._all]))}
     />}

@@ -7,7 +7,7 @@ const authEmailSchema = z.object({
   to: z.email(),
   subject: z.string().min(1).max(140),
   text: z.string().min(1).max(20_000),
-  category: z.enum(["verification", "password-reset", "invitation"]),
+  category: z.enum(["verification", "password-reset", "invitation", "message"]),
 });
 
 export type AuthEmail = z.infer<typeof authEmailSchema>;

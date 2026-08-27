@@ -215,6 +215,7 @@ export async function createRoleQrInvitationAction(
   const parsed = createRoleQrInvitationSchema.safeParse({
     role: formData.get("role"),
     validity: formData.get("validity"),
+    usageLimit: formData.get("usageLimit"),
   });
 
   if (!parsed.success) {
@@ -250,6 +251,7 @@ export async function createRoleQrInvitationAction(
       role: parsed.data.role,
       tokenHash: hashInvitationToken(token),
       expiresAt,
+      maxUses: parsed.data.usageLimit === "once" ? 1 : null,
     },
     select: { id: true },
   });
@@ -268,6 +270,7 @@ export async function createRoleQrInvitationAction(
       metadata: {
         role: parsed.data.role,
         expiresAt: expiresAt.toISOString(),
+        usageLimit: parsed.data.usageLimit,
       },
     },
   });
@@ -275,7 +278,7 @@ export async function createRoleQrInvitationAction(
 
   return {
     status: "success",
-    message: `Kod dla roli „${invitationRoleLabels[parsed.data.role]}” jest gotowy. Może zostać użyty tylko raz.`,
+    message: `Kod dla roli „${invitationRoleLabels[parsed.data.role]}” jest gotowy. ${parsed.data.usageLimit === "once" ? "Może zostać użyty tylko raz." : "Może tworzyć kolejne konta aż do wygaśnięcia."}`,
     invitationLink,
     invitationKind: "ROLE_QR",
     roleLabel: invitationRoleLabels[parsed.data.role],
@@ -365,7 +368,7 @@ export async function acceptInvitationAction(
   if (
     !invitation ||
     !isInvitableIdentityRole(invitation.role) ||
-    invitation.acceptedAt ||
+    (invitation.maxUses !== null && invitation.useCount >= invitation.maxUses) ||
     invitation.revokedAt ||
     invitation.expiresAt.getTime() <= Date.now()
   ) {
@@ -448,11 +451,14 @@ export async function acceptInvitationAction(
   const claimed = await db.invitation.updateMany({
     where: {
       id: invitation.id,
-      acceptedAt: null,
       revokedAt: null,
       expiresAt: { gt: claimedAt },
+      OR: [{ maxUses: null }, { useCount: { lt: invitation.maxUses ?? 1 } }],
     },
-    data: { acceptedAt: claimedAt },
+    data: {
+      useCount: { increment: 1 },
+      acceptedAt: invitation.maxUses === 1 ? claimedAt : null,
+    },
   });
 
   if (claimed.count !== 1) {
@@ -526,7 +532,7 @@ export async function acceptInvitationAction(
         }
         await transaction.invitation.update({
           where: { id: invitation.id },
-          data: { acceptedUserId: existingUser.id },
+          data: invitation.maxUses === 1 ? { acceptedUserId: existingUser.id } : {},
         });
         await transaction.auditLog.create({
           data: {
@@ -582,7 +588,7 @@ export async function acceptInvitationAction(
       }),
       db.invitation.update({
         where: { id: invitation.id },
-        data: { acceptedUserId: created.user.id },
+        data: invitation.maxUses === 1 ? { acceptedUserId: created.user.id } : {},
       }),
       db.auditLog.create({
         data: {
@@ -599,10 +605,12 @@ export async function acceptInvitationAction(
     await db.invitation.updateMany({
       where: {
         id: invitation.id,
-        acceptedAt: claimedAt,
-        acceptedUserId: null,
+        ...(invitation.maxUses === 1 ? { acceptedAt: claimedAt, acceptedUserId: null } : {}),
       },
-      data: { acceptedAt: null },
+      data: {
+        acceptedAt: invitation.maxUses === 1 ? null : undefined,
+        useCount: { decrement: 1 },
+      },
     });
 
     return {

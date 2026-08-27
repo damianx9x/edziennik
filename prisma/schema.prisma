@@ -237,6 +237,7 @@ model School {
   notificationStates         NotificationState[]
   onboardingProgress         OnboardingProgress[]
   learningMaterials          LearningMaterial[]
+  learningMaterialRecipients LearningMaterialRecipient[]
   homeworkAssignments        HomeworkAssignment[]
   homeworkSubmissions        HomeworkSubmission[]
   progressObservations       StudentProgressObservation[]
@@ -335,6 +336,7 @@ model User {
   notificationStates             NotificationState[]
   onboardingProgress             OnboardingProgress?
   createdLearningMaterials       LearningMaterial[]           @relation("LearningMaterialCreator")
+  learningMaterialRecipients     LearningMaterialRecipient[]
   createdHomeworkAssignments     HomeworkAssignment[]         @relation("HomeworkAssignmentCreator")
   homeworkSubmissions            HomeworkSubmission[]         @relation("HomeworkSubmissionStudent")
   reviewedHomeworkSubmissions    HomeworkSubmission[]         @relation("HomeworkSubmissionReviewer")
@@ -432,6 +434,8 @@ model Invitation {
   tokenHash      String         @unique
   expiresAt      DateTime
   acceptedAt     DateTime?
+  maxUses        Int?           @default(1)
+  useCount       Int            @default(0)
   revokedAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -862,6 +866,7 @@ model LearningMaterial {
   title        String
   description  String?
   externalUrl  String?
+  audience     String    @default("GROUP")
   publishedAt  DateTime  @default(now())
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -871,10 +876,25 @@ model LearningMaterial {
   group      CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
   createdBy  User        @relation("LearningMaterialCreator", fields: [createdById], references: [id], onDelete: Restrict)
   storedFile StoredFile? @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+  recipients LearningMaterialRecipient[]
 
   @@index([schoolId, publishedAt])
   @@index([groupId, archivedAt, publishedAt])
   @@index([createdById, createdAt])
+}
+
+model LearningMaterialRecipient {
+  materialId String @db.Uuid
+  userId     String @db.Uuid
+  schoolId   String @db.Uuid
+  createdAt  DateTime @default(now())
+
+  material LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  school   School           @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@id([materialId, userId])
+  @@index([schoolId, userId])
 }
 
 model HomeworkAssignment {

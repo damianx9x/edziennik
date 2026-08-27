@@ -675,7 +675,7 @@ export async function generateScheduleAction(formData: FormData) {
   });
 
   redirect(
-    `${schedulePath}?tydzien=${firstWeek}&propozycja=${generation.id}`,
+    `${schedulePath}?tydzien=${firstWeek}&tryb=auto&propozycja=${generation.id}`,
   );
 }
 

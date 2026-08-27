@@ -25,6 +25,7 @@ export const createInvitationSchema = z.object({
 export const createRoleQrInvitationSchema = z.object({
   role: invitationRoleSchema,
   validity: z.enum(["15m", "1h", "24h", "7d"]),
+  usageLimit: z.enum(["once", "unlimited"]),
 });
 
 export const acceptInvitationSchema = z
@@ -144,9 +145,17 @@ export function getInvitationAvailability(input: {
   acceptedAt: Date | null;
   revokedAt: Date | null;
   expiresAt: Date;
+  maxUses?: number | null;
+  useCount?: number;
   now?: Date;
 }): InvitationAvailability {
-  if (input.acceptedAt) return "accepted";
+  if (
+    input.maxUses === undefined
+      ? input.acceptedAt
+      : input.maxUses !== null && (input.useCount ?? 0) >= input.maxUses
+  ) {
+    return "accepted";
+  }
   if (input.revokedAt) return "revoked";
   if (input.expiresAt.getTime() <= (input.now ?? new Date()).getTime()) {
     return "expired";

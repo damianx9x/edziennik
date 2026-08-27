@@ -27,6 +27,8 @@ import {
   Move,
   UsersRound,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -133,6 +135,7 @@ export function ScheduleWorkspace({
   const [groupFilter, setGroupFilter] = useState("");
   const [roomFilter, setRoomFilter] = useState("");
   const [teacherFilter, setTeacherFilter] = useState("");
+  const [showCancelled, setShowCancelled] = useState(false);
   const [newGroupId, setNewGroupId] = useState("");
   const [newDate, setNewDate] = useState(
     days.find((day) => day.isToday)?.key ?? days[0]?.key ?? "",
@@ -199,9 +202,10 @@ export function ScheduleWorkspace({
           (!groupFilter || slot.groupId === groupFilter) &&
           (!locationFilter || slot.locationId === locationFilter) &&
           (!roomFilter || slot.roomId === roomFilter) &&
-          (!teacherFilter || slot.teacherId === teacherFilter),
+          (!teacherFilter || slot.teacherId === teacherFilter) &&
+          (showCancelled || slot.status !== "CANCELLED"),
       ),
-    [groupFilter, locationFilter, roomFilter, slots, teacherFilter],
+    [groupFilter, locationFilter, roomFilter, showCancelled, slots, teacherFilter],
   );
 
   function handleDragEnd(event: DragEndEvent) {
@@ -657,6 +661,15 @@ export function ScheduleWorkspace({
           }}
         >
           Wyczyść filtry
+        </button>
+        <button
+          className={`schedule-cancelled-toggle ${showCancelled ? "active" : ""}`}
+          type="button"
+          aria-pressed={showCancelled}
+          onClick={() => setShowCancelled((current) => !current)}
+        >
+          {showCancelled ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+          {showCancelled ? "Ukryj odwołane" : "Pokaż odwołane"}
         </button>
       </section>
 

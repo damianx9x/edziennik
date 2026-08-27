@@ -288,8 +288,8 @@ export function InvitationManager() {
           <div className="invite-qr-intro">
             <Link2 aria-hidden="true" />
             <p>
-              Wygenerujesz czasowy, jednorazowy kod. Osoba po zeskanowaniu sama
-              wpisze swoje dane, a konto od razu otrzyma wybraną rolę.
+              Wygenerujesz czasowy kod. Osoba po zeskanowaniu sama wpisze swoje
+              dane, a konto od razu otrzyma wybraną rolę.
             </p>
           </div>
           <div className="invite-form-grid">
@@ -314,6 +314,14 @@ export function InvitationManager() {
                   ),
                 )}
               </select>
+            </label>
+            <label>
+              <span>Ile kont można utworzyć?</span>
+              <select name="usageLimit" defaultValue="once" required>
+                <option value="once">Jedno konto</option>
+                <option value="unlimited">Bez limitu — do czasu wygaśnięcia</option>
+              </select>
+              <small>Kod bez limitu udostępniaj tylko kontrolowanej grupie.</small>
             </label>
           </div>
           <InvitationResult state={qrState} />

@@ -120,8 +120,12 @@ export default async function ContractLegalHelpPage() {
             <h2 id="contract-faq-title">Najczęstsze pytania</h2>
           </div>
           <details>
-            <summary>Czy trzeba drukować i podpisywać umowę?</summary>
-            <p>Nie zawsze. Dla umowy niewymagającej formy pisemnej rodzic może złożyć oświadczenie w eDzienniku w formie dokumentowej: system identyfikuje konto i zachowuje dokładną treść oświadczenia oraz wersję dokumentów (art. 77² i 77³ Kodeksu cywilnego). Jeżeli KLA wybierze podpis odręczny, rodzic pobiera umowę i informacje RODO, podpisuje egzemplarz, a następnie wgrywa czytelny skan; papierowy oryginał zachowuje. Cennik i harmonogram pozostają załącznikami do wglądu.</p>
+            <summary>Czy akceptacja elektroniczna zawiera umowę?</summary>
+            <p>Tak — w wariancie „Akceptacja w eDzienniku” rodzic składa utrwalone oświadczenie, że chce zawrzeć dokładnie pokazaną umowę. Dla umowy, dla której przepisy ani jej treść nie zastrzegają formy pisemnej pod rygorem nieważności, jest to zawarcie umowy w formie dokumentowej zgodnie z art. 60, 77² i 77³ Kodeksu cywilnego. Przy umowie odpłatnej przycisk jednoznacznie wskazuje obowiązek zapłaty. System zachowuje konto, czas, wersję, treść oświadczeń i skrót dokumentów.</p>
+          </details>
+          <details>
+            <summary>Czy można wybrać zwykły podpis na papierze?</summary>
+            <p>Tak. W wariancie „Pobierz, podpisz i wgraj” rodzic pobiera umowę, podpisuje ją odręcznie i wgrywa czytelny PDF lub zdjęcie. Dyrektor sprawdza dokument przed zmianą statusu. Cennik i harmonogram pozostają niezmiennymi załącznikami do wglądu.</p>
           </details>
           <details>
             <summary>Czy kod SMS zastępuje podpis?</summary>

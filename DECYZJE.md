@@ -1057,3 +1057,25 @@ nie można nadać przez zaproszenie ani edycję kartoteki.
 móc uruchomić szkołę od pustej bazy i zaprosić pierwszego dyrektora. Osobne
 blokady `SYSTEM_OWNER` w modułach tworzyły niespójny interfejs: centrum systemu
 pokazywało akcję, którą docelowa strona odrzucała.
+
+## ADR-082 — Konfigurowalne kanały operacyjne i fizyczny nośnik backupu
+
+**Data:** 2026-08-27
+**Status:** przyjęta
+
+Poczta wychodząca jest konfigurowana w centrum właściciela przez SMTP albo
+Resend, a zgłoszenia błędów domyślnie trafiają do opiekuna technicznego.
+Bezpłatnym adapterem SMS pilota jest otwarty SMS Gateway for Android; szkoła
+używa własnego telefonu i karty SIM, więc aplikacja nie obiecuje bezpłatnych
+wiadomości u operatora. Brak konfiguracji kanału nie blokuje podstawowych
+operacji — kolejka zapisuje kontrolowany błąd i pozwala ponowić wysyłkę.
+
+Backup z panelu nie przyjmuje dowolnej ścieżki tekstowej. Właściciel wybiera
+wyłącznie zamontowany nośnik USB wykryty przez system pod `/media` albo `/mnt`.
+Skrypt nie formatuje urządzenia, sprawdza możliwość zapisu, szyfruje kopię,
+zapisuje sumę kontrolną i wykonuje test odtworzenia. Dysk będący głównym sejfem
+danych nie może równocześnie stanowić jedynej kopii zapasowej.
+
+**Dlaczego:** konfiguracja musi być wykonalna przez osobę nietechniczną, ale
+nie może umożliwiać wysłania sekretów do przypadkowej usługi ani pozorować
+backupu przez kopiowanie pliku na ten sam uszkadzalny nośnik.

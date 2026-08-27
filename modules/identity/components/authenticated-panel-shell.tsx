@@ -297,6 +297,9 @@ export async function AuthenticatedPanelShell({
               <small>Dostęp chroniony według roli</small>
             </div>
           </div>
+          <a className="app-sidebar-creator" href="mailto:damianx9x@me.com">
+            System: Damian Eron · damianx9x@me.com
+          </a>
         </aside>
 
         <section className="app-panel-content">{children}</section>

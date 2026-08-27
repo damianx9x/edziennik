@@ -25,7 +25,7 @@ export async function GET(
       storageKey: true,
       originalName: true,
       mimeType: true,
-      learningMaterials: { where: { archivedAt: null }, select: { groupId: true } },
+      learningMaterials: { where: { archivedAt: null }, select: { groupId: true, audience: true, createdById: true, recipients: { select: { userId: true } } } },
       homeworkSubmissions: { select: { studentId: true, assignment: { select: { groupId: true } } } },
     },
   });
@@ -39,6 +39,16 @@ export async function GET(
     where: { ...accessibleGroupWhere(actor), id: { in: candidateGroupIds } },
     select: { id: true },
   }));
+  const accessibleGroups = await db.courseGroup.findMany({ where: { ...accessibleGroupWhere(actor), id: { in: storedFile.learningMaterials.map((material) => material.groupId) } }, select: { id: true } });
+  const accessibleGroupIds = new Set(accessibleGroups.map(({ id }) => id));
+  const linkedChildIds = session.user.role === "PARENT" ? (await db.parentChild.findMany({ where: { schoolId: session.user.schoolId, parentId: session.user.id, archivedAt: null }, select: { childId: true } })).map(({ childId }) => childId) : [];
+  const hasAccessibleMaterial = storedFile.learningMaterials.some((material) =>
+    accessibleGroupIds.has(material.groupId) && (
+      ["SYSTEM_OWNER", "DIRECTOR"].includes(session.user.role) ||
+      material.audience === "GROUP" || material.createdById === session.user.id ||
+      material.recipients.some(({ userId }) => userId === session.user.id || linkedChildIds.includes(userId))
+    ),
+  );
   const isOwnSubmission = session.user.role === "STUDENT" && storedFile.homeworkSubmissions.some((submission) => submission.studentId === session.user.id);
   const isLinkedChildSubmission = session.user.role === "PARENT" && Boolean(await db.parentChild.findFirst({
     where: {
@@ -52,6 +62,7 @@ export async function GET(
   if (!canViewLearningStoredFile({
     role: session.user.role,
     hasAccessibleGroup,
+    hasAccessibleMaterial,
     containsHomeworkSubmission: storedFile.homeworkSubmissions.length > 0,
     isOwnSubmission,
     isLinkedChildSubmission: Boolean(isLinkedChildSubmission),

@@ -108,11 +108,11 @@ export function buildConfigurationChecks(
       key: "sms",
       label: "Powiadomienia SMS",
       detail:
-        smsProvider !== "disabled" && environment.SMS_API_KEY
+        smsProvider === "sms-gate" && environment.SMS_GATE_USERNAME && environment.SMS_GATE_PASSWORD
           ? `Dostawca ${smsProvider} jest skonfigurowany.`
           : "SMS są wyłączone.",
       status:
-        smsProvider !== "disabled" && environment.SMS_API_KEY
+        smsProvider === "sms-gate" && environment.SMS_GATE_USERNAME && environment.SMS_GATE_PASSWORD
           ? "ok"
           : "warning",
     },

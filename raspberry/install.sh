@@ -198,7 +198,7 @@ BETTER_AUTH_URL=${APP_URL}
 NEXT_PUBLIC_APP_URL=${APP_URL}
 NEXT_PUBLIC_APP_RELEASE=raspberry
 KLA_DEPLOYMENT_MODE=${MODE}
-KLA_REQUIRE_DIRECTOR_MFA=$([[ "$MODE" == "production" ]] && echo 1 || echo 0)
+KLA_REQUIRE_DIRECTOR_MFA=1
 KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=0
 KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "production" ]] && echo 0 || echo 1)
 KLA_PUBLIC_SCHOOL_SLUG=$([[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]] && echo kings-language-academy-demo || echo kings-language-academy)
@@ -211,6 +211,8 @@ KLA_BACKUP_PROVIDER=age-local
 LOG_LEVEL=info
 MESSAGE_REFRESH_MS=8000
 SMS_PROVIDER=disabled
+KLA_BUG_REPORT_EMAIL=damianx9x@me.com
+NEXT_PUBLIC_SUPPORT_EMAIL=damianx9x@me.com
 KLA_BOOTSTRAP_TOKEN_HASH=${BOOTSTRAP_TOKEN_HASH:-}
 ENV
 printf 'EMAIL_PROVIDER=%q\nRESEND_API_KEY=%q\nEMAIL_FROM=%q\nSMTP_HOST=%q\nSMTP_PORT=%q\nSMTP_USER=%q\nSMTP_PASSWORD=%q\n' \
@@ -257,6 +259,10 @@ install -m 755 "$SOURCE_DIR/raspberry/optimize-server.sh" /usr/local/sbin/kla-op
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 install -m 755 "$SOURCE_DIR/raspberry/control.sh" /usr/local/sbin/kla-control
+install -m 755 "$SOURCE_DIR/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+printf 'kla ALL=(root) NOPASSWD: /usr/local/sbin/kla-web-control *\n' > /etc/sudoers.d/kla-web-control
+chmod 440 /etc/sudoers.d/kla-web-control
+visudo -cf /etc/sudoers.d/kla-web-control >/dev/null
 printf '%s\n' "$CONTROL_USER" > /etc/kla/control-user
 chmod 600 /etc/kla/control-user
 printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
