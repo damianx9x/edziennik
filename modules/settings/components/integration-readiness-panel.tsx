@@ -82,7 +82,7 @@ export function IntegrationReadinessPanel({ systemOwner = false }: { systemOwner
         <p className="integration-limit compact"><CircleAlert aria-hidden="true" /><span><strong>Zwykłe FTP nie jest zalecane.</strong> Dla danych uczniów wybieramy szyfrowane SFTP, szyfrowaną kopię i osobny test odtworzenia.</span></p>
         <footer>
           {systemOwner ? (
-            <Link className="button button-primary" href="/panel/bog#raspberry-title">
+            <Link className="button button-primary" href="/panel/bog#backup-usb">
               <HardDrive aria-hidden="true" /> Wykryj dysk i włącz backup
             </Link>
           ) : (

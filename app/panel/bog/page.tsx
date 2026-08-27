@@ -9,6 +9,7 @@ import {
   Gauge,
   HardDrive,
   ListChecks,
+  Mail,
   ScrollText,
   Settings2,
   ShieldCheck,
@@ -106,6 +107,12 @@ export default async function SystemOwnerPage() {
           </p>
         </div>
         <div className="owner-heading-actions">
+          <a className="button button-secondary" href="#email-delivery">
+            <Mail aria-hidden="true" /> Ustaw wysyłkę
+          </a>
+          <a className="button button-secondary" href="#backup-usb">
+            <HardDrive aria-hidden="true" /> Ustaw backup
+          </a>
           <Link className="button button-secondary" href="/panel/bog/logi">
             <ScrollText aria-hidden="true" /> Otwórz logi
           </Link>
