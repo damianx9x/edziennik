@@ -203,6 +203,16 @@ const smtpSchema = z.object({
   password: z.string().min(1).max(500),
 });
 
+function smtpErrorMessage(error: unknown) {
+  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+  const responseCode = typeof error === "object" && error && "responseCode" in error ? Number(error.responseCode) : 0;
+  if (["EAUTH", "535"].includes(code) || responseCode === 535) return "Serwer odrzucił login lub hasło. Wpisz pełny adres skrzynki i jej aktualne hasło albo hasło aplikacji.";
+  if (["ECONNECTION", "ETIMEDOUT", "ECONNREFUSED"].includes(code)) return "Nie udało się połączyć z serwerem SMTP. Sprawdź adres serwera, port i dostęp Raspberry do internetu.";
+  if (responseCode === 550 || responseCode === 553) return "Serwer nie pozwolił wysłać z podanego adresu. Adres nadawcy powinien należeć do zalogowanej skrzynki.";
+  if (code === "ESOCKET") return "Nie udało się uzgodnić bezpiecznego połączenia TLS. Sprawdź, czy port 587 używa STARTTLS, a 465 SSL/TLS.";
+  return "Test SMTP nie powiódł się. Sprawdź dane skrzynki i spróbuj ponownie.";
+}
+
 export async function configureSmtpAction(_: ServerActionState, formData: FormData): Promise<ServerActionState> {
   const session = await requireSystemOwner("/panel/bog");
   const parsed = smtpSchema.safeParse(Object.fromEntries(formData));
@@ -221,6 +231,7 @@ export async function configureSmtpAction(_: ServerActionState, formData: FormDa
       tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
     });
     try {
+      await transport.verify();
       await transport.sendMail({
         from: parsed.data.from,
         to: session.user.email,
@@ -236,7 +247,7 @@ export async function configureSmtpAction(_: ServerActionState, formData: FormDa
     revalidatePath("/panel/bog/ustawienia");
     return { status: "success", message: `${message} Wiadomość testowa została wysłana na adres Twojego konta.` };
   } catch (error) {
-    return initialError(error instanceof Error ? error.message : "Nie udało się zapisać SMTP.");
+    return initialError(smtpErrorMessage(error));
   }
 }
 

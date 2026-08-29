@@ -15,7 +15,7 @@ import {
   Users,
   Upload,
 } from "lucide-react";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 
 import {
   createHomeworkAssignmentAction,
@@ -66,6 +66,30 @@ export type LearningGroupView = {
 };
 
 const initialState: LearningActionState = { status: "idle" };
+const maxLearningFileBytes = 15 * 1024 * 1024;
+
+function LearningFileField({ name = "file", compact = false }: { name?: string; compact?: boolean }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  return <label className={compact ? "homework-file" : undefined}>
+    <span>{compact ? <>Załącz plik <small>(PDF, JPG lub PNG)</small></> : "Plik PDF, JPG lub PNG"}</span>
+    <input ref={inputRef} name={name} type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => {
+      const file = event.target.files?.[0];
+      setError(null);
+      if (!file) { setFileName(null); return; }
+      if (file.size > maxLearningFileBytes) {
+        event.target.value = "";
+        setFileName(null);
+        setError("Plik może mieć maksymalnie 15 MB.");
+        return;
+      }
+      setFileName(file.name);
+    }} />
+    {fileName ? <small className="learning-file-selected">Wybrano: {fileName}</small> : null}
+    {error ? <small className="learning-file-error" role="alert">{error}</small> : null}
+  </label>;
+}
 
 export function LearningWorkspace({
   role,
@@ -207,7 +231,7 @@ function PublisherPanel({ group }: { group: LearningGroupView }) {
           <input type="hidden" name="groupId" value={group.id} />
           <label><span>Tytuł</span><input name="title" required minLength={2} maxLength={140} placeholder="np. Powtórka: Past Simple" /></label>
           <label className="learning-wide"><span>Krótki opis <small>(opcjonalnie)</small></span><textarea name="description" rows={3} maxLength={2000} placeholder="Napisz, co warto zrobić z tym materiałem." /></label>
-          <label><span>Plik PDF, JPG lub PNG</span><input name="file" type="file" accept="application/pdf,image/jpeg,image/png" /></label>
+          <LearningFileField />
           <label><span>albo bezpieczny link</span><input name="externalUrl" type="url" inputMode="url" placeholder="https://…" /></label>
           <label className="learning-wide"><span>Odbiorcy</span><select name="audience" value={audience} onChange={(event) => { setAudience(event.target.value as typeof audience); setRecipientIds([]); setRecipientQuery(""); }}><option value="GROUP">Cała grupa</option><option value="STUDENTS">Wybrani uczniowie</option><option value="TEACHERS">Wybrani wykładowcy</option></select></label>
           {audience !== "GROUP" ? <RecipientPicker audience={audience} group={group} query={recipientQuery} onQuery={setRecipientQuery} selectedIds={recipientIds} onSelected={setRecipientIds} /> : null}
@@ -291,7 +315,7 @@ function HomeworkCard({ assignment, role }: { assignment: LearningGroupView["hom
           <form action={submissionAction} className="homework-submit-form">
             <input type="hidden" name="assignmentId" value={assignment.id} />
             <label><span>Twoja odpowiedź</span><textarea name="studentNote" rows={3} maxLength={3000} placeholder="Możesz wpisać odpowiedź lub krótką wiadomość." /></label>
-            <label className="homework-file"><span>Załącz plik <small>(PDF, JPG lub PNG)</small></span><input name="file" type="file" accept="application/pdf,image/jpeg,image/png" /></label>
+            <LearningFileField compact />
             <ActionFeedback state={submissionState} />
             <button className="button button-primary" type="submit" disabled={submissionPending}>
               {submissionPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Send aria-hidden="true" />}

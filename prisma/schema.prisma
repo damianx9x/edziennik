@@ -1191,17 +1191,25 @@ model DirectorConversationAccess {
 }
 
 model PageVisit {
-  id        String   @id @default(uuid()) @db.Uuid
-  schoolId  String   @db.Uuid
-  userId    String?  @db.Uuid
-  path      String
-  visitedAt DateTime @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  schoolId      String   @db.Uuid
+  userId        String?  @db.Uuid
+  path          String
+  countryCode   String?  @db.VarChar(2)
+  regionCode    String?  @db.VarChar(12)
+  regionName    String?  @db.VarChar(80)
+  clientHash    String?  @db.VarChar(16)
+  deviceFamily  String?  @db.VarChar(20)
+  browserFamily String?  @db.VarChar(20)
+  visitedAt     DateTime @default(now())
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, visitedAt])
   @@index([schoolId, path, visitedAt])
+  @@index([schoolId, countryCode, regionCode, visitedAt])
+  @@index([schoolId, clientHash, visitedAt])
   @@index([userId, visitedAt])
 }
 

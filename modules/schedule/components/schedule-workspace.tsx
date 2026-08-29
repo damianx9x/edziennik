@@ -73,8 +73,6 @@ const initialActionState: ScheduleActionState = {
   status: "idle",
   message: "",
 };
-const rowHeight = 76;
-
 type ScheduleDay = {
   key: string;
   label: string;
@@ -238,6 +236,9 @@ export function ScheduleWorkspace({
   }
 
   const activeDay = days.find((day) => day.key === selectedDay) ?? days[0];
+  const activeDayHasLessons = filteredSlots.some(
+    (slot) => slot.dateKey === activeDay?.key,
+  );
   const hasResources = groups.length > 0 && rooms.length > 0 && teachers.length > 0;
   const selectedGroup = groups.find((group) => group.id === newGroupId);
   const groupsInLocation = groups.filter(
@@ -749,12 +750,12 @@ export function ScheduleWorkspace({
         </div>
       ) : null}
 
-      <section className="schedule-board" aria-label={`Grafik: ${weekLabel}`}>
+      {canManage || activeDayHasLessons ? <section className="schedule-board" aria-label={`Grafik: ${weekLabel}`}>
         <div className="schedule-time-column" aria-hidden="true">
           <div className="schedule-day-header-spacer" />
           <div className="schedule-time-track">
             {times.map((time, index) => (
-              <span key={time} style={{ top: index * rowHeight - 8 }}>
+              <span key={time} style={{ top: `calc(${index} * var(--schedule-row-height) - 8px)` }}>
                 {time}
               </span>
             ))}
@@ -770,7 +771,7 @@ export function ScheduleWorkspace({
             slots={filteredSlots.filter((slot) => slot.dateKey === day.key)}
           />
         ))}
-      </section>
+      </section> : null}
     </DndContext>
   );
 }
@@ -807,7 +808,7 @@ function ScheduleDayColumn({
       </header>
       <div
         className="schedule-day-track"
-        style={{ height: times.length * rowHeight }}
+        style={{ height: `calc(${times.length} * var(--schedule-row-height))` }}
       >
         {times.map((time, index) => (
           <ScheduleDropCell
@@ -850,7 +851,10 @@ function ScheduleDropCell({
     <div
       ref={setNodeRef}
       className={`schedule-drop-cell ${isOver ? "valid-target" : ""}`}
-      style={{ top: index * rowHeight, height: rowHeight }}
+      style={{
+        top: `calc(${index} * var(--schedule-row-height))`,
+        height: "var(--schedule-row-height)",
+      }}
       aria-label={`Termin ${id.replace("|", " o ")}`}
     >
       <span className="schedule-mobile-time">{time}</span>
@@ -904,14 +908,9 @@ function LessonCard({
   const [hour, minute] = slot.startTime.split(":").map(Number);
   const offsetMinutes =
     (hour - DAY_START_HOUR) * 60 + (Number.isFinite(minute) ? minute : 0);
-  const top = (offsetMinutes / GRID_STEP_MINUTES) * rowHeight + 3;
-  const height = Math.max(
-    68,
-    (slot.durationMinutes / GRID_STEP_MINUTES) * rowHeight - 6,
-  );
   const style = {
-    top,
-    height,
+    top: `calc(${offsetMinutes / GRID_STEP_MINUTES} * var(--schedule-row-height) + 3px)`,
+    height: `max(68px, calc(${slot.durationMinutes / GRID_STEP_MINUTES} * var(--schedule-row-height) - 6px))`,
     transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 80 : actionsOpen ? 60 : 4,
   } satisfies CSSProperties;

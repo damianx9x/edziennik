@@ -28,7 +28,9 @@ import {
   sanitizeDiagnosticValue,
 } from "@/modules/system-owner/diagnostics";
 import { RaspberryStatusOverview } from "@/modules/system-owner/components/raspberry-control-panel";
+import { SecurityTrafficOverview } from "@/modules/system-owner/components/security-traffic-overview";
 import { getRaspberryStatus } from "@/modules/system-owner/server-control";
+import { summarizeProtectedActivity } from "@/modules/system-owner/security-traffic";
 
 export const metadata: Metadata = { title: "Centrum właściciela systemu" };
 export const dynamic = "force-dynamic";
@@ -46,6 +48,10 @@ export default async function SystemOwnerPage() {
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60_000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
+  const release =
+    process.env.NEXT_PUBLIC_APP_RELEASE ?? "wydanie bez identyfikatora";
 
   const [
     schoolCount,
@@ -58,6 +64,9 @@ export default async function SystemOwnerPage() {
     openFeedbackCount,
     recentLogs,
     raspberryStatus,
+    rateLimitRows,
+    trafficRows,
+    challengeAccountCount,
   ] = await Promise.all([
     db.school.count(),
     db.user.count({ where: { status: "ACTIVE", archivedAt: null } }),
@@ -84,15 +93,45 @@ export default async function SystemOwnerPage() {
       },
     }),
     getRaspberryStatus(),
+    db.rateLimit.findMany({ orderBy: { lastRequest: "desc" }, take: 200 }),
+    db.pageVisit.findMany({
+      where: { schoolId: session.user.schoolId, visitedAt: { gte: thirtyDaysAgo } },
+      select: { countryCode: true, regionCode: true, regionName: true, deviceFamily: true, browserFamily: true },
+      take: 10_000,
+    }),
+    db.user.count({
+      where: { name: { equals: "zadanie_wykonane", mode: "insensitive" }, archivedAt: null },
+    }),
   ]);
+
+  const protectedActivity = summarizeProtectedActivity(
+    rateLimitRows.filter((row) => Number(row.lastRequest) >= dayAgo.getTime()),
+    process.env.KLA_ANALYTICS_SALT ?? process.env.BETTER_AUTH_SECRET ?? release,
+  );
+  const regionNames = new Map([
+    ["mazowieckie", "MZ"], ["małopolskie", "MP"], ["śląskie", "SL"], ["wielkopolskie", "WP"],
+    ["dolnośląskie", "DS"], ["pomorskie", "PM"], ["łódzkie", "LD"], ["lubelskie", "LU"],
+    ["podkarpackie", "PK"], ["podlaskie", "PD"], ["opolskie", "OP"], ["lubuskie", "LB"],
+    ["świętokrzyskie", "SK"], ["kujawsko-pomorskie", "KP"], ["warmińsko-mazurskie", "WM"], ["zachodniopomorskie", "ZP"],
+  ]);
+  const regionCounts = new Map<string, { name: string; visits: number }>();
+  const deviceCounts = new Map<string, number>();
+  for (const visit of trafficRows) {
+    const code = visit.regionCode?.toUpperCase().replace(/^PL-/, "") ?? (visit.regionName ? regionNames.get(visit.regionName.toLocaleLowerCase("pl")) : undefined);
+    if (visit.countryCode === "PL" && code) {
+      const current = regionCounts.get(code);
+      regionCounts.set(code, { name: visit.regionName ?? code, visits: (current?.visits ?? 0) + 1 });
+    }
+    const device = `${visit.deviceFamily ?? "Nieznane"} · ${visit.browserFamily ?? "Inna"}`;
+    deviceCounts.set(device, (deviceCounts.get(device) ?? 0) + 1);
+  }
+  const regionActivity = [...regionCounts].map(([code, value]) => ({ code, ...value })).sort((a, b) => b.visits - a.visits);
+  const deviceActivity = [...deviceCounts].map(([label, visits]) => ({ label, visits })).sort((a, b) => b.visits - a.visits).slice(0, 8);
 
   const configurationChecks = buildConfigurationChecks(process.env);
   const problemCount = configurationChecks.filter(
     (check) => check.status !== "ok",
   ).length;
-  const release =
-    process.env.NEXT_PUBLIC_APP_RELEASE ?? "wydanie bez identyfikatora";
-
   return (
     <AuthenticatedPanelShell session={session}>
       <header className="role-panel-heading owner-heading">
@@ -110,6 +149,9 @@ export default async function SystemOwnerPage() {
           </Link>
           <Link className="button button-secondary" href="/panel/bog/ustawienia#backup-usb">
             <HardDrive aria-hidden="true" /> Ustaw backup
+          </Link>
+          <Link className="button button-secondary" href="/panel/bog/ustawienia#full-export">
+            <Database aria-hidden="true" /> Eksportuj bazę
           </Link>
           <Link className="button button-secondary" href="/panel/bog/logi">
             <ScrollText aria-hidden="true" /> Otwórz logi
@@ -134,6 +176,15 @@ export default async function SystemOwnerPage() {
         </div>
         <small>{release}</small>
       </section>
+
+      <SecurityTrafficOverview
+        protectedActivity={protectedActivity}
+        regionActivity={regionActivity}
+        deviceActivity={deviceActivity}
+        polandVisits={trafficRows.filter((visit) => visit.countryCode === "PL").length}
+        foreignVisits={trafficRows.filter((visit) => visit.countryCode && visit.countryCode !== "PL").length}
+        challengeAccountFound={challengeAccountCount > 0}
+      />
 
       {activeUserCount === 1 ? (
         <section className="owner-first-step">

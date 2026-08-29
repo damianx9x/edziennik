@@ -3,7 +3,7 @@ import { z } from "zod";
 export const messageSchema = z.object({
   groupId: z.string().uuid().optional(),
   conversationId: z.string().uuid().optional(),
-  body: z.string().trim().min(1, "Napisz wiadomość.").max(2000, "Wiadomość może mieć maksymalnie 2000 znaków."),
+  body: z.string().trim().max(2000, "Wiadomość może mieć maksymalnie 2000 znaków."),
   requiresAcknowledgement: z.boolean().default(false),
   clientRequestId: z.string().uuid("Odśwież formularz i spróbuj ponownie."),
 }).refine((value) => Boolean(value.groupId) !== Boolean(value.conversationId), "Wybierz jedną rozmowę.");

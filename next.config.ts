@@ -62,6 +62,12 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    // Learning materials are capped at 15 MB in the server action and at
+    // 20 MB by nginx. The default 1 MB limit rejected valid mobile uploads
+    // before our validation could return a useful error.
+    serverActions: { bodySizeLimit: "18mb" },
+  },
   ...(isStaticPreview
     ? {}
     : {

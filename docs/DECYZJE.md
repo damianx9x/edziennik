@@ -1136,3 +1136,23 @@ rozmowy.
 **Dlaczego:** kilka równoległych paneli i zagnieżdżonych obszarów przewijania
 utrudniało obsługę na telefonie. Jeden bieżący kontekst jest czytelniejszy dla
 rodzica i ucznia, a jednocześnie zachowuje funkcje dyrektora i wykładowcy.
+## ADR-085 — prywatna telemetria bezpieczeństwa bez surowych adresów IP
+
+**Data:** 2026-08-30
+**Decyzja:** panel właściciela pokazuje przybliżony kraj i województwo przekazane
+przez Cloudflare, kategorię urządzenia oraz pseudonim klienta wyliczony HMAC.
+Nie zapisujemy surowego adresu IP ani pełnego User-Agent w tabeli odwiedzin.
+Sygnały limitera logowania są widoczne wyłącznie dla właściciela i są opisywane
+jako aktywność wymagająca sprawdzenia, nie jako potwierdzone włamanie.
+**Dlaczego:** pozwala szybko wykrywać nadużycia i oceniać ruch po publicznych
+testach, jednocześnie minimalizując dane oraz ryzyko fałszywych alarmów.
+
+## ADR-086 — spójny limit plików w mobilnych Server Actions
+
+**Data:** 2026-08-30
+**Decyzja:** proxy przyjmuje maksymalnie 20 MB, Next.js 18 MB, a logika plików
+materiałów i prac ucznia maksymalnie 15 MB. Format jest potwierdzany po sygnaturze
+pliku, a magazyn pozostaje prywatny.
+**Dlaczego:** domyślny limit 1 MB odrzucał poprawne pliki na telefonie zanim
+aplikacja mogła pokazać zrozumiały błąd. Warstwowe limity zachowują ochronę przed
+nadmiernym zużyciem pamięci.

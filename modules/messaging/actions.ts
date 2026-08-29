@@ -84,6 +84,11 @@ export async function sendMessageAction(_previous: MessagingActionState, formDat
   const session = await requireActiveSession(messagesPath);
   const parsed = messageSchema.safeParse({ groupId: formData.get("groupId") || undefined, conversationId: formData.get("conversationId") || undefined, body: formData.get("body"), requiresAcknowledgement: formData.get("requiresAcknowledgement") === "on", clientRequestId: formData.get("clientRequestId") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź wiadomość." };
+  let attachment: Awaited<ReturnType<typeof prepareAttachment>>;
+  try { attachment = await prepareAttachment(formData); } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Sprawdź załącznik." }; }
+  if (!parsed.data.body && !attachment.file) {
+    return { status: "error", message: "Napisz wiadomość albo wybierz załącznik." };
+  }
   const allowed = parsed.data.conversationId
     ? await canUseConversation(session, parsed.data.conversationId)
     : await canUseGroupConversation(session, parsed.data.groupId!);
@@ -95,8 +100,6 @@ export async function sendMessageAction(_previous: MessagingActionState, formDat
   const recipients = parsed.data.conversationId
     ? await getConversationRecipientIds(parsed.data.conversationId, session.user.schoolId, session.user.id)
     : await getGroupRecipientIds(parsed.data.groupId!, session.user.schoolId, session.user.id);
-  let attachment: Awaited<ReturnType<typeof prepareAttachment>>;
-  try { attachment = await prepareAttachment(formData); } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Sprawdź załącznik." }; }
   const storage = getFileStorage();
   let stored: Awaited<ReturnType<typeof storage.put>> | null = null;
   try {

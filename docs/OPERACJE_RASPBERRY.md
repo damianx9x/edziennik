@@ -203,3 +203,9 @@ To solidny serwer pilota, ale nie wysokodostępna chmura. Brak prądu, Internetu
 lub awaria jednego Raspberry wyłączą usługę. Przed prawdziwymi danymi trzeba
 zamknąć checklistę z `BEZPIECZENSTWO_PRAWO_RODO.md`, włączyć HTTPS, 2FA dyrektora,
 UPS, monitoring oraz wykonać udokumentowany test odtworzenia.
+## Przybliżona mapa wejść w panelu właściciela
+
+Kraj jest przekazywany przez Cloudflare automatycznie. Aby zobaczyć także
+województwa, w Cloudflare dla domeny włącz regułę **Managed Transforms → Add
+visitor location headers**. Aplikacja wykorzysta wyłącznie kod i nazwę regionu;
+nie zapisuje surowego adresu IP ani pełnego identyfikatora przeglądarki.

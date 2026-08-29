@@ -2,6 +2,9 @@ import { db } from "@/lib/server/db";
 import type { ActiveSession } from "@/modules/identity/auth/session";
 import { getAccessibleGroups } from "@/modules/messaging/access";
 import { getEffectivePaymentStatus } from "@/modules/payments/schema";
+import { receivesChildLessonNotifications, receivesFormalNotifications } from "./audience";
+
+export { receivesChildLessonNotifications, receivesFormalNotifications } from "./audience";
 
 export type NotificationItem = {
   key: string;
@@ -19,7 +22,30 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
   const raw: Omit<NotificationItem, "read" | "snoozedUntil">[] = [];
   const role = session.user.role;
 
-  if (role === "SYSTEM_OWNER" || role === "DIRECTOR") {
+  if (role === "SYSTEM_OWNER") {
+    const protectedAttempts = await db.rateLimit.findMany({
+      where: { count: { gte: 5 } },
+      orderBy: { lastRequest: "desc" },
+      take: 20,
+    });
+    for (const item of protectedAttempts.filter((attempt) =>
+      ["/sign-in/email", "/request-password-reset", "/sign-up", "two-factor"]
+        .some((path) => attempt.key.includes(path)),
+    )) {
+      const occurredAt = new Date(Number(item.lastRequest));
+      if (now.getTime() - occurredAt.getTime() > 24 * 60 * 60_000) continue;
+      raw.push({
+        key: `protected-activity:${item.id}:${item.count}`,
+        kind: "WARNING",
+        title: "Pilny sygnał ochrony konta",
+        description: `${item.count} prób chronionej operacji. Otwórz prywatne centrum ochrony.`,
+        href: "/panel/bog#owner-security-title",
+        occurredAt,
+      });
+    }
+  }
+
+  if (receivesFormalNotifications(role) && role !== "PARENT") {
     const [changes, failedDeliveries, assignments, signedContracts, scheduleChanges] = await Promise.all([
       db.recordChangeRequest.findMany({
         where: { schoolId: session.user.schoolId, status: "PENDING" },
@@ -96,7 +122,7 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
     addPaymentNotifications(raw, assignments, now, true);
   }
 
-  if (role === "PARENT") {
+  if (receivesFormalNotifications(role) && role === "PARENT") {
     const [contracts, assignments] = await Promise.all([
       db.contractAssignment.findMany({
         where: { schoolId: session.user.schoolId, parentId: session.user.id, status: { in: ["SENT", "VIEWED"] } },
@@ -116,7 +142,7 @@ export async function getNotifications(session: ActiveSession): Promise<Notifica
     addPaymentNotifications(raw, assignments, now, false);
   }
 
-  if (["TEACHER", "PARENT", "STUDENT"].includes(role)) {
+  if (receivesChildLessonNotifications(role)) {
     const groups = await getAccessibleGroups(session);
     const groupIds = groups.map((group) => group.id);
     if (groupIds.length) {

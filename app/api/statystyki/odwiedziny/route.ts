@@ -7,6 +7,7 @@ import {
   isTrackedPagePath,
   pageVisitHourlyLimit,
 } from "@/modules/observability/page-visits";
+import { getCoarseRequestContext } from "@/modules/observability/request-context";
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? "0");
@@ -39,8 +40,12 @@ export async function POST(request: Request) {
   if (!school) return new NextResponse(null, { status: 204 });
 
   const userId = session?.user.id ?? null;
+  const requestContext = getCoarseRequestContext(
+    request.headers,
+    process.env.KLA_ANALYTICS_SALT ?? process.env.BETTER_AUTH_SECRET ?? "",
+  );
   await db.$transaction(async (transaction) => {
-    const limiterKey = `page-visit:${school.id}:${userId ?? "anonymous"}`;
+    const limiterKey = `page-visit:${school.id}:${userId ?? requestContext.clientHash ?? "anonymous"}`;
     await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${limiterKey}))`;
 
     const now = Date.now();
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
     }
 
     await transaction.pageVisit.create({
-      data: { schoolId: school.id, userId, path },
+      data: { schoolId: school.id, userId, path, ...requestContext },
     });
   });
   return new NextResponse(null, { status: 204 });

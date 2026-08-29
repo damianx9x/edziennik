@@ -15,6 +15,7 @@ import {
   prepareSftpAction, restartApplicationAction, type ServerActionState, type SftpActionState,
 } from "../server-actions";
 import type { ImportPreparation, RaspberryStatus, StorageDevice } from "../server-control";
+import { classifyStorageTargets } from "../storage";
 
 const initialState: ServerActionState = { status: "idle" };
 const initialSftpState: SftpActionState = { status: "idle" };
@@ -27,13 +28,6 @@ function uptime(value = 0) {
   const days = Math.floor(value / 86_400);
   const hours = Math.floor((value % 86_400) / 3_600);
   return `${days} dni ${hours} godz.`;
-}
-
-function flatten(devices: StorageDevice[], inherited: Pick<StorageDevice, "tran" | "rm" | "hotplug"> = {}): StorageDevice[] {
-  return devices.flatMap((device) => {
-    const resolved = { ...device, tran: device.tran ?? inherited.tran, rm: device.rm ?? inherited.rm, hotplug: device.hotplug ?? inherited.hotplug };
-    return [resolved, ...flatten(device.children ?? [], resolved)];
-  });
 }
 
 function Feedback({ state }: { state: ServerActionState }) {
@@ -134,9 +128,7 @@ export function RaspberryBackupSettings({ status, storage }: { status: Raspberry
   const [copiedKey, setCopiedKey] = useState(false);
   if (!status.available) return <Unavailable message={status.message} />;
 
-  const externalPartitions = flatten(storage).filter((item) => item.type === "part" && item.mountpoints?.some(Boolean) && (item.tran === "usb" || item.rm || item.hotplug));
-  const mountedUsb = externalPartitions.filter((item) => item.mountpoints?.some((path) => path?.startsWith("/media/") || path?.startsWith("/mnt/")));
-  const primaryExternal = externalPartitions.filter((item) => !mountedUsb.some((candidate) => candidate.path === item.path));
+  const { mountedUsb, primaryExternal } = classifyStorageTargets(storage);
   const policy = status.backupPolicy ?? { frequency: "daily", retentionDays: 30 };
   const prepared = sftpState.preparation;
 
@@ -154,7 +146,7 @@ export function RaspberryBackupSettings({ status, storage }: { status: Raspberry
         <header><Usb aria-hidden="true" /><div><span className="section-kicker">Nośnik przy Raspberry</span><h3>Dodatkowy dysk USB</h3></div></header>
         <p>Wybranie nośnika nie formatuje go ani nie usuwa istniejących plików. Kopia jest szyfrowana przed zapisaniem.</p>
         <form action={usbAction} className="owner-config-form owner-config-form-single"><label>Zamontowany nośnik<select name="mountpoint" required defaultValue={status.usbBackupPath ?? ""}><option value="" disabled>{mountedUsb.length ? "Wybierz wykryty dysk" : "Nie wykryto osobnego dysku USB"}</option>{mountedUsb.map((item) => item.mountpoints?.filter(Boolean).map((path) => <option key={`${item.path}-${path}`} value={path!}>{item.label || item.name} · {bytes(item.size)} · {path}</option>))}{primaryExternal.map((item) => <option key={`primary-${item.path}`} value="" disabled>{item.label || item.name} · główny sejf danych</option>)}</select></label><button className="button button-primary" disabled={usbPending || !mountedUsb.length}>{usbPending ? <LoaderCircle className="spin" /> : <HardDrive aria-hidden="true" />} Użyj do backupu</button></form>
-        {!mountedUsb.length && primaryExternal.length ? <p className="integration-limit compact"><HardDrive aria-hidden="true" /><span>Podłącz drugi nośnik. Dysk sejfu nie może być jednocześnie własną kopią.</span></p> : null}
+        {!mountedUsb.length && primaryExternal.length ? <p className="integration-limit compact"><HardDrive aria-hidden="true" /><span>Raspberry widzi dysk zewnętrzny, ale przechowuje on już główny sejf danych. Podłącz drugi nośnik albo ustaw SFTP — kopia na tym samym dysku nie chroniłaby przed jego awarią.</span></p> : null}
         {status.usbBackupPath ? <p className="integration-limit compact"><CheckCircle2 aria-hidden="true" /><span>Aktywne miejsce: <strong>{status.usbBackupPath}</strong></span></p> : null}<Feedback state={usbState} />
         {status.usbBackupPath ? <form action={clearUsbBackupAction}><button className="button button-ghost">Przestań kopiować na ten dysk</button></form> : null}
       </article>
@@ -187,7 +179,7 @@ function RaspberryCommunicationSettings({ status }: { status: RaspberryStatus })
   const [smtpState, smtpAction, smtpPending] = useActionState(configureSmtpAction, initialState);
   const [smsState, smsAction, smsPending] = useActionState(configureSmsGateAction, initialState);
   return <section id="communication-settings" className="server-settings-section" aria-labelledby="communication-settings-title"><header className="server-settings-heading"><span className="record-icon record-icon-blue"><Mail aria-hidden="true" /></span><div><span className="section-kicker">Komunikacja wychodząca</span><h2 id="communication-settings-title">E-mail i SMS</h2><p>Dane są sprawdzane przed zapisem i trafiają do zaszyfrowanego sejfu.</p></div></header><div className="raspberry-config-grid">
-    <article id="email-delivery" className="integration-card owner-config-target"><header><Mail aria-hidden="true" /><div><span className="section-kicker">Wysyłka w imieniu szkoły</span><h3>Serwer SMTP</h3></div><span className={`integration-status ${status.emailConfigured ? "ready" : "planning"}`}>{status.emailConfigured ? <><CheckCircle2 aria-hidden="true" /> Aktywny</> : <>Do ustawienia</>}</span></header><p>Po zapisaniu system wyśle wiadomość testową na adres Twojego konta. Ustawienie nie ma związku z SFTP.</p><form action={smtpAction} className="owner-config-form"><label>Adres nadawcy<input name="from" type="email" required placeholder="kontakt@kingslanguageacademy.pl" /></label><label>Host SMTP<input name="host" required placeholder="smtp.poczta.pl" /></label><label>Port<select name="port" defaultValue="587"><option value="587">587 · STARTTLS</option><option value="465">465 · TLS</option></select></label><label>Login<input name="user" autoComplete="username" required /></label><label>Hasło aplikacji / SMTP<input name="password" type="password" autoComplete="new-password" required /></label><button className="button button-primary" disabled={smtpPending}>{smtpPending ? <LoaderCircle className="spin" /> : <Mail aria-hidden="true" />} Sprawdź, zapisz i wyślij test</button></form><Feedback state={smtpState} /></article>
+    <article id="email-delivery" className="integration-card owner-config-target"><header><Mail aria-hidden="true" /><div><span className="section-kicker">Wysyłka w imieniu szkoły</span><h3>Serwer SMTP</h3></div><span className={`integration-status ${status.emailConfigured ? "ready" : "planning"}`}>{status.emailConfigured ? <><CheckCircle2 aria-hidden="true" /> Aktywny</> : <>Do ustawienia</>}</span></header><p>Wszystko ustawiasz tutaj, w przeglądarce. Po zapisaniu system najpierw wyśle wiadomość testową na adres Twojego konta i dopiero wtedy zachowa dane w zaszyfrowanym sejfie.</p><details className="owner-config-help"><summary>Gdzie znaleźć dane skrzynki home.pl?</summary><ol><li>W Panelu klienta home.pl otwórz wybraną skrzynkę e-mail i skopiuj adres serwera SMTP.</li><li>Jako login wpisz pełny adres skrzynki, a jako hasło — hasło tej skrzynki.</li><li>Wybierz port 587. Jeśli dostawca podaje wyłącznie SSL/TLS, wybierz 465.</li></ol><a href="https://pomoc.home.pl/baza-wiedzy/gdzie-znajde-adresy-serwerow-pocztowych-dla-skrzynki-email" target="_blank" rel="noreferrer">Otwórz oficjalną instrukcję home.pl <ExternalLink aria-hidden="true" /></a></details><form action={smtpAction} className="owner-config-form"><label>Adres nadawcy<input name="from" type="email" required placeholder="kontakt@kingslanguageacademy.pl" /></label><label>Serwer poczty wychodzącej (SMTP)<input name="host" required placeholder="np. serwer123456.home.pl" /></label><label>Port i zabezpieczenie<select name="port" defaultValue="587"><option value="587">587 · STARTTLS (zalecany)</option><option value="465">465 · SSL/TLS</option></select></label><label>Login skrzynki e-mail<input name="user" autoComplete="username" inputMode="email" required placeholder="pełny adres e-mail" /></label><label>Hasło skrzynki / hasło aplikacji<input name="password" type="password" autoComplete="new-password" required /></label><button className="button button-primary" disabled={smtpPending}>{smtpPending ? <LoaderCircle className="spin" /> : <Mail aria-hidden="true" />} Sprawdź, zapisz i wyślij test</button></form><Feedback state={smtpState} /></article>
     <article id="sms-delivery" className="integration-card owner-config-target"><header><MessageSquareText aria-hidden="true" /><div><span className="section-kicker">Bez stałego abonamentu bramki</span><h3>SMS z telefonu Android</h3></div></header><p>Osobny telefon z aplikacją SMS Gateway for Android wysyła wiadomości z własnej karty SIM. Koszt zależy od taryfy operatora.</p><form action={smsAction} className="owner-config-form owner-config-form-single"><label>Login bramki<input name="username" autoComplete="username" required /></label><label>Hasło bramki<input name="password" type="password" autoComplete="new-password" required /></label><button className="button button-primary" disabled={smsPending}>{smsPending ? <LoaderCircle className="spin" /> : <MessageSquareText aria-hidden="true" />} Włącz SMS</button></form><Feedback state={smsState} /></article>
   </div></section>;
 }

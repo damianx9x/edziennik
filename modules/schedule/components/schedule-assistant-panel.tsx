@@ -843,11 +843,18 @@ export function AvailabilityForm({
         }]
     ).map((window, index) => ({ ...window, key: `availability-${index}` })),
   );
+  const [expanded, setExpanded] = useState(false);
+  const configuredDisplay = entry.configured || state.status === "success";
   const distinctHours = new Set(
-    entry.windows.map(
+    windows.map(
       (window) => `${window.startMinute}-${window.endMinute}`,
     ),
   ).size;
+  useEffect(() => {
+    if (state.status !== "success") return;
+    const timer = window.setTimeout(() => setExpanded(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [state.status]);
   function addAvailabilityWindow() {
     setWindows((current) => {
       const previous = current.at(-1);
@@ -872,10 +879,10 @@ export function AvailabilityForm({
     });
   }
   return (
-    <details className="assistant-config-item">
+    <details className="assistant-config-item" open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
       <summary>
-        <span className={entry.configured ? "done" : ""}>
-          {entry.configured ? (
+        <span className={configuredDisplay ? "done" : ""}>
+          {configuredDisplay ? (
             <Check aria-hidden="true" />
           ) : (
             <UserRoundCheck aria-hidden="true" />
@@ -884,8 +891,8 @@ export function AvailabilityForm({
         <div>
           <strong>{entry.teacherName}</strong>
           <small>
-            {entry.configured
-              ? `${entry.windows.length} ${entry.windows.length === 1 ? "przedział" : "przedziały"} · ${
+            {configuredDisplay
+              ? `${windows.length} ${windows.length === 1 ? "przedział" : "przedziały"} · ${
                   distinctHours > 1 ? "różne godziny" : "te same godziny"
                 }`
               : "Dodaj dni, godziny i lokalizacje"}

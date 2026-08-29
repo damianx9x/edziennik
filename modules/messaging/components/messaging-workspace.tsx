@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, Plus, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
 
@@ -31,7 +31,12 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const [recipientRole, setRecipientRole] = useState("ALL");
   const [recipientGroup, setRecipientGroup] = useState("ALL");
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [selectedAttachment, setSelectedAttachment] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
+  const messageFormRef = useRef<HTMLFormElement>(null);
+  const attachmentRef = useRef<HTMLInputElement>(null);
+  const attachmentDetailsRef = useRef<HTMLDetailsElement>(null);
   const messageRequestId = useRef<HTMLInputElement>(null);
   const announcementRequestId = useRef<HTMLInputElement>(null);
   const announcementDialog = useRef<HTMLDialogElement>(null);
@@ -58,6 +63,31 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
     if (!field) return;
     field.value = `${field.value}${field.value && !field.value.endsWith(" ") ? " " : ""}${emoji}`;
     field.focus();
+  }
+
+  useEffect(() => {
+    if (messageState.status !== "success") return;
+    messageFormRef.current?.reset();
+    if (messageRequestId.current) messageRequestId.current.value = newRequestId();
+    if (attachmentDetailsRef.current) attachmentDetailsRef.current.open = false;
+    const timer = window.setTimeout(() => {
+      setSelectedAttachment(null);
+      setAttachmentError(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [messageState]);
+
+  function selectAttachment(file: File | undefined) {
+    setAttachmentError(null);
+    if (!file) { setSelectedAttachment(null); return; }
+    if (file.size > 8 * 1024 * 1024) {
+      if (attachmentRef.current) attachmentRef.current.value = "";
+      setSelectedAttachment(null);
+      setAttachmentError("Załącznik może mieć maksymalnie 8 MB.");
+      return;
+    }
+    setSelectedAttachment(file.name);
+    if (attachmentDetailsRef.current) attachmentDetailsRef.current.open = false;
   }
 
   return (
@@ -102,7 +132,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
                 const own = message.authorId === currentUserId;
                 return <article key={message.id} className={`messaging-message ${own ? "own" : ""} ${message.kind === "ANNOUNCEMENT" ? "announcement" : ""}`}>
                   <div className="messaging-message-meta"><strong>{message.kind === "ANNOUNCEMENT" ? "Ogłoszenie szkoły" : message.author.name}</strong><time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time></div>
-                  {message.subject ? <h3>{message.subject}</h3> : null}<p>{message.body}</p>
+                  {message.subject ? <h3>{message.subject}</h3> : null}{message.body ? <p>{message.body}</p> : null}
                   {message.attachments.length ? <div className="messaging-attachments">{message.attachments.map((attachment) => <a key={attachment.id} href={`/panel/wiadomosci/zalacznik/${attachment.id}`}><Paperclip aria-hidden="true" /><span><strong>{attachment.storedFile.originalName}</strong><small>{Math.ceil(attachment.storedFile.sizeBytes / 1024)} KB</small></span><Download aria-hidden="true" /></a>)}</div> : null}
                   <div className="messaging-reactions" aria-label="Reakcje na wiadomość">{messageReactionEmojis.map((emoji) => { const summary = message.reactionSummary.find((item) => item.emoji === emoji); return <form action={toggleMessageReactionAction} key={emoji}><input type="hidden" name="messageId" value={message.id} /><input type="hidden" name="emoji" value={emoji} /><button type="submit" className={summary?.reacted ? "active" : undefined} aria-label={`${summary?.reacted ? "Usuń" : "Dodaj"} reakcję ${emoji}`}>{emoji}{summary?.count ? <span>{summary.count}</span> : null}</button></form>; })}</div>
                   {message.requiresAcknowledgement && !own ? message.acknowledgedByCurrent ? <span className="messaging-acknowledged"><CheckCheck /> Potwierdzono</span> : <form action={acknowledgeMessageAction} className="messaging-ack-form"><input type="hidden" name="messageId" value={message.id} /><button type="submit"><CheckCheck /> Potwierdzam, że przeczytałem/am</button></form> : null}
@@ -110,10 +140,12 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
                 </article>;
               })}
             </div>
-            <form className="messaging-composer" action={messageAction} onSubmit={() => rotateRequestId(messageRequestId)}>
+            <form ref={messageFormRef} className="messaging-composer" action={messageAction} onSubmit={() => rotateRequestId(messageRequestId)}>
               {selected.kind === "GROUP" ? <input type="hidden" name="groupId" value={selected.groupId ?? ""} /> : <input type="hidden" name="conversationId" value={selected.conversationId ?? ""} />}<input ref={messageRequestId} type="hidden" name="clientRequestId" defaultValue={newRequestId()} />
-              <label htmlFor="message-body">{selected.kind === "DIRECT" ? "Wiadomość do wybranych osób" : "Wiadomość do całej grupy"}</label><div className="messaging-composer-main"><textarea ref={draftRef} id="message-body" name="body" maxLength={2000} rows={2} placeholder="Napisz wiadomość…" required /><button disabled={messagePending} type="submit" aria-label="Wyślij wiadomość"><Send aria-hidden="true" /></button></div>
-              <div className="messaging-composer-toolbar"><div aria-label="Dodaj emoji">{["👋", "👍", "😊", "🎉"].map((emoji) => <button key={emoji} type="button" onClick={() => addEmoji(emoji)} aria-label={`Dodaj ${emoji}`}>{emoji}</button>)}</div><details><summary><Plus aria-hidden="true" /> Załącznik i opcje</summary><div className="messaging-composer-options"><label><Paperclip /><span>Dodaj PDF, JPG lub PNG</span><input type="file" name="attachment" accept="application/pdf,image/jpeg,image/png" /></label>{["DIRECTOR", "TEACHER"].includes(role) ? <label><input type="checkbox" name="requiresAcknowledgement" /><span>Poproś o świadome potwierdzenie przeczytania</span></label> : null}</div></details></div>
+              <label htmlFor="message-body">{selected.kind === "DIRECT" ? "Wiadomość do wybranych osób" : "Wiadomość do całej grupy"}</label><div className="messaging-composer-main"><textarea ref={draftRef} id="message-body" name="body" maxLength={2000} rows={2} placeholder="Napisz wiadomość albo wyślij sam załącznik…" /><button disabled={messagePending} type="submit" aria-label="Wyślij wiadomość"><Send aria-hidden="true" /></button></div>
+              {selectedAttachment ? <div className="messaging-selected-attachment"><Paperclip aria-hidden="true" /><span>{selectedAttachment}</span><button type="button" aria-label="Usuń wybrany załącznik" onClick={() => { if (attachmentRef.current) attachmentRef.current.value = ""; setSelectedAttachment(null); }}><X aria-hidden="true" /></button></div> : null}
+              <div className="messaging-composer-toolbar"><div aria-label="Dodaj emoji">{["👋", "👍", "😊", "🎉"].map((emoji) => <button key={emoji} type="button" onClick={() => addEmoji(emoji)} aria-label={`Dodaj ${emoji}`}>{emoji}</button>)}</div><details ref={attachmentDetailsRef}><summary><Plus aria-hidden="true" /> Załącznik i opcje</summary><div className="messaging-composer-options"><label><Paperclip /><span>Dodaj PDF, JPG lub PNG</span><input ref={attachmentRef} type="file" name="attachment" accept="application/pdf,image/jpeg,image/png" onChange={(event) => selectAttachment(event.target.files?.[0])} /></label>{["DIRECTOR", "TEACHER"].includes(role) ? <label><input type="checkbox" name="requiresAcknowledgement" /><span>Poproś o świadome potwierdzenie przeczytania</span></label> : null}</div></details></div>
+              {attachmentError ? <p className="messaging-status error" role="alert">{attachmentError}</p> : null}
               {messageState.message ? <p className={`messaging-status ${messageState.status}`} role="status">{messageState.message}</p> : null}
             </form>
           </>

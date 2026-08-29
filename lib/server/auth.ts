@@ -50,6 +50,13 @@ export const auth = betterAuth({
       generateId: "uuid",
     },
     cookiePrefix: "kla",
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for"],
+      // nginx is the only process allowed to reach the Node service. Better
+      // Auth therefore walks the proxy chain from the trusted loopback hop
+      // instead of collapsing every visitor into one shared rate-limit key.
+      trustedProxies: ["127.0.0.1", "::1"],
+    },
   },
   emailAndPassword: {
     enabled: true,
