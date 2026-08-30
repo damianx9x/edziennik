@@ -1,7 +1,7 @@
 # eDziennik KLA v1.0 — technical handoff
 
-**Stan dokumentu:** 27 sierpnia 2026
-**Odbiorca:** inżynier oceniający architekturę, bezpieczeństwo i gotowość pilota  
+**Stan dokumentu:** 30 sierpnia 2026
+**Odbiorca:** inżynier oceniający architekturę, bezpieczeństwo i gotowość pilota
 **Zakres:** aplikacja dla jednej prywatnej szkoły języka angielskiego; nie jest
 to wydanie pilota; prawdziwe dane wymagają zamknięcia bramek odbiorowych.
 
@@ -17,8 +17,9 @@ Pre-release obejmuje: konta i role, kartoteki, relacje rodzinne, lokalizacje,
 grafik, obecność, umowy i raty, komunikator, powiadomienia, materiały, zadania
 oraz opisowe obserwacje postępu. Dane odbiorowe są wyłącznie syntetyczne.
 Najważniejszą pozostałą pracą przed produkcją jest zamknięcie bramki prawnej i
-RODO, uruchomienie MFA, konfiguracja dostawców, test na fizycznym Raspberry Pi
-oraz udokumentowane odtworzenie szyfrowanego backupu spoza urządzenia.
+RODO, konfiguracja docelowych dostawców, odbiór każdej roli oraz udokumentowane
+odtworzenie szyfrowanego backupu na drugim urządzeniu. Pilot działa na fizycznym
+Raspberry Pi, a aktualizacje i lokalny test odtworzenia są automatyzowane.
 
 ## Stos i uzasadnienie
 
@@ -30,7 +31,7 @@ oraz udokumentowane odtworzenie szyfrowanego backupu spoza urządzenia.
 | dane | PostgreSQL, Prisma 7 z adapterem `pg` | transakcje, blokady doradcze, jawne migracje i bezpieczne relacje |
 | walidacja | Zod 4 | jeden kontrakt wejścia po stronie serwera i formularza |
 | testy | Vitest, ESLint, TypeScript, real-browser QA | szybkie testy reguł oraz osobna kontrola faktycznych przepływów |
-| pliki | adapter `FileStorage`, lokalny prywatny katalog / szyfrowany SSD | brak publicznych URL-i i możliwość późniejszego przejścia na S3-compatible |
+| pliki | adapter `FileStorage`, lokalny prywatny katalog / szyfrowany dysk USB | brak publicznych URL-i i możliwość późniejszego przejścia na S3-compatible |
 | edge | Cloudflare Tunnel → nginx na `127.0.0.1:8080` | brak publicznego portu originu i stały HTTPS dla pilota |
 
 Celowo nie ma mikroserwisów, Redisa, Kafki ani Kubernetesa. Przy obecnej skali
@@ -97,11 +98,13 @@ jest służbowy, widoczny w zasadach i audytowany.
 - cookie sesyjne i chronione trasy działają po HTTPS; publiczna rejestracja jest
   wyłączona, a rola pochodzi z jednorazowego zaproszenia;
 - role panelowe nie dziedziczą administracyjnego API Better Auth;
-- konto obsługi technicznej nie ma dostępu do danych pedagogicznych ani rodzin;
+- konto właściciela dziedziczy narzędzia dyrektora w obrębie własnej szkoły,
+  ale nie omija integralności, audytu, retencji ani autoryzacji po stronie serwera;
 - pliki są poza `public/`, mają losowy klucz, hash, limit, kontrolę sygnatury i
   autoryzację przy każdym pobraniu;
 - produkcyjny profil Raspberry wymaga ClamAV i trzyma bazę z dokumentami na
-  LUKS2; klucz odzyskiwania nie jest zapisany na urządzeniu;
+  LUKS2; SSD jest zalecany, HDD ma automatycznie ostrożniejszy profil I/O, a
+  klucz odzyskiwania nie jest zapisany na urządzeniu;
 - logi nie powinny zawierać haseł, tokenów, treści wiadomości, pełnych adresów
   IP ani danych dzieci; zdarzenia biznesowe trafiają do `AuditLog`;
 - CSP, `no-store` i `no-transform` chronią prywatny panel; origin nginx nasłuchuje
@@ -109,10 +112,11 @@ jest służbowy, widoczny w zasadach i audytowany.
 - migracje wydania są rozszerzające. Kontrola CI blokuje typowe destrukcyjne
   polecenia SQL oraz przypadkowe sekrety.
 
-Model zagrożeń znajduje się w `wr-threat-model.md`, a bieżący raport w
-`security_best_practices_report.md`. Nadal wymagane są: zewnętrzny test
-odtworzenia, konfiguracja retencji, MFA wszystkich uprzywilejowanych kont,
-rate limits sprawdzone na docelowym originie i okresowy proces aktualizacji.
+Publiczne zasady odpowiedzialnych testów znajdują się w `SECURITY.md`, a model
+bezpieczeństwa i prywatności w `docs/BEZPIECZENSTWO_PRAWO_RODO.md`. Nadal
+wymagane są: test odtworzenia na drugim urządzeniu, zatwierdzona retencja,
+odbiór MFA wszystkich uprzywilejowanych kont oraz kontrolowany test obciążenia
+przed przejściem z pilota na produkcję.
 
 ## Wydanie, aktualizacja i rollback
 

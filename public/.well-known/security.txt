@@ -1,0 +1,5 @@
+Contact: mailto:damianx9x@me.com
+Canonical: https://demo.kingslanguageacademy.pl/.well-known/security.txt
+Policy: https://github.com/damianx9x/edziennik/blob/main/SECURITY.md
+Preferred-Languages: pl, en
+Expires: 2027-08-30T00:00:00.000Z

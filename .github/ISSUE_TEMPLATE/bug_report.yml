@@ -1,0 +1,35 @@
+name: Błąd aplikacji
+description: Zgłoś błąd funkcjonalny bez danych osobowych
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Nie wpisuj haseł, danych dzieci, umów ani szczegółów podatności. Problemy bezpieczeństwa zgłaszaj prywatnie według SECURITY.md."
+  - type: input
+    id: area
+    attributes:
+      label: Moduł
+      placeholder: np. grafik, kartoteki, wiadomości
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Kroki odtworzenia
+      description: Opisz po kolei, co zostało kliknięte.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Oczekiwany rezultat
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Urządzenie
+      options: [Telefon, Tablet, Komputer, Raspberry Pi, Inne]
+    validations:
+      required: true

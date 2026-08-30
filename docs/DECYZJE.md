@@ -1,6 +1,25 @@
 # Decyzje architektoniczne
 
-## ADR-084 — ciągłość v1.0, auto-start i podpisane wydania
+## ADR-093 — kontrolowane przeciążenie pilota Raspberry
+
+**Data:** 2026-08-30. **Decyzja:** publiczny origin pozostaje dostępny wyłącznie
+przez Cloudflare Tunnel. Nginx kompresuje odpowiedzi, długo cache’uje
+wersjonowane zasoby statyczne i stosuje osobne limity dla logowania oraz ruchu
+ogólnego według adresu przekazanego przez zaufany tunel. Limity połączeń, pamięci
+Node, puli PostgreSQL i watchdog mają odrzucić nadmiar ruchem HTTP 429 zamiast
+doprowadzić do utraty całego urządzenia. Raspberry nadal jest serwerem pilota;
+stały większy ruch jest sygnałem do migracji na VPS.
+
+## ADR-092 — centrum zdarzeń łączy audyt operacji i prywatną telemetrię
+
+**Data:** 2026-08-30. **Decyzja:** właściciel systemu otrzymuje filtrowany,
+stronicowany widok każdej zapisanej operacji biznesowej oraz każdego
+zarejestrowanego wejścia na ekran. Operacje i wejścia pozostają oddzielnymi
+typami, ponieważ mają inną retencję i znaczenie. Widok pokazuje rolę, moduł,
+obiekt, czas, pseudonim klienta oraz przybliżony region/urządzenie, ale nie
+przechowuje treści wiadomości, sekretów, pełnego User-Agent ani surowego IP.
+
+## ADR-087 — ciągłość v1.0, auto-start i podpisane wydania
 
 **Data:** 2026-08-27. **Decyzja:** eksport zawiera PostgreSQL, prywatne pliki i
 zaszyfrowane sekrety ciągłości, lecz nie prywatny klucz `age`. Klucz jest
@@ -10,14 +29,14 @@ po zaniku prądu przez klucz LUKS root-only na karcie systemowej. To świadomie
 zmniejsza ochronę przy jednoczesnej kradzieży Pi i SSD; zewnętrzne eksporty
 pozostają niezależnie zaszyfrowane.
 
-## ADR-083 — treść strony jest danymi serwerowymi
+## ADR-088 — treść strony jest danymi serwerowymi
 
 **Data:** 2026-08-27. **Decyzja:** PostgreSQL jest źródłem prawdy dla treści i
 układu strony. IndexedDB jest wyłącznie lokalnym cache/fallbackiem. Dzięki temu
 zmiany dyrektora są wspólne na urządzeniach i trafiają do pełnego backupu.
 Ten ADR zastępuje lokalny zakres ADR-057.
 
-## ADR-061 — jeden szyfrowany sejf danych na Raspberry Pi
+## ADR-089 — jeden szyfrowany sejf danych na Raspberry Pi
 
 **Data:** 2026-08-22
 **Decyzja:** PostgreSQL i prywatne dokumenty przechowujemy razem na osobnym
@@ -278,7 +297,7 @@ statyczne, a `package:release` zawiera pełny serwer bieżącego etapu i migracj
 **Dlaczego:** home.pl FTP nie uruchomi bezpiecznych sesji ani PostgreSQL, ale
 nadal może służyć do pokazu strony bez udawania pełnej aplikacji.
 
-## ADR-024 — dwuetapowy, transakcyjny import
+## ADR-090 — dwuetapowy, transakcyjny import
 
 **Data:** 2026-07-25
 **Decyzja:** podgląd importu zapisuje prywatny plik i raport walidacji, a
@@ -287,7 +306,7 @@ w jednej transakcji.
 **Dlaczego:** użytkownik widzi błędy przed zmianą bazy, a podmiana pliku lub
 częściowy zapis nie pozostawiają niespójnych kartotek.
 
-## ADR-025 — rekord ucznia bez konta logowania
+## ADR-091 — rekord ucznia bez konta logowania
 
 **Data:** 2026-07-25
 **Decyzja:** uczeń może mieć kartotekę i szkolny `externalId` bez adresu e-mail
@@ -1156,3 +1175,57 @@ pliku, a magazyn pozostaje prywatny.
 **Dlaczego:** domyślny limit 1 MB odrzucał poprawne pliki na telefonie zanim
 aplikacja mogła pokazać zrozumiały błąd. Warstwowe limity zachowują ochronę przed
 nadmiernym zużyciem pamięci.
+
+## ADR-087 — neutralna wizytówka nie zmienia realnego panelu
+
+**Data:** 2026-08-30
+**Decyzja:** właściciel może przełączyć wyłącznie publiczną stronę `/` między
+wizytówką szkoły a neutralnym pokazem produktu. Tryb produktu nie czyta treści
+szkoły z bazy i używa neutralnych metadanych oraz grafik. Logowanie, role,
+realna baza, umowy, materiały, wiadomości i audyt pozostają tym samym systemem.
+Tryb jest zapisywany w zaszyfrowanej konfiguracji i po błędzie działa
+bezpiecznie jako neutralny pokaz, nie jako strona szkoły.
+
+**Dlaczego:** publiczna prezentacja technologii nie powinna ujawniać kontaktów,
+zdjęć ani lokalizacji szkoły. Jednocześnie nie wolno tworzyć pozorowanego
+„laboratorium włamań” współdzielącego bazę i sekrety z pilotem.
+
+## ADR-088 — profil sprzętowy jest mierzony, nie podkręcany
+
+**Data:** 2026-08-30
+**Decyzja:** instalacja wspiera Pi 4B z 4 lub 8 GB RAM i wykrywa, czy sejf działa
+na SSD czy HDD. Dla HDD PostgreSQL dostaje ostrożniejszy profil I/O, a aplikacja
+na 4 GB ma heap 1408 MB. Krótki mikro-test działa wyłącznie na loopbacku,
+rozróżnia kontrolowane 429 od awarii i przerywa się przy bieżącym throttlingu,
+niedoborze pamięci lub temperaturze 75°C. Nie włączamy overclockingu.
+
+**Dlaczego:** urządzenie pilotowe ma historyczne sygnały spadku napięcia i
+rotacyjny dysk. Większe taktowanie zwiększyłoby ryzyko uszkodzenia workflow i
+bazy, a nie gwarantowałoby większej przepustowości całego stosu.
+
+## ADR-089 — kod produktu na AGPL-3.0
+
+**Data:** 2026-08-30
+**Decyzja:** kod aplikacji jest publikowany na GNU AGPL-3.0. Można go audytować,
+uruchamiać i modyfikować na warunkach tej licencji. Zmodyfikowana wersja
+udostępniana użytkownikom przez sieć musi oferować odpowiadający jej kod
+źródłowy. Znaki i identyfikacja konkretnej szkoły nie są elementem licencji.
+
+**Dlaczego:** przewagą projektu ma być realna audytowalność i możliwość
+dopasowania wdrożenia, bez zamykania poprawek utrzymywanego produktu. AGPL
+pozwala nadal oferować komercyjne wdrożenia i wsparcie, a ogranicza zamknięcie
+zmodyfikowanej usługi bez zwrotu kodu społeczności.
+
+## ADR-090 — ruch produktu jest oddzielony od tenantów szkół
+
+**Data:** 2026-08-30
+**Decyzja:** anonimowe wejścia neutralnej wizytówki są zapisywane jako prywatne,
+pseudonimizowane zdarzenia platformowe bez `schoolId`. Wejścia po zalogowaniu i
+wejścia wizytówki szkoły zachowują przypisanie do właściwej szkoły. Właściciel
+może filtrować oba strumienie, ale statystyki szkoły nie są zasilane kampanią
+produktu. Publiczna kampania nie wydaje zaproszeń do docelowego panelu.
+
+**Dlaczego:** promocja i odpowiedzialne sprawdzanie granicy logowania mają dawać
+realny sygnał operacyjny, ale nie mogą mieszać danych między tenantami ani
+zamieniać docelowej bazy w otwarte laboratorium. Szerszy pentest lub test
+obciążeniowy wymaga osobnego zakresu oraz izolowanego środowiska.

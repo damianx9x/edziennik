@@ -24,6 +24,7 @@ type SaveResult = {
 type SiteContentContextValue = {
   content: SiteContent;
   isReady: boolean;
+  publicMode: "SCHOOL" | "PRODUCT";
   saveContent: (nextContent: SiteContent) => Promise<SaveResult>;
   resetContent: () => Promise<void>;
 };
@@ -37,18 +38,24 @@ export function SiteContentProvider({
 }) {
   const [content, setContent] = useState<SiteContent>(defaultSiteContent);
   const [isReady, setIsReady] = useState(false);
+  // Fail closed: until the server confirms SCHOOL, never render a cached school
+  // presentation. This prevents an offline browser cache from leaking school
+  // marketing content while the neutral mode is active.
+  const [publicMode, setPublicMode] = useState<"SCHOOL" | "PRODUCT">("PRODUCT");
 
   useEffect(() => {
     const loadTimer = window.setTimeout(async () => {
-      const parsed = await readStoredContent();
-      if (parsed) setContent(parsed);
+      const result = await readStoredContent();
+      if (result.content) setContent(result.content);
+      setPublicMode(result.publicMode);
       setIsReady(true);
     }, 0);
 
     async function synchronize(event: StorageEvent) {
       if (event.key !== STORAGE_KEY) return;
-      const parsed = await readStoredContent();
-      setContent(parsed ?? defaultSiteContent);
+      const result = await readStoredContent();
+      setContent(result.content ?? defaultSiteContent);
+      setPublicMode(result.publicMode);
     }
 
     window.addEventListener("storage", synchronize);
@@ -95,8 +102,8 @@ export function SiteContentProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ content, isReady, saveContent, resetContent }),
-    [content, isReady, resetContent, saveContent],
+    () => ({ content, isReady, publicMode, saveContent, resetContent }),
+    [content, isReady, publicMode, resetContent, saveContent],
   );
 
   return (
@@ -114,28 +121,29 @@ export function useSiteContent() {
   return context;
 }
 
-async function readStoredContent(): Promise<SiteContent | null> {
+async function readStoredContent(): Promise<{ content: SiteContent | null; publicMode: "SCHOOL" | "PRODUCT" }> {
   try {
     const response = await fetch("/api/site-content", { cache: "no-store" });
     if (response.ok) {
+      const publicMode = response.headers.get("x-kla-public-mode") === "PRODUCT" ? "PRODUCT" : "SCHOOL";
       const remote = siteContentSchema.safeParse(await response.json());
       if (remote.success) {
         await writeIndexedContent(remote.data);
-        return remote.data;
+        return { content: remote.data, publicMode };
       }
     }
     const indexed = await readIndexedContent();
-    if (indexed) return indexed;
+    if (indexed) return { content: indexed, publicMode: "PRODUCT" };
 
     const legacy = window.localStorage.getItem(STORAGE_KEY);
-    if (!legacy || !legacy.startsWith("{")) return null;
+    if (!legacy || !legacy.startsWith("{")) return { content: null, publicMode: "PRODUCT" };
     const result = siteContentSchema.safeParse(JSON.parse(legacy));
-    if (!result.success) return null;
+    if (!result.success) return { content: null, publicMode: "PRODUCT" };
     await writeIndexedContent(result.data);
     window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    return result.data;
+    return { content: result.data, publicMode: "PRODUCT" };
   } catch {
-    return null;
+    return { content: null, publicMode: "PRODUCT" };
   }
 }
 

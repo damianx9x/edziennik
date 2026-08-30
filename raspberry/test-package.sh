@@ -13,6 +13,7 @@ required_files=(
   raspberry/mac-control/kla-server-control.sh
   raspberry/mac-control/KLA-Serwer.applescript
   raspberry/optimize-server.sh
+  raspberry/benchmark-readonly.sh
   docs/OPERACJE_RASPBERRY.md
   raspberry/vault-create.sh
   raspberry/vault-create-partition.sh
@@ -48,6 +49,16 @@ grep -q '192.168.0.0/16' "$ROOT/raspberry/install.sh"
 grep -q 'avahi-daemon' "$ROOT/raspberry/install.sh"
 grep -q '__LISTEN__' "$ROOT/raspberry/nginx/kla.conf"
 grep -q '__FORWARDED_PROTO__' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'limit_req_zone.*kla_auth' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'kla_sensitive_auth_key' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'zone=kla_health' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'log_format kla_privacy' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'uri=\$uri' "$ROOT/raspberry/nginx/kla.conf"
+! grep -q '\$request_uri' "$ROOT/raspberry/nginx/kla.conf"
+[[ "$(grep -c 'add_header X-Content-Type-Options' "$ROOT/raspberry/nginx/kla.conf")" -ge 2 ]]
+grep -q 'loopback-read-only' "$ROOT/raspberry/benchmark-readonly.sh"
+grep -q 'limit_conn.*kla_connections' "$ROOT/raspberry/nginx/kla.conf"
+grep -q 'location \^~ /_next/static/' "$ROOT/raspberry/nginx/kla.conf"
 LOCAL_NGINX="$(sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|0.0.0.0:8080|g' -e 's|__FORWARDED_PROTO__|http|g' "$ROOT/raspberry/nginx/kla.conf")"
 PRODUCTION_NGINX="$(sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|127.0.0.1:8080|g' -e 's|__FORWARDED_PROTO__|https|g' "$ROOT/raspberry/nginx/kla.conf")"
 grep -q 'listen 0.0.0.0:8080 default_server;' <<<"$LOCAL_NGINX"
@@ -64,13 +75,14 @@ grep -q 'SZYFRUJ \$PARTITION' "$ROOT/raspberry/vault-create-partition.sh"
 grep -q 'KLA_DATA' "$ROOT/raspberry/vault-create-partition.sh"
 grep -q 'shared_buffers = 512MB' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'PermitRootLogin no' "$ROOT/raspberry/optimize-server.sh"
-grep -q 'MemoryMax=2700M' "$ROOT/raspberry/systemd/edziennik-kla.service"
+grep -q 'MemoryMax=1850M' "$ROOT/raspberry/systemd/edziennik-kla.service"
 grep -q 'standalone/.next/cache' "$ROOT/raspberry/systemd/edziennik-kla.service"
 grep -q 'noatime,nodiratime' "$ROOT/raspberry/unlock.sh"
-grep -q 'NODE_OPTIONS=--max-old-space-size=2048' "$ROOT/raspberry/install.sh"
+grep -q 'NODE_OPTIONS=--max-old-space-size=1408' "$ROOT/raspberry/install.sh"
 grep -q 'npm run db:generate' "$ROOT/raspberry/install.sh"
 grep -q 'npm run db:generate' "$ROOT/raspberry/update.sh"
 grep -q 'systemctl daemon-reload' "$ROOT/raspberry/update.sh"
+grep -q 'systemctl reload nginx' "$ROOT/raspberry/update.sh"
 grep -q 'npm ci --include=dev' "$ROOT/raspberry/install.sh"
 grep -q 'runuser -u kla -- bash -c.*npm ci --include=dev' "$ROOT/raspberry/update.sh"
 grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"

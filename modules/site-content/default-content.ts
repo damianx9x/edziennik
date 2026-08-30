@@ -3,13 +3,13 @@ import type { SiteContent } from "./schema";
 export const defaultSiteContent: SiteContent = {
   version: 1,
   hero: {
-    eyebrow: "King’s Language Academy",
+    eyebrow: "Twoja szkoła językowa",
     title: "Nauka, która",
     accent: "dodaje odwagi.",
     description:
       "Prywatna szkoła języka angielskiego dla dzieci i młodzieży. Kameralne grupy, dużo mówienia i zajęcia, na które chce się wracać — blisko domu i online.",
     primaryCta: "Otwórz eDziennik",
-    secondaryCta: "Poznaj KLA",
+    secondaryCta: "Poznaj szkołę",
   },
   slider: {
     layout: "split",
@@ -19,25 +19,25 @@ export const defaultSiteContent: SiteContent = {
     {
       id: "london-bus",
       src: "/photos/kla-london-bus.jpg",
-      alt: "Fioletowy autobus przed Warner Bros. Studio Tour London",
+      alt: "Abstrakcyjna ilustracja podróży z językiem angielskim",
       kicker: "Angielski poza salą",
       title: "Język prowadzi dalej",
-      text: "Wyjazdy KLA zamieniają słówka i rozmowy w prawdziwe doświadczenia.",
+      text: "Wyjazdy zamieniają słówka i rozmowy w prawdziwe doświadczenia.",
       position: "center",
     },
     {
       id: "award",
       src: "/photos/kla-award.jpg",
-      alt: "Przedstawicielka KLA z dyplomem plebiscytu edukacyjnego",
-      kicker: "Docenieni na Pomorzu",
-      title: "Jakość, którą widać",
-      text: "Pierwsze miejsce KLA w plebiscycie edukacyjnym Dziennika Bałtyckiego 2025.",
+      alt: "Abstrakcyjny symbol jakości nauki",
+      kicker: "Jakość każdego dnia",
+      title: "Postęp, który widać",
+      text: "Małe grupy, czytelna informacja zwrotna i wspólny kierunek pracy.",
       position: "center 35%",
     },
     {
       id: "trip",
       src: "/photos/kla-trip-together.jpg",
-      alt: "Grupa KLA podczas wspólnego wyjazdu, sfotografowana od tyłu",
+      alt: "Abstrakcyjna ilustracja wspólnej nauki",
       kicker: "Razem odważniej",
       title: "Małe grupy. Wielkie historie.",
       text: "Dzieci uczą się mówić, współpracować i odkrywać świat po angielsku.",
@@ -46,14 +46,14 @@ export const defaultSiteContent: SiteContent = {
   ],
   proof: [
     { value: "2–8", label: "osób w grupie" },
-    { value: "8+", label: "lokalizacji i online" },
-    { value: "100%", label: "poleceń na profilu KLA" },
+    { value: "1+", label: "lokalizacji i online" },
+    { value: "4", label: "role w jednym systemie" },
     { value: "1", label: "prosty eDziennik" },
   ],
   offer: {
     kicker: "Tylko angielski. Naprawdę dobrze.",
     title: "Jedna specjalizacja, wiele sposobów na postęp",
-    text: "KLA koncentruje się wyłącznie na języku angielskim. Mówienie, rozumienie, czytanie i pisanie rozwijają się razem, w tempie dopasowanym do wieku i potrzeb grupy.",
+    text: "Szkoła koncentruje się na języku angielskim. Mówienie, rozumienie, czytanie i pisanie rozwijają się razem, w tempie dopasowanym do wieku i potrzeb grupy.",
     cards: [
       {
         eyebrow: "Speak",
@@ -88,27 +88,18 @@ export const defaultSiteContent: SiteContent = {
   story: {
     kicker: "Język w prawdziwym świecie",
     title: "Angielski nie kończy się na ostatniej stronie podręcznika.",
-    text: "W KLA rozmowa, kultura i wspólne doświadczenia są częścią nauki. Dzięki temu dzieci nie tylko znają odpowiedź — mają też odwagę, by powiedzieć ją po angielsku.",
+    text: "Rozmowa, kultura i wspólne doświadczenia są częścią nauki. Dzięki temu dzieci nie tylko znają odpowiedź — mają też odwagę, by powiedzieć ją po angielsku.",
     linkLabel: "Zobacz życie szkoły",
   },
   locations: {
-    kicker: "KLA jest blisko",
-    title: "Spotkajmy się na Pomorzu albo online",
+    kicker: "Szkoła jest blisko",
+    title: "Spotkajmy się stacjonarnie albo online",
     text: "Wybierz wygodną lokalizację. Aktualny grafik i dostępność miejsc potwierdzi zespół szkoły.",
-    items: [
-      "Przodkowo",
-      "Czeczewo",
-      "Wilanowo",
-      "Gdańsk Nowatorów",
-      "Gdańsk Morena",
-      "Gdańsk Niedźwiednik",
-      "Gdynia Pogórze",
-      "Online",
-    ],
+    items: ["Lokalizacja szkoły", "Online"],
   },
   digital: {
     kicker: "Cyfrowe zaplecze, ludzkie podejście",
-    title: "Jedno proste miejsce dla całej społeczności KLA.",
+    title: "Jedno proste miejsce dla całej społeczności szkoły.",
     text: "Rodzic, uczeń, wykładowca i dyrektor widzą tylko to, czego potrzebują. Plan, obecności i najważniejsze informacje są pod ręką — szczególnie na telefonie.",
     cta: "Otwórz eDziennik",
     roles: [
@@ -160,10 +151,10 @@ export const defaultSiteContent: SiteContent = {
   contact: {
     kicker: "Masz pytanie?",
     title: "Porozmawiajmy o najlepszym starcie.",
-    text: "Napisz lub zadzwoń. Zespół KLA pomoże dobrać zajęcia, lokalizację i grupę odpowiednią dla dziecka.",
-    phoneDisplay: "533 609 841",
-    phoneHref: "tel:+48533609841",
-    email: "kingsjezykiobce@gmail.com",
-    facebookUrl: "https://www.facebook.com/szkolakingslanguageacademy",
+    text: "Dane kontaktowe szkoły pojawią się po konfiguracji wizytówki.",
+    phoneDisplay: "Kontakt przez e-mail",
+    phoneHref: "mailto:damianx9x@me.com",
+    email: "damianx9x@me.com",
+    facebookUrl: "https://github.com/damianx9x/edziennik",
   },
 };

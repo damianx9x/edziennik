@@ -12,6 +12,7 @@ refresh_operations() {
   [[ -d "$CURRENT/raspberry/systemd" ]] || { echo "Brak plików operacyjnych bieżącego wydania."; exit 1; }
   install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
   install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+  install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
   install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
   install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
   install -m 755 "$CURRENT/raspberry/retention.sh" /usr/local/sbin/edziennik-kla-retention
@@ -72,6 +73,9 @@ case "$ACTION" in
     PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
     [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; exit 1; }
     SUDO_USER="$(cat /etc/kla/control-user)" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
+    ;;
+  benchmark-readonly)
+    exec /usr/local/sbin/kla-benchmark-readonly
     ;;
   logs)
     journalctl -u edziennik-kla -u cloudflared --since "2 hours ago" --no-pager -n 400
@@ -156,7 +160,7 @@ PY
     systemctl poweroff
     ;;
   *)
-    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, logs, email-config, bootstrap-code, update, reboot, poweroff."
+    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, benchmark-readonly, logs, email-config, bootstrap-code, update, reboot, poweroff."
     exit 2
     ;;
 esac

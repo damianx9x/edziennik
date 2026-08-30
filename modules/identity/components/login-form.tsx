@@ -36,7 +36,7 @@ function getErrorMessage(code: string | undefined, status: number): string {
   return "E-mail lub hasło są nieprawidłowe. Sprawdź dane i spróbuj ponownie.";
 }
 
-export function LoginForm() {
+export function LoginForm({ neutral = false }: { neutral?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activationConfirmed = searchParams.get("aktywacja") === "1";
@@ -125,18 +125,18 @@ export function LoginForm() {
   return (
     <main className="auth-page">
       <div className="auth-topbar">
-        <Brand compact />
+        <Brand compact neutral={neutral} />
         <Link className="back-link" href="/">
-          <ArrowLeft size={18} aria-hidden="true" /> Strona szkoły
+          <ArrowLeft size={18} aria-hidden="true" /> {neutral ? "Strona produktu" : "Strona szkoły"}
         </Link>
       </div>
 
       <div className="auth-layout">
         <section className="auth-intro" aria-label="Bezpieczny dostęp">
-          <span className="auth-kicker">eDziennik King’s</span>
+          <span className="auth-kicker">{neutral ? "Bezpieczny eDziennik" : "eDziennik King’s"}</span>
           <h1>Witaj z powrotem.</h1>
           <p>
-            Jedno spokojne miejsce na plan, wiadomości i codzienne sprawy KLA.
+            {neutral ? "Jedno spokojne miejsce na plan, wiadomości i codzienne sprawy szkoły." : "Jedno spokojne miejsce na plan, wiadomości i codzienne sprawy KLA."}
           </p>
           <ul>
             <li>
@@ -253,7 +253,7 @@ export function LoginForm() {
           </form>
 
           <p className="auth-help">
-            Nie masz konta? Poproś dyrektora KLA o zaproszenie.
+            Nie masz konta? Poproś dyrektora szkoły o zaproszenie.
           </p>
         </section>
       </div>

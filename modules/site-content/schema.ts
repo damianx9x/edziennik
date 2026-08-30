@@ -102,7 +102,14 @@ export const siteContentSchema = z.object({
     title: shortText,
     text: paragraph,
     phoneDisplay: z.string().trim().min(5).max(40),
-    phoneHref: z.string().trim().startsWith("tel:").max(50),
+    phoneHref: z
+      .string()
+      .trim()
+      .max(160)
+      .refine(
+        (value) => value.startsWith("tel:") || value.startsWith("mailto:"),
+        "Podaj bezpieczny link tel: albo mailto:",
+      ),
     email: z.email().max(160),
     facebookUrl: z.url().max(300),
   }),

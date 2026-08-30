@@ -11,30 +11,30 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "King’s Language Academy — nauka, która dodaje odwagi",
-    template: "%s | King’s Language Academy",
+    default: "eDziennik — bezpieczny system szkoły językowej",
+    template: "%s | eDziennik",
   },
   description:
-    "Prywatna szkoła języka angielskiego dla dzieci i młodzieży. Małe grupy na Pomorzu i online oraz prosty eDziennik KLA.",
+    "Mobilny system dla szkoły językowej: grafik, komunikacja, umowy, płatności, materiały, obecność i postępy.",
   icons: {
-    icon: [{ url: "/kla-logo.jpg", type: "image/jpeg" }],
-    apple: [{ url: "/kla-logo.jpg", type: "image/jpeg" }],
+    icon: [{ url: "/product-mark.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/product-mark.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "King’s Language Academy — nauka, która dodaje odwagi",
+    title: "eDziennik — bezpieczny system szkoły językowej",
     description:
-      "Prywatna szkoła angielskiego: małe grupy, dużo mówienia i jeden prosty eDziennik dla społeczności KLA.",
-    images: [{ url: "/og.png", width: 1729, height: 910 }],
+      "Mobilny system operacyjny szkoły językowej z kontrolą ról, audytem i bezpiecznym hostingiem.",
+    images: [{ url: "/product-og.png", width: 1600, height: 900 }],
     locale: "pl_PL",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "King’s Language Academy",
-    description: "Nauka, która dodaje odwagi.",
-    images: ["/og.png"],
+    title: "eDziennik",
+    description: "Bezpieczny system operacyjny szkoły językowej.",
+    images: ["/product-og.png"],
   },
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

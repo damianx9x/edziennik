@@ -93,7 +93,7 @@ export function HeroSlider({
     <section
       className="hero-slider"
       aria-roledescription="karuzela"
-      aria-label="Życie King’s Language Academy"
+      aria-label="Życie szkoły językowej"
       data-testid="hero-slider"
     >
       <div className="hero-slider-viewport" ref={viewportRef}>

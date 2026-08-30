@@ -7,6 +7,10 @@ export type RaspberryStatus = {
   hostname?: string;
   uptimeSeconds?: number;
   temperatureC?: number;
+  throttledHex?: string;
+  currentThrottling?: boolean | null;
+  memoryControllerEnabled?: boolean;
+  vaultRotational?: boolean | null;
   load?: number[];
   memory?: { total: number; available: number };
   rootDisk?: { total: number; used: number; free: number } | null;
@@ -20,6 +24,7 @@ export type RaspberryStatus = {
     retentionDays: number;
   };
   emailConfigured?: boolean;
+  publicPresentationMode?: "school" | "product";
   autoUnlockEnabled?: boolean;
   message?: string;
 };
@@ -71,18 +76,28 @@ function runControl(action: string, args: string[] = [], input?: string): Promis
     });
     let stdout = "";
     let stderr = "";
+    const maxOutput = 256 * 1024;
+    let outputExceeded = false;
     const timer = setTimeout(
       () => child.kill("SIGKILL"),
-      action === "import-prepare" ? 300_000 : ["backup-now", "export-create"].includes(action) ? 120_000 : 20_000,
+      action === "import-prepare" ? 300_000 : ["backup-now", "export-create", "benchmark-readonly"].includes(action) ? 180_000 : 20_000,
     );
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => { stdout += chunk; });
-    child.stderr.on("data", (chunk: string) => { stderr += chunk; });
+    const append = (current: string, chunk: string) => {
+      const next = current + chunk;
+      if (next.length <= maxOutput) return next;
+      outputExceeded = true;
+      child.kill("SIGKILL");
+      return next.slice(0, maxOutput);
+    };
+    child.stdout.on("data", (chunk: string) => { stdout = append(stdout, chunk); });
+    child.stderr.on("data", (chunk: string) => { stderr = append(stderr, chunk); });
     child.on("error", reject);
     child.on("close", (code: number | null) => {
       clearTimeout(timer);
-      if (code === 0) resolve(stdout.trim());
+      if (outputExceeded) reject(new Error("Narzędzie serwera zwróciło zbyt dużo danych i zostało bezpiecznie zatrzymane."));
+      else if (code === 0) resolve(stdout.trim());
       else reject(new Error(stderr.trim() || stdout.trim() || "Polecenie serwera nie powiodło się."));
     });
     child.stdin.end(input ?? "");
@@ -120,6 +135,10 @@ export async function runBackupNow(): Promise<string> {
 
 export async function restartApplication(): Promise<string> {
   return runControl("restart-app");
+}
+
+export async function runReadonlyBenchmark(): Promise<string> {
+  return runControl("benchmark-readonly");
 }
 
 export async function setBackupPolicy(input: {
@@ -177,4 +196,8 @@ export async function setSmtpConfiguration(input: {
 
 export async function setSmsGateConfiguration(input: { username: string; password: string }): Promise<string> {
   return runControl("set-sms-gate", [], JSON.stringify(input));
+}
+
+export async function setPublicPresentationMode(mode: "school" | "product"): Promise<string> {
+  return runControl("set-public-mode", [mode]);
 }

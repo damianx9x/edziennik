@@ -73,6 +73,17 @@ if [[ -c /dev/watchdog || -c /dev/watchdog0 ]]; then
 fi
 
 install -d -m 0755 "$PG_CONF_DIR"
+VAULT_SOURCE="$(findmnt -n -o SOURCE /srv/kla-vault 2>/dev/null || true)"
+VAULT_ROTA="$(lsblk -ndo ROTA "$VAULT_SOURCE" 2>/dev/null | head -n1 | tr -d '[:space:]')"
+if [[ "$VAULT_ROTA" == "0" ]]; then
+  RANDOM_PAGE_COST=1.1
+  EFFECTIVE_IO_CONCURRENCY=100
+else
+  # Conservative defaults for the current rotational USB vault. They remain
+  # safe if the exact storage type cannot be determined.
+  RANDOM_PAGE_COST=2.5
+  EFFECTIVE_IO_CONCURRENCY=2
+fi
 printf '%s\n' \
   "listen_addresses = '127.0.0.1'" \
   'max_connections = 40' \
@@ -84,8 +95,8 @@ printf '%s\n' \
   'checkpoint_completion_target = 0.9' \
   'checkpoint_timeout = 15min' \
   'max_wal_size = 1GB' \
-  'random_page_cost = 1.1' \
-  'effective_io_concurrency = 100' \
+  "random_page_cost = $RANDOM_PAGE_COST" \
+  "effective_io_concurrency = $EFFECTIVE_IO_CONCURRENCY" \
   'default_statistics_target = 100' \
   'jit = off' \
   'track_io_timing = on' \

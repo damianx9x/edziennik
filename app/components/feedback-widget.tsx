@@ -26,8 +26,7 @@ import {
 } from "../../modules/observability/client-events";
 import { sanitizeDiagnosticText } from "../../modules/observability/sanitize";
 
-const supportEmail =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "damianx9x@me.com";
+const supportEmail = "damianx9x@me.com";
 const appRelease =
   process.env.NEXT_PUBLIC_APP_RELEASE ?? "0.4.0-stage-1";
 

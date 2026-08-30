@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="eDziennik — realny system, kontrolowana prezentacja">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f1d42"/><stop offset="1" stop-color="#214aa6"/></linearGradient></defs>
+  <rect width="1600" height="900" fill="#f7f6f2"/>
+  <circle cx="1320" cy="120" r="460" fill="#dce7ff"/>
+  <rect x="90" y="90" width="116" height="116" rx="28" fill="#11224d"/>
+  <path d="M124 126h48v47h-48z" fill="none" stroke="#fff" stroke-width="8"/><path d="M135 115v20M161 115v20M136 149h24M136 161h16" stroke="#7ca4ff" stroke-width="7" stroke-linecap="round"/>
+  <text x="230" y="153" fill="#11224d" font-family="Arial, sans-serif" font-size="54" font-weight="800">eDziennik</text>
+  <text x="90" y="370" fill="#11224d" font-family="Arial, sans-serif" font-size="102" font-weight="900">Realny system.</text>
+  <text x="90" y="485" fill="#bd3541" font-family="Arial, sans-serif" font-size="102" font-weight="900">Kontrolowana prezentacja.</text>
+  <text x="96" y="590" fill="#5d6981" font-family="Arial, sans-serif" font-size="34" font-weight="600">Grafik · komunikacja · umowy · płatności · nauka · audyt</text>
+  <rect x="90" y="690" width="420" height="84" rx="25" fill="url(#g)"/>
+  <text x="132" y="744" fill="#fff" font-family="Arial, sans-serif" font-size="28" font-weight="800">mobile-first · self-hosted</text>
+</svg>

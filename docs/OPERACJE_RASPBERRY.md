@@ -1,4 +1,4 @@
-# KLA Server — Raspberry Pi 4B 8 GB
+# KLA Server — Raspberry Pi 4B
 
 Pakiet ma dwa wyraźnie rozdzielone warianty:
 
@@ -10,18 +10,40 @@ Pakiet ma dwa wyraźnie rozdzielone warianty:
   prawdziwe dane dopiero po zamknięciu odbioru/RODO.
 
 Baza PostgreSQL i wszystkie prywatne pliki są w jednym szyfrowanym sejfie
-LUKS2 na zewnętrznym SSD. Karta microSD zawiera system i aplikację, ale nie
+LUKS2 na zewnętrznym dysku USB. SSD jest wariantem zalecanym, a HDD jest
+wspierany w profilu pilota z ostrożniejszymi ustawieniami bazy. Karta microSD
+zawiera system i aplikację, ale nie
 bazę, dokumenty, hasło bazy ani sekret sesji.
+
+## Zachowanie przy nagłym większym ruchu
+
+Publiczny ruch przechodzi przez Cloudflare Tunnel, a prywatny origin nasłuchuje
+wyłącznie na `127.0.0.1`. Nginx kompresuje odpowiedzi, utrzymuje długi cache dla
+wersjonowanych plików Next.js oraz ogranicza liczbę równoległych połączeń i prób
+logowania dla pseudonimowego klienta. Usługa deklaruje limity pamięci, małą pulę
+PostgreSQL i watchdog systemd. Limity systemd stają się aktywne dopiero, gdy
+kernel ma włączony kontroler pamięci cgroup; panel właściciela pokazuje ten
+stan zamiast udawać ochronę. Przeciążenie powinno więc zwolnić lub zwrócić
+HTTP 429, zamiast wyczerpać pamięć całego urządzenia.
+
+Raspberry Pi 4B jest serwerem pilota, a nie infrastrukturą dla nieograniczonego
+ruchu. Przed produkcją należy wykonać test obciążenia na kopii danych, włączyć
+reguły WAF Cloudflare i przygotować migrację na VPS, jeżeli stały ruch przekroczy
+możliwości urządzenia.
 
 > Lokalny tryb demo działa po HTTP tylko w prywatnej sieci. Nie wpisuj tam
 > prawdziwych danych dzieci, umów ani dokumentów.
 
 ## Co trzeba przygotować
 
-- Raspberry Pi 4B 8 GB, oficjalny zasilacz i kabel sieciowy;
+- Raspberry Pi 4B 4 GB lub 8 GB; 8 GB jest zalecane, profil 4 GB ma mniejszy
+  heap Node.js i wymaga szczególnie dobrego zasilania;
+- oficjalny zasilacz i kabel sieciowy;
 - karta microSD 32 GB lub większa;
-- osobny SSD USB 3.0 (instalator usunie z niego całą zawartość);
-- najlepiej UPS dla Raspberry Pi i SSD;
+- osobny dysk USB 3.0 (SSD zalecany; HDD wspierany testowo; instalator usunie
+  całą zawartość wskazanego nośnika);
+- dla HDD zalecane jest osobne zasilanie lub aktywny hub USB;
+- najlepiej UPS dla Raspberry Pi i dysku;
 - drugi komputer do zapisania klucza odzyskiwania;
 - opcjonalnie konto SFTP na innym urządzeniu lub u dostawcy backupu.
 - dla produkcji: domenę dodaną do Cloudflare oraz utworzony tunel z publicznym
@@ -39,7 +61,7 @@ bazę, dokumenty, hasło bazy ani sekret sesji.
 2. W ustawieniach Imagera ustaw nazwę `kla-server`, własnego użytkownika,
    mocne hasło, polską strefę czasową i włącz SSH.
 3. Najlepiej dodaj klucz SSH. Nie używaj domyślnego użytkownika `pi`.
-4. Uruchom Raspberry, podłącz Internet kablem i dopiero potem podłącz SSD.
+4. Uruchom Raspberry, podłącz Internet kablem i dopiero potem podłącz dysk danych.
 
 ## 2. Jedna instalacja lokalnego demo
 
@@ -103,7 +125,7 @@ cd ~/edziennik-kla
 sudo ./raspberry/install.sh
 ```
 
-Instalator pokaże dyski i poprosi o wskazanie SSD, np. `/dev/sda`. Dwa razy
+Instalator pokaże dyski i poprosi o wskazanie dysku danych, np. `/dev/sda`. Dwa razy
 sprawdź jego rozmiar/model. Skrypt odmawia użycia dysku systemowego i wymaga
 przepisania dokładnego potwierdzenia przed usunięciem danych.
 
@@ -136,7 +158,7 @@ Na serwerze pilotowym można świadomie włączyć bezobsługowy start z panelu 
 Macu albo poleceniem `sudo kla-enable-auto-unlock`. Klucz techniczny trafia wtedy
 do pliku `root-only` na karcie systemowej, a system automatycznie montuje sejf i
 uruchamia wszystkie usługi po zaniku prądu. To zapewnia ciągłość pracy, lecz
-osłabia ochronę przy kradzieży całego zestawu Raspberry + karta + SSD. Klucz
+osłabia ochronę przy kradzieży całego zestawu Raspberry + karta + dysk. Klucz
 odzyskiwania eksportów nadal jest osobny i zapisany poza urządzeniem. Wersja
 docelowa może przenieść auto-start do TPM lub fizycznego klucza USB.
 
@@ -194,7 +216,7 @@ zarchiwizowane i zapisuje zdarzenie audytowe.
   Import przesyła plik fragmentami, prosi o klucz instalacji źródłowej i przed
   odtworzeniem wykonuje pełny test. Klucz nie jest zapisywany.
 - Utrata hasła i klucza odzyskiwania oznacza trwałą utratę danych.
-- Backup na tym samym SSD nie chroni przed awarią/kradzieżą; SFTP musi być poza
+- Backup na tym samym dysku nie chroni przed awarią/kradzieżą; SFTP musi być poza
   Raspberry Pi i najlepiej poza lokalem szkoły.
 
 ## Granica rozwiązania
@@ -203,6 +225,19 @@ To solidny serwer pilota, ale nie wysokodostępna chmura. Brak prądu, Internetu
 lub awaria jednego Raspberry wyłączą usługę. Przed prawdziwymi danymi trzeba
 zamknąć checklistę z `BEZPIECZENSTWO_PRAWO_RODO.md`, włączyć HTTPS, 2FA dyrektora,
 UPS, monitoring oraz wykonać udokumentowany test odtworzenia.
+## Profil wydajności i zasilania
+
+Wbudowany `kla-benchmark-readonly` wykonuje krótki, ograniczony mikro-test
+wyłącznie przez lokalny nginx. Nie loguje się, nie zapisuje danych i nie uderza
+w domenę publiczną. Raportuje opóźnienia, odpowiedzi HTTP 429, temperaturę,
+pamięć oraz bieżące bity zasilania/ograniczenia CPU. Nie zastępuje testu
+obciążenia na oddzielnym środowisku.
+
+Nie podkręcaj Raspberry, jeśli `vcgencmd get_throttled` pokazuje bieżące lub
+historyczne problemy z zasilaniem albo temperaturą. Najpierw popraw zasilacz,
+chłodzenie i zasilanie dysku. Stabilność i integralność bazy są ważniejsze niż
+kilka procent taktowania.
+
 ## Przybliżona mapa wejść w panelu właściciela
 
 Kraj jest przekazywany przez Cloudflare automatycznie. Aby zobaczyć także

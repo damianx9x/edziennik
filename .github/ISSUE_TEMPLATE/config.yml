@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Prywatne zgłoszenie bezpieczeństwa
+    url: https://github.com/damianx9x/edziennik/security/policy
+    about: Nie publikuj podatności ani danych w issue.

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="eDziennik">
+  <rect width="128" height="128" rx="30" fill="#11224d"/>
+  <path d="M38 39h52v50H38z" fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M49 28v21M79 28v21M50 63h28M50 76h18" stroke="#7ca4ff" stroke-width="8" stroke-linecap="round"/>
+</svg>

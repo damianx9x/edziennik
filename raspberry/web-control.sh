@@ -45,11 +45,28 @@ for line in read("/etc/kla/backup-policy.env").splitlines():
         try: policy["retentionDays"] = int(line.split("=", 1)[1].strip("'\""))
         except ValueError: pass
 temperature = read("/sys/class/thermal/thermal_zone0/temp")
+try:
+    throttled_raw = subprocess.check_output(["vcgencmd", "get_throttled"], text=True, timeout=2).strip().split("=", 1)[-1]
+    throttled_value = int(throttled_raw, 16)
+except (OSError, ValueError, subprocess.SubprocessError):
+    throttled_raw, throttled_value = "unknown", None
+controllers = read("/sys/fs/cgroup/cgroup.controllers").split()
+memory_controller_enabled = "memory" in controllers or os.path.isdir("/sys/fs/cgroup/memory")
+try:
+    vault_source = subprocess.check_output(["findmnt", "-n", "-o", "SOURCE", "/srv/kla-vault"], text=True, timeout=2).strip()
+    vault_rota_raw = subprocess.check_output(["lsblk", "-ndo", "ROTA", vault_source], text=True, timeout=2).strip().splitlines()[0]
+    vault_rotational = vault_rota_raw == "1"
+except (OSError, IndexError, subprocess.SubprocessError):
+    vault_rotational = None
 print(json.dumps({
   "available": True,
   "hostname": read("/etc/hostname", "raspberrypi"),
   "uptimeSeconds": int(float(read("/proc/uptime", "0").split()[0])),
   "temperatureC": round(int(temperature or 0) / 1000, 1),
+  "throttledHex": throttled_raw,
+  "currentThrottling": None if throttled_value is None else bool(throttled_value & 0xF),
+  "memoryControllerEnabled": memory_controller_enabled,
+  "vaultRotational": vault_rotational,
   "load": list(os.getloadavg()),
   "memory": {"total": mem.get("MemTotal", 0), "available": mem.get("MemAvailable", 0)},
   "rootDisk": disk("/"), "vaultDisk": disk("/srv/kla-vault"),
@@ -58,7 +75,8 @@ print(json.dumps({
   "sftpConfigured": os.path.isfile("/etc/kla/backup-sftp.env"),
   "backupPolicy": policy,
   "autoUnlockEnabled": os.path.isfile("/etc/kla/vault-auto-unlock.key"),
-  "emailConfigured": any(line.startswith("EMAIL_PROVIDER=") and not line.endswith("=disabled") for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines())
+  "emailConfigured": any(line.startswith("EMAIL_PROVIDER=") and not line.endswith("=disabled") for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines()),
+  "publicPresentationMode": next((line.split("=", 1)[1].strip("'\"").lower() for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines() if line.startswith("KLA_PUBLIC_PRESENTATION_MODE=")), "product")
 }, ensure_ascii=False))
 PY
     ;;
@@ -83,6 +101,9 @@ PY
     ;;
   backup-now)
     exec /usr/local/sbin/edziennik-kla-backup --test-restore
+    ;;
+  benchmark-readonly)
+    exec /usr/local/sbin/kla-benchmark-readonly
     ;;
   restart-app)
     systemd-run --quiet --unit="kla-panel-restart-$(date +%s)" --on-active=3s \
@@ -336,6 +357,27 @@ PY
     systemd-run --quiet --unit="kla-app-restart-$(date +%s)" --on-active=4s \
       /usr/bin/systemctl restart edziennik-kla
     echo "Bramka SMS została włączona. Aplikacja wczyta ustawienia za kilka sekund; wiadomości wysyła telefon z Androidem i aktywną kartą SIM."
+    ;;
+  set-public-mode)
+    MODE="${2:-}"
+    [[ "$MODE" == "school" || "$MODE" == "product" ]] || { echo "Niepoprawny tryb wizytówki." >&2; exit 2; }
+    python3 - "$ENV_FILE" "$MODE" <<'PY'
+import grp, os, shlex, sys, tempfile
+env_path, mode = sys.argv[1:]
+key = "KLA_PUBLIC_PRESENTATION_MODE"
+with open(env_path, encoding="utf-8") as handle:
+    lines = [line for line in handle if line.split("=", 1)[0] != key]
+fd, temp_path = tempfile.mkstemp(prefix="public-mode.", dir=os.path.dirname(env_path), text=True)
+with os.fdopen(fd, "w", encoding="utf-8") as handle:
+    handle.writelines(lines)
+    handle.write(f"{key}={shlex.quote(mode)}\n")
+os.chmod(temp_path, 0o640)
+os.chown(temp_path, 0, grp.getgrnam("kla").gr_gid)
+os.replace(temp_path, env_path)
+PY
+    systemd-run --quiet --unit="kla-public-mode-restart-$(date +%s)" --on-active=4s \
+      /usr/bin/systemctl restart edziennik-kla
+    echo "Tryb publicznej wizytówki został zapisany. Panel i prawdziwa baza nie zostały zmienione."
     ;;
   *)
     echo "Niedozwolona operacja panelu serwera." >&2

@@ -38,7 +38,7 @@ lsblk -o NAME,PATH,SIZE,TYPE,FSTYPE,LABEL,PARTLABEL,MODEL,TRAN
 if [[ "$MODE" == "public-demo" ]]; then
   read -r -p "Podaj NOWĄ partycję KLA_DATA (np. /dev/sda3): " VAULT_PARTITION
 else
-  read -r -p "Podaj pusty dysk SSD na zaszyfrowany sejf (np. /dev/sda): " VAULT_DEVICE
+  read -r -p "Podaj pusty dysk danych USB na zaszyfrowany sejf (SSD zalecany; np. /dev/sda): " VAULT_DEVICE
 fi
 
 if [[ "$MODE" == "local-demo" ]]; then
@@ -188,7 +188,7 @@ chown -R kla:kla "$APP_DIR.new"
 
 cat > "$VAULT/secrets/edziennik.env" <<ENV
 NODE_ENV=production
-NODE_OPTIONS=--max-old-space-size=2048
+NODE_OPTIONS=--max-old-space-size=1408
 PORT=3000
 HOSTNAME=127.0.0.1
 DATABASE_URL=postgresql://kla_app:${DB_PASSWORD}@127.0.0.1:5432/kla_edziennik?schema=public
@@ -252,6 +252,7 @@ chown -R kla:kla "$APP_DIR"
 
 install -m 644 "$SOURCE_DIR"/raspberry/systemd/* /etc/systemd/system/
 install -m 755 "$SOURCE_DIR/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$SOURCE_DIR/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
 install -m 755 "$SOURCE_DIR/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
 install -m 755 "$SOURCE_DIR/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
 install -m 755 "$SOURCE_DIR/raspberry/retention.sh" /usr/local/sbin/edziennik-kla-retention

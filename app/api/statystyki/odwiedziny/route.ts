@@ -7,7 +7,9 @@ import {
   isTrackedPagePath,
   pageVisitHourlyLimit,
 } from "@/modules/observability/page-visits";
+import { resolvePageVisitSchoolId } from "@/modules/observability/page-visit-scope";
 import { getCoarseRequestContext } from "@/modules/observability/request-context";
+import { getPublicPresentationMode } from "@/modules/site-content/public-mode";
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? "0");
@@ -18,26 +20,35 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => null)) as
-    | { path?: unknown }
-    | null;
+  const body = (await request.json().catch(() => null)) as {
+    path?: unknown;
+  } | null;
   const path = body?.path;
   if (!isTrackedPagePath(path)) {
     return new NextResponse(null, { status: 400 });
   }
 
   const session = await getServerSession();
-  const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;
-  const school =
-    session?.user.schoolId
-      ? { id: session.user.schoolId }
-      : publicSchoolSlug
-        ? await db.school.findUnique({
+  const publicMode = getPublicPresentationMode(
+    process.env.KLA_PUBLIC_PRESENTATION_MODE,
+  );
+  let publicSchoolId: string | null = null;
+  if (!session?.user.schoolId && publicMode === "SCHOOL") {
+    const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;
+    const publicSchool = publicSchoolSlug
+      ? await db.school.findUnique({
           where: { slug: publicSchoolSlug },
           select: { id: true },
         })
-        : null;
-  if (!school) return new NextResponse(null, { status: 204 });
+      : null;
+    publicSchoolId = publicSchool?.id ?? null;
+  }
+  const schoolId = resolvePageVisitSchoolId({
+    sessionSchoolId: session?.user.schoolId,
+    publicMode,
+    publicSchoolId,
+  });
+  if (schoolId === undefined) return new NextResponse(null, { status: 204 });
 
   const userId = session?.user.id ?? null;
   const requestContext = getCoarseRequestContext(
@@ -45,14 +56,15 @@ export async function POST(request: Request) {
     process.env.KLA_ANALYTICS_SALT ?? process.env.BETTER_AUTH_SECRET ?? "",
   );
   await db.$transaction(async (transaction) => {
-    const limiterKey = `page-visit:${school.id}:${userId ?? requestContext.clientHash ?? "anonymous"}`;
+    const tenantKey = schoolId ?? "platform-product";
+    const limiterKey = `page-visit:${tenantKey}:${userId ?? requestContext.clientHash ?? "anonymous"}`;
     await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${limiterKey}))`;
 
     const now = Date.now();
     const [recent, hourlyCount] = await Promise.all([
       transaction.pageVisit.findFirst({
         where: {
-          schoolId: school.id,
+          schoolId,
           userId,
           path,
           visitedAt: { gte: new Date(now - 30_000) },
@@ -61,21 +73,18 @@ export async function POST(request: Request) {
       }),
       transaction.pageVisit.count({
         where: {
-          schoolId: school.id,
+          schoolId,
           userId,
           visitedAt: { gte: new Date(now - 60 * 60_000) },
         },
       }),
     ]);
-    if (
-      recent ||
-      hourlyCount >= pageVisitHourlyLimit(Boolean(userId))
-    ) {
+    if (recent || hourlyCount >= pageVisitHourlyLimit(Boolean(userId))) {
       return;
     }
 
     await transaction.pageVisit.create({
-      data: { schoolId: school.id, userId, path, ...requestContext },
+      data: { schoolId, userId, path, ...requestContext },
     });
   });
   return new NextResponse(null, { status: 204 });

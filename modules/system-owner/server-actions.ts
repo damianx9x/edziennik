@@ -14,12 +14,15 @@ import {
   createFullExport,
   prepareSftpBackup,
   restartApplication,
+  runReadonlyBenchmark,
   runBackupNow,
   setBackupPolicy,
   setSmtpConfiguration,
   setSmsGateConfiguration,
+  setPublicPresentationMode,
   setUsbBackupTarget,
 } from "./server-control";
+import { summarizeBenchmark } from "./benchmark-result";
 
 export type ServerActionState = {
   status: "idle" | "success" | "error";
@@ -93,6 +96,20 @@ export async function restartApplicationAction(previous: ServerActionState): Pro
     return { status: "success", message };
   } catch (error) {
     return initialError(error instanceof Error ? error.message : "Nie udało się zaplanować restartu aplikacji.");
+  }
+}
+
+export async function runReadonlyBenchmarkAction(previous: ServerActionState): Promise<ServerActionState> {
+  void previous;
+  const session = await requireSystemOwner("/panel/bog/ustawienia");
+  try {
+    const raw = await runReadonlyBenchmark();
+    const result = summarizeBenchmark(raw);
+    await audit(session.user.id, session.user.schoolId, "system.benchmark.readonly_completed", result);
+    const prefix = result.status === "ok" ? "Pomiar zakończony" : "Pomiar zatrzymany przez próg ochronny";
+    return { status: result.status === "ok" ? "success" : "error", message: `${prefix}: szczyt ${result.peakRequestsPerSecond.toFixed(1)} ż./s, najgorsze p95 ${result.worstP95Ms.toFixed(1)} ms, nieoczekiwane błędy ${result.unexpectedErrors}, kontrolowane 429 ${result.throttledResponses}. Test działał wyłącznie lokalnie i niczego nie zapisywał.` };
+  } catch (error) {
+    return initialError(error instanceof Error ? error.message : "Benchmark został bezpiecznie przerwany.");
   }
 }
 
@@ -263,5 +280,20 @@ export async function configureSmsGateAction(_: ServerActionState, formData: For
     return { status: "success", message };
   } catch (error) {
     return initialError(error instanceof Error ? error.message : "Nie udało się skonfigurować bramki SMS.");
+  }
+}
+
+export async function configurePublicPresentationAction(_: ServerActionState, formData: FormData): Promise<ServerActionState> {
+  const session = await requireSystemOwner("/panel/bog/ustawienia");
+  const parsed = z.enum(["school", "product"]).safeParse(formData.get("mode"));
+  if (!parsed.success) return initialError("Wybierz prawidłowy tryb publicznej wizytówki.");
+  try {
+    const message = await setPublicPresentationMode(parsed.data);
+    await audit(session.user.id, session.user.schoolId, "site.public_presentation.changed", { mode: parsed.data });
+    revalidatePath("/");
+    revalidatePath("/panel/bog/ustawienia");
+    return { status: "success", message: `${message} Zmiana pojawi się publicznie w ciągu kilkunastu sekund.` };
+  } catch (error) {
+    return initialError(error instanceof Error ? error.message : "Nie udało się zmienić wizytówki.");
   }
 }

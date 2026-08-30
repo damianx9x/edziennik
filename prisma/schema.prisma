@@ -1192,7 +1192,7 @@ model DirectorConversationAccess {
 
 model PageVisit {
   id            String   @id @default(uuid()) @db.Uuid
-  schoolId      String   @db.Uuid
+  schoolId      String?  @db.Uuid
   userId        String?  @db.Uuid
   path          String
   countryCode   String?  @db.VarChar(2)
@@ -1203,7 +1203,7 @@ model PageVisit {
   browserFamily String?  @db.VarChar(20)
   visitedAt     DateTime @default(now())
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, visitedAt])

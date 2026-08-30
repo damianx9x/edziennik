@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Abstrakcyjna podróż z językiem angielskim</title>
+  <desc id="desc">Granatowe tło, jasna droga, czerwone i żółte akcenty edukacyjne.</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10275c"/><stop offset="1" stop-color="#3159b2"/></linearGradient></defs>
+  <rect width="1200" height="900" rx="48" fill="url(#g)"/>
+  <circle cx="970" cy="170" r="150" fill="#ffd862"/>
+  <path d="M-80 760C210 520 430 790 700 550s420-210 600-340" fill="none" stroke="#fff" stroke-width="110" stroke-linecap="round" opacity=".9"/>
+  <path d="M160 210h410v245H160z" fill="#ef3454" rx="34"/><path d="M220 285h290M220 350h190" stroke="#fff" stroke-width="32" stroke-linecap="round"/>
+</svg>

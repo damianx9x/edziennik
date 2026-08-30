@@ -22,12 +22,21 @@ import Link from "next/link";
 
 import { Brand } from "./components/brand";
 import { HeroSlider } from "./components/hero-slider";
+import { ProductShowcase } from "./components/product-showcase";
 import { useSiteContent } from "../modules/site-content/site-content-provider";
 
 const offerIcons = [MessagesSquare, School, BookOpenCheck, Globe2] as const;
 
 export default function Home() {
-  const { content } = useSiteContent();
+  const { content, isReady, publicMode } = useSiteContent();
+
+  if (!isReady)
+    return (
+      <main className="public-mode-loading" aria-label="Wczytywanie strony">
+        <span />
+      </main>
+    );
+  if (publicMode === "PRODUCT") return <ProductShowcase />;
 
   return (
     <main>
@@ -82,10 +91,13 @@ export default function Home() {
           </ul>
         </div>
 
-        <HeroSlider slides={content.slides} imageFit={content.slider.imageFit} />
+        <HeroSlider
+          slides={content.slides}
+          imageFit={content.slider.imageFit}
+        />
       </section>
 
-      <section className="proof-strip" aria-label="King’s Language Academy w skrócie">
+      <section className="proof-strip" aria-label="Szkoła językowa w skrócie">
         {content.proof.map((item) => (
           <div key={`${item.value}-${item.label}`}>
             <strong>{item.value}</strong>
@@ -104,16 +116,17 @@ export default function Home() {
           {content.offer.cards.map((item, index) => {
             const Icon = offerIcons[index];
             return (
-              <article className={`offer-card offer-${item.tone}`} key={item.title}>
+              <article
+                className={`offer-card offer-${item.tone}`}
+                key={item.title}
+              >
                 <div className="offer-card-top">
                   <span>{item.eyebrow}</span>
                   <Icon aria-hidden="true" />
                 </div>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
-                <span className="offer-more">
-                  {item.detail}
-                </span>
+                <span className="offer-more">{item.detail}</span>
               </article>
             );
           })}
@@ -130,7 +143,11 @@ export default function Home() {
         </div>
         <div className="editorial-story-copy">
           <p>{content.story.text}</p>
-          <a href={content.contact.facebookUrl} target="_blank" rel="noreferrer">
+          <a
+            href={content.contact.facebookUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             {content.story.linkLabel} <ArrowRight aria-hidden="true" />
           </a>
         </div>
@@ -244,7 +261,7 @@ export default function Home() {
             className="button button-secondary"
             href={`mailto:${content.contact.email}`}
           >
-            <MessageCircleMore aria-hidden="true" /> Napisz do KLA
+            <MessageCircleMore aria-hidden="true" /> Napisz do szkoły
           </a>
         </div>
       </section>
@@ -252,8 +269,9 @@ export default function Home() {
       <footer>
         <Brand />
         <p>
-          Bezpieczne środowisko demonstracyjne eDziennika · wyłącznie dane testowe
-          <br />System zaprojektował Damian Eron · damianx9x@me.com
+          Publiczna wizytówka szkoły · panel dostępny wyłącznie po zalogowaniu
+          <br />
+          System zaprojektował Damian Eron · damianx9x@me.com
         </p>
         <Link href="/panel">eDziennik</Link>
       </footer>

@@ -12,13 +12,13 @@ User=kla
 Group=kla
 WorkingDirectory=/opt/kla/current
 EnvironmentFile=/etc/kla/edziennik.env
-Environment=NODE_OPTIONS=--max-old-space-size=2048
+Environment=NODE_OPTIONS=--max-old-space-size=1408
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=5
 TimeoutStopSec=30
-MemoryHigh=2300M
-MemoryMax=2700M
+MemoryHigh=1600M
+MemoryMax=1850M
 TasksMax=512
 LimitNOFILE=65536
 OOMScoreAdjust=-250

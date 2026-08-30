@@ -19,6 +19,8 @@ PREVIOUS="$APP_ROOT/previous"
 NEW="$APP_ROOT/current.new"
 FAILED="$APP_ROOT/failed-update"
 LOCK_FILE=/run/lock/edziennik-kla-update.lock
+NGINX_CONFIG=/etc/nginx/sites-available/kla
+NGINX_CONFIG_BACKUP=/etc/nginx/sites-available/kla.pre-update
 switched=0
 
 exec 9>"$LOCK_FILE"
@@ -86,6 +88,10 @@ rollback() {
       sleep 2
     done
   fi
+  if [[ -f "$NGINX_CONFIG_BACKUP" ]]; then
+    install -m 644 "$NGINX_CONFIG_BACKUP" "$NGINX_CONFIG"
+    nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+  fi
   cleanup
   exit "$exit_code"
 }
@@ -127,6 +133,7 @@ mv "$NEW" "$CURRENT"
 switched=1
 install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
 install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
 install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
 install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
 install -m 755 "$CURRENT/raspberry/retention.sh" /usr/local/sbin/edziennik-kla-retention
@@ -164,7 +171,24 @@ if [[ -f /etc/kla/control-user ]]; then
   PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
   [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; false; }
   SUDO_USER="$CONTROL_USER" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
+  systemctl reload postgresql
 fi
+
+# Aktualizacja odświeża reverse proxy razem z kodem. Poprawki wydajności i
+# ochrony ruchu nie wymagają dzięki temu ponownej instalacji urządzenia.
+if [[ "${KLA_DEPLOYMENT_MODE:-production}" == "local-demo" ]]; then
+  [[ ! -f "$NGINX_CONFIG" ]] || install -m 644 "$NGINX_CONFIG" "$NGINX_CONFIG_BACKUP"
+  sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|0.0.0.0:8080|g' -e 's|__FORWARDED_PROTO__|http|g' \
+    "$CURRENT/raspberry/nginx/kla.conf" > "$NGINX_CONFIG"
+else
+  [[ ! -f "$NGINX_CONFIG" ]] || install -m 644 "$NGINX_CONFIG" "$NGINX_CONFIG_BACKUP"
+  sed -e 's|__SERVER_NAME__|_|g' -e 's|__LISTEN__|127.0.0.1:8080|g' -e 's|__FORWARDED_PROTO__|https|g' \
+    "$CURRENT/raspberry/nginx/kla.conf" > "$NGINX_CONFIG"
+  sed -i '/listen 127\.0\.0\.1:8080 default_server;/a\  listen 127.0.0.1:3100;' "$NGINX_CONFIG"
+fi
+ln -sfn "$NGINX_CONFIG" /etc/nginx/sites-enabled/kla
+nginx -t
+systemctl reload nginx
 systemctl daemon-reload
 systemctl enable edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 systemctl restart edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
@@ -179,6 +203,7 @@ systemctl start edziennik-kla
 for attempt in {1..45}; do
   if curl --fail --silent --show-error --max-time 5 \
     http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+    rm -f "$NGINX_CONFIG_BACKUP"
     switched=0
     trap - ERR INT TERM
     echo "Aktualizacja zakończona. Poprzednia wersja: $PREVIOUS"

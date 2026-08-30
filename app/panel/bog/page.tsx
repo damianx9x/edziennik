@@ -95,12 +95,21 @@ export default async function SystemOwnerPage() {
     getRaspberryStatus(),
     db.rateLimit.findMany({ orderBy: { lastRequest: "desc" }, take: 200 }),
     db.pageVisit.findMany({
-      where: { schoolId: session.user.schoolId, visitedAt: { gte: thirtyDaysAgo } },
-      select: { countryCode: true, regionCode: true, regionName: true, deviceFamily: true, browserFamily: true },
+      where: { visitedAt: { gte: thirtyDaysAgo } },
+      select: {
+        countryCode: true,
+        regionCode: true,
+        regionName: true,
+        deviceFamily: true,
+        browserFamily: true,
+      },
       take: 10_000,
     }),
     db.user.count({
-      where: { name: { equals: "zadanie_wykonane", mode: "insensitive" }, archivedAt: null },
+      where: {
+        name: { equals: "zadanie_wykonane", mode: "insensitive" },
+        archivedAt: null,
+      },
     }),
   ]);
 
@@ -109,24 +118,48 @@ export default async function SystemOwnerPage() {
     process.env.KLA_ANALYTICS_SALT ?? process.env.BETTER_AUTH_SECRET ?? release,
   );
   const regionNames = new Map([
-    ["mazowieckie", "MZ"], ["małopolskie", "MP"], ["śląskie", "SL"], ["wielkopolskie", "WP"],
-    ["dolnośląskie", "DS"], ["pomorskie", "PM"], ["łódzkie", "LD"], ["lubelskie", "LU"],
-    ["podkarpackie", "PK"], ["podlaskie", "PD"], ["opolskie", "OP"], ["lubuskie", "LB"],
-    ["świętokrzyskie", "SK"], ["kujawsko-pomorskie", "KP"], ["warmińsko-mazurskie", "WM"], ["zachodniopomorskie", "ZP"],
+    ["mazowieckie", "MZ"],
+    ["małopolskie", "MP"],
+    ["śląskie", "SL"],
+    ["wielkopolskie", "WP"],
+    ["dolnośląskie", "DS"],
+    ["pomorskie", "PM"],
+    ["łódzkie", "LD"],
+    ["lubelskie", "LU"],
+    ["podkarpackie", "PK"],
+    ["podlaskie", "PD"],
+    ["opolskie", "OP"],
+    ["lubuskie", "LB"],
+    ["świętokrzyskie", "SK"],
+    ["kujawsko-pomorskie", "KP"],
+    ["warmińsko-mazurskie", "WM"],
+    ["zachodniopomorskie", "ZP"],
   ]);
   const regionCounts = new Map<string, { name: string; visits: number }>();
   const deviceCounts = new Map<string, number>();
   for (const visit of trafficRows) {
-    const code = visit.regionCode?.toUpperCase().replace(/^PL-/, "") ?? (visit.regionName ? regionNames.get(visit.regionName.toLocaleLowerCase("pl")) : undefined);
+    const code =
+      visit.regionCode?.toUpperCase().replace(/^PL-/, "") ??
+      (visit.regionName
+        ? regionNames.get(visit.regionName.toLocaleLowerCase("pl"))
+        : undefined);
     if (visit.countryCode === "PL" && code) {
       const current = regionCounts.get(code);
-      regionCounts.set(code, { name: visit.regionName ?? code, visits: (current?.visits ?? 0) + 1 });
+      regionCounts.set(code, {
+        name: visit.regionName ?? code,
+        visits: (current?.visits ?? 0) + 1,
+      });
     }
     const device = `${visit.deviceFamily ?? "Nieznane"} · ${visit.browserFamily ?? "Inna"}`;
     deviceCounts.set(device, (deviceCounts.get(device) ?? 0) + 1);
   }
-  const regionActivity = [...regionCounts].map(([code, value]) => ({ code, ...value })).sort((a, b) => b.visits - a.visits);
-  const deviceActivity = [...deviceCounts].map(([label, visits]) => ({ label, visits })).sort((a, b) => b.visits - a.visits).slice(0, 8);
+  const regionActivity = [...regionCounts]
+    .map(([code, value]) => ({ code, ...value }))
+    .sort((a, b) => b.visits - a.visits);
+  const deviceActivity = [...deviceCounts]
+    .map(([label, visits]) => ({ label, visits }))
+    .sort((a, b) => b.visits - a.visits)
+    .slice(0, 8);
 
   const configurationChecks = buildConfigurationChecks(process.env);
   const problemCount = configurationChecks.filter(
@@ -144,17 +177,26 @@ export default async function SystemOwnerPage() {
           </p>
         </div>
         <div className="owner-heading-actions">
-          <Link className="button button-secondary" href="/panel/bog/ustawienia#email-delivery">
+          <Link
+            className="button button-secondary"
+            href="/panel/bog/ustawienia#email-delivery"
+          >
             <Mail aria-hidden="true" /> Ustaw wysyłkę
           </Link>
-          <Link className="button button-secondary" href="/panel/bog/ustawienia#backup-usb">
+          <Link
+            className="button button-secondary"
+            href="/panel/bog/ustawienia#backup-usb"
+          >
             <HardDrive aria-hidden="true" /> Ustaw backup
           </Link>
-          <Link className="button button-secondary" href="/panel/bog/ustawienia#full-export">
+          <Link
+            className="button button-secondary"
+            href="/panel/bog/ustawienia#full-export"
+          >
             <Database aria-hidden="true" /> Eksportuj bazę
           </Link>
           <Link className="button button-secondary" href="/panel/bog/logi">
-            <ScrollText aria-hidden="true" /> Otwórz logi
+            <ScrollText aria-hidden="true" /> Centrum zdarzeń
           </Link>
           <a
             className="button button-primary"
@@ -181,14 +223,22 @@ export default async function SystemOwnerPage() {
         protectedActivity={protectedActivity}
         regionActivity={regionActivity}
         deviceActivity={deviceActivity}
-        polandVisits={trafficRows.filter((visit) => visit.countryCode === "PL").length}
-        foreignVisits={trafficRows.filter((visit) => visit.countryCode && visit.countryCode !== "PL").length}
+        polandVisits={
+          trafficRows.filter((visit) => visit.countryCode === "PL").length
+        }
+        foreignVisits={
+          trafficRows.filter(
+            (visit) => visit.countryCode && visit.countryCode !== "PL",
+          ).length
+        }
         challengeAccountFound={challengeAccountCount > 0}
       />
 
       {activeUserCount === 1 ? (
         <section className="owner-first-step">
-          <span className="owner-status-icon"><UserPlus aria-hidden="true" /></span>
+          <span className="owner-status-icon">
+            <UserPlus aria-hidden="true" />
+          </span>
           <div>
             <span className="section-kicker">Instalacja jest czysta</span>
             <h2>Zaproś pierwszą osobę</h2>
@@ -197,7 +247,10 @@ export default async function SystemOwnerPage() {
               otrzyma własne uprawnienia i bezpieczny link startowy.
             </p>
           </div>
-          <Link className="button button-primary" href="/panel/szkola/zaproszenia">
+          <Link
+            className="button button-primary"
+            href="/panel/szkola/zaproszenia"
+          >
             Otwórz zaproszenia <UserPlus aria-hidden="true" />
           </Link>
         </section>
@@ -259,7 +312,9 @@ export default async function SystemOwnerPage() {
             </div>
             <span
               className={
-                problemCount ? "owner-review-count is-warning" : "owner-review-count"
+                problemCount
+                  ? "owner-review-count is-warning"
+                  : "owner-review-count"
               }
             >
               {problemCount ? `${problemCount} uwag` : "Gotowe"}
@@ -298,8 +353,8 @@ export default async function SystemOwnerPage() {
             <Link href="/panel/bog/logi">
               <ScrollText aria-hidden="true" />
               <span>
-                <strong>Przeszukaj logi</strong>
-                <small>Akcje, encje i błędy operacji</small>
+                <strong>Centrum zdarzeń</strong>
+                <small>Każda operacja, wejście i chroniony sygnał</small>
               </span>
             </Link>
             <a href="/panel/bog/raport" download>
@@ -345,7 +400,7 @@ export default async function SystemOwnerPage() {
         <header>
           <div>
             <span className="section-kicker">Ostatnia aktywność</span>
-            <h2>Log audytowy</h2>
+            <h2>Ostatnie operacje</h2>
           </div>
           <Link href="/panel/bog/logi">
             Zobacz wszystkie <ScrollText aria-hidden="true" />
@@ -354,7 +409,9 @@ export default async function SystemOwnerPage() {
         <div className="owner-log-table">
           {recentLogs.map((entry) => (
             <article key={entry.id}>
-              <span className="owner-log-time">{formatDate(entry.createdAt)}</span>
+              <span className="owner-log-time">
+                {formatDate(entry.createdAt)}
+              </span>
               <span>
                 <strong>{entry.action}</strong>
                 <small>

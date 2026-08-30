@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Abstrakcyjna ilustracja wspólnej nauki</title>
+  <desc id="desc">Kolorowe postacie połączone wokół otwartej książki.</desc>
+  <rect width="1200" height="900" rx="48" fill="#e9effd"/>
+  <circle cx="240" cy="270" r="95" fill="#ef3454"/><circle cx="600" cy="190" r="95" fill="#17336f"/><circle cx="960" cy="270" r="95" fill="#ffd862"/>
+  <path d="M105 690c0-210 70-330 180-330s180 120 180 330M420 690c0-260 72-405 180-405s180 145 180 405M735 690c0-210 70-330 180-330s180 120 180 330" fill="none" stroke="#17336f" stroke-width="75" stroke-linecap="round"/>
+  <path d="M600 780c-150-100-285-95-390-42V570c125-48 265-18 390 75 125-93 265-123 390-75v168c-105-53-240-58-390 42z" fill="#fff" stroke="#3159b2" stroke-width="22" stroke-linejoin="round"/>
+</svg>

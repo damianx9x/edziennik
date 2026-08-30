@@ -5,14 +5,25 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { defaultSiteContent } from "@/modules/site-content/default-content";
 import { siteContentSchema } from "@/modules/site-content/schema";
+import { getPublicPresentationMode } from "@/modules/site-content/public-mode";
+import { productSiteContent } from "@/modules/site-content/product-content";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const school = await db.school.findFirst({ orderBy: { createdAt: "asc" }, select: { siteContent: true } });
+  const mode = getPublicPresentationMode(process.env.KLA_PUBLIC_PRESENTATION_MODE);
+  if (mode === "PRODUCT") {
+    return NextResponse.json(productSiteContent, {
+      headers: { "Cache-Control": "no-store", "X-KLA-Public-Mode": mode },
+    });
+  }
+  const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;
+  const school = publicSchoolSlug
+    ? await db.school.findUnique({ where: { slug: publicSchoolSlug }, select: { siteContent: true } })
+    : null;
   const parsed = siteContentSchema.safeParse(school?.siteContent);
   return NextResponse.json(parsed.success ? parsed.data : defaultSiteContent, {
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "no-store", "X-KLA-Public-Mode": mode },
   });
 }
 

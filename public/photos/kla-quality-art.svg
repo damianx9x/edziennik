@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Abstrakcyjny symbol jakości nauki</title>
+  <desc id="desc">Jasne tło z dużą granatową rozetą i geometrycznymi akcentami.</desc>
+  <rect width="1200" height="900" rx="48" fill="#f7f3eb"/>
+  <path d="M600 120l105 86 134-13 27 132 111 76-65 119 18 135-130 42-72 115-128-49-128 49-72-115-130-42 18-135-65-119 111-76 27-132 134 13z" fill="#17336f"/>
+  <circle cx="600" cy="465" r="215" fill="#ffd862"/><path d="M500 470l72 72 148-165" fill="none" stroke="#17336f" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="175" cy="170" r="66" fill="#ef3454"/><circle cx="1030" cy="710" r="94" fill="#3159b2"/>
+</svg>
