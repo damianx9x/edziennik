@@ -18,6 +18,22 @@ fi
 if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo ./raspberry/install.sh [--local-demo|--public-demo]"; exit 1; fi
 [[ "$(dpkg --print-architecture)" == "arm64" ]] || { echo "Wymagany jest Raspberry Pi OS 64-bit (arm64)."; exit 1; }
 grep -qi 'Raspberry Pi' /proc/device-tree/model 2>/dev/null || { echo "Ten instalator jest przeznaczony dla Raspberry Pi."; exit 1; }
+
+# Niektóre obudowy Seagate z tym kontrolerem gubią zapisy w trybie UAS na Pi 4.
+# Konfigurujemy bezpieczniejszy sterownik przed jakąkolwiek zmianą partycji.
+if lsusb 2>/dev/null | grep -q '0bc2:ab26' \
+  && lsusb -t 2>/dev/null | grep -q 'Driver=uas' \
+  && ! grep -q 'usb-storage.quirks=0bc2:ab26:u' /boot/firmware/cmdline.txt; then
+  python3 - <<'PY'
+from pathlib import Path
+path = Path("/boot/firmware/cmdline.txt")
+text = path.read_text(encoding="utf-8").strip()
+path.write_text(f"{text} usb-storage.quirks=0bc2:ab26:u\n", encoding="utf-8")
+PY
+  echo "Wykryto dysk Seagate wymagający bezpieczniejszego sterownika USB."
+  echo "Ustawienie zapisano przed formatowaniem. Uruchom ponownie Raspberry i włącz instalator jeszcze raz."
+  exit 75
+fi
 hostnamectl set-hostname kingslanguageacademy
 
 APP_ROOT=/opt/kla
@@ -122,7 +138,7 @@ if [[ "$MODE" != "local-demo" && -f /usr/share/keyrings/cloudflare-main.gpg ]]; 
 fi
 apt-get update
 apt-get full-upgrade -y
-apt-get install -y --no-install-recommends age avahi-daemon ca-certificates clamav clamav-daemon cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
+apt-get install -y --no-install-recommends age avahi-daemon ca-certificates clamav clamav-daemon clamdscan cryptsetup curl fail2ban gnupg nginx openssh-client parted postgresql postgresql-client rsync unattended-upgrades ufw
 if [[ "$MODE" != "local-demo" ]]; then
   install -d -m 0755 /usr/share/keyrings
   curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg > /usr/share/keyrings/cloudflare-main.gpg

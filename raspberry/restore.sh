@@ -83,7 +83,7 @@ trap rollback_restore ERR INT TERM
 
 # Najpierw pełne odtworzenie do odizolowanej bazy i osobnego katalogu.
 sudo -u postgres createdb --owner=kla_app "$CANDIDATE_DB"
-sudo -u postgres pg_restore --no-owner --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
+sudo -u postgres pg_restore --no-owner --role=kla_app --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
 sudo -u postgres psql --dbname="$CANDIDATE_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
 install -d -m 700 -o kla -g kla "$RESTORE_FILES"
 /usr/local/sbin/kla-safe-archive private "$TEMP_DIR/private-files.tar.gz" "$RESTORE_FILES"
