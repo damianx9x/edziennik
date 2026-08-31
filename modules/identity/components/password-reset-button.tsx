@@ -6,13 +6,13 @@ import { sendUserPasswordResetAction, type PasswordResetActionState } from "../p
 
 const initialState: PasswordResetActionState = { status: "idle" };
 
-export function PasswordResetButton({ userId }: { userId: string }) {
+export function PasswordResetButton({ userId, compact = false }: { userId: string; compact?: boolean }) {
   const [state, action, pending] = useActionState(sendUserPasswordResetAction, initialState);
-  return <form action={action} className="person-password-reset">
+  return <form action={action} className={`person-password-reset${compact ? " is-compact" : ""}`}>
     <input type="hidden" name="userId" value={userId} />
-    <button className="person-module-action" type="submit" disabled={pending}>
+    <button className={compact ? "button button-secondary" : "person-module-action"} type="submit" disabled={pending}>
       {pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <KeyRound aria-hidden="true" />}
-      <span><strong>Reset hasła</strong><small>Wyślij bezpieczny link e-mailem</small></span>
+      {compact ? <span>Wyślij reset</span> : <span><strong>Reset hasła</strong><small>Wyślij bezpieczny link e-mailem</small></span>}
     </button>
     {state.message ? <p className={`record-form-message is-${state.status}`} role="status">{state.message}</p> : null}
   </form>;

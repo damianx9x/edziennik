@@ -13,7 +13,12 @@ import {
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { createFirstOwner, resendFirstOwnerActivation } from "./actions";
+import {
+  configureFirstRunSmtp,
+  createFirstOwner,
+  resendFirstOwnerActivation,
+  type FirstRunSmtpState,
+} from "./actions";
 import { initialFirstRunState } from "./schema";
 
 function FieldError({ errors }: { errors?: string[] }) {
@@ -100,6 +105,8 @@ export function FirstRunForm({
   }
 
   return (
+    <div className="first-run-form-stack">
+      {!emailReady ? <FirstRunEmailSetup /> : null}
     <section className="security-setup-card" aria-labelledby="first-run-title">
       <div className="auth-card-icon auth-card-icon-secure">
         <KeyRound aria-hidden="true" />
@@ -113,8 +120,9 @@ export function FirstRunForm({
 
       {!emailReady ? (
         <div className="auth-message auth-message-info" role="status">
-          Poczta nie jest jeszcze ustawiona. Możesz utworzyć konto teraz kodem
-          instalacyjnym, a SMTP lub Resend podłączyć później z panelu serwera.
+          Poczta nie jest jeszcze ustawiona. Najpierw użyj konfiguracji SMTP
+          powyżej, jeśli konto ma otrzymać e-mail aktywacyjny. Możesz też
+          świadomie utworzyć konto kodem instalacyjnym i podłączyć pocztę później.
         </div>
       ) : null}
 
@@ -164,7 +172,11 @@ export function FirstRunForm({
             required
             disabled={pending}
           />
-          <small>Na ten adres przyjdzie jednorazowy link aktywacyjny.</small>
+          <small>
+            {emailReady
+              ? "Na ten adres przyjdzie jednorazowy link aktywacyjny."
+              : "Bez SMTP konto zostanie potwierdzone bezpiecznym kodem instalacyjnym."}
+          </small>
           <FieldError errors={state.fieldErrors?.email} />
         </label>
         <label>
@@ -237,6 +249,39 @@ export function FirstRunForm({
         <ShieldCheck aria-hidden="true" /> Dane pozostają w zaszyfrowanej instalacji szkoły.
       </p>
     </section>
+    </div>
+  );
+}
+
+const initialSmtpState: FirstRunSmtpState = { status: "idle" };
+
+function FirstRunEmailSetup() {
+  const [state, action, pending] = useActionState(
+    configureFirstRunSmtp,
+    initialSmtpState,
+  );
+  return (
+    <details className="security-setup-card first-run-smtp-card" open>
+      <summary>
+        <MailCheck aria-hidden="true" />
+        <span><strong>Najpierw ustaw wysyłkę e-mail</strong><small>Kreator sprawdzi SMTP i wyśle prawdziwą wiadomość testową.</small></span>
+      </summary>
+      <form className="auth-form" action={action} aria-busy={pending}>
+        <label><span>Kod instalacyjny</span><input name="setupCode" type="password" autoComplete="off" required disabled={pending} /></label>
+        <label><span>E-mail do testu</span><input name="testEmail" type="email" autoComplete="email" required disabled={pending} /></label>
+        <label><span>Adres nadawcy</span><input name="from" type="email" placeholder="sekretariat@domena.pl" required disabled={pending} /></label>
+        <div className="first-run-smtp-grid">
+          <label><span>Serwer SMTP</span><input name="host" placeholder="smtp.domena.pl" required disabled={pending} /></label>
+          <label><span>Port</span><select name="port" defaultValue="465" disabled={pending}><option value="465">465 — SSL/TLS</option><option value="587">587 — STARTTLS</option></select></label>
+        </div>
+        <label><span>Login SMTP</span><input name="user" autoComplete="username" required disabled={pending} /></label>
+        <label><span>Hasło SMTP lub hasło aplikacji</span><input name="password" type="password" autoComplete="new-password" required disabled={pending} /></label>
+        {state.message ? <div className={`auth-message auth-message-${state.status === "success" ? "success" : "error"}`} role="status">{state.message}</div> : null}
+        <button className="button button-secondary button-full" type="submit" disabled={pending}>
+          {pending ? <><LoaderCircle className="spin" aria-hidden="true" /> Sprawdzam i wysyłam test…</> : <><MailCheck aria-hidden="true" /> Sprawdź SMTP i zapisz</>}
+        </button>
+      </form>
+    </details>
   );
 }
 

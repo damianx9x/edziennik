@@ -12,6 +12,7 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { InvitationManager } from "@/modules/identity/components/invitation-manager";
+import { PasswordResetButton } from "@/modules/identity/components/password-reset-button";
 import { RevokeInvitationForm } from "@/modules/identity/components/revoke-invitation-form";
 import {
   getInvitationAvailability,
@@ -24,24 +25,38 @@ export const dynamic = "force-dynamic";
 
 export default async function InvitationsPage() {
   const session = await requireDirector();
-  const invitations = await db.invitation.findMany({
-    where: { schoolId: session.user.schoolId },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      kind: true,
-      role: true,
-      createdAt: true,
-      expiresAt: true,
-      acceptedAt: true,
-      revokedAt: true,
-      maxUses: true,
-      useCount: true,
-    },
-  });
+  const [invitations, accounts] = await Promise.all([
+    db.invitation.findMany({
+      where: { schoolId: session.user.schoolId },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        kind: true,
+        role: true,
+        createdAt: true,
+        expiresAt: true,
+        acceptedAt: true,
+        revokedAt: true,
+        maxUses: true,
+        useCount: true,
+      },
+    }),
+    db.user.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        archivedAt: null,
+        accounts: { some: {} },
+        ...(session.user.role === "SYSTEM_OWNER"
+          ? {}
+          : { role: { not: "SYSTEM_OWNER" as const } }),
+      },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, email: true, role: true, status: true },
+    }),
+  ]);
 
   return (
     <AuthenticatedPanelShell session={session} active="records">
@@ -69,6 +84,53 @@ export default async function InvitationsPage() {
 
       <div className="invitation-workspace">
         <InvitationManager />
+
+        <section className="invitation-list-card account-access-card">
+          <div className="card-heading">
+            <div>
+              <span className="section-kicker">Aktywne logowanie</span>
+              <h2>Konta i odzyskiwanie dostępu</h2>
+              <p>
+                Reset nie zmienia hasła samodzielnie. Użytkownik otrzyma
+                jednorazowy, wygasający link i ustawi nowe hasło osobiście.
+              </p>
+            </div>
+            <span className="stage-one-badge">{accounts.length} kont</span>
+          </div>
+          {accounts.length === 0 ? (
+            <div className="invitation-empty">
+              <ShieldCheck aria-hidden="true" />
+              <h3>Nie ma jeszcze aktywnych kont</h3>
+              <p>Najpierw wyślij zaproszenie i poczekaj na jego przyjęcie.</p>
+            </div>
+          ) : (
+            <div className="account-access-list">
+              {accounts.map((account) => {
+                const role = account.role as keyof typeof invitationRoleLabels;
+                return (
+                  <article key={account.id}>
+                    <div className="invitation-person">
+                      <div aria-hidden="true">
+                        {account.name.slice(0, 1).toLocaleUpperCase("pl-PL")}
+                      </div>
+                      <span>
+                        <strong>{account.name}</strong>
+                        <small>{maskEmail(account.email)}</small>
+                      </span>
+                    </div>
+                    <span className="invitation-role">
+                      {invitationRoleLabels[role] ?? "Użytkownik"}
+                    </span>
+                    <span className={`invitation-status status-${account.status === "ACTIVE" ? "accepted" : "expired"}`}>
+                      {account.status === "ACTIVE" ? "Aktywne" : "Wstrzymane"}
+                    </span>
+                    <PasswordResetButton userId={account.id} compact />
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
         <section className="invitation-list-card">
           <div className="card-heading">

@@ -1274,3 +1274,38 @@ integracje. Ustawienia szkoły nie duplikują już formularzy backupu i Raspberr
 **Dlaczego:** samo ukrycie funkcji nie jest zabezpieczeniem, dlatego serwerowe
 kontrole ról pozostają bez zmian. Czytelny podział ogranicza jednak pomyłki i
 sprawia, że codzienne zadania dyrektora nie mieszają się z utrzymaniem hosta.
+
+## ADR-094 — pierwsze uruchomienie sprawdza pocztę przed utworzeniem konta
+
+**Data:** 2026-08-31
+**Decyzja:** pustą instalację otwiera jednorazowy kod o wysokiej entropii.
+Kreator może przed utworzeniem właściciela sprawdzić połączenie SMTP i wysłać
+prawdziwą wiadomość testową. Dane SMTP zapisuje dopiero po udanym teście.
+Jeżeli operator świadomie wybierze konfigurację bez poczty, konto potwierdza
+fizyczną kontrolę nad serwerem kodem instalacyjnym, a UI nie obiecuje e-maila.
+Odzyskiwanie haseł pozostaje linkiem wysyłanym przez skonfigurowaną pocztę.
+
+Dyrektor może rozpocząć reset kont szkoły, ale nigdy konta `SYSTEM_OWNER`.
+Właściciel systemu może rozpocząć reset każdego konta w swoim `schoolId`.
+Każda taka operacja trafia do audytu.
+
+**Dlaczego:** instalacja bez SMTP nie może utknąć w cyklu, w którym konto jest
+potrzebne do ustawienia poczty, a poczta do utworzenia konta. Jednocześnie
+nieudane lub błędne SMTP nie może zostać zapisane jako rzekomo działające, a
+codzienna rola dyrektora nie może prowadzić do przejęcia administracji
+technicznej.
+
+## ADR-095 — trzy niezależne klucze chronią ciągłość i odzyskanie
+
+**Data:** 2026-08-31
+**Decyzja:** nowa instalacja tworzy osobno: hasło główne LUKS, losowy klucz
+recovery LUKS w drugim slocie oraz klucz `age` do eksportów i backupów.
+Automatyczny start używa czwartego, osobnego klucza LUKS zapisanego jako
+`root-only` na karcie systemowej. Instalacja nadzorowana może przekazać dwa
+pierwsze sekrety wyłącznie przez pliki `0600` w pamięci `/run`, bez wypisywania
+ich do logów. Operator przechowuje kopie poza Raspberry Pi.
+
+**Dlaczego:** klucz backupu nie otwiera partycji, a awaria jednego sposobu
+odblokowania nie może unieruchomić danych. Automatyzacja nie może jednak
+przenosić sekretów przez argumenty procesów, repozytorium ani trwałe pliki
+tymczasowe.

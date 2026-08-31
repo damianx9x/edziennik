@@ -120,6 +120,12 @@ download_latest_backup() {
 
 ACTION="${1:-status}"
 case "$ACTION" in
+  open-storage-folder)
+    STORAGE_DIR="$HOME/Desktop/rasbery serwer"
+    install -d -m 700 "$STORAGE_DIR/kopie"
+    open "$STORAGE_DIR"
+    echo "Otworzyłem folder kluczy, instrukcji i szyfrowanych kopii."
+    ;;
   configure)
     save_config "${2:-$KLA_HOST}" "${3:-$KLA_PORT}" "${4:-$KLA_USER}" "${5:-$KLA_KEY}"
     ;;

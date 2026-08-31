@@ -26,6 +26,7 @@ const actionLabels: Record<string, string> = {
   "contracts.signed_file.rejected": "Odrzucono podpisany dokument",
   "contracts.signed_file.uploaded": "Wgrano podpisany dokument",
   "identity.password_reset.requested_by_director": "Dyrektor rozpoczął reset hasła",
+  "identity.password_reset.requested": "Rozpoczęto bezpieczny reset hasła",
   "learning.homework.reviewed": "Sprawdzono zadanie domowe",
   "learning.homework.submitted": "Oddano zadanie domowe",
   "learning.material.published": "Opublikowano materiał",

@@ -3,11 +3,29 @@ on run
   set baseDir to do shell script "/usr/bin/dirname " & quoted form of appPath
   set backend to baseDir & "/kla-server-control.sh"
   repeat
-    set choices to {"Stan serwera", "Audyt startu po zaniku prądu", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Utwórz, przetestuj i pobierz backup na Maca", "Pobierz ostatni backup na Maca", "Utwórz backup na Raspberry", "Test odtworzenia", "Zapisz klucz kopii age (tylko raz)", "Pokaż logi", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Wgraj aktualizację", "Włącz automatyczny start po zaniku prądu", "Odblokuj sejf po restarcie", "Ustaw połączenie", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry", "Zamknij panel"}
-    set picked to choose from list choices with title "KLA — Raspberry Serwer" with prompt "Wybierz działanie:" default items {"Stan serwera"} OK button name "Wykonaj" cancel button name "Zamknij"
-    if picked is false then return
-    set actionName to item 1 of picked
-    if actionName is "Zamknij panel" then return
+    set sections to {"Serwer — codzienna obsługa", "Kopie i odzyskiwanie", "Pierwsze uruchomienie i ustawienia", "Aktualizacja i diagnostyka", "Zamknij panel"}
+    set pickedSection to choose from list sections with title "KLA — Raspberry Serwer" with prompt "Co chcesz zrobić?" default items {"Serwer — codzienna obsługa"} OK button name "Dalej" cancel button name "Zamknij"
+    if pickedSection is false then return
+    set sectionName to item 1 of pickedSection
+    if sectionName is "Zamknij panel" then return
+    if sectionName is "Serwer — codzienna obsługa" then
+      set choices to {"Stan serwera", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry"}
+    else if sectionName is "Kopie i odzyskiwanie" then
+      set choices to {"Utwórz, przetestuj i pobierz backup na Maca", "Pobierz ostatni backup na Maca", "Utwórz backup na Raspberry", "Test odtworzenia", "Zapisz klucz kopii age (tylko raz)"}
+    else if sectionName is "Pierwsze uruchomienie i ustawienia" then
+      set choices to {"Pokaż folder kluczy i kopii", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Włącz automatyczny start po zaniku prądu", "Odblokuj sejf po restarcie", "Ustaw połączenie"}
+    else
+      set choices to {"Audyt startu po zaniku prądu", "Pokaż logi", "Wgraj aktualizację"}
+    end if
+    set picked to choose from list choices with title "KLA — " & sectionName with prompt "Wybierz działanie:" default items {item 1 of choices} OK button name "Wykonaj" cancel button name "Wróć"
+    if picked is false then
+      set actionName to ""
+    else
+      set actionName to item 1 of picked
+    end if
+    if actionName is "" then
+      -- Powrót do listy działów bez wykonywania polecenia.
+    else
     try
       if actionName is "Stan serwera" then
         set resultText to do shell script quoted form of backend & " status"
@@ -37,6 +55,8 @@ on run
         set resultText to do shell script quoted form of backend & " recovery-key-once"
       else if actionName is "Pokaż logi" then
         set resultText to do shell script quoted form of backend & " logs"
+      else if actionName is "Pokaż folder kluczy i kopii" then
+        set resultText to do shell script quoted form of backend & " open-storage-folder"
       else if actionName is "Skonfiguruj e-mail" then
         tell application "Terminal"
           activate
@@ -81,5 +101,6 @@ on run
     on error errorMessage number errorNumber
       if errorNumber is not -128 then display dialog errorMessage with title "Nie udało się wykonać działania" buttons {"OK"} default button "OK" with icon stop
     end try
+    end if
   end repeat
 end run

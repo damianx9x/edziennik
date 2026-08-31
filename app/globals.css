@@ -5564,6 +5564,119 @@ body:has(.first-run-page) .theme-trigger {
   letter-spacing: -0.035em;
 }
 
+.account-access-card {
+  grid-column: 1 / -1;
+}
+
+.first-run-form-stack {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.first-run-smtp-card {
+  padding: 1.25rem;
+}
+
+.first-run-smtp-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.first-run-smtp-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.first-run-smtp-card > summary svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--blue-700);
+}
+
+.first-run-smtp-card > summary span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.first-run-smtp-card > summary small {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.first-run-smtp-card .auth-form {
+  margin-top: 1rem;
+}
+
+.first-run-smtp-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11rem;
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .first-run-smtp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-access-card .card-heading p {
+  max-width: 48rem;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.account-access-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.account-access-list > article {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) auto auto minmax(9rem, auto);
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.person-password-reset.is-compact {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: stretch;
+}
+
+.person-password-reset.is-compact .button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.person-password-reset.is-compact .record-form-message {
+  grid-column: 1 / -1;
+  max-width: 21rem;
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 760px) {
+  .account-access-list > article {
+    grid-template-columns: 1fr auto;
+  }
+
+  .account-access-list .person-password-reset {
+    grid-column: 1 / -1;
+  }
+
+  .account-access-list .person-password-reset .button {
+    width: 100%;
+  }
+}
+
 .invite-card-heading p {
   margin: 0;
   color: var(--muted);

@@ -42,13 +42,30 @@ echo
 lsblk -o NAME,PATH,SIZE,FSTYPE,LABEL,PARTLABEL,MODEL,TRAN "$PARTITION" "$PART_PARENT"
 echo "Zaszyfrowana zostanie WYŁĄCZNIE nowa partycja $PARTITION."
 echo "Pozostałe partycje na $PART_PARENT nie zostaną zmienione."
-read -r -p "Wpisz dokładnie SZYFRUJ $PARTITION: " CONFIRM
+if [[ "${KLA_VAULT_CONFIRM:-}" == "SZYFRUJ $PARTITION" ]]; then
+  CONFIRM="$KLA_VAULT_CONFIRM"
+else
+  read -r -p "Wpisz dokładnie SZYFRUJ $PARTITION: " CONFIRM
+fi
 [[ "$CONFIRM" == "SZYFRUJ $PARTITION" ]] || { echo "Anulowano."; exit 1; }
 
-read -r -s -p "Ustal hasło odblokowania sejfu (min. 16 znaków): " PASSPHRASE
-echo
-read -r -s -p "Powtórz hasło: " PASSPHRASE_CONFIRM
-echo
+if [[ -n "${KLA_VAULT_PASSPHRASE_FILE:-}" ]]; then
+  [[ "$KLA_VAULT_PASSPHRASE_FILE" == /run/* && -f "$KLA_VAULT_PASSPHRASE_FILE" ]] || {
+    echo "Automatyczne hasło musi być plikiem w pamięci /run." >&2
+    exit 1
+  }
+  [[ "$(stat -c '%u:%a' "$KLA_VAULT_PASSPHRASE_FILE")" =~ ^0:600$ ]] || {
+    echo "Plik hasła musi należeć do root i mieć uprawnienia 600." >&2
+    exit 1
+  }
+  PASSPHRASE="$(cat "$KLA_VAULT_PASSPHRASE_FILE")"
+  PASSPHRASE_CONFIRM="$PASSPHRASE"
+else
+  read -r -s -p "Ustal hasło odblokowania sejfu (min. 16 znaków): " PASSPHRASE
+  echo
+  read -r -s -p "Powtórz hasło: " PASSPHRASE_CONFIRM
+  echo
+fi
 [[ "$PASSPHRASE" == "$PASSPHRASE_CONFIRM" ]] || { echo "Hasła są różne."; exit 1; }
 [[ ${#PASSPHRASE} -ge 16 ]] || { echo "Hasło musi mieć co najmniej 16 znaków."; exit 1; }
 
@@ -74,15 +91,25 @@ printf 'KLA_LUKS_UUID=%s\nKLA_VAULT_DEVICE=%s\nKLA_VAULT_MAPPER=kla-data\nKLA_VA
   "$UUID" "$PARTITION" > /etc/kla/vault.conf
 chmod 600 /etc/kla/vault.conf
 
-clear || true
-echo "================================================================"
-echo "KLUCZ ODZYSKIWANIA SEJFU KLA — POKAZANY TYLKO TERAZ"
-echo
-echo "$RECOVERY_KEY"
-echo
-echo "Zapisz go w menedżerze haseł i na papierze poza Raspberry Pi."
-echo "================================================================"
-read -r -p "Po zapisaniu klucza wpisz MAM KOPIE: " SAVED
+if [[ -n "${KLA_VAULT_RECOVERY_OUTPUT:-}" ]]; then
+  [[ "$KLA_VAULT_RECOVERY_OUTPUT" == /run/* ]] || {
+    echo "Plik odbiorczy klucza musi znajdować się w pamięci /run." >&2
+    exit 1
+  }
+  install -m 600 -o root -g root "$TEMP_KEY" "$KLA_VAULT_RECOVERY_OUTPUT"
+  SAVED="MAM KOPIE"
+  echo "Klucz odzyskiwania zapisano tymczasowo w pamięci RAM do bezpiecznego odbioru."
+else
+  clear || true
+  echo "================================================================"
+  echo "KLUCZ ODZYSKIWANIA SEJFU KLA — POKAZANY TYLKO TERAZ"
+  echo
+  echo "$RECOVERY_KEY"
+  echo
+  echo "Zapisz go w menedżerze haseł i na papierze poza Raspberry Pi."
+  echo "================================================================"
+  read -r -p "Po zapisaniu klucza wpisz MAM KOPIE: " SAVED
+fi
 [[ "$SAVED" == "MAM KOPIE" ]] || {
   echo "Instalacja przerwana. Sejf istnieje, ale nie zapisano aplikacji."
   exit 1

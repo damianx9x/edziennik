@@ -3,10 +3,13 @@
 import { randomUUID } from "node:crypto";
 
 import { hashPassword } from "better-auth/crypto";
+import nodemailer from "nodemailer";
+import { z } from "zod";
 
 import { auth } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
 import { readRecoveryKeyOnce } from "@/modules/system-owner/server-control";
+import { setSmtpConfiguration } from "@/modules/system-owner/server-control";
 
 import { firstRunSchema, type FirstRunState } from "./schema";
 import {
@@ -16,6 +19,78 @@ import {
 } from "./security";
 
 const BOOTSTRAP_LOCK_ID = 4_918_202_026;
+
+export type FirstRunSmtpState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+};
+
+const firstRunSmtpSchema = z.object({
+  setupCode: z.string().min(20).max(200),
+  testEmail: z.email("Podaj adres, na który ma przyjść test."),
+  from: z.email("Podaj sam adres nadawcy, bez dodatkowego opisu."),
+  host: z.string().min(3).max(255).regex(/^[A-Za-z0-9.-]+$/, "Niepoprawny host SMTP."),
+  port: z.enum(["465", "587"]),
+  user: z.string().min(1).max(255),
+  password: z.string().min(1).max(500),
+});
+
+export async function configureFirstRunSmtp(
+  _previous: FirstRunSmtpState,
+  formData: FormData,
+): Promise<FirstRunSmtpState> {
+  const parsed = firstRunSmtpSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź dane poczty." };
+  }
+  if (!isSetupCodeValid(parsed.data.setupCode, process.env.KLA_BOOTSTRAP_TOKEN_HASH)) {
+    return { status: "error", message: "Kod instalacyjny jest nieprawidłowy." };
+  }
+  const ownerExists = await db.user.count({ where: { role: "SYSTEM_OWNER" } });
+  if (ownerExists > 0) {
+    return { status: "error", message: "Pierwsza konfiguracja została już zakończona." };
+  }
+
+  const port = Number(parsed.data.port);
+  const transport = nodemailer.createTransport({
+    host: parsed.data.host,
+    port,
+    secure: port === 465,
+    requireTLS: port !== 465,
+    auth: { user: parsed.data.user, pass: parsed.data.password },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+    tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
+  });
+  try {
+    await transport.verify();
+    await transport.sendMail({
+      from: parsed.data.from,
+      to: parsed.data.testEmail,
+      subject: "Test pierwszego uruchomienia eDziennika KLA",
+      text: "Wysyłka działa. Wróć do kreatora, odśwież stronę i utwórz konto właściciela.",
+    });
+    await setSmtpConfiguration({
+      from: parsed.data.from,
+      host: parsed.data.host,
+      port: parsed.data.port,
+      user: parsed.data.user,
+      password: parsed.data.password,
+    });
+    return {
+      status: "success",
+      message: "Test dotarł do serwera pocztowego. Ustawienia zapisano; odczekaj 10 sekund i odśwież stronę.",
+    };
+  } catch {
+    return {
+      status: "error",
+      message: "Test SMTP nie przeszedł. Sprawdź host, port, login i hasło aplikacji. Żadne ustawienie nie zostało zapisane.",
+    };
+  } finally {
+    transport.close();
+  }
+}
 
 export async function createFirstOwner(
   _previous: FirstRunState,

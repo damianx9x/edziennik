@@ -36,7 +36,11 @@ local_ipv4() {
 echo "Dostępne zewnętrzne dyski:"
 lsblk -o NAME,PATH,SIZE,TYPE,FSTYPE,LABEL,PARTLABEL,MODEL,TRAN
 if [[ "$MODE" == "public-demo" ]]; then
-  read -r -p "Podaj NOWĄ partycję KLA_DATA (np. /dev/sda3): " VAULT_PARTITION
+  if [[ -n "${KLA_INSTALL_VAULT_PARTITION:-}" ]]; then
+    VAULT_PARTITION="$KLA_INSTALL_VAULT_PARTITION"
+  else
+    read -r -p "Podaj NOWĄ partycję KLA_DATA (np. /dev/sda3): " VAULT_PARTITION
+  fi
 else
   read -r -p "Podaj pusty dysk danych USB na zaszyfrowany sejf (SSD zalecany; np. /dev/sda): " VAULT_DEVICE
 fi
@@ -57,8 +61,13 @@ elif [[ "$MODE" == "public-demo" ]]; then
   echo
   echo "PUBLICZNY PILOT: pusta baza i kreator pierwszego uruchomienia pod $APP_URL."
   echo "Ta konfiguracja nie jest przeznaczona do prawdziwych danych."
-  read -r -s -p "Token istniejącego tunelu Cloudflare dla demo.kingslanguageacademy.pl: " TUNNEL_TOKEN
-  echo
+  if [[ -n "${KLA_INSTALL_TUNNEL_TOKEN_FILE:-}" ]]; then
+    [[ "$KLA_INSTALL_TUNNEL_TOKEN_FILE" == /run/* && -f "$KLA_INSTALL_TUNNEL_TOKEN_FILE" ]] || { echo "Plik tokenu tunelu musi być w pamięci /run."; exit 1; }
+    TUNNEL_TOKEN="$(cat "$KLA_INSTALL_TUNNEL_TOKEN_FILE")"
+  else
+    read -r -s -p "Token istniejącego tunelu Cloudflare dla demo.kingslanguageacademy.pl: " TUNNEL_TOKEN
+    echo
+  fi
   [[ "$TUNNEL_TOKEN" == eyJ* ]] || { echo "Nie rozpoznano tokenu tunelu Cloudflare."; exit 1; }
 else
   read -r -p "Publiczny adres HTTPS aplikacji (np. https://edziennik.example.pl): " APP_URL
@@ -71,7 +80,11 @@ fi
 
 if [[ "$MODE" != "local-demo" && ! "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   echo "Poczta może używać dowolnego SMTP albo Resend. Możesz ustawić ją później z panelu na Macu."
-  read -r -p "Poczta: [S]MTP / [R]esend / [P]óźniej: " EMAIL_CHOICE
+  if [[ "${KLA_INSTALL_EMAIL_LATER:-}" == "1" ]]; then
+    EMAIL_CHOICE="p"
+  else
+    read -r -p "Poczta: [S]MTP / [R]esend / [P]óźniej: " EMAIL_CHOICE
+  fi
   case "${EMAIL_CHOICE,,}" in
     s)
       EMAIL_PROVIDER=smtp
@@ -96,6 +109,12 @@ if [[ "$MODE" != "local-demo" && ! "$INSTALL_DEMO" =~ ^[TtYy]$ ]]; then
   [[ -z "${EMAIL_PROVIDER:-}" || "${EMAIL_FROM:-}" == *"@"* ]] || { echo "Niepoprawny adres nadawcy."; exit 1; }
   BOOTSTRAP_CODE="$(openssl rand -base64 32 | tr -d '/+=')"
   BOOTSTRAP_TOKEN_HASH="$(printf '%s' "$BOOTSTRAP_CODE" | sha256sum | awk '{print $1}')"
+  if [[ -n "${KLA_BOOTSTRAP_CODE_OUTPUT:-}" ]]; then
+    [[ "$KLA_BOOTSTRAP_CODE_OUTPUT" == /run/* ]] || { echo "Plik kodu instalacyjnego musi być w pamięci /run."; exit 1; }
+    printf '%s\n' "$BOOTSTRAP_CODE" > "$KLA_BOOTSTRAP_CODE_OUTPUT"
+    chown root:root "$KLA_BOOTSTRAP_CODE_OUTPUT"
+    chmod 600 "$KLA_BOOTSTRAP_CODE_OUTPUT"
+  fi
 fi
 
 if [[ "$MODE" != "local-demo" && -f /usr/share/keyrings/cloudflare-main.gpg ]]; then
@@ -342,8 +361,12 @@ if [[ -n "${DEMO_PASSWORD:-}" ]]; then
   echo "Zapisz je teraz w menedżerze haseł. Nie jest zapisywane w pakiecie ani repozytorium."
 fi
 if [[ -n "${BOOTSTRAP_CODE:-}" ]]; then
-  echo "Jednorazowy kod pierwszego uruchomienia: $BOOTSTRAP_CODE"
-  echo "Zapisz go teraz w menedżerze haseł. Serwer przechowuje wyłącznie jego hash."
+  if [[ -n "${KLA_BOOTSTRAP_CODE_OUTPUT:-}" ]]; then
+    echo "Jednorazowy kod pierwszego uruchomienia zapisano tymczasowo w pamięci RAM do bezpiecznego odbioru."
+  else
+    echo "Jednorazowy kod pierwszego uruchomienia: $BOOTSTRAP_CODE"
+    echo "Zapisz go teraz w menedżerze haseł. Serwer przechowuje wyłącznie jego hash."
+  fi
   echo "Otwórz: $APP_URL/pierwsze-uruchomienie"
 fi
 if [[ "$MODE" == "local-demo" ]]; then
