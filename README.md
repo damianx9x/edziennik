@@ -155,6 +155,9 @@ Instalacja i utrzymanie Raspberry: [docs/OPERACJE_RASPBERRY.md](docs/OPERACJE_RA
 
 ## Dokumentacja
 
+- Po zalogowaniu wybierz ikonę **Instrukcja** w górnym pasku. Aplikacja pobiera
+  PDF zgodny dokładnie z uruchomioną wersją; podręcznik techniczny jest widoczny
+  tylko dla właściciela systemu.
 - [Instrukcja dla szkoły — PDF](output/pdf/Instrukcja_eDziennika_KLA_dla_szkoly.pdf)
 - [Instrukcja właściciela systemu — PDF](output/pdf/Instrukcja_eDziennika_KLA_dla_wlasciciela_systemu.pdf)
 - [Funkcje i role](docs/FUNKCJE_I_ROLE.md)

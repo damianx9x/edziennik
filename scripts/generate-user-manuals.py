@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from reportlab.lib import colors
@@ -28,6 +29,7 @@ from PIL import Image as PillowImage
 ROOT = Path(__file__).resolve().parents[1]
 SCREEN_DIR = ROOT / "tmp" / "manual-screens"
 OUTPUT_DIR = ROOT / "output" / "pdf"
+RELEASE = json.loads((ROOT / "manuals" / "release.json").read_text(encoding="utf-8"))
 FONT_REGULAR = Path("/System/Library/Fonts/Supplemental/Arial.ttf")
 FONT_BOLD = Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")
 
@@ -117,19 +119,22 @@ def screenshot(name: str, max_width: float = 174 * mm, max_height: float = 105 *
     return image
 
 
-def cover(title: str, subtitle: str, audience: str, image_name: str | None = None):
+def cover(title: str, subtitle: str, audience: str, changes: list[str], image_name: str | None = None):
     story = [
         Spacer(1, 18 * mm),
         Paragraph("eDZIENNIK KLA · INSTRUKCJA", S["cover_kicker"]),
         Paragraph(title, S["cover_title"]),
         Paragraph(subtitle, S["cover_subtitle"]),
         callout("Dla kogo jest ten poradnik?", audience, "green"),
-        Spacer(1, 12 * mm),
+        Spacer(1, 6 * mm),
+        Paragraph("Co zmieniło się od poprzedniej wersji", S["h2"]),
+        *bullets(changes),
+        Spacer(1, 5 * mm),
     ]
     if image_name:
-        story += [screenshot(image_name, 164 * mm, 86 * mm), Spacer(1, 10 * mm)]
+        story += [screenshot(image_name, 150 * mm, 48 * mm), Spacer(1, 5 * mm)]
     story += [
-        Paragraph("Wersja 1.1 · 31 sierpnia 2026", S["small"]),
+        Paragraph(f"Wersja {RELEASE['version']} · {RELEASE['date']}", S["small"]),
         Paragraph("Zrzuty pokazują wyłącznie bezpieczne dane demonstracyjne.", S["small"]),
         PageBreak(),
     ]
@@ -140,7 +145,8 @@ def section(title: str, intro: str, screenshot_name: str | None, actions: list[s
     story = [Paragraph(title, S["h1"]), Paragraph(intro, S["body"])]
     if screenshot_name:
         story += [Spacer(1, 3 * mm), screenshot(screenshot_name, 174 * mm if not mobile else 72 * mm, 95 * mm if not mobile else 115 * mm), Spacer(1, 4 * mm)]
-    story += [Paragraph("Co możesz tutaj zrobić", S["h2"]), *bullets(actions)]
+    steps = [f"{index}. {action}" for index, action in enumerate(actions, start=1)]
+    story += [Paragraph("Krok po kroku", S["h2"]), *bullets(steps)]
     if limits:
         story += [Paragraph("Ważne ograniczenia", S["h2"]), *bullets(limits)]
     if tip:
@@ -154,6 +160,7 @@ def build_client_manual(path: Path):
         "eDziennik bez stresu",
         "Pełna instrukcja dla dyrektora, wykładowcy, rodzica i ucznia — krok po kroku, zwykłym językiem.",
         "Dla osób, które chcą po prostu wykonać swoją pracę. Nie trzeba znać informatyki ani działania serwera.",
+        RELEASE["schoolChanges"],
         "dyrektor-start.png",
     )
     story += [
@@ -183,7 +190,7 @@ def build_client_manual(path: Path):
     story += section("Grafik i obecność", "Grafik łączy grupę, salę, lokalizację i wykładowcę. Na telefonie pokazuje dzień, na komputerze tydzień.", "grafik.png", ["filtrować według lokalizacji, grupy, sali lub wykładowcy", "dodać i przeciągnąć lekcję ręcznie", "uruchomić generator i obejrzeć propozycję przed publikacją", "zaakceptować poprawne propozycje i poprawić braki", "otworzyć lekcję, uzupełnić temat i obecność", "odwołać zajęcia z powodem; odbiorcy dostają wiadomość", "pokazać lub ukryć odwołane zajęcia"], ["publikacja należy do dyrektora", "system blokuje kolizję sali, wykładowcy i grupy", "propozycja automatu nie jest planem, dopóki dyrektor jej nie zatwierdzi", "wykładowca zgłasza zmianę; dyrektor ją przyjmuje lub odrzuca"], "Jeśli automat pokazuje braki, popraw dostępność lub zasoby wskazanej grupy i uruchom podgląd ponownie.")
     story += section("Umowy", "Dyrektor wysyła rodzicowi dokładną wersję PDF oraz powiązane dokumenty: kosztorys i harmonogram.", "umowy.png", ["wybrać rodzica i ucznia", "dodać właściwy PDF oraz pakiet dokumentów", "ustawić sposób zawarcia: akceptacja elektroniczna albo pobranie, podpis i wgranie skanu", "wysłać przypomnienie bez szukania osobnej rozmowy", "sprawdzić wyświetlenie, decyzję, podpis i historię wersji", "zmienić status administracyjny zgodnie z rzeczywistym stanem"], ["wysłanego dokumentu nie edytuje się — korekta tworzy nową wersję", "zwykła akceptacja w systemie nie jest kwalifikowanym podpisem elektronicznym", "ostateczne wzory, RODO i informacje konsumenckie muszą być zatwierdzone dla działalności szkoły przez prawnika"], "Rodzic przed decyzją widzi dokładną wersję dokumentu oraz jasny skutek: zawarcie odpłatnej umowy lub obowiązek wgrania podpisanego egzemplarza.")
     story += section("Płatności i raty", "Kwoty wynikają z przypisanego kosztorysu. Szkoła ręcznie oznacza stan poszczególnych rat.", "platnosci.png", ["filtrować należności według osoby, umowy i statusu", "otworzyć szczegóły i zobaczyć wszystkie raty", "oznaczyć ratę jako opłaconą, zaległą lub oczekującą", "zapisać bezpieczną notatkę i historię zmiany", "przejść z płatności do umowy oraz kartoteki"], ["system nie pobiera pieniędzy i nie łączy automatycznie przelewów", "nie wpisuj numerów rachunków ani pełnej treści przelewu w notatce", "rodzic widzi tylko własne rozliczenia"], "Zmieniaj status dopiero po sprawdzeniu wpłaty w księgowości lub banku.")
-    story += section("Wiadomości", "Rozmowa na telefonie zajmuje cały ekran. Lista rozmów i otwarty kanał są osobnymi widokami.", "output/qa/stage-7/mobile-messaging.png", ["wybrać grupę albo prywatną rozmowę", "wysłać tekst, sam załącznik lub oba elementy", "dodać emoji i reakcję", "poprosić o świadome potwierdzenie przeczytania", "utworzyć rozmowę z pojedynczymi osobami lub całą grupą", "wysłać ogłoszenie do kilku grup"], ["uczestników rozmowy ustala dyrektor", "e-mail jest dodatkiem; właściwa historia pozostaje w aplikacji", "system przechowuje ostatnie 100 wiadomości w widoku, a starsza historia pozostaje w bazie", "załącznik może mieć maksymalnie 8 MB i dozwolony format"], "Przycisk „Rozmowy” wraca do listy. W kanale przewija się tylko historia, a pole pisania pozostaje zawsze na dole.", True)
+    story += section("Wiadomości", "Rozmowa na telefonie zajmuje cały ekran. Lista rozmów i otwarty kanał są osobnymi widokami.", "output/qa/stage-7/mobile-messaging.png", ["wybrać grupę albo prywatną rozmowę", "wysłać tekst, sam załącznik lub oba elementy", "dodać emoji i reakcję", "poprosić o świadome potwierdzenie przeczytania", "utworzyć rozmowę z pojedynczymi osobami lub całą grupą", "wybrać „Napisz do twórcy aplikacji”, aby otworzyć prywatny kanał pomocy technicznej", "wysłać ogłoszenie do kilku grup"], ["uczestników rozmowy ustala dyrektor", "e-mail jest dodatkiem; właściwa historia pozostaje w aplikacji", "system przechowuje ostatnie 100 wiadomości w widoku, a starsza historia pozostaje w bazie", "załącznik może mieć maksymalnie 8 MB i dozwolony format"], "Przycisk „Rozmowy” wraca do listy. W kanale przewija się tylko historia, a pole pisania pozostaje zawsze na dole.", True)
     story += section("Powiadomienia", "To skrzynka spraw wymagających uwagi: terminy, umowy, płatności, lekcje i wiadomości.", "powiadomienia.png", ["filtrować według źródła", "zaznaczyć wybrane pozycje", "oznaczyć wybrane albo wszystkie jako przeczytane", "odłożyć przypomnienie do jutra", "kliknąć pozycję i przejść do właściwej sprawy"], ["powiadomienie nie zastępuje właściwego dokumentu lub rozmowy", "uczeń nie dostaje powiadomień o podpisie umowy ani płatnościach rodzica"], "Po akcji pojawia się wyraźne potwierdzenie — nie trzeba klikać drugi raz.")
     story += section("Materiały i zadania", "Wykładowca dodaje plik albo bezpieczny link i wybiera odbiorców. Uczeń i rodzic widzą tylko przypisane treści.", "nauka.png", ["dodać PDF, JPG, PNG albo link", "przypisać materiał do grup, uczniów lub wykładowców", "utworzyć zadanie z terminem", "oddać zadanie z odpowiedzią lub załącznikiem", "sprawdzić pracę i przekazać informację zwrotną"], ["lista pokazuje kilka podpowiedzi; pozostałe osoby znajdziesz wyszukiwarką", "nie publikuj danych wrażliwych ani niepotrzebnych danych dziecka", "duży lub niedozwolony plik zostanie odrzucony z instrukcją"], "Po poprawnym wysłaniu okno zamyka się, a nowa pozycja pojawia się na liście.")
     story += section("Postępy", "Postępy są opisową pomocą w nauce, a nie automatyczną diagnozą dziecka.", "postepy.png", ["zapisać obserwacje umiejętności językowych", "dodać mocną stronę i kolejny mały krok", "oglądać wykres zmian, obecność i historię lekcji", "filtrować uczniów zgodnie z rolą"], ["wykres przewiduje trend wyłącznie na podstawie dostępnych danych", "wynik nie jest oceną medyczną, psychologiczną ani gwarancją", "uczeń i rodzic widzą tylko własne lub powiązane dane"], "Opisuj konkretne zachowanie na lekcji, nie cechę osoby.")
@@ -201,7 +208,7 @@ def build_client_manual(path: Path):
         *bullets(["sprawdź swoją rolę na telefonie i komputerze", "otwórz najbliższą lekcję", "wyślij testową wiadomość i załącznik", "sprawdź umowę i płatność na koncie rodzica", "dodaj materiał na koncie wykładowcy", "zgłoś każdą niejasność przed użyciem prawdziwych danych"]),
     ]
 
-    doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm, topMargin=17 * mm, bottomMargin=18 * mm, title="eDziennik KLA — instrukcja dla szkoły", author="Damian Eron")
+    doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm, topMargin=17 * mm, bottomMargin=18 * mm, title="eDziennik KLA — instrukcja dla szkoły", author="Damian Eron", subject=f"KLA-MANUAL:{RELEASE['version']}:school")
     doc.build(story, onFirstPage=lambda c, d: footer(c, d, "eDziennik KLA · instrukcja dla szkoły"), onLaterPages=lambda c, d: footer(c, d, "eDziennik KLA · instrukcja dla szkoły"))
 
 
@@ -210,6 +217,7 @@ def build_owner_manual(path: Path):
         "Podręcznik właściciela systemu",
         "Pierwsze uruchomienie, serwer Raspberry Pi, szyfrowanie, kopie, odtwarzanie, aktualizacje i diagnostyka.",
         "Wyłącznie dla właściciela technicznego. Tego pliku nie przekazuj zwykłym użytkownikom szkoły.",
+        RELEASE["ownerChanges"],
         "tworca-start.png",
     )
     story += [
@@ -260,7 +268,7 @@ def build_owner_manual(path: Path):
         Spacer(1, 5 * mm),
         callout("Stan sprzętu", "Raspberry zgłasza historię problemów z zasilaniem. Przed produkcją wymagane są stabilny zasilacz, chłodzenie i najlepiej UPS. Oprogramowanie nie naprawi spadków napięcia.", "red"),
     ]
-    doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm, topMargin=17 * mm, bottomMargin=18 * mm, title="eDziennik KLA — podręcznik właściciela systemu", author="Damian Eron")
+    doc = SimpleDocTemplate(str(path), pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm, topMargin=17 * mm, bottomMargin=18 * mm, title="eDziennik KLA — podręcznik właściciela systemu", author="Damian Eron", subject=f"KLA-MANUAL:{RELEASE['version']}:owner")
     doc.build(story, onFirstPage=lambda c, d: footer(c, d, "eDziennik KLA · tylko dla właściciela systemu"), onLaterPages=lambda c, d: footer(c, d, "eDziennik KLA · tylko dla właściciela systemu"))
 
 

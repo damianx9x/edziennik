@@ -14,6 +14,7 @@ import { getFileStorage } from "@/modules/files/storage";
 import { canUseConversation, canUseGroupConversation, getConversationRecipientIds, getGroupRecipientIds } from "./access";
 import { processEmailDeliveryQueue } from "./queue";
 import { announcementSchema, directConversationSchema, messageReactionSchema, messageSchema, type MessagingActionState } from "./schema";
+import { canStartCreatorSupport, creatorSupportConversationTitle } from "./support";
 
 const messagesPath = "/panel/wiadomosci";
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
@@ -199,6 +200,31 @@ export async function openPersonConversationAction(formData: FormData) {
     title: `Rozmowa: ${person.name}`,
   });
   if (!conversation) redirect(`${messagesPath}?blad=${encodeURIComponent("Nie można otworzyć rozmowy z tą osobą.")}`);
+  redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
+}
+
+export async function openCreatorConversationAction() {
+  const session = await requireActiveSession(messagesPath);
+  if (!canStartCreatorSupport(session.user.role)) redirect(messagesPath);
+  const owner = await db.user.findFirst({
+    where: {
+      schoolId: session.user.schoolId,
+      role: "SYSTEM_OWNER",
+      status: "ACTIVE",
+      archivedAt: null,
+      id: { not: session.user.id },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!owner) redirect(`${messagesPath}?blad=${encodeURIComponent("Opiekun techniczny nie ma jeszcze aktywnego konta w tej instalacji.")}`);
+  const conversation = await getOrCreateDirectConversation({
+    schoolId: session.user.schoolId,
+    actorId: session.user.id,
+    participantIds: [owner.id],
+    title: creatorSupportConversationTitle,
+  });
+  if (!conversation) redirect(`${messagesPath}?blad=${encodeURIComponent("Nie udało się otworzyć pomocy technicznej. Spróbuj ponownie.")}`);
   redirect(`${messagesPath}?rozmowa=direct:${conversation.id}`);
 }
 

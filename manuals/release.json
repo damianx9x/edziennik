@@ -1,0 +1,18 @@
+{
+  "version": "1.1.1",
+  "date": "31 sierpnia 2026",
+  "schoolChanges": [
+    "Dodano wygodny widok wiadomości na telefonie: historia przewija się osobno, a pole odpowiedzi pozostaje na dole.",
+    "Można wysłać sam załącznik, a materiały dodawane z telefonu mają czytelne potwierdzenie zapisu.",
+    "Uzupełniono najbliższe zajęcia, powiadomienia oraz instrukcje dla każdej roli.",
+    "W Wiadomościach można jednym przyciskiem otworzyć prywatny kontakt z twórcą aplikacji.",
+    "Podręcznik można teraz pobrać bezpośrednio z panelu Pomoc i podręczniki."
+  ],
+  "ownerChanges": [
+    "Pełny eksport i próbne odtworzenie obejmują bazę oraz prywatne pliki.",
+    "Poprawiono uruchamianie kopii i odtwarzania z bezpiecznego brokera bez poleceń sudo w aplikacji.",
+    "Dodano jasną procedurę auto-startu, watchdogów, aktualizacji i reagowania na awarię.",
+    "Użytkownicy mogą otworzyć audytowaną rozmowę wsparcia z właścicielem systemu.",
+    "Podręcznik właściciela jest dostępny wyłącznie po zalogowaniu na konto właściciela systemu."
+  ]
+}

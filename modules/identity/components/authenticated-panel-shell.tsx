@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  BookOpenText,
   CalendarDays,
   ContactRound,
   CreditCard,
@@ -26,6 +27,7 @@ import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 import { SignOutButton } from "./sign-out-button";
 import { getNotifications } from "@/modules/notifications/service";
 import { OnboardingTour } from "@/modules/onboarding/components/onboarding-tour";
+import { CreatorEasterEgg } from "./creator-easter-egg";
 
 type PanelSection =
   | "home"
@@ -42,6 +44,7 @@ type PanelSection =
   | "learning"
   | "progress"
   | "logs"
+  | "help"
   | "server-settings";
 
 function navigationGroup(
@@ -287,6 +290,9 @@ export async function AuthenticatedPanelShell({
       <header className="app-panel-topbar">
         <Brand compact />
         <div className="app-panel-account">
+          <Link className="app-panel-manual" href="/panel/pomoc" aria-label="Pomoc i podręczniki">
+            <BookOpenText aria-hidden="true" /><span>Instrukcja</span>
+          </Link>
           <Link
               className="app-panel-notifications"
               href="/panel/powiadomienia"
@@ -341,10 +347,7 @@ export async function AuthenticatedPanelShell({
               <small>Dostęp chroniony według roli</small>
             </div>
           </div>
-          <a className="app-sidebar-creator" href="mailto:damianx9x@me.com">
-            <span>Projekt i opieka techniczna</span>
-            <strong>Damian Eron · damianx9x@me.com</strong>
-          </a>
+          <CreatorEasterEgg />
         </aside>
 
         <section className="app-panel-content">{children}</section>

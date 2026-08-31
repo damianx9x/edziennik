@@ -1323,3 +1323,40 @@ pozostają stale widoczne. Dotykowe reakcje i przyciski mają minimum 44 px.
 większość przestrzeni roboczej i było trudne do zrozumienia na telefonie.
 Pełnoekranowy kanał odpowiada utrwalonemu modelowi komunikatorów i ogranicza
 przypadkowe przejścia do innej części panelu w trakcie pisania.
+
+## ADR-097 — podręcznik jest wersjonowanym elementem wydania
+
+**Data:** 2026-08-31
+**Decyzja:** instrukcja szkoły i podręcznik właściciela są generowane z jednego
+manifestu wersji. Pierwsza strona zawsze pokazuje zmiany od poprzedniego
+wydania. Aplikacja serwuje PDF-y bezpośrednio ze swojego bieżącego pakietu z
+`no-store`; instrukcja szkoły wymaga aktywnej sesji, a podręcznik techniczny
+roli `SYSTEM_OWNER`. Kontrola `npm run check` odrzuca PDF niezgodny z manifestem.
+
+**Dlaczego:** osobny link lub ręcznie wysłany stary plik szybko rozjeżdża się z
+interfejsem. Instrukcja musi podróżować razem z dokładnym commitem, ale informacje
+o serwerze, odtwarzaniu i sekretach nie mogą być publicznym zasobem statycznym.
+
+## ADR-098 — PWA nie cache'uje prywatnych danych szkoły
+
+**Data:** 2026-08-31
+**Decyzja:** aplikacja ma manifest, ikony instalacyjne i minimalny service
+worker. Worker przejmuje nową wersję po aktywacji, ale nie obsługuje `fetch` i
+nie zapisuje odpowiedzi w Cache Storage. Panel pozostaje sieciowy i po zaniku
+połączenia pokazuje kontrolowany błąd zamiast starej umowy albo wiadomości.
+
+**Dlaczego:** dodanie panelu do ekranu telefonu ma ułatwić codzienny dostęp, ale
+offline cache uwierzytelnionych danych zwiększałby ryzyko prywatności i trudnych
+do wyjaśnienia konfliktów po przywróceniu sieci.
+
+## ADR-099 — pomoc twórcy korzysta z istniejącego komunikatora
+
+**Data:** 2026-08-31
+**Decyzja:** dyrektor, wykładowca, rodzic i uczeń mogą jednym przyciskiem
+utworzyć lub otworzyć prywatną rozmowę z aktywnym właścicielem systemu w swoim
+`schoolId`. Kanał używa istniejących uczestników, kontroli dostępu, limitów,
+audytu i załączników. UI przypomina, aby nie wysyłać sekretów. Nie powstaje
+osobna skrzynka ani uprzywilejowany dostęp do serwera.
+
+**Dlaczego:** bezpośrednia pomoc ma być równie prosta jak rozmowa ze szkołą, ale
+drugi system wiadomości dublowałby historię, uprawnienia i ryzyko prywatności.

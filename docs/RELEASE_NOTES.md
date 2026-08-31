@@ -1,5 +1,22 @@
 # Notatki wydania
 
+## 1.1.1 — podręczniki w aplikacji i zamknięcie techniczne Etapów 5–6
+
+- strona „Pomoc i podręczniki” udostępnia aktualną instrukcję zgodną z
+  uruchomionym wydaniem; podręcznik techniczny widzi tylko właściciel systemu;
+- pierwsza strona obu PDF-ów pokazuje zmiany względem poprzedniej wersji, a
+  każdy moduł prowadzi użytkownika kolejno przez kliknięcie i oczekiwany skutek;
+- kontrola przed commitem sprawdza zgodność wersji wygenerowanych PDF-ów z
+  manifestem podręczników;
+- produkcyjny pakiet standalone zawiera te same zweryfikowane PDF-y, więc
+  pobieranie instrukcji działa również po wdrożeniu na Raspberry;
+- uzupełniono PWA: manifest, ikony i service worker, który nie cache'uje
+  prywatnych danych panelu;
+- każda rola szkoły może otworzyć prywatny, audytowany kanał pomocy technicznej
+  z twórcą aplikacji bez przechodzenia do poczty;
+- Etapy 5 i 6 są zamknięte technicznie; zadaniowy odbiór klientki pozostaje w
+  Etapie 7.
+
 ## 1.1.0 · 30 sierpnia 2026
 
 - właściciel przełącza publiczną stronę między zachowaną wizytówką szkoły a

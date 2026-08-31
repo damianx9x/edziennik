@@ -1,4 +1,4 @@
-import { ExternalLink, MessageCircleMore, Radio, ShieldCheck } from "lucide-react";
+import { ExternalLink, Headset, MessageCircleMore, Radio, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
 import { db } from "@/lib/server/db";
@@ -7,6 +7,8 @@ import { MessagingWorkspace } from "@/modules/messaging/components/messaging-wor
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { openCreatorConversationAction } from "@/modules/messaging/actions";
+import { canStartCreatorSupport } from "@/modules/messaging/support";
 
 export const metadata: Metadata = { title: "Wiadomości" };
 export const dynamic = "force-dynamic";
@@ -75,6 +77,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   return <AuthenticatedPanelShell session={session} active="messages">
     <header className={`messaging-heading${selected ? " has-selection" : ""}`}><div><span className="section-kicker">Komunikacja szkoły</span><h1>{isManagement ? "Wiadomości pod kontrolą" : "Rozmowy bez szukania czatu"}</h1><p>{isManagement ? "Czytaj kanały szkoły bez dodatkowych formularzy. Twórz też rozmowy tylko z wybranymi osobami." : "Wybierz rozmowę, przeczytaj nowe informacje i odpowiedz w jednym miejscu."}</p></div><span className="role-security-chip"><ShieldCheck aria-hidden="true" /> Dostęp według roli</span></header>
     {isManagement ? <aside className={`messaging-meta-banner${selected ? " has-selection" : ""}`}><MessageCircleMore aria-hidden="true" /><span><strong>Potrzebujesz napisać na Facebooku?</strong><small>Otwórz zwykły Messenger w osobnej karcie. eDziennik nie przekazuje do niego danych uczniów.</small></span><a href="https://www.messenger.com/" target="_blank" rel="noreferrer">Otwórz Messenger <ExternalLink aria-hidden="true" /></a></aside> : null}
+    {canStartCreatorSupport(session.user.role) ? <aside className={`messaging-support-banner${selected ? " has-selection" : ""}`}><Headset aria-hidden="true" /><span><strong>Pomoc techniczna w aplikacji</strong><small>Otwórz prywatną rozmowę z twórcą systemu. Nie wysyłaj haseł, kodów MFA ani kluczy kopii.</small></span><form action={openCreatorConversationAction}><button type="submit"><MessageCircleMore aria-hidden="true" /> Napisz do twórcy aplikacji</button></form></aside> : null}
     {channels.length === 0 && !isManagement ? <section className="messaging-empty"><MessageCircleMore aria-hidden="true" /><h2>Nie masz jeszcze rozmowy</h2><p>Gdy szkoła przypisze Ci grupę lub doda do rozmowy, pojawi się tutaj automatycznie.</p></section> : <MessagingWorkspace
       role={session.user.role === "SYSTEM_OWNER" ? "DIRECTOR" : session.user.role} currentUserId={session.user.id} errorMessage={params.blad ?? null} channels={channels}
       selectedKey={selectedKey} canRead={canRead} recipientDirectory={recipientDirectory.map((person) => ({

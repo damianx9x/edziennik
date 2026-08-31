@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { FeedbackWidget } from "./components/feedback-widget";
 import { PageVisitTracker } from "./components/page-visit-tracker";
 import { ThemeToggle } from "./components/theme-toggle";
+import { ServiceWorkerRegistration } from "./components/service-worker-registration";
 import { SiteContentProvider } from "../modules/site-content/site-content-provider";
 import "./globals.css";
 
@@ -16,9 +17,13 @@ export const metadata: Metadata = {
   },
   description:
     "Mobilny system dla szkoły językowej: grafik, komunikacja, umowy, płatności, materiały, obecność i postępy.",
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/product-mark.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/product-mark.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/product-mark.svg", type: "image/svg+xml" },
+      { url: "/icons/edziennik-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/icons/edziennik-192.png", type: "image/png", sizes: "192x192" }],
   },
   openGraph: {
     title: "eDziennik — bezpieczny system szkoły językowej",
@@ -55,6 +60,7 @@ export default function RootLayout({
         <SiteContentProvider>
           {children}
           <PageVisitTracker />
+          <ServiceWorkerRegistration />
           <ThemeToggle />
           <FeedbackWidget />
         </SiteContentProvider>

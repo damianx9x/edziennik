@@ -1,6 +1,6 @@
 {
   "name": "edziennik-kla",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "engines": {
     "node": ">=22.13.0 <25"
@@ -27,6 +27,8 @@
     "db:demo:reset:rich": "node --env-file=.env scripts/reset-demo-database.mjs --rich --confirm=RESET_SYNTHETIC_DEMO",
     "db:first-run:reset": "node --env-file-if-exists=.env scripts/reset-to-first-run.mjs --confirm=EMPTY_FIRST_RUN",
     "export:demo-school": "tsx scripts/export-demo-school.ts",
+    "manuals:build": "${KLA_PYTHON:-python3} scripts/generate-user-manuals.py",
+    "manuals:check": "node scripts/check-manuals-current.mjs",
     "security:rotate-demo-password": "node --env-file=.env scripts/rotate-demo-password.mjs",
     "account:owner": "node --env-file-if-exists=.env scripts/setup-system-owner.mjs",
     "pilot:mfa:sync": "node --env-file=.env scripts/apply-director-mfa-policy.mjs",
@@ -34,7 +36,7 @@
     "host:mac:status": "./scripts/mac-test-host-status.sh",
     "host:mac:stop": "./scripts/mac-test-host-stop.sh",
     "security:check": "node scripts/check-no-secrets.mjs && node scripts/check-migrations-safe.mjs",
-    "check": "npm run lint && npm run typecheck && npm run db:validate && npm run test && npm run security:check",
+    "check": "npm run lint && npm run typecheck && npm run db:validate && npm run test && npm run security:check && npm run manuals:check",
     "package:release": "./scripts/package-release.sh",
     "package:vps": "./scripts/package-home-vps.sh",
     "package:preview": "./scripts/package-home-preview.sh",

@@ -1,6 +1,6 @@
 # eDziennik KLA 2026 — plan realizacji
 
-Stan produktu na 27 sierpnia 2026. Etapy 0–6 tworzą wersję 1.0 pilota.
+Stan produktu na 31 sierpnia 2026. Etapy 0–6 tworzą wersję 1.0 pilota.
 
 ## Uczciwy zakres
 
@@ -131,7 +131,9 @@ równoległe próby nie zapisują konfliktu.
 
 ### Etap 5 — komunikator i ogłoszenia (17–21 sierpnia)
 
-**Stan: zaimplementowany, nadal objęty odbiorem pilota na gałęzi Etapu 7.**
+**Stan: zamknięty technicznie 31 sierpnia 2026. Funkcje przeszły testy
+automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczne
+potwierdzenie klientki pozostaje częścią Etapu 7.**
 
 - służbowe rozmowy grupowe i potwierdzenia odczytu,
 - rozmowy z osobami wskazanymi przez dyrektora, z jawnym składem uczestników,
@@ -139,9 +141,15 @@ równoległe próby nie zapisują konfliktu.
 - kolejka, ponowienia i idempotencja e-mail,
 - jawny, audytowany dostęp dyrektora.
 
+Odbiór techniczny: rozmowa grupowa i bezpośrednia, sam załącznik, potwierdzenie
+odczytu, ogłoszenie, neutralny e-mail, ponowienie kolejki oraz odmowa dostępu
+osobie spoza kanału działają na tej samej, serwerowej kontroli ról.
+
 ### Etap 6 — materiały, zadania i panele klienta (22–25 sierpnia)
 
-**Stan: zaimplementowany, nadal objęty odbiorem pilota na gałęzi Etapu 7.**
+**Stan: zamknięty technicznie 31 sierpnia 2026. Funkcje przeszły testy
+automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczne
+potwierdzenie klientki pozostaje częścią Etapu 7.**
 
 - materiał jako plik lub link przypisany do grupy,
 - zadanie, termin i status oddania,
@@ -149,15 +157,22 @@ równoległe próby nie zapisują konfliktu.
 - prosty plan, obecności i sprawy bieżące rodzica i ucznia,
 - dzwonek w aplikacji i manifest PWA.
 
+Odbiór techniczny: materiały, zadania, prywatne oddania prac i panele wszystkich
+ról korzystają z kontroli `schoolId`. Pliki są weryfikowane po sygnaturze,
+skanowane i wydawane prywatną trasą. Manifest, ikony i bezpieczny service worker
+pozwalają dodać panel do ekranu telefonu bez cache'owania danych szkoły.
+
 ### Etap 7 — pilot i odbiór (26–28 sierpnia)
 
-**Stan: w toku — funkcje i infrastruktura są wdrożone testowo, odbiór klientki,
-podręczniki oraz decyzja prawno-bezpieczeństwowa „go/no-go” nie są zamknięte.**
+**Stan: w toku — funkcje, infrastruktura i podręczniki są wdrożone testowo.
+Pozostają: zadaniowy odbiór klientki i decyzja prawno-bezpieczeństwowa
+„go/no-go” przed prawdziwymi danymi.**
 
 - prawdziwa marka, bez danych uczniów,
 - test zadaniowy z klientką bez podpowiadania,
 - staging, backup i próbne odtworzenie,
-- instrukcja i protokół odbioru.
+- instrukcja szkoły oraz osobny podręcznik właściciela, pobierane zawsze z
+  bieżącego wdrożenia, i protokół odbioru.
 
 ### Rezerwa (29–31 sierpnia)
 

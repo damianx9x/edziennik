@@ -15,5 +15,11 @@ await cp(path.join(projectDir, "public"), path.join(standaloneDir, "public"), {
   recursive: true,
   force: true,
 });
+await mkdir(path.join(standaloneDir, "output"), { recursive: true });
+await cp(
+  path.join(projectDir, "output", "pdf"),
+  path.join(standaloneDir, "output", "pdf"),
+  { recursive: true, force: true },
+);
 
 console.log("Standalone production assets are ready.");
