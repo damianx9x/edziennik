@@ -37,11 +37,11 @@ clamdscan --fdpass --no-summary "$VALIDATION_FILES" >/dev/null \
 
 if [[ "$MODE" == "--test" ]]; then
   TEST_DB="kla_restore_test_$(date +%s)"
-  trap 'sudo -u postgres dropdb --if-exists "$TEST_DB" >/dev/null 2>&1 || true; rm -rf "$TEMP_DIR"' EXIT
-  sudo -u postgres createdb "$TEST_DB"
-  sudo -u postgres pg_restore --no-owner --dbname="$TEST_DB" "$TEMP_DIR/database.dump"
-  sudo -u postgres psql --dbname="$TEST_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
-  sudo -u postgres dropdb "$TEST_DB"
+  trap 'runuser -u postgres -- dropdb --if-exists "$TEST_DB" >/dev/null 2>&1 || true; rm -rf "$TEMP_DIR"' EXIT
+  runuser -u postgres -- createdb "$TEST_DB"
+  runuser -u postgres -- pg_restore --no-owner --dbname="$TEST_DB" "$TEMP_DIR/database.dump"
+  runuser -u postgres -- psql --dbname="$TEST_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
+  runuser -u postgres -- dropdb "$TEST_DB"
   echo "TEST ODTWORZENIA OK: baza i dokumenty są czytelne."
   exit 0
 fi
@@ -63,7 +63,7 @@ rollback_restore() {
   if [[ "$switched" -eq 1 ]]; then
     echo "Odtworzenie nie przeszło kontroli. Przywracam poprzedni stan..."
     systemctl stop edziennik-kla >/dev/null 2>&1 || true
-    sudo -u postgres psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL || true
+    runuser -u postgres -- psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL || true
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname IN ('kla_edziennik', '$PREVIOUS_DB') AND pid <> pg_backend_pid();
 ALTER DATABASE kla_edziennik RENAME TO ${CANDIDATE_DB}_failed;
 ALTER DATABASE $PREVIOUS_DB RENAME TO kla_edziennik;
@@ -75,22 +75,22 @@ SQL
     fi
     systemctl start edziennik-kla >/dev/null 2>&1 || true
   fi
-  sudo -u postgres dropdb --if-exists "$CANDIDATE_DB" >/dev/null 2>&1 || true
+  runuser -u postgres -- dropdb --if-exists "$CANDIDATE_DB" >/dev/null 2>&1 || true
   rm -rf -- "$RESTORE_FILES"
   exit "$exit_code"
 }
 trap rollback_restore ERR INT TERM
 
 # Najpierw pełne odtworzenie do odizolowanej bazy i osobnego katalogu.
-sudo -u postgres createdb --owner=kla_app "$CANDIDATE_DB"
-sudo -u postgres pg_restore --no-owner --role=kla_app --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
-sudo -u postgres psql --dbname="$CANDIDATE_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
+runuser -u postgres -- createdb --owner=kla_app "$CANDIDATE_DB"
+runuser -u postgres -- pg_restore --no-owner --role=kla_app --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
+runuser -u postgres -- psql --dbname="$CANDIDATE_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
 install -d -m 700 -o kla -g kla "$RESTORE_FILES"
 /usr/local/sbin/kla-safe-archive private "$TEMP_DIR/private-files.tar.gz" "$RESTORE_FILES"
 chown -R kla:kla "$RESTORE_FILES"
 
 systemctl stop edziennik-kla
-sudo -u postgres psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL
+runuser -u postgres -- psql --dbname=postgres -v ON_ERROR_STOP=1 <<SQL
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'kla_edziennik' AND pid <> pg_backend_pid();
 ALTER DATABASE kla_edziennik RENAME TO $PREVIOUS_DB;
 ALTER DATABASE $CANDIDATE_DB RENAME TO kla_edziennik;
@@ -99,7 +99,7 @@ mv "$VAULT/private-files" "$PREVIOUS_FILES"
 mv "$RESTORE_FILES" "$VAULT/private-files"
 switched=1
 
-sudo -u kla bash -lc "cd /opt/kla/current && set -a && source /etc/kla/edziennik.env && set +a && npm run db:migrate:deploy"
+runuser -u kla -- bash -lc "cd /opt/kla/current && set -a && source /etc/kla/edziennik.env && set +a && npm run db:migrate:deploy"
 systemctl start edziennik-kla
 /usr/local/sbin/edziennik-kla-health
 switched=0

@@ -12,7 +12,7 @@ delete_archived_files() {
   local purpose="$1" days="$2"
   [[ "$days" =~ ^[0-9]+$ ]] || { echo "Nieprawidłowa retencja: $purpose"; exit 1; }
   [[ "$days" -gt 0 ]] || return 0
-  sudo -u postgres psql -d kla_edziennik -At -F $'\t' -v purpose="$purpose" -v days="$days" <<'SQL' |
+  runuser -u postgres -- psql -d kla_edziennik -At -F $'\t' -v purpose="$purpose" -v days="$days" <<'SQL' |
 SELECT id, "schoolId", "storageKey"
 FROM "StoredFile"
 WHERE purpose::text = :'purpose'
@@ -24,7 +24,7 @@ SQL
     target="$VAULT/private-files/$storage_key"
     if [[ -f "$target" ]]; then
       rm -f "$target"
-      sudo -u postgres psql -d kla_edziennik -v ON_ERROR_STOP=1 \
+      runuser -u postgres -- psql -d kla_edziennik -v ON_ERROR_STOP=1 \
         -v school_id="$school_id" -v file_id="$file_id" -v purpose="$purpose" <<'SQL'
 INSERT INTO "AuditLog" (id, "schoolId", action, "entityType", "entityId", metadata, "createdAt")
 VALUES (gen_random_uuid(), :'school_id'::uuid, 'files.retention.deleted', 'StoredFile', :'file_id', jsonb_build_object('purpose', :'purpose'), now());

@@ -37,6 +37,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   const messageFormRef = useRef<HTMLFormElement>(null);
   const attachmentRef = useRef<HTMLInputElement>(null);
   const attachmentDetailsRef = useRef<HTMLDetailsElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const messageRequestId = useRef<HTMLInputElement>(null);
   const announcementRequestId = useRef<HTMLInputElement>(null);
   const announcementDialog = useRef<HTMLDialogElement>(null);
@@ -76,6 +77,12 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
     }, 0);
     return () => window.clearTimeout(timer);
   }, [messageState]);
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+    if (!selected || !messageList) return;
+    messageList.scrollTop = messageList.scrollHeight;
+  }, [messages.length, selected]);
 
   function selectAttachment(file: File | undefined) {
     setAttachmentError(null);
@@ -125,9 +132,9 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
           <div className="messaging-thread-empty"><Megaphone aria-hidden="true" /><h2>Wybierz rozmowę</h2><p>Otworzysz kanał grupy albo rozmowę z wybranymi osobami. Dostęp dyrektora zostanie zapisany automatycznie.</p></div>
         ) : (
           <>
-            <header className="messaging-thread-header"><Link className="messaging-mobile-back" href="/panel/wiadomosci"><ArrowLeft aria-hidden="true" /> Rozmowy</Link><div><span className="section-kicker">{selected.locationName}</span><h2>{selected.name}</h2><small><Users aria-hidden="true" /> {selected.kind === "DIRECT" ? selected.participants.map((item) => item.name).join(", ") : `${selected.studentCount} uczniów · ${selected.teacherCount} wykładowców · rodzice powiązani z uczniami`}</small></div><span><Clock3 aria-hidden="true" /> Ostatnie 100 wiadomości</span>{role === "DIRECTOR" && selected.kind === "GROUP" ? <Link className="messaging-members-link" href="/panel/szkola/kartoteki#grupy">Zarządzaj składem grupy</Link> : null}</header>
+            <header className="messaging-thread-header"><Link className="messaging-mobile-back" href="/panel/wiadomosci" onClick={(event) => { event.preventDefault(); window.location.assign("/panel/wiadomosci"); }}><ArrowLeft aria-hidden="true" /> Rozmowy</Link><div><span className="section-kicker">{selected.locationName}</span><h2>{selected.name}</h2><small><Users aria-hidden="true" /> {selected.kind === "DIRECT" ? selected.participants.map((item) => item.name).join(", ") : `${selected.studentCount} uczniów · ${selected.teacherCount} wykładowców · rodzice powiązani z uczniami`}</small></div><span><Clock3 aria-hidden="true" /> Ostatnie 100 wiadomości</span>{role === "DIRECTOR" && selected.kind === "GROUP" ? <Link className="messaging-members-link" href="/panel/szkola/kartoteki#grupy">Zarządzaj składem grupy</Link> : null}</header>
             <p className="messaging-oversight-note"><ShieldCheck aria-hidden="true" /> Dyrektor ma służbowy wgląd w wiadomości; otwarcia są zapisywane w historii bezpieczeństwa.</p>
-            <div className="messaging-message-list" aria-live="polite">
+            <div ref={messageListRef} className="messaging-message-list" aria-live="polite" tabIndex={0} aria-label={`Wiadomości: ${selected.name}`}>
               {messages.length === 0 ? <div className="messaging-thread-empty"><Send aria-hidden="true" /><h3>Zacznij rozmowę</h3><p>Napisz krótką informację dla grupy. Powiadomienia e-mail trafią do kolejki.</p></div> : messages.map((message) => {
                 const own = message.authorId === currentUserId;
                 return <article key={message.id} className={`messaging-message ${own ? "own" : ""} ${message.kind === "ANNOUNCEMENT" ? "announcement" : ""}`}>

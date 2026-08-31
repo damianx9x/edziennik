@@ -131,7 +131,7 @@ równoległe próby nie zapisują konfliktu.
 
 ### Etap 5 — komunikator i ogłoszenia (17–21 sierpnia)
 
-**Stan: funkcjonalny, w odbiorze na gałęzi `stage/5-1-manual-review`.**
+**Stan: zaimplementowany, nadal objęty odbiorem pilota na gałęzi Etapu 7.**
 
 - służbowe rozmowy grupowe i potwierdzenia odczytu,
 - rozmowy z osobami wskazanymi przez dyrektora, z jawnym składem uczestników,
@@ -141,6 +141,8 @@ równoległe próby nie zapisują konfliktu.
 
 ### Etap 6 — materiały, zadania i panele klienta (22–25 sierpnia)
 
+**Stan: zaimplementowany, nadal objęty odbiorem pilota na gałęzi Etapu 7.**
+
 - materiał jako plik lub link przypisany do grupy,
 - zadanie, termin i status oddania,
 - monitoring wykładowcy,
@@ -148,6 +150,9 @@ równoległe próby nie zapisują konfliktu.
 - dzwonek w aplikacji i manifest PWA.
 
 ### Etap 7 — pilot i odbiór (26–28 sierpnia)
+
+**Stan: w toku — funkcje i infrastruktura są wdrożone testowo, odbiór klientki,
+podręczniki oraz decyzja prawno-bezpieczeństwowa „go/no-go” nie są zamknięte.**
 
 - prawdziwa marka, bez danych uczniów,
 - test zadaniowy z klientką bez podpowiadania,

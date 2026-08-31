@@ -50,8 +50,10 @@ możliwości urządzenia.
   adresem HTTPS; w routingu tunelu ustaw usługę `http://localhost:8080` i
   skopiuj token instalacyjny. Token traktuj jak hasło.
 - dane zwykłego serwera SMTP (host, port 465/587, login, hasło i nadawca) albo
-  opcjonalnie konto Resend. Możesz ustawić je później z panelu na Macu. Bez
-  działającego e-maila kreator celowo nie utworzy pierwszego konta.
+  opcjonalnie konto Resend. Możesz ustawić je podczas pierwszego uruchomienia
+  albo później w Centrum systemu. Jednorazowy kod instalacyjny pozwala świadomie
+  utworzyć pierwszego właściciela bez poczty, ale zaproszenia, odzyskiwanie hasła
+  i powiadomienia e-mail pozostaną zablokowane do czasu poprawnego testu SMTP.
 
 ## 1. System z Raspberry Pi Imager
 
@@ -104,7 +106,9 @@ menedżerze haseł — na Raspberry pozostaje wyłącznie jego hash.
 1. Otwórz `https://demo.kingslanguageacademy.pl/pierwsze-uruchomienie`.
 2. Wpisz kod instalacyjny, nazwę szkoły, imię i nazwisko, własny e-mail oraz
    nowe hasło.
-3. Kliknij link aktywacyjny z poczty i zaloguj się swoim adresem.
+3. Jeżeli SMTP zostało sprawdzone, kliknij link aktywacyjny z poczty. Jeżeli
+   świadomie wybrano konfigurację bez poczty, konto aktywuje kod instalacyjny,
+   a panel od razu przypomni o brakujących funkcjach e-mail.
 4. Zeskanuj kod MFA aplikacją na telefonie i zapisz kody awaryjne poza Pi.
 5. W centrum systemu wybierz **Zaproś pierwszą osobę**. Role dyrektora,
    wykładowcy, rodzica i ucznia powstają wyłącznie przez zaproszenia.

@@ -1309,3 +1309,17 @@ ich do logów. Operator przechowuje kopie poza Raspberry Pi.
 odblokowania nie może unieruchomić danych. Automatyzacja nie może jednak
 przenosić sekretów przez argumenty procesów, repozytorium ani trwałe pliki
 tymczasowe.
+
+## ADR-096 — otwarta rozmowa zajmuje cały ekran telefonu
+
+**Data:** 2026-08-31
+**Decyzja:** lista rozmów i otwarta rozmowa są na telefonie dwoma osobnymi
+widokami. Po wejściu do kanału komunikator zajmuje całe dostępne okno, ukrywa
+nawigację znajdującą się pod nim i pozostawia tylko jeden przewijany obszar:
+historię wiadomości. Nagłówek, informacja o służbowym wglądzie i pole wysyłki
+pozostają stale widoczne. Dotykowe reakcje i przyciski mają minimum 44 px.
+
+**Dlaczego:** przewijanie strony, a następnie osobnego bloku wiadomości zabierało
+większość przestrzeni roboczej i było trudne do zrozumienia na telefonie.
+Pełnoekranowy kanał odpowiada utrwalonemu modelowi komunikatorów i ogranicza
+przypadkowe przejścia do innej części panelu w trakcie pisania.

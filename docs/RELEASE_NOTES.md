@@ -41,6 +41,13 @@
 - dyrektor ma czytelne wejścia do edycji strony, kont i statystyk odwiedzin,
   natomiast backup, SMTP, wersje i diagnostyka pozostają w osobnym panelu
   właściciela.
+- rozmowa na telefonie zajmuje cały ekran, utrzymuje pole odpowiedzi nad paskiem
+  systemowym i pozwala wrócić do skrzynki jedną akcją bez podwójnego przewijania;
+- naprawiono pełny eksport i odtwarzanie uruchamiane z chronionego panelu:
+  odizolowana usługa nie korzysta już z niedozwolonego `sudo`, a archiwum nadal
+  zawiera bazę PostgreSQL oraz prywatne dokumenty i załączniki;
+- wydanie zawiera dwie ilustrowane instrukcje PDF: prostą instrukcję wszystkich
+  ról szkoły oraz osobny podręcznik serwera, szyfrowania, kopii i awarii.
 
 ## 1.0.0 · 27 sierpnia 2026
 

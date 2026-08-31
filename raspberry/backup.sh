@@ -24,7 +24,7 @@ if [[ -f /etc/kla/backup-policy.env ]]; then
 fi
 [[ "$BACKUP_RETENTION_DAYS" =~ ^(14|30|90)$ ]] || { echo "Nieprawidłowy okres przechowywania backupu." >&2; exit 1; }
 
-sudo -u postgres pg_dump --format=custom --dbname=kla_edziennik > "$TEMP_DIR/database.dump"
+runuser -u postgres -- pg_dump --format=custom --dbname=kla_edziennik > "$TEMP_DIR/database.dump"
 tar -C "$VAULT" -czf "$TEMP_DIR/private-files.tar.gz" private-files
 install -d -m 700 "$TEMP_DIR/continuity"
 install -m 600 "$VAULT/secrets/edziennik.env" "$TEMP_DIR/continuity/edziennik.env"

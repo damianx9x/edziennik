@@ -7,6 +7,7 @@
 /outputs
 /out
 /work
+/tmp
 /.data
 .DS_Store
 *.log

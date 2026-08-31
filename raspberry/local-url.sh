@@ -24,7 +24,7 @@ sed -i \
   "$ENV_FILE"
 
 echo "Aktualizuję adres w aplikacji — może to potrwać kilka minut."
-sudo -u kla bash -lc "cd /opt/kla/current && set -a && source '$ENV_FILE' && set +a && npm run build"
+runuser -u kla -- bash -lc "cd /opt/kla/current && set -a && source '$ENV_FILE' && set +a && npm run build"
 systemctl restart edziennik-kla
 echo "Adres lokalnego demo: $APP_URL"
 echo "Jeśli adres IP się zmienił, aplikacja została przeładowana pod nowym adresem."
