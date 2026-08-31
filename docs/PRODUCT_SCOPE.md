@@ -171,8 +171,9 @@ Pozostają: zadaniowy odbiór klientki i decyzja prawno-bezpieczeństwowa
 - prawdziwa marka, bez danych uczniów,
 - test zadaniowy z klientką bez podpowiadania,
 - staging, backup i próbne odtworzenie,
-- instrukcja szkoły oraz osobny podręcznik właściciela, pobierane zawsze z
-  bieżącego wdrożenia, i protokół odbioru.
+- osobny, obszerny podręcznik ze zrzutami dla dyrektora, wykładowcy, rodzica i
+  ucznia oraz osobny podręcznik właściciela; wszystkie pobierane z bieżącego
+  wdrożenia, i protokół odbioru.
 
 ### Rezerwa (29–31 sierpnia)
 

@@ -1360,3 +1360,21 @@ osobna skrzynka ani uprzywilejowany dostęp do serwera.
 
 **Dlaczego:** bezpośrednia pomoc ma być równie prosta jak rozmowa ze szkołą, ale
 drugi system wiadomości dublowałby historię, uprawnienia i ryzyko prywatności.
+
+## ADR-100 — każda rola otrzymuje własny podręcznik po samouczku
+
+**Data:** 2026-08-31
+**Decyzja:** zamiast jednej skróconej instrukcji szkoły wydanie zawiera cztery
+obszerne PDF-y: dla dyrektora, wykładowcy, rodzica i ucznia. Każdy opisuje
+wyłącznie funkcje dostępne dla tej roli i zawiera zrzuty, ścieżkę w panelu,
+przygotowanie, kroki, wynik, granice uprawnień oraz typowe problemy. Po pierwszym
+zakończeniu lub pominięciu samouczka pojawia się osobne, nieblokujące pytanie o
+pobranie właściwego PDF-u. Podręcznik pozostaje później w panelu Pomoc.
+
+Pobieranie jest chronione aktywną sesją i kontrolą roli na serwerze. Właściciel
+systemu może pobrać wszystkie podręczniki do wsparcia użytkowników. Zrzuty są
+syntetyczne i wersjonowane w repozytorium, więc generator jest powtarzalny.
+
+**Dlaczego:** wspólny dokument mieszał odpowiedzialności i nadal wymagał od
+nowej osoby domyślania się, które kroki jej dotyczą. Osobne instrukcje skracają
+drogę do odpowiedzi, a jednocześnie jasno pokazują ograniczenia roli.

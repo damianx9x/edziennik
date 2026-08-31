@@ -3,7 +3,13 @@ import type { Metadata } from "next";
 
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
-import { manualRelease } from "@/modules/manuals/release";
+import {
+  manualAudienceForRole,
+  manualLabels,
+  manualRelease,
+  schoolManualAudiences,
+  type SchoolManualAudience,
+} from "@/modules/manuals/release";
 
 export const metadata: Metadata = { title: "Pomoc i podręczniki" };
 export const dynamic = "force-dynamic";
@@ -11,6 +17,16 @@ export const dynamic = "force-dynamic";
 export default async function ManualsPage() {
   const session = await requireActiveSession("/panel/pomoc");
   const isOwner = session.user.role === "SYSTEM_OWNER";
+  const ownAudience = manualAudienceForRole(session.user.role);
+  const roleDescriptions: Record<SchoolManualAudience, string> = {
+    director: "Codzienna organizacja szkoły, konta, kartoteki, grafik, umowy, raty, komunikacja, nauka i statystyki.",
+    teacher: "Plan i dostępność, prowadzenie lekcji, obecność, wiadomości, materiały, zadania i postępy uczniów.",
+    parent: "Dzieci, najbliższe zajęcia, plan, wiadomości, umowy, raty, materiały i postępy.",
+    student: "Najbliższe lekcje, plan, wiadomości, materiały, zadania, obecność i własne postępy.",
+  };
+  const visibleAudiences: SchoolManualAudience[] = isOwner
+    ? schoolManualAudiences
+    : ownAudience === "owner" ? [] : [ownAudience];
 
   return (
     <AuthenticatedPanelShell session={session} active="help">
@@ -29,11 +45,11 @@ export default async function ManualsPage() {
       </section>
 
       <section className="manual-download-grid" aria-label="Podręczniki do pobrania">
-        <article>
+        {visibleAudiences.map((audience) => <article key={audience}>
           <BookOpenCheck aria-hidden="true" />
-          <div><span className="section-kicker">Dla szkoły i rodzin</span><h2>Instrukcja dla dyrektora, wykładowcy, rodzica i ucznia</h2><p>Pokazuje ekran po ekranie: gdzie kliknąć, co się stanie, jaki wynik zobaczysz i czego dana rola nie może zmienić.</p></div>
-          <a className="button button-primary" href="/panel/pomoc/podrecznik"><Download aria-hidden="true" /> Pobierz aktualny PDF</a>
-        </article>
+          <div><span className="section-kicker">Instrukcja dopasowana do roli</span><h2>{manualLabels[audience]}</h2><p>{roleDescriptions[audience]}</p><small>Każda funkcja ma osobną stronę ze zdjęciem, dokładną ścieżką, oczekiwanym wynikiem i typowymi problemami.</small></div>
+          <a className="button button-primary" href={isOwner ? `/panel/pomoc/podrecznik/${audience}` : "/panel/pomoc/podrecznik"}><Download aria-hidden="true" /> Pobierz {manualLabels[audience].toLocaleLowerCase("pl-PL")}</a>
+        </article>)}
         {isOwner ? <article>
           <ShieldCheck aria-hidden="true" />
           <div><span className="section-kicker">Tylko dla właściciela systemu</span><h2>Serwer, szyfrowanie, kopie i awarie</h2><p>Osobny przewodnik po pierwszym uruchomieniu, sekretach, Raspberry, aktualizacjach, odtwarzaniu i bezpiecznej diagnostyce.</p></div>

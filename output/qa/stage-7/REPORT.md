@@ -8,7 +8,7 @@
 - materiały i wiadomości z samym załącznikiem;
 - dostępność wykładowcy i role użytkowników;
 - pełny eksport, import, odtworzenie i pakiet Raspberry;
-- dwie instrukcje PDF renderowane i sprawdzone wizualnie.
+- pięć instrukcji PDF renderowanych i sprawdzonych wizualnie.
 
 ## Audyt Etapów 1–7
 
@@ -42,20 +42,26 @@ bezpieczny pusty podgląd dokumentu, nie niezrealizowany moduł.
 - wykładowca opublikował z telefonu syntetyczny plik PNG bez błędu widoku;
 - pięć zapisanych przedziałów dostępności pozostało widocznych po zmianie ekranu;
 - panele dyrektora, wykładowcy, rodzica i ucznia otworzyły właściwe widoki;
-- wygenerowane instrukcje mają odpowiednio 16 i 10 stron A4, bez uciętych treści.
+- wygenerowane instrukcje mają: dyrektor 27 stron, wykładowca 21, rodzic 21,
+  uczeń 21 i właściciel 10 stron A4; wszystkie 100 stron wyrenderowano i
+  sprawdzono wizualnie bez uciętych treści;
 - ekran Pomoc i podręczniki sprawdzono na 1440 × 900 i 375 × 812; dyrektor
-  pobiera instrukcję szkoły, ale nie widzi chronionego podręcznika właściciela;
+  widzi i pobiera wyłącznie podręcznik dyrektora, a ręczna próba pobrania PDF-u
+  wykładowcy kończy się kontrolowanym 404;
+- po pierwszym samouczku na telefonie pojawia się osobne pytanie o pobranie
+  podręcznika roli; oba przyciski mają co najmniej 44 px, tekst mieści się bez
+  przewijania poziomego, a tło jest prawidłowo zablokowane;
 - po uruchomieniu produkcyjnego pakietu standalone pobrano cały, niepusty PDF
-  przez prawdziwą zalogowaną sesję; test wykrył i usunął wcześniejszy brak PDF
-  w katalogu wdrożeniowym;
+  dyrektora przez prawdziwą zalogowaną sesję; suma pliku pobranego przez
+  przeglądarkę jest identyczna z wydaniem;
 - przycisk „Napisz do twórcy aplikacji” jest widoczny i czytelny na telefonie;
 - ukryta zagadka otwiera się dopiero po pięciu świadomych kliknięciach, przyjmuje
   poprawną odpowiedź i pokazuje zamykany podgląd bez zasłaniania interfejsu po
   zamknięciu;
 - konsola przeglądarki po przejściu tych przepływów: 0 błędów i 0 ostrzeżeń.
 
-Zrzuty dowodowe: `manuals-desktop.png`, `manuals-mobile.png`,
-`creator-support-mobile.png` i `easter-egg.png` w tym katalogu.
+Zrzuty dowodowe obejmują również `manual-offer-mobile.png` i
+`manual-library-desktop.png` w tym katalogu.
 
 ## Granice odbioru
 

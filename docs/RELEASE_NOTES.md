@@ -1,5 +1,21 @@
 # Notatki wydania
 
+## 1.1.2 — pełne podręczniki każdej roli
+
+- dyrektor, wykładowca, rodzic i uczeń otrzymują osobny podręcznik PDF, który
+  opisuje wyłącznie funkcje dostępne dla danej roli;
+- każda główna funkcja ma własny rozdział ze zrzutem ekranu, ścieżką w panelu,
+  przygotowaniem, dokładną obsługą, oczekiwanym wynikiem, uprawnieniami oraz
+  rozwiązaniem typowych problemów;
+- po pierwszym samouczku system pyta, czy użytkownik chce od razu pobrać swój
+  podręcznik; odmowa nie zamyka dostępu — aktualny PDF pozostaje pod przyciskiem
+  „Instrukcja”;
+- właściciel systemu może pobrać komplet czterech instrukcji ról oraz osobny
+  podręcznik techniczny;
+- serwer sprawdza rolę przy każdym pobraniu, dlatego zwykły użytkownik nie może
+  pobrać instrukcji innej roli przez ręczną zmianę adresu;
+- kontrola wydania odrzuca brakujący, zbyt mały albo niezgodny wersją PDF.
+
 ## 1.1.1 — podręczniki w aplikacji i zamknięcie techniczne Etapów 5–6
 
 - strona „Pomoc i podręczniki” udostępnia aktualną instrukcję zgodną z

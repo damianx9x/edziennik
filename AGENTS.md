@@ -47,7 +47,7 @@ uproszczeń prawnych ani decyzji technicznych.
 - Po decyzji architektonicznej dopisz wpis do `docs/DECYZJE.md`.
 - Każda zmiana obejmuje zależne pliki, migracje, testy, dokumentację i paczkę.
 - Każdy commit zmieniający zachowanie widoczne dla użytkownika aktualizuje
-  `manuals/release.json`, oba podręczniki PDF i listę zmian na ich pierwszej
+  `manuals/release.json`, wszystkie aktualne podręczniki PDF i listę zmian na ich pierwszej
   stronie. Przed commitem uruchom `npm run manuals:build`.
 - Nigdy nie używaj prawdziwych danych dzieci w kodzie, logach, seedach,
   zrzutach ani na stagingu.

@@ -1,7 +1,9 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "date": "31 sierpnia 2026",
   "schoolChanges": [
+    "Każda rola otrzymała osobny, obszerny podręcznik ze zrzutami i dokładnym opisem wszystkich dostępnych funkcji.",
+    "Po pierwszym samouczku system pyta, czy od razu pobrać właściwy podręcznik PDF.",
     "Dodano wygodny widok wiadomości na telefonie: historia przewija się osobno, a pole odpowiedzi pozostaje na dole.",
     "Można wysłać sam załącznik, a materiały dodawane z telefonu mają czytelne potwierdzenie zapisu.",
     "Uzupełniono najbliższe zajęcia, powiadomienia oraz instrukcje dla każdej roli.",
@@ -9,6 +11,7 @@
     "Podręcznik można teraz pobrać bezpośrednio z panelu Pomoc i podręczniki."
   ],
   "ownerChanges": [
+    "Właściciel może pobrać z panelu komplet instrukcji wszystkich ról oraz osobny podręcznik techniczny.",
     "Pełny eksport i próbne odtworzenie obejmują bazę oraz prywatne pliki.",
     "Poprawiono uruchamianie kopii i odtwarzania z bezpiecznego brokera bez poleceń sudo w aplikacji.",
     "Dodano jasną procedurę auto-startu, watchdogów, aktualizacji i reagowania na awarię.",

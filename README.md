@@ -156,9 +156,13 @@ Instalacja i utrzymanie Raspberry: [docs/OPERACJE_RASPBERRY.md](docs/OPERACJE_RA
 ## Dokumentacja
 
 - Po zalogowaniu wybierz ikonę **Instrukcja** w górnym pasku. Aplikacja pobiera
-  PDF zgodny dokładnie z uruchomioną wersją; podręcznik techniczny jest widoczny
-  tylko dla właściciela systemu.
-- [Instrukcja dla szkoły — PDF](output/pdf/Instrukcja_eDziennika_KLA_dla_szkoly.pdf)
+  PDF właściwy dla zalogowanej roli i zgodny dokładnie z uruchomioną wersją.
+  Po pierwszym samouczku system proponuje jego pobranie. Podręcznik techniczny
+  jest widoczny tylko dla właściciela systemu.
+- [Podręcznik dyrektora — PDF](output/pdf/Podrecznik_eDziennika_KLA_dla_dyrektora.pdf)
+- [Podręcznik wykładowcy — PDF](output/pdf/Podrecznik_eDziennika_KLA_dla_wykladowcy.pdf)
+- [Podręcznik rodzica — PDF](output/pdf/Podrecznik_eDziennika_KLA_dla_rodzica.pdf)
+- [Podręcznik ucznia — PDF](output/pdf/Podrecznik_eDziennika_KLA_dla_ucznia.pdf)
 - [Instrukcja właściciela systemu — PDF](output/pdf/Instrukcja_eDziennika_KLA_dla_wlasciciela_systemu.pdf)
 - [Funkcje i role](docs/FUNKCJE_I_ROLE.md)
 - [Zakres i stan produktu](docs/PRODUCT_SCOPE.md)

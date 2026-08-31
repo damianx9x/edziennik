@@ -10853,6 +10853,42 @@ html[data-theme="dark"] .schedule-tone-5 {
 .onboarding-dismiss { margin-top: 12px; text-align: center; }
 .onboarding-dismiss button { min-height: 44px; border: 0; background: transparent; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 
+.manual-offer-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-width: none;
+  padding: 34px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--paper);
+  color: var(--navy-900);
+  box-shadow: var(--shadow-lg);
+}
+.manual-offer-dialog[open] { animation: manual-offer-in var(--motion-base) var(--ease-enter); }
+.manual-offer-dialog::backdrop { background: rgb(9 24 58 / .58); backdrop-filter: blur(4px); }
+.manual-offer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--navy-900);
+}
+.manual-offer-close svg { width: 20px; }
+.manual-offer-icon { display: grid; width: 58px; height: 58px; margin-bottom: 20px; place-items: center; border-radius: 18px; background: var(--blue-soft); color: var(--blue); }
+.manual-offer-icon svg { width: 27px; }
+.manual-offer-dialog h2 { margin: 8px 54px 12px 0; font-size: clamp(1.8rem, 6vw, 2.35rem); line-height: 1.08; }
+.manual-offer-dialog > p { margin: 0; color: var(--muted); line-height: 1.65; }
+.manual-offer-dialog > p strong { color: var(--navy-900); }
+.manual-offer-actions { display: grid; grid-template-columns: 1.35fr .8fr; gap: 10px; margin-top: 24px; }
+.manual-offer-actions .button { min-height: 50px; justify-content: center; }
+.manual-offer-dialog > small { display: block; margin-top: 15px; color: var(--muted); line-height: 1.5; }
+@keyframes manual-offer-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
 .messaging-group-tools { display: grid; gap: 8px; padding: 0 14px 12px; }
 .messaging-group-tools label { display: flex; min-height: 44px; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .messaging-group-tools label svg { width: 18px; color: var(--muted); }
@@ -10920,6 +10956,9 @@ html[data-theme="dark"] .schedule-tone-5 {
   .onboarding-shell main { margin-block: auto; }
   .onboarding-shell > footer { position: sticky; bottom: 0; z-index: 5; padding: 10px 0 max(10px, env(safe-area-inset-bottom)); background: var(--paper); }
   .onboarding-shell > footer button { min-width: 112px; justify-content: center; }
+  .manual-offer-dialog { padding: 28px 20px 24px; }
+  .manual-offer-actions { grid-template-columns: 1fr; }
+  .manual-offer-dialog h2 { margin-right: 44px; }
   .messaging-oversight-note { padding-inline: 15px; }
   .messaging-thread-header { align-items: flex-start; }
   .messaging-thread-header > span { display: none; }

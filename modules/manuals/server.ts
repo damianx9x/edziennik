@@ -6,9 +6,21 @@ import path from "node:path";
 import type { ManualAudience } from "./release";
 
 const MANUALS: Record<ManualAudience, { file: string; downloadName: string }> = {
-  school: {
-    file: "Instrukcja_eDziennika_KLA_dla_szkoly.pdf",
-    downloadName: "Instrukcja-eDziennik-KLA.pdf",
+  director: {
+    file: "Podrecznik_eDziennika_KLA_dla_dyrektora.pdf",
+    downloadName: "Podrecznik-eDziennik-KLA-dyrektor.pdf",
+  },
+  teacher: {
+    file: "Podrecznik_eDziennika_KLA_dla_wykladowcy.pdf",
+    downloadName: "Podrecznik-eDziennik-KLA-wykladowca.pdf",
+  },
+  parent: {
+    file: "Podrecznik_eDziennika_KLA_dla_rodzica.pdf",
+    downloadName: "Podrecznik-eDziennik-KLA-rodzic.pdf",
+  },
+  student: {
+    file: "Podrecznik_eDziennika_KLA_dla_ucznia.pdf",
+    downloadName: "Podrecznik-eDziennik-KLA-uczen.pdf",
   },
   owner: {
     file: "Instrukcja_eDziennika_KLA_dla_wlasciciela_systemu.pdf",
