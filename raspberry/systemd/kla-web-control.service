@@ -1,0 +1,24 @@
+[Unit]
+Description=KLA allowlisted server control broker
+After=local-fs.target
+RequiresMountsFor=/srv/kla-vault
+
+[Service]
+Type=simple
+User=root
+Group=kla
+RuntimeDirectory=kla-web-control
+RuntimeDirectoryMode=0750
+ExecStart=/usr/local/sbin/kla-web-control-daemon
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+UMask=0077
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

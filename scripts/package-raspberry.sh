@@ -22,6 +22,31 @@ COMMIT="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
 mkdir -p "$STAGE" "$OUTPUT_DIR"
 git -C "$PROJECT_DIR" archive --format=tar "$COMMIT" | tar -xf - -C "$STAGE"
 printf '%s\n' "$COMMIT" > "$STAGE/KLA_RELEASE_COMMIT"
+AUDIT_RESULT="$TEMP_DIR/npm-audit.json"
+(cd "$PROJECT_DIR" && npm audit --omit=dev --json > "$AUDIT_RESULT") || true
+node - "$STAGE/package.json" "$AUDIT_RESULT" "$STAGE/KLA_RELEASE_METADATA.json" "$COMMIT" <<'NODE'
+const fs = require("node:fs");
+const [packagePath, auditPath, outputPath, commit] = process.argv.slice(2);
+const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+const audit = JSON.parse(fs.readFileSync(auditPath, "utf8"));
+const values = audit.metadata?.vulnerabilities ?? {};
+const vulnerabilities = {
+  total: Number(values.total ?? 0),
+  critical: Number(values.critical ?? 0),
+  high: Number(values.high ?? 0),
+  moderate: Number(values.moderate ?? 0),
+  low: Number(values.low ?? 0),
+};
+if (vulnerabilities.critical > 0 || vulnerabilities.high > 0) {
+  throw new Error("Wydanie ma krytyczne albo wysokie podatności zależności.");
+}
+fs.writeFileSync(outputPath, `${JSON.stringify({
+  version: packageJson.version,
+  commit,
+  auditedAt: new Date().toISOString(),
+  vulnerabilities,
+}, null, 2)}\n`, { mode: 0o600 });
+NODE
 (
   cd "$STAGE"
   find . -type f ! -name KLA_RELEASE_MANIFEST.sha256 -print0 \

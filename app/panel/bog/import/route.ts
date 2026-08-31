@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/server/db";
+import { isTrustedSameOrigin } from "@/lib/server/same-origin";
 import { requireSystemOwner } from "@/modules/identity/auth/session";
 import { prepareFullImport, restoreFullImport } from "@/modules/system-owner/server-control";
 
@@ -20,14 +21,6 @@ const restoreSchema = z.object({ action: z.literal("restore"), id: z.string().uu
 
 type UploadMetadata = { id: string; actorId: string; schoolId: string; filename: string; size: number; createdAt: string };
 
-function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  const protocol = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
-  return Boolean(host) && origin === `${protocol}://${host}`;
-}
-
 function paths(id: string) {
   return { data: `${IMPORT_ROOT}/${id}.part`, metadata: `${IMPORT_ROOT}/${id}.json` };
 }
@@ -42,7 +35,7 @@ async function readMetadata(id: string, actorId: string, schoolId: string) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
+  if (!isTrustedSameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
   const session = await requireSystemOwner("/panel/bog/ustawienia");
   const body = await request.json().catch(() => null);
   const start = startSchema.safeParse(body);
@@ -91,7 +84,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
+  if (!isTrustedSameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
   const session = await requireSystemOwner("/panel/bog/ustawienia");
   const id = request.nextUrl.searchParams.get("id") ?? "";
   const offset = Number(request.nextUrl.searchParams.get("offset"));

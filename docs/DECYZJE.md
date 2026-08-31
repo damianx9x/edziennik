@@ -1229,3 +1229,48 @@ produktu. Publiczna kampania nie wydaje zaproszeń do docelowego panelu.
 realny sygnał operacyjny, ale nie mogą mieszać danych między tenantami ani
 zamieniać docelowej bazy w otwarte laboratorium. Szerszy pentest lub test
 obciążeniowy wymaga osobnego zakresu oraz izolowanego środowiska.
+
+## ADR-091 — panel serwera używa wąskiego brokera, a nie `sudo`
+
+**Data:** 2026-08-30
+**Decyzja:** proces Next.js zachowuje `NoNewPrivileges=true` i nie uruchamia
+`sudo`. Dokładnie wyliczone operacje właściciela przechodzą przez lokalne
+gniazdo Unix do osobnej usługi root. Broker ma zamkniętą listę akcji, limity
+wejścia, odpowiedzi i czasu oraz nie udostępnia powłoki ani instalowania paczek.
+Aktualizacje nadal przyjmują wyłącznie podpisane wydanie z dokładnym manifestem,
+a panel pokazuje jego wersję, commit i wynik audytu zależności.
+
+**Dlaczego:** ustawienia SMTP, backupu, eksportu i wizytówki muszą działać z UI,
+ale wyłączenie ochrony systemd albo szeroki wpis sudoers dawałyby aplikacji zbyt
+duże uprawnienia. Instalowanie `npm update` bezpośrednio na żywym Raspberry nie
+zapewnia powtarzalnego builda, backupu, migracji ani rollbacku.
+
+## ADR-092 — ciągłość startu jest mierzona jako osobny łańcuch
+
+**Data:** 2026-08-31
+**Decyzja:** panel właściciela i `kla-startup-audit` pokazują osobno stan sejfu,
+auto-odblokowania, sprzętowego watchdoga, trwałego journala, restartu aplikacji,
+restartu tunelu, minutowego healthchecku i harmonogramu kopii. Aktualizacja
+ponownie stosuje profil runtime bez zmiany bazy. Zamknięty sejf jest alarmem,
+nie pozornie poprawnym wynikiem healthchecku.
+
+Klucz startowy LUKS pozostaje `root-only` na karcie systemowej i jest tworzony
+dopiero po jednorazowym potwierdzeniu aktualnym hasłem lub kluczem recovery
+LUKS. Klucz `age` do kopii nie otwiera partycji i nie zastępuje klucza LUKS.
+
+**Dlaczego:** restart procesu nie pomaga, gdy zaszyfrowany wolumen nie został
+zamontowany. Operator musi widzieć dokładnie, której warstwy brakuje, a logi
+poprzedniego bootu muszą przetrwać nagły zanik zasilania. Automatyczny start nie
+może jednak powstać przez zgadywanie albo przechowywanie hasła w repozytorium.
+
+## ADR-093 — ustawienia szkoły i systemu mają oddzielną architekturę informacji
+
+**Data:** 2026-08-31
+**Decyzja:** dyrektor zarządza kontami, publiczną treścią szkoły, importem
+kartotek i statystykami ograniczonymi do własnego `schoolId`. Właściciel ma
+osobne kategorie techniczne: stan systemu, bezpieczeństwo i zdarzenia, serwer i
+integracje. Ustawienia szkoły nie duplikują już formularzy backupu i Raspberry.
+
+**Dlaczego:** samo ukrycie funkcji nie jest zabezpieczeniem, dlatego serwerowe
+kontrole ról pozostają bez zmian. Czytelny podział ogranicza jednak pomyłki i
+sprawia, że codzienne zadania dyrektora nie mieszają się z utrzymaniem hosta.

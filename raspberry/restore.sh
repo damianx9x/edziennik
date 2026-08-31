@@ -11,13 +11,18 @@ if [[ ${EUID} -ne 0 || ! -f "$BACKUP" ]]; then
   exit 1
 fi
 mountpoint -q "$VAULT" || { echo "Najpierw: sudo kla-unlock"; exit 1; }
+if [[ "${KLA_MAINTENANCE_LOCK_HELD:-0}" != "1" ]]; then
+  exec 9>/run/lock/kla-maintenance.lock
+  flock -n 9 || { echo "Trwa inna operacja serwisowa. Odtwarzanie nie zostało rozpoczęte."; exit 1; }
+fi
 (
   cd "$(dirname "$BACKUP")"
   sha256sum -c "$(basename "$BACKUP").sha256"
 )
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
-age -d -i "$VAULT/secrets/backup-age.key" "$BACKUP" | tar -C "$TEMP_DIR" -xf -
+age -d -i "$VAULT/secrets/backup-age.key" "$BACKUP" \
+  | /usr/local/sbin/kla-safe-archive outer "$TEMP_DIR"
 # Katalog tymczasowy pozostaje prywatny dla roota. PostgreSQL dostaje tylko
 # prawo przejścia przez katalog i odczytu samego zrzutu bazy.
 chgrp postgres "$TEMP_DIR/database.dump"
@@ -25,7 +30,10 @@ chgrp postgres "$TEMP_DIR"
 chmod 710 "$TEMP_DIR"
 chmod 640 "$TEMP_DIR/database.dump"
 pg_restore --list "$TEMP_DIR/database.dump" >/dev/null
-tar -tzf "$TEMP_DIR/private-files.tar.gz" >/dev/null
+VALIDATION_FILES="$TEMP_DIR/private-files.validation"
+/usr/local/sbin/kla-safe-archive private "$TEMP_DIR/private-files.tar.gz" "$VALIDATION_FILES"
+clamdscan --fdpass --no-summary "$VALIDATION_FILES" >/dev/null \
+  || { echo "Skan antywirusowy zatrzymał odtwarzanie kopii."; exit 1; }
 
 if [[ "$MODE" == "--test" ]]; then
   TEST_DB="kla_restore_test_$(date +%s)"
@@ -42,7 +50,7 @@ if [[ "$MODE" != "--confirmed" ]]; then
   read -r -p "To zastąpi bazę i dokumenty. Wpisz ODTWARZAM KLA: " CONFIRM
   [[ "$CONFIRM" == "ODTWARZAM KLA" ]] || { echo "Anulowano."; exit 1; }
 fi
-/usr/local/sbin/edziennik-kla-backup
+KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-backup
 STAMP="$(date +%s)"
 CANDIDATE_DB="kla_restore_candidate_$STAMP"
 PREVIOUS_DB="kla_before_restore_$STAMP"
@@ -78,7 +86,7 @@ sudo -u postgres createdb --owner=kla_app "$CANDIDATE_DB"
 sudo -u postgres pg_restore --no-owner --dbname="$CANDIDATE_DB" "$TEMP_DIR/database.dump"
 sudo -u postgres psql --dbname="$CANDIDATE_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
 install -d -m 700 -o kla -g kla "$RESTORE_FILES"
-tar -C "$RESTORE_FILES" --strip-components=1 -xzf "$TEMP_DIR/private-files.tar.gz"
+/usr/local/sbin/kla-safe-archive private "$TEMP_DIR/private-files.tar.gz" "$RESTORE_FILES"
 chown -R kla:kla "$RESTORE_FILES"
 
 systemctl stop edziennik-kla

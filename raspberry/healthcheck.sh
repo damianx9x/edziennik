@@ -96,8 +96,8 @@ check_postgresql_with_recovery() {
 }
 
 if ! mountpoint -q /srv/kla-vault; then
-  log "Szyfrowany sejf jest zamknięty; automatyczna naprawa celowo czeka na ręczne odblokowanie."
-  exit 0
+  log "ALARM: szyfrowany sejf jest zamknięty. Automatyczny start nie może uruchomić bazy ani aplikacji."
+  exit 1
 fi
 
 install -d -m 0750 "$STATE_DIR"

@@ -18,6 +18,23 @@ if [[ -f /etc/kla/vault-auto-unlock.key ]] && grep -qE '^[[:space:]]*kla-data[[:
 else
   echo "[UWAGA] automatyczny start sejfu nie jest jeszcze włączony"
 fi
+if grep -RqsE '^[[:space:]]*RuntimeWatchdogSec=' /etc/systemd/system.conf /etc/systemd/system.conf.d 2>/dev/null; then
+  echo "[OK] sprzętowy watchdog systemd skonfigurowany"
+else
+  echo "[STOP] sprzętowy watchdog systemd nie jest skonfigurowany"
+fi
+if [[ -d /var/log/journal ]] && grep -RqsE '^[[:space:]]*Storage=persistent' /etc/systemd/journald.conf /etc/systemd/journald.conf.d 2>/dev/null; then
+  echo "[OK] trwałe logi poprzednich uruchomień"
+else
+  echo "[UWAGA] logi startu nie są jawnie zapisane trwale"
+fi
+for TIMER in edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer; do
+  if systemctl is-enabled --quiet "$TIMER" && systemctl is-active --quiet "$TIMER"; then
+    echo "[OK] $TIMER"
+  else
+    echo "[STOP] $TIMER"
+  fi
+done
 if command -v vcgencmd >/dev/null; then
   echo "Temperatura: $(vcgencmd measure_temp | cut -d= -f2)"
   THROTTLED="$(vcgencmd get_throttled | cut -d= -f2)"

@@ -3,7 +3,7 @@ on run
   set baseDir to do shell script "/usr/bin/dirname " & quoted form of appPath
   set backend to baseDir & "/kla-server-control.sh"
   repeat
-    set choices to {"Stan serwera", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Utwórz backup", "Test odtworzenia", "Zapisz jedyny klucz odzyskiwania", "Pokaż logi", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Wgraj aktualizację", "Włącz automatyczny start po zaniku prądu", "Odblokuj po restarcie", "Ustaw połączenie", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry", "Zamknij panel"}
+    set choices to {"Stan serwera", "Audyt startu po zaniku prądu", "Uruchom", "Zatrzymaj", "Restart", "Otwórz publiczne demo", "Otwórz lokalnie przez SSH", "Utwórz, przetestuj i pobierz backup na Maca", "Pobierz ostatni backup na Maca", "Utwórz backup na Raspberry", "Test odtworzenia", "Zapisz klucz kopii age (tylko raz)", "Pokaż logi", "Skonfiguruj e-mail", "Wygeneruj kod pierwszego uruchomienia", "Kopiuj kod pierwszego uruchomienia", "Wgraj aktualizację", "Włącz automatyczny start po zaniku prądu", "Odblokuj sejf po restarcie", "Ustaw połączenie", "Uruchom ponownie Raspberry", "Bezpiecznie wyłącz Raspberry", "Zamknij panel"}
     set picked to choose from list choices with title "KLA — Raspberry Serwer" with prompt "Wybierz działanie:" default items {"Stan serwera"} OK button name "Wykonaj" cancel button name "Zamknij"
     if picked is false then return
     set actionName to item 1 of picked
@@ -11,6 +11,8 @@ on run
     try
       if actionName is "Stan serwera" then
         set resultText to do shell script quoted form of backend & " status"
+      else if actionName is "Audyt startu po zaniku prądu" then
+        set resultText to do shell script quoted form of backend & " startup-audit"
       else if actionName is "Uruchom" then
         set resultText to do shell script quoted form of backend & " start"
       else if actionName is "Zatrzymaj" then
@@ -22,12 +24,16 @@ on run
         set resultText to do shell script quoted form of backend & " public-preview"
       else if actionName is "Otwórz lokalnie przez SSH" then
         set resultText to do shell script quoted form of backend & " local-preview"
-      else if actionName is "Utwórz backup" then
+      else if actionName is "Utwórz, przetestuj i pobierz backup na Maca" then
+        set resultText to do shell script quoted form of backend & " verified-backup-download"
+      else if actionName is "Pobierz ostatni backup na Maca" then
+        set resultText to do shell script quoted form of backend & " download-backup"
+      else if actionName is "Utwórz backup na Raspberry" then
         set resultText to do shell script quoted form of backend & " backup"
       else if actionName is "Test odtworzenia" then
         set resultText to do shell script quoted form of backend & " restore-test"
-      else if actionName is "Zapisz jedyny klucz odzyskiwania" then
-        display dialog "Klucz zostanie pokazany przez serwer tylko raz i zapisany w pliku na tym Macu. Bez niego pełnego eksportu nie da się odtworzyć. Kontynuować?" buttons {"Anuluj", "Zapisz klucz"} default button "Anuluj" with icon caution
+      else if actionName is "Zapisz klucz kopii age (tylko raz)" then
+        display dialog "To klucz do odszyfrowania plików backupu age, a nie hasło partycji LUKS. Serwer pokaże go tylko raz i zapisze na tym Macu. Kontynuować?" buttons {"Anuluj", "Zapisz klucz"} default button "Anuluj" with icon caution
         set resultText to do shell script quoted form of backend & " recovery-key-once"
       else if actionName is "Pokaż logi" then
         set resultText to do shell script quoted form of backend & " logs"
@@ -52,7 +58,7 @@ on run
           do script quoted form of backend & " auto-unlock-enable"
         end tell
         set resultText to "Dokończ jednorazowe włączenie w Terminalu. Jeżeli system poprosi, wpisz dotychczasowe hasło sejfu; hasło nie zostanie zapisane."
-      else if actionName is "Odblokuj po restarcie" then
+      else if actionName is "Odblokuj sejf po restarcie" then
         tell application "Terminal"
           activate
           do script quoted form of backend & " unlock"

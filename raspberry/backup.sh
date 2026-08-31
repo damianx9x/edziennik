@@ -2,6 +2,11 @@
 set -Eeuo pipefail
 umask 077
 
+if [[ "${KLA_MAINTENANCE_LOCK_HELD:-0}" != "1" ]]; then
+  exec 9>/run/lock/kla-maintenance.lock
+  flock -n 9 || { echo "Trwa inna operacja serwisowa. Kopia nie została rozpoczęta."; exit 1; }
+fi
+
 VAULT=/srv/kla-vault
 BACKUP_DIR="$VAULT/backups"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -24,9 +29,14 @@ tar -C "$VAULT" -czf "$TEMP_DIR/private-files.tar.gz" private-files
 install -d -m 700 "$TEMP_DIR/continuity"
 install -m 600 "$VAULT/secrets/edziennik.env" "$TEMP_DIR/continuity/edziennik.env"
 if [[ -f /etc/kla/vault.conf ]]; then install -m 600 /etc/kla/vault.conf "$TEMP_DIR/continuity/vault.conf"; fi
+if [[ -f /opt/kla/current/KLA_RELEASE_COMMIT ]]; then
+  APP_COMMIT="$(tr -d '\r\n' < /opt/kla/current/KLA_RELEASE_COMMIT)"
+else
+  APP_COMMIT="$(git -C /opt/kla/current rev-parse HEAD 2>/dev/null || echo unknown-release)"
+fi
 cat > "$TEMP_DIR/manifest.txt" <<EOF
 created_at=$STAMP
-app_commit=$(git -C /opt/kla/current rev-parse HEAD 2>/dev/null || echo packaged-release)
+app_commit=$APP_COMMIT
 database=kla_edziennik
 files=private-files
 continuity=encrypted-application-secrets-without-backup-private-key
@@ -81,7 +91,7 @@ if [[ "${1:-}" == "--test-restore" ]]; then
     done
     TEST_BACKUP="$REMOTE_TEST_DIR/kla-$STAMP.tar.age"
   fi
-  /usr/local/sbin/edziennik-kla-restore --test "$TEST_BACKUP"
+  KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-restore --test "$TEST_BACKUP"
 fi
 
 echo "Kopia gotowa: $BACKUP_DIR/kla-$STAMP.tar.age"

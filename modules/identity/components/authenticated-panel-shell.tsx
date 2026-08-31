@@ -16,7 +16,7 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { Brand } from "@/app/components/brand";
 import { db } from "@/lib/server/db";
@@ -29,6 +29,7 @@ import { OnboardingTour } from "@/modules/onboarding/components/onboarding-tour"
 
 type PanelSection =
   | "home"
+  | "school"
   | "invitations"
   | "records"
   | "tools"
@@ -43,6 +44,27 @@ type PanelSection =
   | "logs"
   | "server-settings";
 
+function navigationGroup(
+  role: ActiveSession["user"]["role"],
+  key: string,
+): string | null {
+  if (role === "SYSTEM_OWNER") {
+    if (["home", "logs", "server-settings"].includes(key)) return "System";
+    if (["school", "records", "invitations", "schedule", "messages", "notifications"].includes(key)) return "Obsługa szkoły";
+    if (["learning", "progress"].includes(key)) return "Nauka";
+    if (["contracts", "payments"].includes(key)) return "Dokumenty i rozliczenia";
+    if (["tools", "statistics"].includes(key)) return "Administracja szkołą";
+  }
+  if (role === "DIRECTOR") {
+    if (["home", "schedule", "messages", "notifications"].includes(key)) return "Codzienna praca";
+    if (["records", "invitations"].includes(key)) return "Szkoła i osoby";
+    if (["learning", "progress"].includes(key)) return "Nauka";
+    if (["contracts", "payments"].includes(key)) return "Dokumenty i rozliczenia";
+    if (["tools", "statistics"].includes(key)) return "Administracja";
+  }
+  return null;
+}
+
 function getNavigation(role: ActiveSession["user"]["role"]) {
   if (role === "SYSTEM_OWNER") {
     return [
@@ -53,22 +75,22 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "home",
       },
       {
-        href: "/panel/szkola",
-        label: "Panel szkoły",
-        icon: ShieldCheck,
-        key: "school",
-      },
-      {
         href: "/panel/bog/logi",
-        label: "Głębokie logi",
+        label: "Bezpieczeństwo i zdarzenia",
         icon: ScrollText,
         key: "logs",
       },
       {
         href: "/panel/bog/ustawienia",
-        label: "Ustawienia serwera",
+        label: "Serwer i integracje",
         icon: Settings2,
         key: "server-settings",
+      },
+      {
+        href: "/panel/szkola",
+        label: "Panel szkoły",
+        icon: ShieldCheck,
+        key: "school",
       },
       {
         href: "/panel/szkola/kartoteki",
@@ -82,12 +104,18 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         icon: ContactRound,
         key: "invitations",
       },
+      {
+        href: "/panel/plan",
+        label: "Grafik",
+        icon: CalendarDays,
+        key: "schedule",
+      },
       { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
       { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
       { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
-      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
       {
         href: "/panel/szkola/narzedzia",
         label: "Ustawienia szkoły",
@@ -95,14 +123,8 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
         key: "tools",
       },
       {
-        href: "/panel/plan",
-        label: "Grafik",
-        icon: CalendarDays,
-        key: "schedule",
-      },
-      {
         href: "/panel/szkola/statystyki",
-        label: "Statystyki",
+        label: "Statystyki szkoły",
         icon: BarChart3,
         key: "statistics",
       },
@@ -112,23 +134,29 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
     return [
       { href: "/panel/szkola", label: "Start", icon: Home, key: "home" },
       {
-        href: "/panel/szkola/kartoteki",
-        label: "Kartoteki",
-        icon: ContactRound,
-        key: "records",
-      },
-      {
         href: "/panel/plan",
         label: "Grafik",
         icon: CalendarDays,
         key: "schedule",
       },
       { href: "/panel/wiadomosci", label: "Wiadomości", icon: MessageCircleMore, key: "messages" },
+      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
+      {
+        href: "/panel/szkola/kartoteki",
+        label: "Kartoteki",
+        icon: ContactRound,
+        key: "records",
+      },
+      {
+        href: "/panel/szkola/zaproszenia",
+        label: "Zaproszenia i konta",
+        icon: ContactRound,
+        key: "invitations",
+      },
       { href: "/panel/nauka", label: "Nauka", icon: GraduationCap, key: "learning" },
       { href: "/panel/postepy", label: "Postępy", icon: NotebookTabs, key: "progress" },
       { href: "/panel/umowy", label: "Umowy", icon: FileSignature, key: "contracts" },
       { href: "/panel/platnosci", label: "Płatności", icon: CreditCard, key: "payments" },
-      { href: "/panel/powiadomienia", label: "Powiadomienia", icon: Bell, key: "notifications" },
       {
         href: "/panel/szkola/narzedzia",
         label: "Ustawienia",
@@ -137,7 +165,7 @@ function getNavigation(role: ActiveSession["user"]["role"]) {
       },
       {
         href: "/panel/szkola/statystyki",
-        label: "Statystyki",
+        label: "Statystyki i odwiedziny",
         icon: BarChart3,
         key: "statistics",
       },
@@ -284,17 +312,25 @@ export async function AuthenticatedPanelShell({
       <div className="app-panel-layout">
         <aside className="app-panel-sidebar">
           <nav aria-label="Nawigacja eDziennika">
-            {navigation.map((item) => {
+            {navigation.map((item, index) => {
               const Icon = item.icon;
+              const group = navigationGroup(session.user.role, item.key);
+              const previousGroup = index > 0
+                ? navigationGroup(session.user.role, navigation[index - 1].key)
+                : null;
               return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={active === item.key ? "active" : undefined}
-                >
-                  <Icon aria-hidden="true" />
-                  {item.label}
-                </Link>
+                <Fragment key={item.key}>
+                  {group && group !== previousGroup ? (
+                    <span className="app-panel-nav-group">{group}</span>
+                  ) : null}
+                  <Link
+                    href={item.href}
+                    className={active === item.key ? "active" : undefined}
+                  >
+                    <Icon aria-hidden="true" />
+                    {item.label}
+                  </Link>
+                </Fragment>
               );
             })}
           </nav>

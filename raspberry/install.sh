@@ -201,6 +201,7 @@ KLA_DEPLOYMENT_MODE=${MODE}
 KLA_REQUIRE_DIRECTOR_MFA=1
 KLA_ALLOW_INSECURE_DEMO_CREDENTIALS=0
 KLA_ALLOW_DEMO_RESET=$([[ "$MODE" == "production" ]] && echo 0 || echo 1)
+KLA_PUBLIC_PRESENTATION_MODE_FILE=$VAULT/config/public-presentation-mode
 KLA_PUBLIC_SCHOOL_SLUG=$([[ "$INSTALL_DEMO" =~ ^[TtYy]$ ]] && echo kings-language-academy-demo || echo kings-language-academy)
 KLA_PRIVATE_FILES_DIR=$VAULT/private-files
 FILE_STORAGE_PROVIDER=local
@@ -252,6 +253,7 @@ chown -R kla:kla "$APP_DIR"
 
 install -m 644 "$SOURCE_DIR"/raspberry/systemd/* /etc/systemd/system/
 install -m 755 "$SOURCE_DIR/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$SOURCE_DIR/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
 install -m 755 "$SOURCE_DIR/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
 install -m 755 "$SOURCE_DIR/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
 install -m 755 "$SOURCE_DIR/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
@@ -263,14 +265,19 @@ install -m 755 "$SOURCE_DIR/raspberry/enable-auto-unlock.sh" /usr/local/sbin/kla
 install -m 755 "$SOURCE_DIR/raspberry/status.sh" /usr/local/bin/kla-status
 install -m 755 "$SOURCE_DIR/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
 install -m 755 "$SOURCE_DIR/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
+install -m 755 "$SOURCE_DIR/raspberry/runtime-guards.sh" /usr/local/sbin/kla-runtime-guards
+install -m 755 "$SOURCE_DIR/raspberry/startup-audit.sh" /usr/local/sbin/kla-startup-audit
 install -m 755 "$SOURCE_DIR/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$SOURCE_DIR/raspberry/update.sh" /usr/local/sbin/kla-update
 install -m 755 "$SOURCE_DIR/raspberry/control.sh" /usr/local/sbin/kla-control
 install -m 755 "$SOURCE_DIR/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+install -m 755 "$SOURCE_DIR/raspberry/web-control-daemon.py" /usr/local/sbin/kla-web-control-daemon
+install -d -m 750 -o root -g kla /srv/kla-vault/config /srv/kla-vault/release-uploads
+printf '%s\n' "${KLA_PUBLIC_PRESENTATION_MODE:-product}" > /srv/kla-vault/config/public-presentation-mode
+chown root:kla /srv/kla-vault/config/public-presentation-mode
+chmod 640 /srv/kla-vault/config/public-presentation-mode
 install -m 644 -o root -g root "$SOURCE_DIR/deployment/release-signing.pub" /etc/kla/release-signing.pub
-printf 'kla ALL=(root) NOPASSWD: /usr/local/sbin/kla-web-control *\n' > /etc/sudoers.d/kla-web-control
-chmod 440 /etc/sudoers.d/kla-web-control
-visudo -cf /etc/sudoers.d/kla-web-control >/dev/null
+rm -f /etc/sudoers.d/kla-web-control
 printf '%s\n' "$CONTROL_USER" > /etc/kla/control-user
 chmod 600 /etc/kla/control-user
 printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
@@ -317,12 +324,12 @@ if [[ "$MODE" == "local-demo" ]]; then
   ufw allow from 192.168.0.0/16 to any port 8080 proto tcp
 fi
 ufw --force enable
-systemctl enable avahi-daemon fail2ban unattended-upgrades nginx edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+systemctl enable avahi-daemon fail2ban unattended-upgrades nginx kla-web-control edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 systemctl daemon-reload
 systemctl restart nginx postgresql clamav-daemon
 systemctl restart avahi-daemon
 [[ "$MODE" != "local-demo" ]] && systemctl restart cloudflared
-systemctl enable --now edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+systemctl enable --now kla-web-control edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 
 echo
 echo "GOTOWE. Otwórz: $APP_URL"

@@ -344,8 +344,8 @@ export default async function SystemOwnerPage() {
         <section className="owner-panel-card">
           <header>
             <div>
-              <span className="section-kicker">Troubleshooting</span>
-              <h2>Szybkie narzędzia</h2>
+              <span className="section-kicker">Obsługa systemu</span>
+              <h2>Skróty według zadania</h2>
             </div>
             <Wrench aria-hidden="true" />
           </header>
@@ -367,8 +367,8 @@ export default async function SystemOwnerPage() {
             <Link href="/panel/szkola/narzedzia">
               <Settings2 aria-hidden="true" />
               <span>
-                <strong>Narzędzia szkoły</strong>
-                <small>Importy, eksporty i ustawienia</small>
+                <strong>Ustawienia szkoły</strong>
+                <small>Strona, konta, statystyki i import kartotek</small>
               </span>
             </Link>
             <Link href="/panel/szkola/powiadomienia">

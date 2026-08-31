@@ -36,17 +36,6 @@ printf '%s\n' \
   > /etc/sysctl.d/90-kla-server.conf
 sysctl --system >/dev/null
 
-install -d -m 0755 /etc/systemd/journald.conf.d
-printf '%s\n' \
-  '[Journal]' \
-  'Compress=yes' \
-  'SystemMaxUse=256M' \
-  'RuntimeMaxUse=64M' \
-  'MaxRetentionSec=14day' \
-  'RateLimitIntervalSec=30s' \
-  'RateLimitBurst=1000' \
-  > /etc/systemd/journald.conf.d/50-kla.conf
-
 ADMIN_USER="${SUDO_USER:-}"
 [[ "$ADMIN_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || {
   echo "Nie udało się bezpiecznie ustalić użytkownika administracyjnego."
@@ -67,10 +56,7 @@ printf '%s\n' \
   > /etc/ssh/sshd_config.d/50-kla.conf
 sshd -t
 
-install -d -m 0755 /etc/systemd/system.conf.d
-if [[ -c /dev/watchdog || -c /dev/watchdog0 ]]; then
-  printf '%s\n' '[Manager]' 'RuntimeWatchdogSec=30s' 'RebootWatchdogSec=5min' > /etc/systemd/system.conf.d/50-kla-watchdog.conf
-fi
+"$(dirname "${BASH_SOURCE[0]}")/runtime-guards.sh"
 
 install -d -m 0755 "$PG_CONF_DIR"
 VAULT_SOURCE="$(findmnt -n -o SOURCE /srv/kla-vault 2>/dev/null || true)"
@@ -114,6 +100,5 @@ sed -i \
   -e 's/^#\?StreamMaxLength .*/StreamMaxLength 25M/' \
   /etc/clamav/clamd.conf
 
-systemctl restart systemd-journald
 systemctl reload ssh
 echo "Optymalizacja Raspberry Pi została zastosowana."

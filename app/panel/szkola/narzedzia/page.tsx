@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   Database,
   Download,
   FileDown,
@@ -11,6 +12,7 @@ import {
   MessageCircleMore,
   Server,
   ShieldCheck,
+  UserPlus,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -20,8 +22,6 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { ImportWizard } from "@/modules/imports/components/import-wizard";
 import { IntegrationReadinessPanel } from "@/modules/settings/components/integration-readiness-panel";
-import { RaspberryBackupSettings } from "@/modules/system-owner/components/raspberry-control-panel";
-import { getRaspberryStatus, listMountedStorage } from "@/modules/system-owner/server-control";
 
 export const metadata: Metadata = { title: "Ustawienia szkoły" };
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
 export default async function TransfersPage() {
   const session = await requireDirector("/panel/szkola/narzedzia");
   const isSystemOwner = session.user.role === "SYSTEM_OWNER";
-  const [recentImports, recordCounts, raspberryStatus, storageDevices] = await Promise.all([
+  const [recentImports, recordCounts] = await Promise.all([
     db.importBatch.findMany({
       where: { schoolId: session.user.schoolId, archivedAt: null },
       orderBy: { createdAt: "desc" },
@@ -64,8 +64,6 @@ export default async function TransfersPage() {
         },
       }),
     ]),
-    isSystemOwner ? getRaspberryStatus() : Promise.resolve({ available: false as const }),
-    isSystemOwner ? listMountedStorage() : Promise.resolve([]),
   ]);
 
   return (
@@ -75,8 +73,8 @@ export default async function TransfersPage() {
           <span className="section-kicker">Ustawienia szkoły</span>
           <h1>Ustawienia</h1>
           <p>
-            Zmień stronę szkoły albo przenieś kartoteki z arkusza. Każda opcja
-            wyjaśnia, co się stanie przed zapisem.
+            Konta, publiczna strona, statystyki i dane szkoły są rozdzielone na
+            proste zadania. Każda opcja wyjaśnia skutek przed zapisem.
           </p>
         </div>
         <span className="role-security-chip">
@@ -86,6 +84,19 @@ export default async function TransfersPage() {
       </header>
 
       <section className="tools-hub-grid" aria-label="Ustawienia dyrektora">
+        <article>
+          <span className="record-icon record-icon-blue">
+            <UserPlus aria-hidden="true" />
+          </span>
+          <div>
+            <span className="section-kicker">Konta i role</span>
+            <h2>Zaproś osoby</h2>
+            <p>Dodaj dyrektora, wykładowcę, rodzica lub ucznia z właściwym dostępem.</p>
+          </div>
+          <Link className="button button-secondary" href="/panel/szkola/zaproszenia">
+            Otwórz konta
+          </Link>
+        </article>
         <article>
           <span className="record-icon record-icon-blue">
             <FileSpreadsheet aria-hidden="true" />
@@ -98,6 +109,19 @@ export default async function TransfersPage() {
           <a className="button button-secondary" href="#dane">
             Wybierz plik
           </a>
+        </article>
+        <article>
+          <span className="record-icon record-icon-green">
+            <BarChart3 aria-hidden="true" />
+          </span>
+          <div>
+            <span className="section-kicker">Odwiedziny i użycie</span>
+            <h2>Statystyki szkoły</h2>
+            <p>Sprawdź odsłony strony i aktywność kont bez zapisywania pełnych adresów IP.</p>
+          </div>
+          <Link className="button button-secondary" href="/panel/szkola/statystyki">
+            Zobacz statystyki
+          </Link>
         </article>
         <article>
           <span className="record-icon record-icon-yellow">
@@ -153,13 +177,16 @@ export default async function TransfersPage() {
         </article>
         <article>
           <span className="record-icon record-icon-green"><Server aria-hidden="true" /></span>
-          <div><span className="section-kicker">Bezpieczeństwo danych</span><h2>Kopie zapasowe</h2><p>Wybierz lokalny folder, dysk lub bezpieczny serwer SFTP.</p></div>
-          <a className="button button-secondary" href={isSystemOwner ? "#backup-settings" : "#kopie"}>{isSystemOwner ? "Ustaw backup" : "Zaplanuj kopię"}</a>
+          <div><span className="section-kicker">{isSystemOwner ? "Obsługa techniczna" : "Bezpieczeństwo danych"}</span><h2>{isSystemOwner ? "Serwer i integracje" : "Kopie zapasowe"}</h2><p>{isSystemOwner ? "SMTP, backup, eksport, wersja i diagnostyka są w osobnym panelu technicznym." : "Zobacz zasady kopii i zakres przygotowania po stronie obsługi technicznej."}</p></div>
+          {isSystemOwner ? (
+            <Link className="button button-secondary" href="/panel/bog/ustawienia">Otwórz serwer</Link>
+          ) : (
+            <a className="button button-secondary" href="#kopie">Zobacz przygotowanie</a>
+          )}
         </article>
       </section>
 
       <IntegrationReadinessPanel showBackup={!isSystemOwner} />
-      {isSystemOwner ? <RaspberryBackupSettings status={raspberryStatus} storage={storageDevices} /> : null}
 
       <section
         className="transfer-choice-grid tools-data-section"

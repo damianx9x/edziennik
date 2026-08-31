@@ -12,6 +12,7 @@ refresh_operations() {
   [[ -d "$CURRENT/raspberry/systemd" ]] || { echo "Brak plików operacyjnych bieżącego wydania."; exit 1; }
   install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
   install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+  install -m 755 "$CURRENT/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
   install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
   install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
   install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
@@ -23,12 +24,17 @@ refresh_operations() {
   install -m 755 "$CURRENT/raspberry/status.sh" /usr/local/bin/kla-status
   install -m 755 "$CURRENT/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
   install -m 755 "$CURRENT/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
+  install -m 755 "$CURRENT/raspberry/runtime-guards.sh" /usr/local/sbin/kla-runtime-guards
+  install -m 755 "$CURRENT/raspberry/startup-audit.sh" /usr/local/sbin/kla-startup-audit
   install -m 755 "$CURRENT/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
   install -m 755 "$CURRENT/raspberry/update.sh" /usr/local/sbin/kla-update
   install -m 755 "$CURRENT/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+  install -m 755 "$CURRENT/raspberry/web-control-daemon.py" /usr/local/sbin/kla-web-control-daemon
   install -m 644 -o root -g root "$CURRENT/deployment/release-signing.pub" /etc/kla/release-signing.pub
+  /usr/local/sbin/kla-runtime-guards
   systemctl daemon-reload
   systemctl enable --now \
+    kla-web-control \
     edziennik-kla-health.timer edziennik-kla-backup.timer \
     edziennik-kla-retention.timer edziennik-kla-restore-test.timer \
     edziennik-kla-email-queue.timer
@@ -60,6 +66,25 @@ case "$ACTION" in
   restore-test)
     /usr/local/sbin/edziennik-kla-restore-test-latest
     ;;
+  backup-download-prepare)
+    mountpoint -q /srv/kla-vault || { echo "Sejf jest zamknięty."; exit 2; }
+    LATEST_BACKUP="$(find /srv/kla-vault/backups -maxdepth 1 -type f -name 'kla-*.tar.age' -print | sort | tail -n1)"
+    [[ -f "$LATEST_BACKUP" && -f "$LATEST_BACKUP.sha256" ]] || { echo "Brak kompletnej kopii do pobrania."; exit 1; }
+    (cd "$(dirname "$LATEST_BACKUP")" && sha256sum -c "$(basename "$LATEST_BACKUP").sha256" >/dev/null)
+    CONTROL_USER="$(cat /etc/kla/control-user)"
+    DOWNLOAD_DIR="$INCOMING/downloads"
+    install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_USER" "$DOWNLOAD_DIR"
+    find "$DOWNLOAD_DIR" -mindepth 1 -maxdepth 1 -type f -delete
+    install -m 600 -o "$CONTROL_USER" -g "$CONTROL_USER" \
+      "$LATEST_BACKUP" "$LATEST_BACKUP.sha256" "$DOWNLOAD_DIR/"
+    basename "$LATEST_BACKUP"
+    ;;
+  backup-download-cleanup)
+    DOWNLOAD_NAME="${2:-}"
+    [[ "$DOWNLOAD_NAME" =~ ^kla-[0-9]{8}T[0-9]{6}Z\.tar\.age$ ]] || { echo "Niepoprawna nazwa kopii."; exit 2; }
+    rm -f -- "$INCOMING/downloads/$DOWNLOAD_NAME" "$INCOMING/downloads/$DOWNLOAD_NAME.sha256"
+    echo "Pliki tymczasowe usunięte z kolejki pobierania."
+    ;;
   recovery-key-once)
     exec /usr/local/sbin/edziennik-kla-print-recovery-key
     ;;
@@ -76,6 +101,9 @@ case "$ACTION" in
     ;;
   benchmark-readonly)
     exec /usr/local/sbin/kla-benchmark-readonly
+    ;;
+  startup-audit)
+    exec /usr/local/sbin/kla-startup-audit
     ;;
   logs)
     journalctl -u edziennik-kla -u cloudflared --since "2 hours ago" --no-pager -n 400
@@ -130,7 +158,11 @@ case "$ACTION" in
   update)
     [[ -f "$ARCHIVE" ]] || { echo "Brak przesłanej paczki aktualizacji."; exit 1; }
     [[ "$(stat -c '%U' "$ARCHIVE")" == "$(cat /etc/kla/control-user)" ]] || { echo "Nieprawidłowy właściciel paczki."; exit 1; }
-    python3 - "$ARCHIVE" <<'PY'
+    TEMP_UPDATE="$(mktemp -d "$INCOMING/update.XXXXXX")"
+    trap 'rm -rf "$TEMP_UPDATE"' EXIT
+    SAFE_ARCHIVE="$TEMP_UPDATE/release.tar.gz"
+    install -m 600 -o root -g root "$ARCHIVE" "$SAFE_ARCHIVE"
+    python3 - "$SAFE_ARCHIVE" <<'PY'
 import pathlib, sys, tarfile
 archive = pathlib.Path(sys.argv[1])
 with tarfile.open(archive, "r:gz") as package:
@@ -145,9 +177,7 @@ with tarfile.open(archive, "r:gz") as package:
         if total > 2 * 1024 * 1024 * 1024:
             raise SystemExit("Paczka po rozpakowaniu jest za duża.")
 PY
-    TEMP_UPDATE="$(mktemp -d "$INCOMING/update.XXXXXX")"
-    trap 'rm -rf "$TEMP_UPDATE"' EXIT
-    tar -xzf "$ARCHIVE" -C "$TEMP_UPDATE"
+    tar --no-same-owner --no-same-permissions -xzf "$SAFE_ARCHIVE" -C "$TEMP_UPDATE"
     SOURCE="$TEMP_UPDATE/edziennik-kla"
     [[ -f "$SOURCE/KLA_RELEASE_MANIFEST.sha256" && -f "$SOURCE/KLA_RELEASE_MANIFEST.sha256.sig" ]] || { echo "To nie jest podpisana paczka KLA."; exit 1; }
     /usr/local/sbin/kla-update "$SOURCE"
@@ -160,7 +190,7 @@ PY
     systemctl poweroff
     ;;
   *)
-    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, benchmark-readonly, logs, email-config, bootstrap-code, update, reboot, poweroff."
+    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, backup-download-prepare, backup-download-cleanup, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, benchmark-readonly, startup-audit, logs, email-config, bootstrap-code, update, reboot, poweroff."
     exit 2
     ;;
 esac

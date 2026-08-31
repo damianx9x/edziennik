@@ -1,6 +1,6 @@
 import "server-only";
 
-import { spawn } from "node:child_process";
+import { createConnection } from "node:net";
 
 export type RaspberryStatus = {
   available: boolean;
@@ -25,7 +25,29 @@ export type RaspberryStatus = {
   };
   emailConfigured?: boolean;
   publicPresentationMode?: "school" | "product";
+  release?: {
+    version: string;
+    commit: string;
+    auditedAt: string;
+    vulnerabilities: {
+      total: number;
+      critical: number;
+      high: number;
+      moderate: number;
+      low: number;
+    };
+  };
   autoUnlockEnabled?: boolean;
+  startupProtection?: {
+    vaultMounted: boolean;
+    autoUnlockReady: boolean;
+    hardwareWatchdog: boolean;
+    persistentJournal: boolean;
+    applicationRestart: boolean;
+    tunnelRestart: boolean;
+    healthTimer: boolean;
+    backupTimer: boolean;
+  };
   message?: string;
 };
 
@@ -70,37 +92,44 @@ export type ImportPreparation = {
 
 function runControl(action: string, args: string[] = [], input?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn("/usr/bin/sudo", ["-n", "/usr/local/sbin/kla-web-control", action, ...args], {
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" },
-    });
-    let stdout = "";
-    let stderr = "";
+    const socket = createConnection("/run/kla-web-control/control.sock");
+    let settled = false;
+    let response = "";
     const maxOutput = 256 * 1024;
     let outputExceeded = false;
     const timer = setTimeout(
-      () => child.kill("SIGKILL"),
+      () => socket.destroy(new Error("Operacja przekroczyła bezpieczny limit czasu.")),
       action === "import-prepare" ? 300_000 : ["backup-now", "export-create", "benchmark-readonly"].includes(action) ? 180_000 : 20_000,
     );
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    const append = (current: string, chunk: string) => {
-      const next = current + chunk;
-      if (next.length <= maxOutput) return next;
-      outputExceeded = true;
-      child.kill("SIGKILL");
-      return next.slice(0, maxOutput);
-    };
-    child.stdout.on("data", (chunk: string) => { stdout = append(stdout, chunk); });
-    child.stderr.on("data", (chunk: string) => { stderr = append(stderr, chunk); });
-    child.on("error", reject);
-    child.on("close", (code: number | null) => {
-      clearTimeout(timer);
-      if (outputExceeded) reject(new Error("Narzędzie serwera zwróciło zbyt dużo danych i zostało bezpiecznie zatrzymane."));
-      else if (code === 0) resolve(stdout.trim());
-      else reject(new Error(stderr.trim() || stdout.trim() || "Polecenie serwera nie powiodło się."));
+    socket.setEncoding("utf8");
+    socket.on("connect", () => socket.end(`${JSON.stringify({ action, args, input: input ?? "" })}\n`));
+    socket.on("data", (chunk: string) => {
+      response += chunk;
+      if (response.length > maxOutput) { outputExceeded = true; socket.destroy(); }
     });
-    child.stdin.end(input ?? "");
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+    };
+    const succeed = (output: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(output);
+    };
+    socket.on("error", fail);
+    socket.on("close", () => {
+      if (settled) return;
+      clearTimeout(timer);
+      if (outputExceeded) { fail(new Error("Narzędzie serwera zwróciło zbyt dużo danych i zostało bezpiecznie zatrzymane.")); return; }
+      try {
+        const payload = JSON.parse(response.trim()) as { ok: boolean; stdout?: string; stderr?: string };
+        if (payload.ok) succeed(payload.stdout?.trim() ?? "");
+        else fail(new Error(payload.stderr?.trim() || payload.stdout?.trim() || "Polecenie serwera nie powiodło się."));
+      } catch { fail(new Error("Usługa sterowania zwróciła nieprawidłową odpowiedź.")); }
+    });
   });
 }
 

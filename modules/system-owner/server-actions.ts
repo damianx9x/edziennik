@@ -288,12 +288,38 @@ export async function configurePublicPresentationAction(_: ServerActionState, fo
   const parsed = z.enum(["school", "product"]).safeParse(formData.get("mode"));
   if (!parsed.success) return initialError("Wybierz prawidłowy tryb publicznej wizytówki.");
   try {
-    const message = await setPublicPresentationMode(parsed.data);
-    await audit(session.user.id, session.user.schoolId, "site.public_presentation.changed", { mode: parsed.data });
+    await audit(session.user.id, session.user.schoolId, "site.public_presentation.requested", { mode: parsed.data });
+  } catch {
+    return initialError("Nie udało się bezpiecznie zapisać prośby o zmianę. Nic nie zmieniono.");
+  }
+
+  let message: string;
+  try {
+    message = await setPublicPresentationMode(parsed.data);
+  } catch (error) {
+    await audit(session.user.id, session.user.schoolId, "site.public_presentation.failed", { mode: parsed.data }).catch(() => undefined);
+    return initialError(
+      error instanceof Error
+        ? `${error.message} Nic nie zmieniono.`
+        : "Nie udało się przełączyć strony. Nic nie zmieniono.",
+    );
+  }
+
+  // Zapis żądania istnieje już przed zmianą systemu. Jeżeli drugi wpis audytu
+  // chwilowo zawiedzie, nie wolno fałszywie powiedzieć, że przełączenie się nie
+  // odbyło — operator nadal ma ślad żądania i prawidłowy komunikat o stanie.
+  await audit(session.user.id, session.user.schoolId, "site.public_presentation.applied", { mode: parsed.data }).catch(() => undefined);
+  try {
     revalidatePath("/");
     revalidatePath("/panel/bog/ustawienia");
-    return { status: "success", message: `${message} Zmiana pojawi się publicznie w ciągu kilkunastu sekund.` };
-  } catch (error) {
-    return initialError(error instanceof Error ? error.message : "Nie udało się zmienić wizytówki.");
+    return {
+      status: "success",
+      message:
+        parsed.data === "product"
+          ? `${message} Osoby bez logowania widzą teraz pokaz systemu.`
+          : `${message} Osoby bez logowania widzą teraz stronę szkoły.`,
+    };
+  } catch {
+    return { status: "success", message: `${message} Odśwież publiczną stronę, aby zobaczyć zmianę.` };
   }
 }

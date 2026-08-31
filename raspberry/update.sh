@@ -28,23 +28,25 @@ if ! flock -n 9; then
   echo "Inna aktualizacja już trwa. Poczekaj na jej zakończenie."
   exit 1
 fi
+exec 8>/run/lock/kla-maintenance.lock
+flock -n 8 || { echo "Trwa backup, import albo odtwarzanie. Aktualizacja nie została rozpoczęta."; exit 1; }
 
 [[ -d "$CURRENT" ]] || { echo "Brak działającej instalacji w $CURRENT."; exit 1; }
 [[ -f "$SOURCE_DIR/package-lock.json" ]] || { echo "Paczka nie zawiera package-lock.json."; exit 1; }
 [[ -f "$SOURCE_DIR/KLA_RELEASE_COMMIT" ]] || { echo "Paczka nie ma identyfikatora wydania."; exit 1; }
 [[ -f "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" ]] || { echo "Paczka nie ma manifestu integralności."; exit 1; }
 [[ -f "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256.sig" ]] || { echo "Paczka nie ma podpisu wydania."; exit 1; }
-if [[ -f /etc/kla/release-signing.pub ]]; then
-  ALLOWED_SIGNERS="$(mktemp)"
-  printf 'kla-release %s\n' "$(cut -d' ' -f1-2 /etc/kla/release-signing.pub)" > "$ALLOWED_SIGNERS"
-  ssh-keygen -Y verify -f "$ALLOWED_SIGNERS" -I kla-release -n kla-release \
-    -s "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256.sig" < "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" >/dev/null
-  rm -f "$ALLOWED_SIGNERS"
-fi
-(
-  cd "$SOURCE_DIR"
-  sha256sum -c KLA_RELEASE_MANIFEST.sha256
-)
+[[ -s /etc/kla/release-signing.pub ]] || { echo "Brak zaufanego klucza podpisu wydania."; exit 1; }
+[[ "$(stat -c '%u' /etc/kla/release-signing.pub)" == "0" ]] || { echo "Klucz podpisu nie należy do roota."; exit 1; }
+[[ $((8#$(stat -c '%a' /etc/kla/release-signing.pub) & 8#022)) -eq 0 ]] || { echo "Klucz podpisu ma zbyt szerokie uprawnienia zapisu."; exit 1; }
+ALLOWED_SIGNERS="$(mktemp)"
+trap 'rm -f "$ALLOWED_SIGNERS"' EXIT
+printf 'kla-release %s\n' "$(cut -d' ' -f1-2 /etc/kla/release-signing.pub)" > "$ALLOWED_SIGNERS"
+ssh-keygen -Y verify -f "$ALLOWED_SIGNERS" -I kla-release -n kla-release \
+  -s "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256.sig" < "$SOURCE_DIR/KLA_RELEASE_MANIFEST.sha256" >/dev/null
+rm -f "$ALLOWED_SIGNERS"
+trap - EXIT
+python3 "$SOURCE_DIR/raspberry/safe-archive.py" release "$SOURCE_DIR"
 EXPECTED_COMMIT="$(tr -d '\r\n' < "$SOURCE_DIR/KLA_RELEASE_COMMIT")"
 [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "Nieprawidłowy identyfikator wydania."; exit 1; }
 # Od tego wydania dyrektor zawsze kończy konfigurację MFA przed dostępem do
@@ -58,13 +60,9 @@ chown root:kla "$MFA_ENV"
 chmod 640 "$MFA_ENV"
 mv "$MFA_ENV" "$ENV_FILE"
 
-if ! dpkg-query -W -f='${Status}' avahi-daemon 2>/dev/null | grep -q 'install ok installed'; then
-  apt-get update
-  apt-get install -y --no-install-recommends avahi-daemon
-fi
-hostnamectl set-hostname kingslanguageacademy
-systemctl enable --now avahi-daemon
-if command -v ufw >/dev/null; then ufw allow 5353/udp >/dev/null; fi
+# Aktualizacja aplikacji nie modyfikuje systemu operacyjnego, hosta ani
+# parametrów PostgreSQL. Takie zmiany należą wyłącznie do instalatora i
+# osobnego, świadomie uruchamianego narzędzia serwisowego.
 
 cleanup() {
   rm -rf -- "$NEW"
@@ -116,8 +114,8 @@ set +a
 runuser -u kla --preserve-environment -- bash -c \
   "cd '$NEW' && npm run db:generate && npm run check && npm run build"
 
-echo "Tworzę szyfrowaną kopię przed migracją..."
-/usr/local/sbin/edziennik-kla-backup
+echo "Tworzę i sprawdzam szyfrowaną kopię przed migracją..."
+KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-backup --test-restore
 
 # Migracje muszą być rozszerzające. Kontroluje je security:check, dzięki czemu
 # poprzedni kod może wrócić nawet wtedy, gdy nowa wersja nie wystartuje.
@@ -133,6 +131,7 @@ mv "$NEW" "$CURRENT"
 switched=1
 install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
 install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$CURRENT/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
 install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
 install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
 install -m 755 "$CURRENT/raspberry/restore.sh" /usr/local/sbin/edziennik-kla-restore
@@ -144,8 +143,26 @@ install -m 755 "$CURRENT/raspberry/enable-auto-unlock.sh" /usr/local/sbin/kla-en
 install -m 755 "$CURRENT/raspberry/status.sh" /usr/local/bin/kla-status
 install -m 755 "$CURRENT/raspberry/local-url.sh" /usr/local/sbin/kla-local-url
 install -m 755 "$CURRENT/raspberry/optimize-server.sh" /usr/local/sbin/kla-optimize-server
+install -m 755 "$CURRENT/raspberry/runtime-guards.sh" /usr/local/sbin/kla-runtime-guards
+install -m 755 "$CURRENT/raspberry/startup-audit.sh" /usr/local/sbin/kla-startup-audit
 install -m 755 "$CURRENT/raspberry/configure-sftp-backup.sh" /usr/local/sbin/kla-configure-sftp-backup
 install -m 755 "$CURRENT/raspberry/update.sh" /usr/local/sbin/kla-update
+install -m 755 "$CURRENT/raspberry/control.sh" /usr/local/sbin/kla-control
+install -m 755 "$CURRENT/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
+install -m 755 "$CURRENT/raspberry/web-control-daemon.py" /usr/local/sbin/kla-web-control-daemon
+/usr/local/sbin/kla-runtime-guards
+rm -f /etc/sudoers.d/kla-web-control
+install -d -m 750 -o root -g kla /srv/kla-vault/config /srv/kla-vault/release-uploads
+if [[ ! -f /srv/kla-vault/config/public-presentation-mode ]]; then
+  MODE_VALUE="$(grep '^KLA_PUBLIC_PRESENTATION_MODE=' "$ENV_FILE" | tail -n1 | cut -d= -f2- | tr -d "'\"" || true)"
+  [[ "$MODE_VALUE" == "school" || "$MODE_VALUE" == "product" ]] || MODE_VALUE=product
+  printf '%s\n' "$MODE_VALUE" > /srv/kla-vault/config/public-presentation-mode
+  chown root:kla /srv/kla-vault/config/public-presentation-mode
+  chmod 640 /srv/kla-vault/config/public-presentation-mode
+fi
+if ! grep -q '^KLA_PUBLIC_PRESENTATION_MODE_FILE=' "$ENV_FILE"; then
+  printf '%s\n' 'KLA_PUBLIC_PRESENTATION_MODE_FILE=/srv/kla-vault/config/public-presentation-mode' >> "$ENV_FILE"
+fi
 if [[ ! -f /etc/kla/release-signing.pub ]]; then
   install -m 644 -o root -g root "$CURRENT/deployment/release-signing.pub" /etc/kla/release-signing.pub
 fi
@@ -156,11 +173,6 @@ fi
 if [[ -f /etc/kla/control-user ]]; then
   CONTROL_USER="$(cat /etc/kla/control-user)"
   [[ "$CONTROL_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]] || { echo "Niepoprawny użytkownik panelu sterowania."; false; }
-  install -m 755 "$CURRENT/raspberry/control.sh" /usr/local/sbin/kla-control
-  install -m 755 "$CURRENT/raspberry/web-control.sh" /usr/local/sbin/kla-web-control
-  printf 'kla ALL=(root) NOPASSWD: /usr/local/sbin/kla-web-control *\n' > /etc/sudoers.d/kla-web-control
-  chmod 440 /etc/sudoers.d/kla-web-control
-  visudo -cf /etc/sudoers.d/kla-web-control >/dev/null
   printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/kla-control *\n' "$CONTROL_USER" > /etc/sudoers.d/kla-control
   chmod 440 /etc/sudoers.d/kla-control
   visudo -cf /etc/sudoers.d/kla-control >/dev/null
@@ -168,10 +180,6 @@ if [[ -f /etc/kla/control-user ]]; then
   chmod 711 /srv/kla-vault
   install -d -m 700 -o "$CONTROL_USER" -g "$CONTROL_GROUP" /srv/kla-vault/control-incoming
   install -d -m 700 -o kla -g kla /srv/kla-vault/imports
-  PG_VERSION="$(pg_lsclusters --no-header | awk 'NR == 1 {print $1}')"
-  [[ -n "$PG_VERSION" ]] || { echo "Nie znaleziono PostgreSQL."; false; }
-  SUDO_USER="$CONTROL_USER" /usr/local/sbin/kla-optimize-server "$PG_VERSION"
-  systemctl reload postgresql
 fi
 
 # Aktualizacja odświeża reverse proxy razem z kodem. Poprawki wydajności i
@@ -190,7 +198,8 @@ ln -sfn "$NGINX_CONFIG" /etc/nginx/sites-enabled/kla
 nginx -t
 systemctl reload nginx
 systemctl daemon-reload
-systemctl enable edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+systemctl enable kla-web-control edziennik-kla edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
+systemctl restart kla-web-control
 systemctl restart edziennik-kla-health.timer edziennik-kla-backup.timer edziennik-kla-retention.timer edziennik-kla-restore-test.timer edziennik-kla-email-queue.timer
 if [[ -f /etc/kla/backup-policy.env ]]; then
   source /etc/kla/backup-policy.env

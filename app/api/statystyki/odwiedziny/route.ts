@@ -9,7 +9,7 @@ import {
 } from "@/modules/observability/page-visits";
 import { resolvePageVisitSchoolId } from "@/modules/observability/page-visit-scope";
 import { getCoarseRequestContext } from "@/modules/observability/request-context";
-import { getPublicPresentationMode } from "@/modules/site-content/public-mode";
+import { resolvePublicPresentationMode } from "@/modules/site-content/public-mode.server";
 
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length") ?? "0");
@@ -29,9 +29,7 @@ export async function POST(request: Request) {
   }
 
   const session = await getServerSession();
-  const publicMode = getPublicPresentationMode(
-    process.env.KLA_PUBLIC_PRESENTATION_MODE,
-  );
+  const publicMode = await resolvePublicPresentationMode();
   let publicSchoolId: string | null = null;
   if (!session?.user.schoolId && publicMode === "SCHOOL") {
     const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;

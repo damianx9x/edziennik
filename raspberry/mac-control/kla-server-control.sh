@@ -95,6 +95,29 @@ remote() {
   ssh "${SSH_OPTIONS[@]}" "$KLA_USER@$KLA_HOST" "$@"
 }
 
+download_latest_backup() {
+  local destination_dir backup_name
+  destination_dir="${1:-$HOME/Desktop/rasbery serwer/kopie}"
+  install -d -m 700 "$destination_dir"
+  backup_name="$(remote "sudo /usr/local/sbin/kla-control backup-download-prepare" | tail -n1)"
+  [[ "$backup_name" =~ ^kla-[0-9]{8}T[0-9]{6}Z\.tar\.age$ ]] || {
+    echo "Serwer nie przygotował poprawnej kopii do pobrania."
+    exit 1
+  }
+  if ! scp "${SCP_OPTIONS[@]}" \
+    "$KLA_USER@$KLA_HOST:/srv/kla-vault/control-incoming/downloads/$backup_name" \
+    "$KLA_USER@$KLA_HOST:/srv/kla-vault/control-incoming/downloads/$backup_name.sha256" \
+    "$destination_dir/"; then
+    remote "sudo /usr/local/sbin/kla-control backup-download-cleanup '$backup_name'" >/dev/null 2>&1 || true
+    echo "Pobieranie nie zostało ukończone. Uruchom je ponownie — istniejące pliki zostaną bezpiecznie zastąpione."
+    exit 1
+  fi
+  (cd "$destination_dir" && shasum -a 256 -c "$backup_name.sha256")
+  remote "sudo /usr/local/sbin/kla-control backup-download-cleanup '$backup_name'" >/dev/null
+  chmod 600 "$destination_dir/$backup_name" "$destination_dir/$backup_name.sha256"
+  echo "Zweryfikowana, szyfrowana kopia jest na Macu: $destination_dir/$backup_name"
+}
+
 ACTION="${1:-status}"
 case "$ACTION" in
   configure)
@@ -103,8 +126,16 @@ case "$ACTION" in
   test)
     remote 'printf "Połączenie SSH działa. Host: "; hostname'
     ;;
-  status|start|stop|restart|backup|restore-test|logs|refresh-operations|optimize-now|benchmark-readonly)
+  status|start|stop|restart|backup|restore-test|logs|refresh-operations|optimize-now|benchmark-readonly|startup-audit)
     remote "sudo /usr/local/sbin/kla-control $ACTION"
+    ;;
+  download-backup)
+    download_latest_backup "${2:-$HOME/Desktop/rasbery serwer/kopie}"
+    ;;
+  verified-backup-download)
+    remote "sudo /usr/local/sbin/kla-control backup"
+    remote "sudo /usr/local/sbin/kla-control restore-test"
+    download_latest_backup "${2:-$HOME/Desktop/rasbery serwer/kopie}"
     ;;
   auto-unlock-enable)
     discover_host

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Brand } from "@/app/components/brand";
 import { defaultSiteContent } from "@/modules/site-content/default-content";
@@ -62,8 +62,40 @@ export function SiteSettingsScreen({
   protectedMode?: boolean;
 }) {
   const { content, isReady, saveContent, resetContent } = useSiteContent();
+  const [protectedContent, setProtectedContent] = useState<SiteContent | null>(
+    null,
+  );
+  const [protectedLoadError, setProtectedLoadError] = useState(false);
 
-  if (!isReady) {
+  useEffect(() => {
+    if (!protectedMode) return;
+    const controller = new AbortController();
+    void fetch("/api/site-content?scope=editor", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("editor-content-load-failed");
+        const parsed = siteContentSchema.safeParse(await response.json());
+        if (!parsed.success) throw new Error("editor-content-invalid");
+        setProtectedContent(parsed.data);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setProtectedLoadError(true);
+      });
+    return () => controller.abort();
+  }, [protectedMode]);
+
+  if (protectedLoadError) {
+    return (
+      <main className="content-editor-loading" role="alert">
+        <span>Nie udało się wczytać treści szkoły. Odśwież stronę i spróbuj ponownie.</span>
+      </main>
+    );
+  }
+
+  if ((protectedMode && !protectedContent) || (!protectedMode && !isReady)) {
     return (
       <main className="content-editor-loading">
         <span>Wczytuję ustawienia strony…</span>
@@ -72,8 +104,8 @@ export function SiteSettingsScreen({
   }
 
   return (
-    <SiteContentEditor
-      initialContent={content}
+      <SiteContentEditor
+      initialContent={protectedMode ? protectedContent ?? defaultSiteContent : content}
       onSave={saveContent}
       onReset={resetContent}
       backHref={backHref}
@@ -289,13 +321,18 @@ function SiteContentEditor({
             })}
           </nav>
           <div className="editor-demo-note">
-            <strong>
-              {protectedMode ? "Tryb lokalnego podglądu" : "Tryb demonstracyjny"}
-            </strong>
-            <span>
-              Zmiany są widoczne tylko w tej przeglądarce. Eksportuj kopię,
-              żeby przekazać je do publikacji lub przenieść na inny komputer.
-            </span>
+            <strong>{protectedMode ? "Treść szkoły" : "Tryb demonstracyjny"}</strong>
+            {protectedMode ? (
+              <span>
+                Zmiany zapisują się w systemie i są objęte backupem. Neutralny
+                pokaz produktu nie nadpisuje treści szkoły.
+              </span>
+            ) : (
+              <span>
+                Zmiany są widoczne tylko w tej przeglądarce. Eksportuj kopię,
+                żeby przekazać je do publikacji lub przenieść na inny komputer.
+              </span>
+            )}
           </div>
         </aside>
 

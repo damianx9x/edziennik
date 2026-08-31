@@ -77,7 +77,10 @@ export function SiteContentProvider({
     try {
       const response = await fetch("/api/site-content", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(result.data) });
       if (!response.ok) throw new Error("remote-save-failed");
-      await writeIndexedContent(result.data);
+      // Cache przeglądarki jest wyłącznie dodatkiem. Safari może wstrzymać
+      // IndexedDB (np. w trybie prywatnym), więc nie może blokować zapisu na
+      // serwerze ani informacji zwrotnej dla użytkownika.
+      void writeIndexedContent(result.data).catch(() => undefined);
       window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
       setContent(result.data);
       return {
@@ -96,7 +99,7 @@ export function SiteContentProvider({
   const resetContent = useCallback(async () => {
     const response = await fetch("/api/site-content", { method: "DELETE" });
     if (!response.ok) throw new Error("remote-reset-failed");
-    await deleteIndexedContent();
+    void deleteIndexedContent().catch(() => undefined);
     window.localStorage.removeItem(STORAGE_KEY);
     setContent(defaultSiteContent);
   }, []);
@@ -128,7 +131,9 @@ async function readStoredContent(): Promise<{ content: SiteContent | null; publi
       const publicMode = response.headers.get("x-kla-public-mode") === "PRODUCT" ? "PRODUCT" : "SCHOOL";
       const remote = siteContentSchema.safeParse(await response.json());
       if (remote.success) {
-        await writeIndexedContent(remote.data);
+        // Najpierw renderujemy potwierdzoną treść serwera. Pomocniczy cache
+        // nie może zatrzymać strony na ekranie ładowania.
+        void writeIndexedContent(remote.data).catch(() => undefined);
         return { content: remote.data, publicMode };
       }
     }

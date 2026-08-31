@@ -154,6 +154,16 @@ Stan sprawdzisz przez:
 sudo kla-status
 ```
 
+Pełny test każdej warstwy startu wykonasz przez:
+
+```bash
+sudo kla-startup-audit
+```
+
+Wynik ma zawierać wyłącznie wpisy `[OK]`. Test rozróżnia hasło/recovery key
+LUKS od klucza `age` używanego do plików kopii. Klucz `AGE-SECRET-KEY-...` nie
+otwiera partycji i jest prawidłowy dopiero podczas importu pliku `.tar.age`.
+
 Na serwerze pilotowym można świadomie włączyć bezobsługowy start z panelu na
 Macu albo poleceniem `sudo kla-enable-auto-unlock`. Klucz techniczny trafia wtedy
 do pliku `root-only` na karcie systemowej, a system automatycznie montuje sejf i
@@ -161,6 +171,11 @@ uruchamia wszystkie usługi po zaniku prądu. To zapewnia ciągłość pracy, le
 osłabia ochronę przy kradzieży całego zestawu Raspberry + karta + dysk. Klucz
 odzyskiwania eksportów nadal jest osobny i zapisany poza urządzeniem. Wersja
 docelowa może przenieść auto-start do TPM lub fizycznego klucza USB.
+
+Profil runtime zapisuje journal trwale przez 14 dni, włącza sprzętowy watchdog
+systemd i wymusza restart tunelu Cloudflare. Dzięki temu po kolejnym zdarzeniu
+można odczytać także logi poprzedniego uruchomienia. Watchdog nie zastępuje UPS
+ani dobrego zasilacza i nie potrafi odblokować sejfu bez prawidłowego klucza.
 
 ## 6. Backup SFTP
 
@@ -178,6 +193,26 @@ Podaj host, port, login i folder. Skrypt wygeneruje osobny klucz SSH, pokaże
 klucz publiczny do wklejenia u dostawcy i każe porównać odcisk serwera.
 Codzienna kopia o 03:15 zawiera bazę, prywatne pliki i numer wersji aplikacji.
 Archiwum jest szyfrowane `age` jeszcze przed wysłaniem przez SFTP.
+
+## Panel właściciela i publiczna prezentacja
+
+Właściciel z aktywnym MFA otwiera **Ustawienia serwera** i może przełączyć
+wyłącznie stronę główną między **Stroną szkoły** oraz **Pokazem systemu**.
+Zmiana nie przełącza bazy, nie kopiuje danych i nie zmienia logowania, umów,
+wiadomości ani plików. Tryb produktu pokazuje syntetyczne przykłady czterech ról.
+
+SMTP, nośnik backupu, eksport, import i ten przełącznik korzystają z lokalnej
+usługi `kla-web-control`. Aplikacja nie ma uprawnienia do dowolnych komend i nie
+uruchamia `sudo`; broker przyjmuje tylko zamkniętą listę operacji. Jego stan:
+
+```bash
+sudo systemctl status kla-web-control --no-pager
+sudo journalctl -u kla-web-control -n 100 --no-pager
+```
+
+Sekcja **Wersja i zależności** pokazuje numer wydania, commit oraz wynik audytu
+zależności zapisany w podpisanej paczce. Zależności aktualizuje się przez nowe
+wydanie i pełny cykl testów — nigdy przez `npm update` na działającej bazie.
 
 Pierwszy pełny test wykonaj tak:
 

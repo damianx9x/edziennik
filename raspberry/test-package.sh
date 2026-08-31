@@ -14,17 +14,23 @@ required_files=(
   raspberry/mac-control/KLA-Serwer.applescript
   raspberry/optimize-server.sh
   raspberry/benchmark-readonly.sh
+  raspberry/runtime-guards.sh
+  raspberry/startup-audit.sh
   docs/OPERACJE_RASPBERRY.md
   raspberry/vault-create.sh
   raspberry/vault-create-partition.sh
   raspberry/unlock.sh
   raspberry/backup.sh
+  raspberry/safe-archive.py
+  raspberry/test-safe-archive.py
+  raspberry/web-control-daemon.py
   raspberry/web-control.sh
   raspberry/restore.sh
   raspberry/retention.sh
   raspberry/configure-sftp-backup.sh
   raspberry/enable-auto-unlock.sh
   raspberry/systemd/edziennik-kla.service
+  raspberry/systemd/kla-web-control.service
   raspberry/systemd/edziennik-kla-backup.timer
   raspberry/systemd/edziennik-kla-restore-test.timer
   raspberry/systemd/edziennik-kla-email-queue.service
@@ -35,6 +41,12 @@ required_files=(
 for file in "${required_files[@]}"; do
   [[ -s "$ROOT/$file" ]] || { echo "Brak wymaganego pliku: $file"; exit 1; }
 done
+
+python3 -m py_compile \
+  "$ROOT/raspberry/safe-archive.py" \
+  "$ROOT/raspberry/test-safe-archive.py" \
+  "$ROOT/raspberry/web-control-daemon.py"
+python3 "$ROOT/raspberry/test-safe-archive.py"
 
 grep -q 'cryptsetup luksFormat --type luks2' "$ROOT/raspberry/vault-create.sh"
 grep -q 'KLA_MALWARE_SCAN_MODE=required' "$ROOT/raspberry/install.sh"
@@ -74,6 +86,14 @@ grep -q 'StrictHostKeyChecking=yes' "$ROOT/raspberry/backup.sh"
 grep -q 'SZYFRUJ \$PARTITION' "$ROOT/raspberry/vault-create-partition.sh"
 grep -q 'KLA_DATA' "$ROOT/raspberry/vault-create-partition.sh"
 grep -q 'shared_buffers = 512MB' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'runtime-guards.sh' "$ROOT/raspberry/optimize-server.sh"
+grep -q 'Storage=persistent' "$ROOT/raspberry/runtime-guards.sh"
+grep -q 'RuntimeWatchdogSec=30s' "$ROOT/raspberry/runtime-guards.sh"
+grep -q 'Restart=always' "$ROOT/raspberry/runtime-guards.sh"
+grep -q 'automatyczne odblokowanie nie jest kompletne' "$ROOT/raspberry/startup-audit.sh"
+grep -q 'backup-download-prepare' "$ROOT/raspberry/control.sh"
+grep -q 'verified-backup-download' "$ROOT/raspberry/mac-control/kla-server-control.sh"
+grep -q 'Audyt startu po zaniku prądu' "$ROOT/raspberry/mac-control/KLA-Serwer.applescript"
 grep -q 'PermitRootLogin no' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'MemoryMax=1850M' "$ROOT/raspberry/systemd/edziennik-kla.service"
 grep -q 'standalone/.next/cache' "$ROOT/raspberry/systemd/edziennik-kla.service"
@@ -89,8 +109,15 @@ grep -q 'chmod 0644.*90-kla.conf' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'NOPASSWD: /usr/local/sbin/kla-control' "$ROOT/raspberry/install.sh"
 grep -q 'PasswordAuthentication no' "$ROOT/raspberry/optimize-server.sh"
 grep -q 'KLA_RELEASE_MANIFEST.sha256.sig' "$ROOT/raspberry/update.sh"
+grep -q 'safe-archive.py.*release' "$ROOT/raspberry/update.sh"
+grep -q -- '--test-restore' "$ROOT/raspberry/update.sh"
 grep -q 'release-signing.pub' "$ROOT/raspberry/install.sh"
 grep -q 'kla-enable-auto-unlock' "$ROOT/raspberry/update.sh"
+grep -q 'kla-web-control-daemon' "$ROOT/raspberry/update.sh"
+grep -q 'kla-web-control' "$ROOT/raspberry/systemd/kla-web-control.service"
+grep -q 'ALLOWED_ACTIONS' "$ROOT/raspberry/web-control-daemon.py"
+! grep -q 'kla-web-control \*' "$ROOT/raspberry/install.sh"
+! grep -q '/usr/bin/sudo.*kla-web-control' "$ROOT/modules/system-owner/server-control.ts"
 grep -q 'edziennik-kla-email-queue.timer' "$ROOT/raspberry/update.sh"
 grep -q 'Klucz kernela nie może zostać odczytany przez cryptsetup' "$ROOT/raspberry/enable-auto-unlock.sh"
 grep -q 'runuser -u kla --preserve-environment' "$ROOT/raspberry/update.sh"

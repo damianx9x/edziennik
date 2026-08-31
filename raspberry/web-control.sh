@@ -9,6 +9,7 @@ ENV_FILE="$VAULT/secrets/edziennik.env"
 BACKUP_USB_ENV=/etc/kla/backup-usb.env
 BACKUP_POLICY_ENV=/etc/kla/backup-policy.env
 BACKUP_SFTP_ENV=/etc/kla/backup-sftp.env
+PUBLIC_MODE_FILE="$VAULT/config/public-presentation-mode"
 
 case "$ACTION" in
   status-json)
@@ -16,6 +17,13 @@ case "$ACTION" in
 import json, os, shutil, subprocess, time
 def service(name):
     return subprocess.run(["systemctl", "is-active", "--quiet", name]).returncode == 0
+def enabled(name):
+    return subprocess.run(["systemctl", "is-enabled", "--quiet", name]).returncode == 0
+def systemd_property(name, prop):
+    try:
+        return subprocess.check_output(["systemctl", "show", "-p", prop, "--value", name], text=True, timeout=2).strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
 def disk(path):
     try:
         value = shutil.disk_usage(path)
@@ -58,6 +66,36 @@ try:
     vault_rotational = vault_rota_raw == "1"
 except (OSError, IndexError, subprocess.SubprocessError):
     vault_rotational = None
+try:
+    release = json.loads(read("/opt/kla/current/KLA_RELEASE_METADATA.json", "{}"))
+except json.JSONDecodeError:
+    release = {}
+vault_mounted = subprocess.run(["mountpoint", "-q", "/srv/kla-vault"]).returncode == 0
+crypttab = read("/etc/crypttab")
+fstab = read("/etc/fstab")
+auto_unlock_ready = (
+    os.path.isfile("/etc/kla/vault-auto-unlock.key")
+    and "/etc/kla/vault-auto-unlock.key" in crypttab
+    and "/srv/kla-vault" in fstab
+)
+manager_config = read("/etc/systemd/system.conf") + "\n"
+manager_dir = "/etc/systemd/system.conf.d"
+if os.path.isdir(manager_dir):
+    manager_config += "\n".join(read(os.path.join(manager_dir, name)) for name in os.listdir(manager_dir))
+journal_config = read("/etc/systemd/journald.conf") + "\n"
+journal_dir = "/etc/systemd/journald.conf.d"
+if os.path.isdir(journal_dir):
+    journal_config += "\n".join(read(os.path.join(journal_dir, name)) for name in os.listdir(journal_dir))
+startup_protection = {
+  "vaultMounted": vault_mounted,
+  "autoUnlockReady": auto_unlock_ready,
+  "hardwareWatchdog": "RuntimeWatchdogSec=" in manager_config,
+  "persistentJournal": os.path.isdir("/var/log/journal") and "Storage=persistent" in journal_config,
+  "applicationRestart": systemd_property("edziennik-kla.service", "Restart") == "always",
+  "tunnelRestart": systemd_property("cloudflared.service", "Restart") in {"always", "on-failure"},
+  "healthTimer": enabled("edziennik-kla-health.timer") and service("edziennik-kla-health.timer"),
+  "backupTimer": enabled("edziennik-kla-backup.timer") and service("edziennik-kla-backup.timer"),
+}
 print(json.dumps({
   "available": True,
   "hostname": read("/etc/hostname", "raspberrypi"),
@@ -74,9 +112,11 @@ print(json.dumps({
   "latestBackupAt": latest, "usbBackupPath": usb_target,
   "sftpConfigured": os.path.isfile("/etc/kla/backup-sftp.env"),
   "backupPolicy": policy,
-  "autoUnlockEnabled": os.path.isfile("/etc/kla/vault-auto-unlock.key"),
+  "autoUnlockEnabled": auto_unlock_ready,
+  "startupProtection": startup_protection,
   "emailConfigured": any(line.startswith("EMAIL_PROVIDER=") and not line.endswith("=disabled") for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines()),
-  "publicPresentationMode": next((line.split("=", 1)[1].strip("'\"").lower() for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines() if line.startswith("KLA_PUBLIC_PRESENTATION_MODE=")), "product")
+  "publicPresentationMode": read("/srv/kla-vault/config/public-presentation-mode", next((line.split("=", 1)[1].strip("'\"").lower() for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines() if line.startswith("KLA_PUBLIC_PRESENTATION_MODE=")), "product")).lower(),
+  "release": release
 }, ensure_ascii=False))
 PY
     ;;
@@ -267,12 +307,12 @@ PY
     [[ "$RECOVERY_KEY" =~ ^AGE-SECRET-KEY-1[A-Z0-9]+$ ]] || { echo "Klucz odzyskiwania ma nieprawidłowy format." >&2; exit 2; }
     printf '%s\n' "$RECOVERY_KEY" > "$KEY_FILE"
     chmod 600 "$KEY_FILE"
-    age -d -i "$KEY_FILE" "$SOURCE" | tar -C "$INSPECT_DIR" -xf - manifest.txt database.dump private-files.tar.gz \
+    age -d -i "$KEY_FILE" "$SOURCE" | /usr/local/sbin/kla-safe-archive outer "$INSPECT_DIR" \
       || { echo "Nie udało się otworzyć kopii. Sprawdź plik i właściwy klucz odzyskiwania." >&2; exit 1; }
     pg_restore --list "$INSPECT_DIR/database.dump" >/dev/null
-    tar -tzf "$INSPECT_DIR/private-files.tar.gz" >/dev/null
-    tar -C "$INSPECT_DIR" -xzf "$INSPECT_DIR/private-files.tar.gz"
-    clamdscan --fdpass --no-summary "$INSPECT_DIR/private-files" >/dev/null \
+    SCAN_DIR="$INSPECT_DIR/private-files.scan"
+    /usr/local/sbin/kla-safe-archive private "$INSPECT_DIR/private-files.tar.gz" "$SCAN_DIR"
+    clamdscan --fdpass --no-summary "$SCAN_DIR" >/dev/null \
       || { echo "Skan antywirusowy zatrzymał import kopii." >&2; exit 1; }
     CREATED_AT="$(sed -n 's/^created_at=//p' "$INSPECT_DIR/manifest.txt" | head -n1)"
     SOURCE_COMMIT="$(sed -n 's/^app_commit=//p' "$INSPECT_DIR/manifest.txt" | head -n1)"
@@ -361,23 +401,21 @@ PY
   set-public-mode)
     MODE="${2:-}"
     [[ "$MODE" == "school" || "$MODE" == "product" ]] || { echo "Niepoprawny tryb wizytówki." >&2; exit 2; }
-    python3 - "$ENV_FILE" "$MODE" <<'PY'
-import grp, os, shlex, sys, tempfile
-env_path, mode = sys.argv[1:]
-key = "KLA_PUBLIC_PRESENTATION_MODE"
-with open(env_path, encoding="utf-8") as handle:
-    lines = [line for line in handle if line.split("=", 1)[0] != key]
-fd, temp_path = tempfile.mkstemp(prefix="public-mode.", dir=os.path.dirname(env_path), text=True)
-with os.fdopen(fd, "w", encoding="utf-8") as handle:
-    handle.writelines(lines)
-    handle.write(f"{key}={shlex.quote(mode)}\n")
-os.chmod(temp_path, 0o640)
-os.chown(temp_path, 0, grp.getgrnam("kla").gr_gid)
-os.replace(temp_path, env_path)
+    install -d -m 750 -o root -g kla "$(dirname "$PUBLIC_MODE_FILE")"
+    exec 8>/run/lock/kla-public-presentation.lock
+    flock -x 8
+    TEMP_MODE="$(mktemp "$(dirname "$PUBLIC_MODE_FILE")/.public-mode.XXXXXX")"
+    trap 'rm -f "$TEMP_MODE"' EXIT
+    printf '%s\n' "$MODE" > "$TEMP_MODE"
+    chown root:kla "$TEMP_MODE"
+    chmod 640 "$TEMP_MODE"
+    python3 - "$TEMP_MODE" <<'PY'
+import os, sys
+with open(sys.argv[1], "rb") as handle: os.fsync(handle.fileno())
 PY
-    systemd-run --quiet --unit="kla-public-mode-restart-$(date +%s)" --on-active=4s \
-      /usr/bin/systemctl restart edziennik-kla
-    echo "Tryb publicznej wizytówki został zapisany. Panel i prawdziwa baza nie zostały zmienione."
+    mv -f "$TEMP_MODE" "$PUBLIC_MODE_FILE"
+    trap - EXIT
+    echo "Tryb publicznej wizytówki został przełączony. Panel, konta i prawdziwa baza nie zostały zmienione."
     ;;
   *)
     echo "Niedozwolona operacja panelu serwera." >&2

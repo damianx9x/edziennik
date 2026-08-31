@@ -16,9 +16,12 @@ import {
   LoaderCircle,
   Mail,
   MessageSquareText,
+  PackageCheck,
+  School,
   Server,
   Settings2,
   ShieldCheck,
+  Sparkles,
   TerminalSquare,
   Thermometer,
   Usb,
@@ -81,7 +84,7 @@ function Unavailable({ message }: { message?: string }) {
       <header>
         <div>
           <span className="section-kicker">Raspberry Pi</span>
-          <h2>Ustawienia serwera</h2>
+          <h2>Serwer i integracje</h2>
         </div>
         <Server aria-hidden="true" />
       </header>
@@ -348,6 +351,17 @@ export function RaspberryStatusOverview({
   if (!status.available) return <Unavailable message={status.message} />;
   const memoryUsed =
     (status.memory?.total ?? 0) - (status.memory?.available ?? 0);
+  const startupProtection = status.startupProtection;
+  const startupChecks = [
+    ["Sejf jest otwarty", startupProtection?.vaultMounted],
+    ["Sejf otworzy się po zaniku prądu", startupProtection?.autoUnlockReady],
+    ["Sprzętowy watchdog Raspberry", startupProtection?.hardwareWatchdog],
+    ["Logi przetrwają restart", startupProtection?.persistentJournal],
+    ["Aplikacja uruchamia się ponownie", startupProtection?.applicationRestart],
+    ["Tunel uruchamia się ponownie", startupProtection?.tunnelRestart],
+    ["Minutowa samonaprawa", startupProtection?.healthTimer],
+    ["Automatyczne kopie", startupProtection?.backupTimer],
+  ] as const;
   return (
     <section
       className="raspberry-control raspberry-overview"
@@ -428,6 +442,32 @@ export function RaspberryStatusOverview({
               ? "SSD"
               : "typ nierozpoznany"}
         </span>
+      </div>
+      <div className="raspberry-startup-audit" aria-label="Warstwy automatycznego startu">
+        <header>
+          <div>
+            <span className="section-kicker">Po zaniku prądu</span>
+            <h3>Łańcuch automatycznego startu</h3>
+          </div>
+          <span className={`integration-status ${startupChecks.every(([, ready]) => ready) ? "ready" : "pending"}`}>
+            {startupChecks.filter(([, ready]) => ready).length}/{startupChecks.length} warstw
+          </span>
+        </header>
+        <div>
+          {startupChecks.map(([label, ready]) => (
+            <span key={label} className={ready ? "ready" : "error"}>
+              {ready ? <CheckCircle2 aria-hidden="true" /> : <KeyRound aria-hidden="true" />}
+              {label}
+            </span>
+          ))}
+        </div>
+        {!startupProtection?.autoUnlockReady ? (
+          <p role="alert">
+            Automatyczny start nie jest jeszcze kompletny. Sejf wymaga jednorazowego
+            odblokowania prawidłowym hasłem LUKS, a następnie włączenia klucza
+            startowego przechowywanego wyłącznie dla roota.
+          </p>
+        ) : null}
       </div>
       {status.currentThrottling !== false || !status.memoryControllerEnabled ? (
         <p className="integration-limit compact">
@@ -1091,6 +1131,13 @@ export function RaspberryControlPanel({
             <small>Logi, raport i bezpieczny terminal</small>
           </span>
         </a>
+        <a href="#release-status">
+          <PackageCheck aria-hidden="true" />
+          <span>
+            <strong>Wydanie aplikacji</strong>
+            <small>Wersja, commit i audyt zależności</small>
+          </span>
+        </a>
       </nav>
       <section
         id="public-presentation"
@@ -1112,8 +1159,8 @@ export function RaspberryControlPanel({
             </p>
           </div>
         </header>
-        <div className="raspberry-config-grid">
-          <article className="integration-card">
+        <div className="raspberry-config-grid public-presentation-grid">
+          <article className="integration-card public-presentation-card">
             <header>
               <Globe2 aria-hidden="true" />
               <div>
@@ -1125,41 +1172,66 @@ export function RaspberryControlPanel({
                 </h3>
               </div>
             </header>
-            <form
-              action={presentationAction}
-              className="owner-config-form owner-config-form-single"
-            >
-              <label>
-                Co widzi osoba wchodząca na adres główny
-                <select
-                  name="mode"
-                  defaultValue={status.publicPresentationMode ?? "product"}
-                >
-                  <option value="school">Strona szkoły King’s</option>
-                  <option value="product">
-                    Neutralny pokaz eDziennika / challenge
-                  </option>
-                </select>
-              </label>
-              <button
-                className="button button-primary"
-                disabled={presentationPending}
+            <p className="public-presentation-safety">
+              Zmiana dotyczy tylko strony głównej. Konta, panel, baza, umowy,
+              wiadomości i pliki pozostają bez zmian.
+            </p>
+            <div className="public-mode-options" aria-label="Wybór publicznej strony">
+              <form
+                action={presentationAction}
+                className={`public-mode-option ${status.publicPresentationMode === "school" ? "active" : ""}`}
               >
-                {presentationPending ? (
-                  <LoaderCircle className="spin" />
+                <input type="hidden" name="mode" value="school" />
+                <span className="public-mode-preview school" aria-hidden="true">
+                  <School />
+                  <i /><i /><i />
+                </span>
+                <span>
+                  <strong>Strona szkoły</strong>
+                  <small>Nazwa, oferta, lokalizacje i kontakt King’s.</small>
+                </span>
+                {status.publicPresentationMode === "school" ? (
+                  <em><CheckCircle2 aria-hidden="true" /> Aktualnie publiczne</em>
                 ) : (
-                  <Globe2 aria-hidden="true" />
-                )}{" "}
-                Zapisz i przełącz wizytówkę
-              </button>
-            </form>
+                  <button className="button button-secondary" disabled={presentationPending}>
+                    {presentationPending ? <LoaderCircle className="spin" /> : <Globe2 aria-hidden="true" />}
+                    Pokaż stronę szkoły
+                  </button>
+                )}
+              </form>
+              <form
+                action={presentationAction}
+                className={`public-mode-option ${status.publicPresentationMode === "product" ? "active" : ""}`}
+              >
+                <input type="hidden" name="mode" value="product" />
+                <span className="public-mode-preview product" aria-hidden="true">
+                  <ShieldCheck />
+                  <i /><i /><i />
+                </span>
+                <span>
+                  <strong>Pokaz systemu</strong>
+                  <small>Bogate demo funkcji bez danych i marki szkoły.</small>
+                </span>
+                {status.publicPresentationMode === "product" ? (
+                  <em><CheckCircle2 aria-hidden="true" /> Aktualnie publiczne</em>
+                ) : (
+                  <button className="button button-secondary" disabled={presentationPending}>
+                    {presentationPending ? <LoaderCircle className="spin" /> : <Sparkles aria-hidden="true" />}
+                    Pokaż możliwości systemu
+                  </button>
+                )}
+              </form>
+            </div>
             <Feedback state={presentationState} />
+            <a className="button button-secondary public-preview-link" href="/" target="_blank" rel="noreferrer">
+              <ExternalLink aria-hidden="true" /> Otwórz publiczną stronę
+            </a>
             <p className="integration-limit compact">
               <ShieldCheck aria-hidden="true" />
               <span>
-                Tryb neutralny nie pokazuje nazwy, zdjęć, lokalizacji ani
-                kontaktów szkoły. Rejestracja pozostaje zamknięta, a prawdziwy
-                ruch nadal trafia do prywatnego centrum zdarzeń.
+                Pokaz systemu nie pobiera nazwy, zdjęć, lokalizacji ani
+                kontaktów szkoły. Rejestracja pozostaje zamknięta, a ruch
+                publiczny trafia do oddzielnej telemetrii produktu.
               </span>
             </p>
           </article>
@@ -1167,8 +1239,8 @@ export function RaspberryControlPanel({
             <header>
               <ShieldCheck aria-hidden="true" />
               <div>
-                <span className="section-kicker">Promocja partnerska</span>
-                <h3>Kontrolowana kampania społeczności</h3>
+                <span className="section-kicker">Udostępnianie produktu</span>
+                <h3>Bezpieczny pokaz dla społeczności</h3>
               </div>
             </header>
             <p>
@@ -1200,6 +1272,67 @@ export function RaspberryControlPanel({
       </section>
       <RaspberryBackupSettings status={status} storage={storage} />
       <RaspberryCommunicationSettings status={status} />
+      <section
+        id="release-status"
+        className="server-settings-section"
+        aria-labelledby="release-status-title"
+      >
+        <header className="server-settings-heading">
+          <span className="record-icon record-icon-green">
+            <PackageCheck aria-hidden="true" />
+          </span>
+          <div>
+            <span className="section-kicker">Kontrolowane wydania</span>
+            <h2 id="release-status-title">Wersja i zależności</h2>
+            <p>
+              Status pochodzi z podpisanej paczki, która przeszła testy przed
+              instalacją. Baza i pliki szkoły nie są częścią paczki kodu.
+            </p>
+          </div>
+        </header>
+        <div className="raspberry-config-grid">
+          <article className="integration-card release-status-card">
+            <header>
+              <PackageCheck aria-hidden="true" />
+              <div>
+                <span className="section-kicker">Aktywne wydanie</span>
+                <h3>{status.release?.version ?? "wersja starsza niż v1.1"}</h3>
+              </div>
+            </header>
+            <dl>
+              <div><dt>Commit</dt><dd>{status.release?.commit?.slice(0, 12) ?? "brak metadanych"}</dd></div>
+              <div><dt>Audyt zależności</dt><dd>{status.release ? `${status.release.vulnerabilities.total} wykrytych` : "pojawi się po aktualizacji"}</dd></div>
+              <div><dt>Krytyczne / wysokie</dt><dd>{status.release ? `${status.release.vulnerabilities.critical} / ${status.release.vulnerabilities.high}` : "—"}</dd></div>
+              <div><dt>Sprawdzono</dt><dd>{status.release?.auditedAt ? new Date(status.release.auditedAt).toLocaleString("pl-PL") : "—"}</dd></div>
+            </dl>
+            <span className={`integration-status ${status.release && status.release.vulnerabilities.critical + status.release.vulnerabilities.high === 0 ? "ready" : "pending"}`}>
+              <ShieldCheck aria-hidden="true" />
+              {status.release && status.release.vulnerabilities.critical + status.release.vulnerabilities.high === 0
+                ? "Brak krytycznych i wysokich podatności"
+                : "Wymaga danych z nowego wydania"}
+            </span>
+          </article>
+          <article className="integration-card">
+            <header>
+              <ShieldCheck aria-hidden="true" />
+              <div><span className="section-kicker">Ochrona realnej bazy</span><h3>Aktualizacja przez podpisane wydanie</h3></div>
+            </header>
+            <p>
+              Pakiet jest budowany z konkretnego commita, podpisywany poza
+              Raspberry i sprawdzany przed instalacją. Serwer robi zaszyfrowaną
+              kopię z testem odtworzenia, wykonuje migracje i kontrolę zdrowia.
+            </p>
+            <ul className="backup-requirements">
+              <li>brak automatycznego <code>npm update</code> na żywej bazie,</li>
+              <li>odrzucenie dodatkowych i zmienionych plików,</li>
+              <li>automatyczny powrót do poprzedniego kodu po błędzie.</li>
+            </ul>
+            <a className="button button-secondary" href="https://github.com/damianx9x/edziennik/releases" target="_blank" rel="noreferrer">
+              <ExternalLink aria-hidden="true" /> Sprawdź opublikowane wydania
+            </a>
+          </article>
+        </div>
+      </section>
       <section
         id="remote-access"
         className="server-settings-section"
