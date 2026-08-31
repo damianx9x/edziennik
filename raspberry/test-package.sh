@@ -42,6 +42,17 @@ for file in "${required_files[@]}"; do
   [[ -s "$ROOT/$file" ]] || { echo "Brak wymaganego pliku: $file"; exit 1; }
 done
 
+for executable in \
+  raspberry/install.sh \
+  raspberry/optimize-server.sh \
+  raspberry/runtime-guards.sh \
+  raspberry/vault-create-partition.sh; do
+  [[ -x "$ROOT/$executable" ]] || {
+    echo "Skrypt instalacyjny nie ma prawa wykonania: $executable"
+    exit 1
+  }
+done
+
 python3 -m py_compile \
   "$ROOT/raspberry/safe-archive.py" \
   "$ROOT/raspberry/test-safe-archive.py" \
