@@ -4,16 +4,50 @@ set -Eeuo pipefail
 if [[ ${EUID} -ne 0 ]]; then echo "Uruchom: sudo kla-status"; exit 1; fi
 source /etc/kla/vault.conf
 DEPLOYMENT_MODE="$(awk -F= '$1 == "KLA_DEPLOYMENT_MODE" {print $2}' /etc/kla/edziennik.env 2>/dev/null || true)"
+BOOT_SECONDS="${BOOT_SECONDS:-$(cut -d. -f1 /proc/uptime)}"
+START_GRACE=300
+AUTO_UNLOCK_READY=0
+if [[ -f /etc/kla/vault-auto-unlock.key ]] && grep -qE '^[[:space:]]*kla-data[[:space:]]' /etc/crypttab; then
+  AUTO_UNLOCK_READY=1
+fi
+STARTING=0
+if ! mountpoint -q "$KLA_VAULT_MOUNT" && ((AUTO_UNLOCK_READY == 1 && BOOT_SECONDS < START_GRACE)); then
+  STARTING=1
+fi
 echo "KLA — stan urządzenia"
-if mountpoint -q "$KLA_VAULT_MOUNT"; then echo "[OK] szyfrowany sejf jest otwarty"; else echo "[STOP] sejf zamknięty — uruchom: sudo kla-unlock"; fi
+if mountpoint -q "$KLA_VAULT_MOUNT"; then
+  echo "[OK] szyfrowany sejf jest otwarty"
+elif ((STARTING == 1)); then
+  echo "[START] sejf otwiera się automatycznie — po zaniku prądu może to potrwać do 5 minut"
+else
+  echo "[STOP] sejf zamknięty — uruchom: sudo kla-unlock"
+fi
 SERVICES=(postgresql clamav-daemon edziennik-kla nginx)
 [[ "$DEPLOYMENT_MODE" != "local-demo" ]] && SERVICES+=(cloudflared)
 for SERVICE in "${SERVICES[@]}"; do
-  if systemctl is-active --quiet "$SERVICE"; then echo "[OK] $SERVICE"; else echo "[STOP] $SERVICE"; fi
+  if systemctl is-active --quiet "$SERVICE"; then
+    echo "[OK] $SERVICE"
+  elif ((STARTING == 1)); then
+    echo "[START] $SERVICE oczekuje na sejf"
+  else
+    echo "[STOP] $SERVICE"
+  fi
 done
-if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then echo "[OK] aplikacja odpowiada"; else echo "[STOP] aplikacja nie odpowiada"; fi
-if curl --fail --silent --max-time 10 http://127.0.0.1:8080/api/health >/dev/null; then echo "[OK] prywatny origin nginx odpowiada"; else echo "[STOP] prywatny origin nginx nie odpowiada"; fi
-if [[ -f /etc/kla/vault-auto-unlock.key ]] && grep -qE '^[[:space:]]*kla-data[[:space:]]' /etc/crypttab; then
+if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then
+  echo "[OK] aplikacja odpowiada"
+elif ((STARTING == 1)); then
+  echo "[START] aplikacja jeszcze się uruchamia"
+else
+  echo "[STOP] aplikacja nie odpowiada"
+fi
+if curl --fail --silent --max-time 10 http://127.0.0.1:8080/api/health >/dev/null; then
+  echo "[OK] prywatny origin nginx odpowiada"
+elif ((STARTING == 1)); then
+  echo "[START] prywatny origin jeszcze się uruchamia"
+else
+  echo "[STOP] prywatny origin nginx nie odpowiada"
+fi
+if ((AUTO_UNLOCK_READY == 1)); then
   echo "[OK] automatyczny start po zaniku prądu"
 else
   echo "[UWAGA] automatyczny start sejfu nie jest jeszcze włączony"

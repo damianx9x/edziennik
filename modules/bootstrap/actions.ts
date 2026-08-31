@@ -20,6 +20,21 @@ import {
 
 const BOOTSTRAP_LOCK_ID = 4_918_202_026;
 
+async function consumeRecoveryKeyForFirstRun() {
+  try {
+    return {
+      recoveryKey: await readRecoveryKeyOnce(),
+      recoveryKeyWarning: undefined,
+    };
+  } catch {
+    return {
+      recoveryKey: undefined,
+      recoveryKeyWarning:
+        "Klucz odzyskiwania nie został jeszcze pobrany. Po zalogowaniu zapisz go jednorazowo z panelu serwera przed dodaniem danych szkoły.",
+    };
+  }
+}
+
 export type FirstRunSmtpState = {
   status: "idle" | "success" | "error";
   message?: string;
@@ -201,15 +216,9 @@ export async function createFirstOwner(
     };
   }
 
-  let recoveryKey: string | undefined;
-  let recoveryKeyWarning: string | undefined;
-  try {
-    recoveryKey = await readRecoveryKeyOnce();
-  } catch {
-    recoveryKeyWarning = "Klucz odzyskiwania nie został jeszcze pobrany. Po zalogowaniu zapisz go jednorazowo z panelu serwera przed dodaniem danych szkoły.";
-  }
-
   if (!emailReady) {
+    const { recoveryKey, recoveryKeyWarning } =
+      await consumeRecoveryKeyForFirstRun();
     return {
       status: "success",
       activationMode: "bootstrap",
@@ -236,6 +245,11 @@ export async function createFirstOwner(
       email: maskEmail(parsed.data.email),
     };
   }
+
+  // Klucz jednorazowy pobieramy dopiero po pewnym wysłaniu aktywacji. Awaria
+  // SMTP nie może pozbawić właściciela jedynej możliwości odtworzenia kopii.
+  const { recoveryKey, recoveryKeyWarning } =
+    await consumeRecoveryKeyForFirstRun();
 
   return {
     status: "success",
