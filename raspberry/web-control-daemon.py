@@ -17,6 +17,7 @@ ALLOWED_ACTIONS = {
     "status-json", "storage-json", "set-backup-usb", "clear-backup-usb",
     "backup-now", "benchmark-readonly", "restart-app", "set-backup-policy",
     "sftp-prepare", "sftp-confirm", "sftp-clear", "recovery-key-once",
+    "recovery-key-first-run-once",
     "export-create", "import-prepare", "import-restore", "set-smtp",
     "set-sms-gate", "set-public-mode",
 }

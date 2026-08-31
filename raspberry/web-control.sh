@@ -254,6 +254,9 @@ PY
   recovery-key-once)
     exec /usr/local/sbin/edziennik-kla-print-recovery-key
     ;;
+  recovery-key-first-run-once)
+    exec /usr/local/sbin/edziennik-kla-print-recovery-key first-run
+    ;;
   export-create)
     EXPORT_ID="${2:-}"
     [[ "$EXPORT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] || {

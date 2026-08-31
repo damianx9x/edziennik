@@ -207,7 +207,7 @@ export async function restoreFullImport(id: string): Promise<string> {
 }
 
 export async function readRecoveryKeyOnce(): Promise<string> {
-  const output = await runControl("recovery-key-once");
+  const output = await runControl("recovery-key-first-run-once");
   const key = output.split(/\r?\n/).find((line) => line.startsWith("AGE-SECRET-KEY-"));
   if (!key) throw new Error("Serwer nie zwrócił prawidłowego klucza odzyskiwania.");
   return key;
