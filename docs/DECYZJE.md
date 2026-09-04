@@ -1473,3 +1473,15 @@ szkoły; prywatny profil właścicielki nie jest kopiowany do aplikacji.
 **Dlaczego:** edytor ma dawać realną swobodę bez możliwości rozbicia mobilnej
 strony albo wstrzyknięcia niebezpiecznego adresu. Rozdzielenie treści szkoły od
 prywatnego profilu utrzymuje jasną odpowiedzialność za publikowane informacje.
+
+## ADR-105 — wdrożenie sprawdza zasoby używane przez przeglądarkę
+
+**Data:** 2026-09-04
+**Decyzja:** aktualizacja Raspberry porównuje komplet plików `/_next/static`
+z katalogiem uruchomieniowym standalone. Po starcie pobiera stronę główną i
+sprawdza faktyczne odnośniki do CSS i JavaScript. Brak choć jednego zasobu
+oznacza nieudane wdrożenie i automatyczny powrót do poprzedniej wersji.
+
+**Dlaczego:** sam zdrowy endpoint API nie dowodzi, że użytkownik otrzyma
+działający interfejs. Kontrola musi obejmować dokładnie tę warstwę, którą
+ładuje przeglądarka.

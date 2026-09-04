@@ -149,5 +149,7 @@ grep -q 'edziennik-kla-restore --test' "$ROOT/raspberry/web-control.sh"
 grep -q 'import-restore)' "$ROOT/raspberry/web-control.sh"
 grep -q -- '--confirmed' "$ROOT/raspberry/restore.sh"
 grep -q 'install -d -m 700 -o kla -g kla.*imports' "$ROOT/raspberry/update.sh"
+grep -q 'STATIC_RUNTIME_COUNT' "$ROOT/raspberry/update.sh"
+grep -q 'verify_browser_assets' "$ROOT/raspberry/update.sh"
 
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."

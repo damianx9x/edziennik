@@ -114,6 +114,16 @@ set +a
 runuser -u kla --preserve-environment -- bash -c \
   "cd '$NEW' && npm run db:generate && npm run check && npm run build"
 
+# Next.js nie dołącza publicznych assetów do standalone automatycznie. Build
+# jest gotowy do wdrożenia dopiero wtedy, gdy każdemu plikowi źródłowemu CSS/JS
+# odpowiada plik w katalogu uruchomieniowym.
+STATIC_SOURCE_COUNT="$(find "$NEW/.next/static" -type f | wc -l | tr -d ' ')"
+STATIC_RUNTIME_COUNT="$(find "$NEW/.next/standalone/.next/static" -type f | wc -l | tr -d ' ')"
+if [[ "$STATIC_SOURCE_COUNT" -eq 0 || "$STATIC_SOURCE_COUNT" -ne "$STATIC_RUNTIME_COUNT" ]]; then
+  echo "Niekompletne zasoby przeglądarki: źródło=$STATIC_SOURCE_COUNT, runtime=$STATIC_RUNTIME_COUNT."
+  false
+fi
+
 echo "Tworzę i sprawdzam szyfrowaną kopię przed migracją..."
 KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-backup --test-restore
 
@@ -209,9 +219,27 @@ if [[ -f /etc/kla/backup-policy.env ]]; then
 fi
 systemctl start edziennik-kla
 
+verify_browser_assets() {
+  local html asset
+  local -a assets=()
+  html="$(curl --fail --silent --show-error --max-time 8 http://127.0.0.1:3000/)" || return 1
+  mapfile -t assets < <(
+    printf '%s' "$html" \
+      | grep -oE '/_next/static/[^"[:space:]]+\.(css|js)' \
+      | sort -u \
+      | awk 'NR <= 12'
+  )
+  [[ "${#assets[@]}" -gt 0 ]] || return 1
+  for asset in "${assets[@]}"; do
+    curl --fail --silent --show-error --max-time 8 \
+      "http://127.0.0.1:3000${asset}" >/dev/null || return 1
+  done
+}
+
 for attempt in {1..45}; do
   if curl --fail --silent --show-error --max-time 5 \
-    http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+    http://127.0.0.1:3000/api/health >/dev/null 2>&1 \
+    && verify_browser_assets; then
     rm -f "$NGINX_CONFIG_BACKUP"
     switched=0
     trap - ERR INT TERM
@@ -219,7 +247,7 @@ for attempt in {1..45}; do
     exit 0
   fi
   if [[ "$attempt" -eq 45 ]]; then
-    echo "Nowa wersja nie osiągnęła stanu gotowości."
+    echo "Nowa wersja nie osiągnęła stanu gotowości z kompletnym CSS/JS."
     false
   fi
   sleep 2

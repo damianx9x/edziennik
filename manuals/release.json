@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "4 września 2026",
   "schoolChanges": [
     "Właściciel może włączyć lub wyłączyć każdy moduł osobno dla dyrektora, wykładowcy, rodzica i ucznia.",
@@ -11,6 +11,7 @@
     "Wizytówka ma bogatszą treść, jednorazowe animacje i szanuje systemowe ograniczenie ruchu."
   ],
   "ownerChanges": [
+    "Aktualizator Raspberry sprawdza teraz prawdziwe pliki CSS i JavaScript strony; niekompletne wydanie jest automatycznie odrzucane i cofane.",
     "Macierz modułów jest zapisywana dla szkoły i każda jej zmiana trafia do audytu.",
     "Kontrola modułu działa po stronie serwera także dla akcji zapisu i prywatnych plików; samo ukrycie przycisku nie jest zabezpieczeniem.",
     "Start, logowanie, MFA, pomoc i zgłoszenia są stałym rdzeniem i nie mogą zostać przypadkowo wyłączone.",
