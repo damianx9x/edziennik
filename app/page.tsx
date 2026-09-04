@@ -2,8 +2,14 @@
 
 import {
   ArrowRight,
+  Award,
   BookOpenCheck,
+  CalendarClock,
+  Camera,
   Check,
+  CircleHelp,
+  Clock3,
+  Compass,
   FileSignature,
   GraduationCap,
   Globe2,
@@ -12,13 +18,20 @@ import {
   Lightbulb,
   Link2,
   MapPin,
+  MapPinned,
   MessageCircleMore,
   MessagesSquare,
   Phone,
   ReceiptText,
+  Quote,
   School,
   ShieldCheck,
   Sparkles,
+  Star,
+  Target,
+  Trophy,
+  UserRound,
+  UserRoundCheck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -219,7 +232,27 @@ function HomeSection({
     );
   }
   if (id === "widgets") {
-    const icons = { highlight: Lightbulb, stat: Sparkles, link: Link2, notice: Info } as const;
+    const icons = {
+      highlight: Lightbulb,
+      stat: Sparkles,
+      link: Link2,
+      notice: Info,
+      testimonial: Quote,
+      enrollment: UserRoundCheck,
+      course: BookOpenCheck,
+      teacher: UserRound,
+      event: CalendarClock,
+      location: MapPinned,
+      faq: CircleHelp,
+      gallery: Camera,
+      schedule: Clock3,
+      benefit: Star,
+      social: MessagesSquare,
+      availability: Compass,
+      method: Target,
+      progress: Trophy,
+      trust: Award,
+    } as const;
     return (
       <section className="section home-widgets-section" aria-label="Ważne informacje">
         <div className="home-widgets-grid">
@@ -227,7 +260,7 @@ function HomeSection({
             const Icon = icons[widget.type];
             const external = widget.href.startsWith("http");
             return (
-              <article className={`home-widget home-widget-${widget.size} home-widget-${widget.tone}`} key={widget.id}>
+              <article className={`home-widget home-widget-${widget.size} home-widget-${widget.tone}`} data-widget-type={widget.type} key={widget.id}>
                 <div className="home-widget-top"><span>{widget.badge}</span><Icon aria-hidden="true" /></div>
                 <h2>{widget.title}</h2><p>{widget.text}</p>
                 <a href={widget.href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>{widget.actionLabel} <ArrowRight aria-hidden="true" /></a>

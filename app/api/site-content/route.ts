@@ -4,7 +4,10 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { isTrustedSameOrigin } from "@/lib/server/same-origin";
 import { requireDirector } from "@/modules/identity/auth/session";
-import { defaultSiteContent } from "@/modules/site-content/default-content";
+import {
+  defaultSiteContent,
+  enrichLegacyDefaultSiteContent,
+} from "@/modules/site-content/default-content";
 import { siteContentSchema } from "@/modules/site-content/schema";
 import { resolvePublicPresentationMode } from "@/modules/site-content/public-mode.server";
 import { productSiteContent } from "@/modules/site-content/product-content";
@@ -20,7 +23,10 @@ export async function GET(request: Request) {
       select: { siteContent: true },
     });
     const parsed = siteContentSchema.safeParse(school?.siteContent);
-    return NextResponse.json(parsed.success ? parsed.data : defaultSiteContent, {
+    const content = parsed.success
+      ? enrichLegacyDefaultSiteContent(parsed.data)
+      : defaultSiteContent;
+    return NextResponse.json(content, {
       headers: { "Cache-Control": "no-store", "X-KLA-Editor-Scope": "school" },
     });
   }
@@ -36,7 +42,10 @@ export async function GET(request: Request) {
     ? await db.school.findUnique({ where: { slug: publicSchoolSlug }, select: { siteContent: true } })
     : null;
   const parsed = siteContentSchema.safeParse(school?.siteContent);
-  return NextResponse.json(parsed.success ? parsed.data : defaultSiteContent, {
+  const content = parsed.success
+    ? enrichLegacyDefaultSiteContent(parsed.data)
+    : defaultSiteContent;
+  return NextResponse.json(content, {
     headers: { "Cache-Control": "no-store", "X-KLA-Public-Mode": mode },
   });
 }

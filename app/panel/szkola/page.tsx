@@ -25,6 +25,8 @@ import {
 } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { getScheduleTone } from "@/modules/schedule/presentation";
+import { getModuleAccessPolicy, moduleIsEnabled } from "@/modules/module-access/server";
+import type { ModuleAccessPolicy } from "@/modules/module-access/catalog";
 
 export const metadata: Metadata = { title: "Panel szkoły" };
 export const dynamic = "force-dynamic";
@@ -44,6 +46,7 @@ export default async function SchoolPanelPage() {
           "view:teacher-dashboard",
           "/panel/szkola",
         );
+  const moduleAccess = await getModuleAccessPolicy(session.user.schoolId);
 
   return (
     <AuthenticatedPanelShell session={session}>
@@ -52,9 +55,11 @@ export default async function SchoolPanelPage() {
         <DirectorDashboard
           name={session.user.name}
           schoolId={session.user.schoolId}
+          role={session.user.role}
+          moduleAccess={moduleAccess}
         />
       ) : (
-        <TeacherDashboard name={session.user.name} userId={session.user.id} schoolId={session.user.schoolId} />
+        <TeacherDashboard name={session.user.name} userId={session.user.id} schoolId={session.user.schoolId} moduleAccess={moduleAccess} />
       )}
     </AuthenticatedPanelShell>
   );
@@ -63,9 +68,13 @@ export default async function SchoolPanelPage() {
 async function DirectorDashboard({
   name,
   schoolId,
+  role,
+  moduleAccess,
 }: {
   name: string;
   schoolId: string;
+  role: "SYSTEM_OWNER" | "DIRECTOR";
+  moduleAccess: ModuleAccessPolicy;
 }) {
   const firstName = name.trim().split(/\s+/)[0] || "Dyrektorze";
   const now = new Date();
@@ -117,7 +126,17 @@ async function DirectorDashboard({
   const daySlots = Array.from({ length: 6 }, (_, day) =>
     slots.filter((slot) => dayIndex(slot.startAt) === day),
   );
-  const matters = pendingChanges + activeInvitations + openReports + signedContracts;
+  const scheduleEnabled = moduleIsEnabled(moduleAccess, "schedule", role);
+  const recordsEnabled = moduleIsEnabled(moduleAccess, "records", role);
+  const invitationsEnabled = moduleIsEnabled(moduleAccess, "invitations", role);
+  const notificationsEnabled = moduleIsEnabled(moduleAccess, "notifications", role);
+  const statisticsEnabled = moduleIsEnabled(moduleAccess, "statistics", role);
+  const contractsEnabled = moduleIsEnabled(moduleAccess, "contracts", role);
+  const matters =
+    (recordsEnabled && notificationsEnabled ? pendingChanges : 0) +
+    (invitationsEnabled ? activeInvitations : 0) +
+    (statisticsEnabled ? openReports : 0) +
+    (contractsEnabled ? signedContracts : 0);
 
   return (
     <>
@@ -126,16 +145,15 @@ async function DirectorDashboard({
           <span className="section-kicker">Command Center szkoły</span>
           <h1>Dzień dobry, {firstName}</h1>
           <p>
-            Plan całej szkoły, sprawy do decyzji i szybkie działania masz teraz
-            na jednym ekranie.
+            Sprawy do decyzji i aktywne funkcje szkoły masz na jednym ekranie.
           </p>
         </div>
-        <Link
+        {invitationsEnabled ? <Link
           className="button button-primary"
           href="/panel/szkola/zaproszenia"
         >
           <MailPlus aria-hidden="true" /> Zaproś osobę
-        </Link>
+        </Link> : null}
       </header>
 
       <section className="command-status" aria-label="Stan szkoły">
@@ -146,10 +164,10 @@ async function DirectorDashboard({
             <small>Najpierw decyzje, potem codzienna organizacja.</small>
           </span>
         </div>
-        <a href="#sprawy">Przejdź do spraw <ArrowRight aria-hidden="true" /></a>
+        {matters > 0 ? <a href="#sprawy">Przejdź do spraw <ArrowRight aria-hidden="true" /></a> : null}
       </section>
 
-      <section className="command-schedule" id="grafik">
+      {scheduleEnabled ? <section className="command-schedule" id="grafik">
         <header>
           <div>
             <span className="section-kicker">Cała szkoła · ten tydzień</span>
@@ -178,10 +196,10 @@ async function DirectorDashboard({
             </section>
           ))}
         </div>
-      </section>
+      </section> : null}
 
       <div className="command-grid">
-        <section className="command-matters" id="sprawy">
+        {matters > 0 ? <section className="command-matters" id="sprawy">
           <header>
             <div>
               <span className="section-kicker">Do sprawdzenia</span>
@@ -190,14 +208,14 @@ async function DirectorDashboard({
             <strong>{matters}</strong>
           </header>
           <div>
-            <CommandMatter icon={<BellRing />} label="Zmiany w kartotekach" value={pendingChanges} href="/panel/szkola/powiadomienia" />
-            <CommandMatter icon={<MailPlus />} label="Aktywne zaproszenia" value={activeInvitations} href="/panel/szkola/zaproszenia" />
-            <CommandMatter icon={<AlertTriangle />} label="Zgłoszenia użytkowników" value={openReports} href="/panel/szkola/statystyki" />
-            <CommandMatter icon={<FileSignature />} label="Podpisane umowy" value={signedContracts} href="/panel/umowy" />
+            {recordsEnabled && notificationsEnabled ? <CommandMatter icon={<BellRing />} label="Zmiany w kartotekach" value={pendingChanges} href="/panel/szkola/powiadomienia" /> : null}
+            {invitationsEnabled ? <CommandMatter icon={<MailPlus />} label="Aktywne zaproszenia" value={activeInvitations} href="/panel/szkola/zaproszenia" /> : null}
+            {statisticsEnabled ? <CommandMatter icon={<AlertTriangle />} label="Zgłoszenia użytkowników" value={openReports} href="/panel/szkola/statystyki" /> : null}
+            {contractsEnabled ? <CommandMatter icon={<FileSignature />} label="Podpisane umowy" value={signedContracts} href="/panel/umowy" /> : null}
           </div>
-        </section>
+        </section> : null}
 
-        <section className="command-school">
+        {recordsEnabled ? <section className="command-school">
           <header><span className="section-kicker">Stan szkoły</span><h2>Organizacja</h2></header>
           <div>
             <span><MapPin /><strong>{locations}</strong><small>Lokalizacje</small></span>
@@ -206,38 +224,38 @@ async function DirectorDashboard({
             <span><GraduationCap /><strong>{students}</strong><small>Uczniowie</small></span>
           </div>
           <Link href="/panel/szkola/kartoteki">Otwórz kartoteki <ArrowRight /></Link>
-        </section>
+        </section> : null}
       </div>
 
       <section className="locked-module-row">
-        <Link href="/panel/umowy" className="module-ready">
+        {contractsEnabled ? <Link href="/panel/umowy" className="module-ready">
           <FileSignature aria-hidden="true" />
           <span>
             <strong>Umowy online</strong>
             <small>Otwórz moduł</small>
           </span>
-        </Link>
-        <Link href="/panel/wiadomosci" className="module-ready" id="wiadomosci">
+        </Link> : null}
+        {moduleIsEnabled(moduleAccess, "messages", role) ? <Link href="/panel/wiadomosci" className="module-ready" id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <span>
             <strong>Wiadomości</strong>
             <small>Rozmowy i ogłoszenia</small>
           </span>
-        </Link>
-        <Link href="/panel/platnosci" className="module-ready" id="platnosci">
+        </Link> : null}
+        {moduleIsEnabled(moduleAccess, "payments", role) ? <Link href="/panel/platnosci" className="module-ready" id="platnosci">
           <CalendarClock aria-hidden="true" />
           <span>
             <strong>Status płatności</strong>
             <small>Otwórz moduł</small>
           </span>
-        </Link>
-        <Link href="/panel/postepy" className="module-ready" id="postepy">
+        </Link> : null}
+        {moduleIsEnabled(moduleAccess, "progress", role) ? <Link href="/panel/postepy" className="module-ready" id="postepy">
           <TrendingUp aria-hidden="true" />
           <span>
             <strong>Postępy uczniów</strong>
             <small>Obserwacje, obecność i rozwój umiejętności</small>
           </span>
-        </Link>
+        </Link> : null}
       </section>
     </>
   );
@@ -262,8 +280,10 @@ function formatTime(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }).format(date);
 }
 
-async function TeacherDashboard({ name, userId, schoolId }: { name: string; userId: string; schoolId: string }) {
+async function TeacherDashboard({ name, userId, schoolId, moduleAccess }: { name: string; userId: string; schoolId: string; moduleAccess: ModuleAccessPolicy }) {
   const firstName = name.trim().split(/\s+/)[0] || "Wykładowco";
+  const scheduleEnabled = moduleIsEnabled(moduleAccess, "schedule", "TEACHER");
+  const messagesEnabled = moduleIsEnabled(moduleAccess, "messages", "TEACHER");
   const [groupCount, nextLesson] = await Promise.all([
     db.groupTeacher.count({ where: { teacherId: userId, archivedAt: null, group: { schoolId, archivedAt: null } } }),
     db.scheduleSlot.findFirst({ where: { schoolId, teacherId: userId, startAt: { gte: new Date() }, status: { not: "CANCELLED" }, archivedAt: null }, orderBy: { startAt: "asc" }, select: { startAt: true, group: { select: { name: true } }, room: { select: { name: true } } } }),
@@ -291,8 +311,8 @@ async function TeacherDashboard({ name, userId, schoolId }: { name: string; user
         </div>
       </section>
 
-      <div className="teacher-today-grid" id="grupy">
-        <section className="role-main-card">
+      {scheduleEnabled || messagesEnabled ? <div className="teacher-today-grid" id="grupy">
+        {scheduleEnabled ? <section className="role-main-card">
           <span className="section-kicker">Dzisiaj</span>
           <h2>{nextLesson ? nextLesson.group.name : groupCount ? "Brak kolejnych zaplanowanych zajęć" : "Plan pojawi się po przypisaniu grup"}</h2>
           <p>
@@ -305,14 +325,14 @@ async function TeacherDashboard({ name, userId, schoolId }: { name: string; user
               <small>{groupCount ? <Link href="/panel/plan">Otwórz mój plan</Link> : "Dostaniesz powiadomienie po przypisaniu pierwszej grupy."}</small>
             </span>
           </div>
-        </section>
-        <aside className="role-side-card" id="wiadomosci">
+        </section> : null}
+        {messagesEnabled ? <aside className="role-side-card" id="wiadomosci">
           <MessageCircleMore aria-hidden="true" />
           <h2>Kontakt z grupą</h2>
           <p>Napisz do przypisanej grupy lub sprawdź ogłoszenia szkoły.</p>
           <Link className="stage-one-badge" href="/panel/wiadomosci">Otwórz wiadomości</Link>
-        </aside>
-      </div>
+        </aside> : null}
+      </div> : null}
     </>
   );
 }

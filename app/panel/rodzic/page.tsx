@@ -13,6 +13,7 @@ import Link from "next/link";
 import { db } from "@/lib/server/db";
 import { requirePanelAccess } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
+import { getModuleAccessPolicy, moduleIsEnabled } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Panel rodzica" };
 export const dynamic = "force-dynamic";
@@ -23,14 +24,16 @@ export default async function ParentPanelPage() {
     "/panel/rodzic",
   );
   const firstName = session.user.name.trim().split(/\s+/)[0] || "Rodzicu";
-  const [childrenCount, nextLesson] = await Promise.all([
+  const [childrenCount, nextLesson, moduleAccess] = await Promise.all([
     db.parentChild.count({ where: { schoolId: session.user.schoolId, parentId: session.user.id, archivedAt: null } }),
     db.scheduleSlot.findFirst({
       where: { schoolId: session.user.schoolId, startAt: { gte: new Date() }, status: { not: "CANCELLED" }, group: { enrollments: { some: { status: "ACTIVE", student: { childLinks: { some: { parentId: session.user.id, archivedAt: null } } } } } } },
       orderBy: { startAt: "asc" },
       select: { startAt: true, group: { select: { name: true } }, room: { select: { name: true } } },
     }),
+    getModuleAccessPolicy(session.user.schoolId),
   ]);
+  const scheduleEnabled = moduleIsEnabled(moduleAccess, "schedule", "PARENT");
 
   return (
     <AuthenticatedPanelShell session={session}>
@@ -38,7 +41,7 @@ export default async function ParentPanelPage() {
         <div>
           <span className="section-kicker">Panel rodzica</span>
           <h1>Dzień dobry, {firstName}</h1>
-          <p>Plan, zadania i informacje ze szkoły — krótko i czytelnie.</p>
+          <p>Najważniejsze informacje ze szkoły — krótko i czytelnie.</p>
         </div>
         <span className="role-security-chip">
           <ShieldCheck aria-hidden="true" />
@@ -46,7 +49,7 @@ export default async function ParentPanelPage() {
         </span>
       </header>
 
-      <section className="parent-next-card" id="plan">
+      {scheduleEnabled ? <section className="parent-next-card" id="plan">
         <div className="parent-next-icon">
           <CalendarDays aria-hidden="true" />
         </div>
@@ -60,31 +63,31 @@ export default async function ParentPanelPage() {
         <span className="stage-one-badge">
           <Clock3 aria-hidden="true" /> <Link href="/panel/plan">Otwórz plan</Link>
         </span>
-      </section>
+      </section> : null}
 
       <div className="parent-module-grid">
-        <article id="wiadomosci">
+        {moduleIsEnabled(moduleAccess, "messages", "PARENT") ? <article id="wiadomosci">
           <Bell aria-hidden="true" />
           <span className="module-status module-status-ready">Gotowe</span>
           <h2>Wiadomości</h2>
           <p>Ogłoszenia szkoły i rozmowy Twoich grup.</p>
           <Link href="/panel/wiadomosci">Otwórz wiadomości</Link>
-        </article>
-        <article className="module-card-linked">
+        </article> : null}
+        {moduleIsEnabled(moduleAccess, "learning", "PARENT") ? <article className="module-card-linked">
           <BookOpenCheck aria-hidden="true" />
           <span className="module-status module-status-empty">0 zadań</span>
           <h2>Materiały i zadania</h2>
           <p>Wszystko dla dziecka w jednym, prostym widoku.</p>
           <Link href="/panel/nauka">Otwórz naukę</Link>
-        </article>
-        <article className="module-card-linked">
+        </article> : null}
+        {moduleIsEnabled(moduleAccess, "progress", "PARENT") ? <article className="module-card-linked">
           <CheckCircle2 aria-hidden="true" />
           <span className="module-status module-status-ready">Gotowe</span>
           <h2>Postępy dziecka</h2>
           <p>Opisowe obserwacje, obecność i kolejne małe kroki.</p>
           <Link href="/panel/postepy">Otwórz postępy</Link>
-        </article>
-        <article>
+        </article> : null}
+        {moduleIsEnabled(moduleAccess, "payments", "PARENT") ? <article>
           <CreditCard aria-hidden="true" />
           <span className="module-status module-status-ready">
             <CheckCircle2 aria-hidden="true" /> Gotowe
@@ -92,7 +95,7 @@ export default async function ParentPanelPage() {
           <h2>Status płatności</h2>
           <p>Bez płatności online — szkoła oznaczy status ręcznie.</p>
           <Link href="/panel/platnosci">Otwórz płatności</Link>
-        </article>
+        </article> : null}
       </div>
     </AuthenticatedPanelShell>
   );

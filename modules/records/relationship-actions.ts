@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
@@ -34,6 +35,7 @@ export async function updateRelationshipAction(
   formData: FormData,
 ): Promise<RecordUpdateState> {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
+  await requireEnabledModule(session, "records");
   const parsed = relationshipUpdateSchema.safeParse({
     entityId: formData.get("entityId"),
     relationKind: formData.get("relationKind"),
@@ -167,6 +169,7 @@ export async function updateStudentAvailabilityAction(
   formData: FormData,
 ): Promise<RecordUpdateState> {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
+  await requireEnabledModule(session, "records");
   const windows = [1, 2, 3, 4, 5, 6]
     .filter((weekday) => formData.get(`enabled-${weekday}`) === "on")
     .map((weekday) => ({

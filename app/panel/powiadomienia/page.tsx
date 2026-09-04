@@ -5,12 +5,14 @@ import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { NotificationCenter } from "@/modules/notifications/components/notification-center";
 import { getNotifications } from "@/modules/notifications/service";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Powiadomienia" };
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const session = await requireActiveSession("/panel/powiadomienia");
+  await requireEnabledModule(session, "notifications");
   const items = await getNotifications(session);
   const unread = items.filter((item) => !item.read).length;
   return (

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
@@ -40,6 +41,7 @@ export async function createLearningMaterialAction(
   formData: FormData,
 ): Promise<LearningActionState> {
   const session = await requireActiveSession(learningPath);
+  await requireEnabledModule(session, "learning");
   if (!canPublishLearningContent(session.user.role)) return error("Nie masz uprawnień do publikowania materiałów.");
   const parsed = learningMaterialSchema.safeParse({
     groupId: formData.get("groupId"),
@@ -114,6 +116,7 @@ export async function createHomeworkAssignmentAction(
   formData: FormData,
 ): Promise<LearningActionState> {
   const session = await requireActiveSession(learningPath);
+  await requireEnabledModule(session, "learning");
   if (!canPublishLearningContent(session.user.role)) return error("Nie masz uprawnień do dodawania zadań.");
   const parsed = homeworkAssignmentSchema.safeParse({
     groupId: formData.get("groupId"),
@@ -144,6 +147,7 @@ export async function createHomeworkAssignmentAction(
 
 export async function markHomeworkOpenedAction(formData: FormData): Promise<void> {
   const session = await requireActiveSession(learningPath);
+  await requireEnabledModule(session, "learning");
   if (!canSubmitHomework(session.user.role)) return;
   const assignmentId = String(formData.get("assignmentId") ?? "");
   if (!assignmentId) return;
@@ -159,6 +163,7 @@ export async function submitHomeworkAction(
   formData: FormData,
 ): Promise<LearningActionState> {
   const session = await requireActiveSession(learningPath);
+  await requireEnabledModule(session, "learning");
   if (!canSubmitHomework(session.user.role)) return error("Tylko uczeń może oddać swoją pracę.");
   const parsed = homeworkSubmissionSchema.safeParse({ assignmentId: formData.get("assignmentId"), studentNote: formData.get("studentNote") });
   if (!parsed.success) return error(parsed.error.issues[0]?.message ?? "Sprawdź dane pracy.");
@@ -207,6 +212,7 @@ export async function reviewHomeworkAction(
   formData: FormData,
 ): Promise<LearningActionState> {
   const session = await requireActiveSession(learningPath);
+  await requireEnabledModule(session, "learning");
   if (!canPublishLearningContent(session.user.role)) return error("Nie masz uprawnień do sprawdzania prac.");
   const parsed = homeworkReviewSchema.safeParse({ submissionId: formData.get("submissionId"), feedback: formData.get("feedback") });
   if (!parsed.success) return error(parsed.error.issues[0]?.message ?? "Dodaj informację zwrotną.");

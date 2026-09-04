@@ -28,6 +28,8 @@ import { SignOutButton } from "./sign-out-button";
 import { getNotifications } from "@/modules/notifications/service";
 import { OnboardingTour } from "@/modules/onboarding/components/onboarding-tour";
 import { CreatorEasterEgg } from "./creator-easter-egg";
+import { getModuleAccessPolicy, moduleIsEnabled } from "@/modules/module-access/server";
+import type { ConfigurableModuleKey } from "@/modules/module-access/catalog";
 
 type PanelSection =
   | "home"
@@ -251,7 +253,17 @@ export async function AuthenticatedPanelShell({
   active?: PanelSection;
   children: ReactNode;
 }) {
-  const navigation = getNavigation(session.user.role);
+  const moduleAccess = await getModuleAccessPolicy(session.user.schoolId);
+  const navigation = getNavigation(session.user.role).filter((item) =>
+    session.user.role === "SYSTEM_OWNER" ||
+    !Object.prototype.hasOwnProperty.call(moduleAccess, item.key) ||
+    moduleIsEnabled(moduleAccess, item.key as ConfigurableModuleKey, session.user.role),
+  );
+  const notificationsEnabled = moduleIsEnabled(
+    moduleAccess,
+    "notifications",
+    session.user.role,
+  );
   const mobileNavigation =
     session.user.role === "SYSTEM_OWNER"
       ? navigation.filter((item) =>
@@ -267,7 +279,7 @@ export async function AuthenticatedPanelShell({
             ? navigation.filter((item) => ["home", "schedule", "learning", "messages", "progress"].includes(item.key))
             : navigation.filter((item) => ["home", "schedule", "learning", "progress", "messages"].includes(item.key));
   const [notificationItems, onboarding] = await Promise.all([
-        getNotifications(session),
+        notificationsEnabled ? getNotifications(session) : Promise.resolve([]),
         db.onboardingProgress.findUnique({ where: { userId: session.user.id }, select: { version: true, completedAt: true, dismissedAt: true } }),
       ]);
   const pendingChangeCount = notificationItems.filter((item) => !item.read).length;
@@ -293,7 +305,7 @@ export async function AuthenticatedPanelShell({
           <Link className="app-panel-manual" href="/panel/pomoc" aria-label="Pomoc i podręczniki">
             <BookOpenText aria-hidden="true" /><span>Instrukcja</span>
           </Link>
-          <Link
+          {notificationsEnabled ? <Link
               className="app-panel-notifications"
               href="/panel/powiadomienia"
               aria-label={`Centrum powiadomień: ${pendingChangeCount} nowych`}
@@ -302,8 +314,8 @@ export async function AuthenticatedPanelShell({
               {pendingChangeCount > 0 ? (
                 <span>{pendingChangeCount > 99 ? "99+" : pendingChangeCount}</span>
               ) : null}
-            </Link>
-          {session.user.role !== "SYSTEM_OWNER" ? <OnboardingTour role={session.user.role} openInitially={!onboarding || (onboarding.version < 1 && !onboarding.completedAt)} /> : null}
+            </Link> : null}
+          {session.user.role !== "SYSTEM_OWNER" ? <OnboardingTour role={session.user.role} enabledModules={(Object.keys(moduleAccess) as ConfigurableModuleKey[]).filter((key) => moduleIsEnabled(moduleAccess, key, session.user.role))} openInitially={!onboarding || (onboarding.version < 1 && !onboarding.completedAt)} /> : null}
           <div className="app-panel-avatar" aria-hidden="true">
             {initials || "K"}
           </div>

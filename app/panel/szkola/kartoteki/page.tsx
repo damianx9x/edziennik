@@ -21,6 +21,7 @@ import {
 import { QuickRecordForms } from "@/modules/people/components/quick-record-forms";
 import type { RecordHistoryEntry } from "@/modules/records/components/record-edit-form";
 import { ResourceDirectory } from "@/modules/records/components/resource-directory";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Kartoteki szkoły" };
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export default async function RecordsPage({
   searchParams: Promise<{ stan?: string }>;
 }) {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
+  await requireEnabledModule(session, "records");
   const params = await searchParams;
   const schoolId = session.user.schoolId;
   const isDirector =

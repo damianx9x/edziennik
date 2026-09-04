@@ -19,12 +19,14 @@ import {
   invitationRoleLabels,
 } from "@/modules/identity/invitations/schema";
 import { maskEmail } from "@/modules/identity/invitations/token";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Zaproszenia" };
 export const dynamic = "force-dynamic";
 
 export default async function InvitationsPage() {
   const session = await requireDirector();
+  await requireEnabledModule(session, "invitations");
   const [invitations, accounts] = await Promise.all([
     db.invitation.findMany({
       where: { schoolId: session.user.schoolId },

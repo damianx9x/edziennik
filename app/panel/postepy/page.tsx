@@ -5,12 +5,14 @@ import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { ProgressWorkspace, type StudentProgressView } from "@/modules/progress/components/progress-workspace";
 import { listStudentProgress } from "@/modules/progress/service";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Postępy ucznia" };
 export const dynamic = "force-dynamic";
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ uczen?: string }> }) {
   const session = await requireActiveSession("/panel/postepy");
+  await requireEnabledModule(session, "progress");
   const [students, params] = await Promise.all([
     listStudentProgress({ id: session.user.id, schoolId: session.user.schoolId, role: session.user.role }),
     searchParams,

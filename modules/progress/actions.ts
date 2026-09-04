@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import { db } from "@/lib/server/db";
 import { requireActiveSession } from "@/modules/identity/auth/session";
@@ -15,6 +16,7 @@ export async function createProgressObservationAction(
   formData: FormData,
 ): Promise<ProgressActionState> {
   const session = await requireActiveSession(progressPath);
+  await requireEnabledModule(session, "progress");
   const parsed = progressObservationSchema.safeParse({
     studentId: formData.get("studentId"),
     scheduleSlotId: formData.get("scheduleSlotId"),
@@ -81,4 +83,3 @@ export async function createProgressObservationAction(
   revalidatePath("/panel/rodzic");
   return { status: "success", message: "Obserwacja została zapisana. Wykres nie służy do automatycznej oceny ucznia." };
 }
-

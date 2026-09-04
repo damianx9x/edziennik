@@ -9,12 +9,14 @@ import { AuthenticatedPanelShell } from "@/modules/identity/components/authentic
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import { openCreatorConversationAction } from "@/modules/messaging/actions";
 import { canStartCreatorSupport } from "@/modules/messaging/support";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Wiadomości" };
 export const dynamic = "force-dynamic";
 
 export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ rozmowa?: string; blad?: string }> }) {
   const session = await requireActiveSession("/panel/wiadomosci");
+  await requireEnabledModule(session, "messages");
   const isManagement = isPrivilegedIdentityRole(session.user.role);
   const params = await searchParams;
   const [groups, directConversations, recipientDirectory] = await Promise.all([

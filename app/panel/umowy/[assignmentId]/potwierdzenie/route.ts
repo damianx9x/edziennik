@@ -5,6 +5,7 @@ import { db } from "@/lib/server/db";
 import { can } from "@/modules/access-control/can";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 type AcceptanceEvidence = {
   method?: string;
@@ -35,6 +36,7 @@ export async function GET(
   const session = await requireActiveSession(
     `/panel/umowy/${assignmentId}/potwierdzenie`,
   );
+  await requireEnabledModule(session, "contracts");
   if (isPrivilegedIdentityRole(session.user.role)) {
     await requireDirector(`/panel/umowy/${assignmentId}/potwierdzenie`);
   }

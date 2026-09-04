@@ -5,9 +5,11 @@ import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export async function GET(_request: Request, context: { params: Promise<{ assignmentId: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
+  await requireEnabledModule(session, "contracts");
   const { assignmentId } = await context.params;
   if (!z.string().uuid().safeParse(assignmentId).success) return new NextResponse("Nie znaleziono dokumentu.", { status: 404 });
   if (isPrivilegedIdentityRole(session.user.role)) await requireDirector("/panel/umowy");

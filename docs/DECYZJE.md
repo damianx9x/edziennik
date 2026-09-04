@@ -1,5 +1,25 @@
 # Decyzje architektoniczne
 
+## ADR-096 — moduły są włączane osobno dla każdej roli
+
+**Data:** 2026-09-04. **Decyzja:** właściciel systemu zarządza jedną szkolną
+macierzą moduł × rola. Wyłączenie usuwa funkcję z menu, pulpitu i samouczka,
+ale również blokuje po stronie serwera stronę, akcje zapisu i prywatne pliki.
+Właściciel zawsze zachowuje dostęp do danych i konfiguracji, a Start,
+logowanie, bezpieczeństwo, pomoc i zgłoszenia pozostają nienaruszalnym
+rdzeniem. Wyłączenie nie usuwa danych, dlatego ponowne włączenie przywraca
+ciągłość pracy.
+
+## ADR-097 — wizytówka korzysta z katalogu bezpiecznych widgetów
+
+**Data:** 2026-09-04. **Decyzja:** edytor udostępnia 15 dodatkowych gotowych
+typów widgetów i do 24 instancji na stronie. Dyrektor wybiera szablon, tekst,
+kolor, rozmiar, kolejność i bezpieczny link, lecz nadal nie wstrzykuje HTML ani
+skryptów. Animacje są jednorazowe, oparte na `opacity/transform` i wyłączane
+przez `prefers-reduced-motion`. Dane szkoły opierają się na jej publicznym
+profilu i potwierdzonych źródłach; starsza oferta innych przedmiotów nie jest
+automatycznie publikowana.
+
 ## ADR-094 — hasło tymczasowe jest jednorazowym przepływem awaryjnym
 
 **Data:** 2026-09-04. **Decyzja:** zalecanym resetem pozostaje jednorazowy link
@@ -14,7 +34,7 @@ hasło.
 ## ADR-095 — wizytówka ma bezpieczny układ modułowy, nie dowolny HTML
 
 **Data:** 2026-09-04. **Decyzja:** dyrektor układa siedem znanych sekcji oraz do
-ośmiu strukturalnych widgetów. Może zmienić widoczność, kolejność, szerokość,
+24 strukturalnych widgetów. Może zmienić widoczność, kolejność, szerokość,
 odstępy, kolor i skalę, lecz nie wstrzykuje kodu. Telefon zawsze używa jednej
 kolumny. Pozwala to personalizować stronę bez tworzenia osobnego kreatora stron
 i bez ryzyka skryptów, niedostępnego układu albo poziomego przewijania.

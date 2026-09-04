@@ -180,3 +180,21 @@ export const defaultSiteContent: SiteContent = {
     ...klaPublicProfile.contact,
   },
 };
+
+/**
+ * Expands only the untouched, three-widget starter page from older releases.
+ * A school that has already customised its widget list keeps it exactly as-is.
+ */
+export function enrichLegacyDefaultSiteContent(content: SiteContent): SiteContent {
+  const legacyDefaultWidgets = defaultSiteContent.widgets.slice(0, 3);
+  const isUntouchedLegacyLayout =
+    content.widgets.length === legacyDefaultWidgets.length &&
+    content.widgets.every(
+      (widget, index) =>
+        JSON.stringify(widget) === JSON.stringify(legacyDefaultWidgets[index]),
+    );
+
+  return isUntouchedLegacyLayout
+    ? { ...content, widgets: defaultSiteContent.widgets }
+    : content;
+}

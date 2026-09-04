@@ -3,6 +3,7 @@
 import { addDays, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
@@ -62,6 +63,7 @@ export async function saveSchedulingRequirementAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const preferredStartRaw = String(formData.get("preferredStart") ?? "");
   const parsed = schedulingRequirementSchema.safeParse({
     groupId: formData.get("groupId"),
@@ -262,6 +264,7 @@ export async function saveTeacherAvailabilityAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireActiveSession(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const weekdays = formData.getAll("windowWeekday");
   const starts = formData.getAll("windowStart");
   const ends = formData.getAll("windowEnd");
@@ -382,6 +385,7 @@ export async function saveTeacherAvailabilityAction(
 
 export async function generateScheduleAction(formData: FormData) {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = scheduleGenerationSchema.safeParse({
     scope: formData.get("scope"),
     targetId: formData.get("targetId") || undefined,
@@ -723,6 +727,7 @@ export async function generateScheduleAction(formData: FormData) {
 
 export async function applyScheduleGenerationAction(formData: FormData) {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const generationId = String(formData.get("generationId") ?? "");
   const allowPartial = formData.get("allowPartial") === "yes";
   const generation = await db.scheduleGeneration.findFirst({

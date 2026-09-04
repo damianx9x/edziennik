@@ -2,6 +2,7 @@
 
 import { addMinutes, differenceInMinutes, subMinutes } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { after } from "next/server";
 import { z } from "zod";
 
@@ -40,6 +41,7 @@ export async function confirmLessonArrivalAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireActiveSession(schedulePath);
+  await requireEnabledModule(session, "schedule");
   if (session.user.role !== "STUDENT") {
     return {
       status: "error",
@@ -134,6 +136,7 @@ export async function saveLessonJournalAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireSchoolStaff(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = parseLessonJournalFormData(formData);
   if (!parsed.success) {
     return { status: "error", message: parsed.message };
@@ -294,6 +297,7 @@ export async function createScheduleSlotAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = createScheduleSlotSchema.safeParse({
     date: formData.get("date"),
     startTime: formData.get("startTime"),
@@ -393,6 +397,7 @@ export async function moveScheduleSlotAction(input: {
   startTime: string;
 }): Promise<ScheduleActionState> {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = moveScheduleSlotSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -493,6 +498,7 @@ export async function cancelScheduleSlotAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireActiveSession(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = cancelScheduleSlotSchema.safeParse({
     slotId: formData.get("slotId"),
     reason: formData.get("reason"),
@@ -704,6 +710,7 @@ export async function reviewScheduleChangeRequestAction(
   formData: FormData,
 ): Promise<ScheduleActionState> {
   const session = await requireDirector(schedulePath);
+  await requireEnabledModule(session, "schedule");
   const parsed = reviewScheduleChangeRequestSchema.safeParse({
     requestId: formData.get("requestId"),
     decision: formData.get("decision"),

@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { redirect } from "next/navigation";
 import { createHash, randomUUID } from "node:crypto";
 
@@ -83,6 +84,7 @@ async function isRateLimited(userId: string) {
 
 export async function sendMessageAction(_previous: MessagingActionState, formData: FormData): Promise<MessagingActionState> {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   const parsed = messageSchema.safeParse({ groupId: formData.get("groupId") || undefined, conversationId: formData.get("conversationId") || undefined, body: formData.get("body"), requiresAcknowledgement: formData.get("requiresAcknowledgement") === "on", clientRequestId: formData.get("clientRequestId") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź wiadomość." };
   let attachment: Awaited<ReturnType<typeof prepareAttachment>>;
@@ -133,6 +135,7 @@ export async function sendMessageAction(_previous: MessagingActionState, formDat
 
 export async function sendAnnouncementAction(_previous: MessagingActionState, formData: FormData): Promise<MessagingActionState> {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   const actor: Actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
   if (!can(actor, "send:announcement", { schoolId: session.user.schoolId })) return { status: "error", message: "Tylko dyrektor może wysyłać ogłoszenia masowe." };
   const parsed = announcementSchema.safeParse({ groupIds: formData.getAll("groupIds"), subject: formData.get("subject"), body: formData.get("body"), requiresAcknowledgement: formData.get("requiresAcknowledgement") === "on", clientRequestId: formData.get("clientRequestId") });
@@ -176,6 +179,7 @@ export async function sendAnnouncementAction(_previous: MessagingActionState, fo
 
 export async function createDirectConversationAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const parsed = directConversationSchema.safeParse({ title: formData.get("title"), participantIds: formData.getAll("participantIds") });
   if (!parsed.success) redirect(`${messagesPath}?blad=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Sprawdź odbiorców.")}`);
@@ -186,6 +190,7 @@ export async function createDirectConversationAction(formData: FormData) {
 
 export async function openPersonConversationAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const personId = String(formData.get("personId") ?? "");
   const person = await db.user.findFirst({
@@ -205,6 +210,7 @@ export async function openPersonConversationAction(formData: FormData) {
 
 export async function openCreatorConversationAction() {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!canStartCreatorSupport(session.user.role)) redirect(messagesPath);
   const owner = await db.user.findFirst({
     where: {
@@ -230,6 +236,7 @@ export async function openCreatorConversationAction() {
 
 export async function remindContractParentAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!isPrivilegedIdentityRole(session.user.role)) redirect("/panel/brak-dostepu");
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const assignment = await db.contractAssignment.findFirst({
@@ -256,6 +263,7 @@ export async function remindContractParentAction(formData: FormData) {
 
 export async function markMessagesReadAction(messageIds: string[]) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!Array.isArray(messageIds) || messageIds.length === 0 || messageIds.length > 100) return;
   const messages = await db.message.findMany({ where: { id: { in: messageIds }, schoolId: session.user.schoolId }, select: { id: true, conversationId: true } });
   const allowed: string[] = [];
@@ -267,6 +275,7 @@ export async function markMessagesReadAction(messageIds: string[]) {
 
 export async function acknowledgeMessageAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   const messageId = String(formData.get("messageId") ?? "");
   if (!/^[0-9a-f-]{36}$/i.test(messageId)) return;
   const message = await db.message.findFirst({ where: { id: messageId, schoolId: session.user.schoolId, requiresAcknowledgement: true }, select: { id: true, authorId: true, conversationId: true } });
@@ -280,6 +289,7 @@ export async function acknowledgeMessageAction(formData: FormData) {
 
 export async function toggleMessageReactionAction(formData: FormData) {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   const parsed = messageReactionSchema.safeParse({ messageId: formData.get("messageId"), emoji: formData.get("emoji") });
   if (!parsed.success) return;
   const message = await db.message.findFirst({
@@ -299,6 +309,7 @@ export async function toggleMessageReactionAction(formData: FormData) {
 
 export async function retryEmailQueueAction() {
   const session = await requireActiveSession(messagesPath);
+  await requireEnabledModule(session, "messages");
   if (!isPrivilegedIdentityRole(session.user.role)) return;
   await db.emailDelivery.updateMany({ where: { schoolId: session.user.schoolId, status: "FAILED", attempts: { lt: 5 } }, data: { nextAttemptAt: new Date() } });
   await processEmailDeliveryQueue(session.user.schoolId, 50);

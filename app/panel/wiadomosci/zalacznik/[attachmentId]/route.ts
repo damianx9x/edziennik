@@ -6,11 +6,13 @@ import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { canUseConversation } from "@/modules/messaging/access";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export async function GET(_request: Request, context: { params: Promise<{ attachmentId: string }> }) {
   const { attachmentId } = await context.params;
   if (!z.string().uuid().safeParse(attachmentId).success) return NextResponse.json({ message: "Nie znaleziono załącznika." }, { status: 404 });
   const session = await requireActiveSession("/panel/wiadomosci");
+  await requireEnabledModule(session, "messages");
   const attachment = await db.messageAttachment.findFirst({
     where: { id: attachmentId, schoolId: session.user.schoolId },
     select: { message: { select: { authorId: true, conversationId: true } }, storedFile: { select: { storageKey: true, originalName: true, mimeType: true } } },

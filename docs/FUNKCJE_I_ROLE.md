@@ -12,6 +12,8 @@ Konfiguruje serwer, e-mail, SMS, backup USB/SFTP, diagnostykę Raspberry i pełn
 zaszyfrowany eksport. Może wykonywać kontrolowane aktualizacje oraz otworzyć
 osobny terminal SSH chroniony Cloudflare Access. Nie otrzymuje „terminala
 root” wewnątrz aplikacji. Klucz odtworzenia jest pokazywany tylko raz.
+W ustawieniach włącza lub wyłącza każdy moduł osobno dla dyrektora,
+wykładowcy, rodzica i ucznia. Wyłączenie ukrywa funkcję, ale nie usuwa danych.
 
 ## Dyrektor
 
@@ -25,6 +27,11 @@ root” wewnątrz aplikacji. Klucz odtworzenia jest pokazywany tylko raz.
 - prowadzi ręczne statusy rat, wiadomości, ogłoszenia, materiały, zadania i
   opisowe postępy;
 - widzi statystyki i audyt. MFA jest obowiązkowe przed prawdziwymi danymi.
+- edytuje publiczną wizytówkę z bezpiecznych sekcji i gotowych widgetów, bez
+  wklejania kodu.
+
+Zakres widocznych funkcji może być ograniczony przez właściciela systemu.
+Wyłączony moduł znika z menu, pulpitu i samouczka oraz nie otwiera się z linku.
 
 ## Wykładowca
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { z } from "zod";
 
 import { db } from "@/lib/server/db";
@@ -18,6 +19,7 @@ const bulkNotificationSchema = z.object({
 
 export async function updateNotificationAction(formData: FormData) {
   const session = await requireActiveSession("/panel/powiadomienia");
+  await requireEnabledModule(session, "notifications");
   const parsed = notificationSchema.safeParse({ key: formData.get("key"), action: formData.get("action") });
   if (!parsed.success) return;
   const now = new Date();
@@ -40,6 +42,7 @@ export async function updateNotificationAction(formData: FormData) {
 
 export async function updateNotificationsAction(formData: FormData) {
   const session = await requireActiveSession("/panel/powiadomienia");
+  await requireEnabledModule(session, "notifications");
   const parsed = bulkNotificationSchema.safeParse({
     keys: formData.getAll("key"),
     action: formData.get("action"),

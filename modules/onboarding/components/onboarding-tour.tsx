@@ -6,47 +6,48 @@ import { useEffect, useRef, useState } from "react";
 
 import { finishOnboardingAction } from "../actions";
 import { manualAudienceForRole, manualLabels } from "@/modules/manuals/release";
+import type { ConfigurableModuleKey } from "@/modules/module-access/catalog";
 
 type Role = "DIRECTOR" | "TEACHER" | "PARENT" | "STUDENT";
-type Step = { title: string; description: string; href: string; label: string; icon: typeof Home };
+type Step = { title: string; description: string; href: string; label: string; icon: typeof Home; module?: ConfigurableModuleKey };
 
-const commonMessages: Step = { title: "Wiadomości bez szukania czatu", description: "Wybierz grupę. Nowe informacje i historia rozmowy są w jednym miejscu.", href: "/panel/wiadomosci", label: "Otwórz wiadomości", icon: MessageCircleMore };
+const commonMessages: Step = { title: "Wiadomości bez szukania czatu", description: "Wybierz grupę. Nowe informacje i historia rozmowy są w jednym miejscu.", href: "/panel/wiadomosci", label: "Otwórz wiadomości", icon: MessageCircleMore, module: "messages" };
 const steps: Record<Role, Step[]> = {
   DIRECTOR: [
     { title: "Command Center", description: "Tutaj zaczynasz dzień: plan szkoły i sprawy wymagające decyzji.", href: "/panel/szkola", label: "Przejdź do startu", icon: Home },
-    { title: "Grafik szkoły", description: "Najpierw zobaczysz kalendarz. Stąd możesz przejść do układania ręcznego albo uruchomić Asystenta.", href: "/panel/plan", label: "Otwórz kalendarz", icon: CalendarDays },
+    { title: "Grafik szkoły", description: "Najpierw zobaczysz kalendarz. Stąd możesz przejść do układania ręcznego albo uruchomić Asystenta.", href: "/panel/plan", label: "Otwórz kalendarz", icon: CalendarDays, module: "schedule" },
     commonMessages,
-    { title: "Umowy i płatności", description: "Umowa jest źródłem kwoty i terminu. Status płatności zmieniasz ręcznie.", href: "/panel/umowy", label: "Otwórz umowy", icon: FileSignature },
-    { title: "Centrum powiadomień", description: "Tu trafiają terminy, błędy wysyłki i zmiany oczekujące na decyzję.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell },
+    { title: "Umowy i płatności", description: "Umowa jest źródłem kwoty i terminu. Status płatności zmieniasz ręcznie.", href: "/panel/umowy", label: "Otwórz umowy", icon: FileSignature, module: "contracts" },
+    { title: "Centrum powiadomień", description: "Tu trafiają terminy, błędy wysyłki i zmiany oczekujące na decyzję.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell, module: "notifications" },
   ],
   TEACHER: [
     { title: "Twój pulpit", description: "Widzisz wyłącznie przypisane grupy i najważniejsze zadania na dziś.", href: "/panel/szkola", label: "Przejdź do startu", icon: Home },
-    { title: "Twój plan", description: "Sprawdź zajęcia. Proponowana zmiana trafia do akceptacji dyrektora.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays },
+    { title: "Twój plan", description: "Sprawdź zajęcia. Proponowana zmiana trafia do akceptacji dyrektora.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays, module: "schedule" },
     commonMessages,
-    { title: "Powiadomienia", description: "Nowe wiadomości i ważne sprawy czekają w jednej kolejce.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell },
+    { title: "Powiadomienia", description: "Nowe wiadomości i ważne sprawy czekają w jednej kolejce.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell, module: "notifications" },
   ],
   PARENT: [
     { title: "Panel rodzica", description: "Plan, wiadomości, umowy i płatności dotyczą tylko powiązanych dzieci.", href: "/panel/rodzic", label: "Przejdź do startu", icon: Home },
-    { title: "Plan dzieci", description: "Zobacz opublikowane zajęcia bez dodatkowego ustawiania filtrów.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays },
+    { title: "Plan dzieci", description: "Zobacz opublikowane zajęcia bez dodatkowego ustawiania filtrów.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays, module: "schedule" },
     commonMessages,
-    { title: "Umowy i terminy", description: "Najpierw przeczytaj PDF, potem świadomie zaakceptuj dokładną wersję.", href: "/panel/umowy", label: "Otwórz umowy", icon: FileSignature },
-    { title: "Powiadomienia", description: "Przypomnimy o umowie, wiadomości lub zbliżającym się terminie.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell },
+    { title: "Umowy i terminy", description: "Najpierw przeczytaj PDF, potem świadomie zaakceptuj dokładną wersję.", href: "/panel/umowy", label: "Otwórz umowy", icon: FileSignature, module: "contracts" },
+    { title: "Powiadomienia", description: "Przypomnimy o umowie, wiadomości lub zbliżającym się terminie.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell, module: "notifications" },
   ],
   STUDENT: [
     { title: "Twój start", description: "Najbliższe zajęcia i najważniejsze informacje są pod ręką.", href: "/panel/uczen", label: "Przejdź do startu", icon: Home },
-    { title: "Twój plan", description: "Widzisz tylko lekcje grup, do których należysz.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays },
+    { title: "Twój plan", description: "Widzisz tylko lekcje grup, do których należysz.", href: "/panel/plan", label: "Otwórz plan", icon: CalendarDays, module: "schedule" },
     commonMessages,
-    { title: "Powiadomienia", description: "Nowe ogłoszenia i wiadomości znajdziesz w jednej kolejce.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell },
+    { title: "Powiadomienia", description: "Nowe ogłoszenia i wiadomości znajdziesz w jednej kolejce.", href: "/panel/powiadomienia", label: "Zobacz powiadomienia", icon: Bell, module: "notifications" },
   ],
 };
 
-export function OnboardingTour({ role, openInitially }: { role: Role; openInitially: boolean }) {
+export function OnboardingTour({ role, openInitially, enabledModules }: { role: Role; openInitially: boolean; enabledModules?: ConfigurableModuleKey[] }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const manualDialogRef = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState(0);
   const [dismissedLocally, setDismissedLocally] = useState(false);
   const [offerManual, setOfferManual] = useState(false);
-  const roleSteps = steps[role];
+  const roleSteps = steps[role].filter((item) => !item.module || enabledModules?.includes(item.module) !== false);
   useEffect(() => { if (openInitially && !dismissedLocally && !dialogRef.current?.open) dialogRef.current?.showModal(); }, [openInitially, dismissedLocally]);
   useEffect(() => { if (offerManual && !manualDialogRef.current?.open) manualDialogRef.current?.showModal(); }, [offerManual]);
   const current = roleSteps[step];

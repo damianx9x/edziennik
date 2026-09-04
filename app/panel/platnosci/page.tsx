@@ -8,12 +8,14 @@ import { AuthenticatedPanelShell } from "@/modules/identity/components/authentic
 import { PaymentList } from "@/modules/payments/components/payment-list";
 import { getEffectivePaymentStatus } from "@/modules/payments/schema";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Statusy płatności" };
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; platnosc?: string }> }) {
   const session = await requireActiveSession("/panel/platnosci");
+  await requireEnabledModule(session, "payments");
   if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) redirect("/panel/brak-dostepu");
   const isManagement = isPrivilegedIdentityRole(session.user.role);
   if (isManagement) await requireDirector("/panel/platnosci");

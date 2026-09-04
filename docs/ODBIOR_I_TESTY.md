@@ -2,6 +2,24 @@
 
 ## Plan audytu Etapów 0–7
 
+### Audyt techniczny wydania 1.2.0 — 4 września 2026
+
+Etapy sprawdzono kolejno, bez pomijania błędów między etapami:
+
+| Etap | Zakres uruchomionych testów | Wynik |
+| --- | --- | --- |
+| 0–1 | wizytówka, tryb publiczny, role, sesje, zaproszenia, MFA i reset | 67/67 |
+| 2 | kartoteki, relacje, import/eksport, pliki i skanowanie | 33/33 |
+| 3 | grafik, twarde kolizje, generator, blokady i dziennik lekcji | 38/38 |
+| 4 | pakiety umów, dowód decyzji, uprawnienia i płatności | 17/17 |
+| 5 | wiadomości, kolejka e-mail, odbiorcy i powiadomienia | 14/14 |
+| 6 | materiały, zadania, postępy i PWA | 18/18 |
+| 7 | backup, diagnostyka, telemetria, instrukcje i serwer | 42/42 |
+
+Nowa macierz modułów jest dodatkowo testowana osobno. Kontrola działa przed
+odczytem strony, wykonaniem akcji i wydaniem prywatnego pliku. Ręczny odbiór
+klientki nadal pozostaje konieczny przed decyzją o prawdziwych danych.
+
 Każdy etap przechodzi osobny test funkcjonalny, negatywny test uprawnień,
 telefon 375 × 812, komputer 1440 × 900, kontrolę konsoli i zapis dowodu w
 `outputs/qa/stage-N/`. Błąd blokujący zatrzymuje wdrożenie kolejnego wydania.
@@ -136,6 +154,8 @@ zasilania.
   wykonać tej operacji wobec właściciela.
 - [ ] Ustawienia serwera, kopii, SMTP i aktualizacji pozostają niedostępne dla
   zwykłych ról szkoły.
+- [ ] Przełącznik modułu ukrywa go wybranej roli w menu, pulpicie i samouczku;
+  bezpośredni adres nie pokazuje danych, a ponowne włączenie niczego nie traci.
 
 ## Wynik odbioru
 

@@ -5,12 +5,14 @@ import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { LearningWorkspace, type LearningGroupView } from "@/modules/learning/components/learning-workspace";
 import { listLearningOverview } from "@/modules/learning/service";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Materiały i zadania" };
 export const dynamic = "force-dynamic";
 
 export default async function LearningPage() {
   const session = await requireActiveSession("/panel/nauka");
+  await requireEnabledModule(session, "learning");
   const groups = await listLearningOverview({
     id: session.user.id,
     schoolId: session.user.schoolId,

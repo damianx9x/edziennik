@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
@@ -15,6 +16,7 @@ export async function savePaymentStatusAction(
   formData: FormData,
 ): Promise<PaymentActionState> {
   const session = await requireDirector(paymentsPath);
+  await requireEnabledModule(session, "payments");
   if (!isPrivilegedIdentityRole(session.user.role)) {
     return { status: "error", message: "Tylko dyrektor lub właściciel systemu może zmieniać statusy płatności." };
   }

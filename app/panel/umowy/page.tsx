@@ -18,12 +18,14 @@ import {
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Umowy online" };
 export const dynamic = "force-dynamic";
 
 export default async function ContractsPage({ searchParams }: { searchParams: Promise<{ rodzic?: string; umowa?: string }> }) {
   const session = await requireActiveSession("/panel/umowy");
+  await requireEnabledModule(session, "contracts");
   if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     redirect("/panel/brak-dostepu");
   }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultSiteContent } from "./default-content";
-import { siteContentSchema } from "./schema";
+import {
+  defaultSiteContent,
+  enrichLegacyDefaultSiteContent,
+} from "./default-content";
+import { siteContentSchema, siteWidgetTemplates } from "./schema";
 
 describe("siteContentSchema", () => {
   it("accepts the versioned default KLA content", () => {
@@ -29,6 +32,32 @@ describe("siteContentSchema", () => {
 
     expect(result.layout.sections).toHaveLength(7);
     expect(result.widgets.length).toBeGreaterThan(0);
+  });
+
+  it("offers fifteen ready-made marketing widget types", () => {
+    expect(Object.keys(siteWidgetTemplates)).toHaveLength(15);
+    for (const template of Object.values(siteWidgetTemplates)) {
+      expect(template.title.length).toBeGreaterThan(4);
+      expect(template.href).toMatch(/^(#|\/|https?:)/);
+    }
+  });
+
+  it("enriches only an untouched legacy widget set", () => {
+    const legacy = {
+      ...defaultSiteContent,
+      widgets: defaultSiteContent.widgets.slice(0, 3),
+    };
+    expect(enrichLegacyDefaultSiteContent(legacy).widgets).toHaveLength(7);
+
+    const customised = {
+      ...legacy,
+      widgets: legacy.widgets.map((widget, index) =>
+        index === 0 ? { ...widget, title: "Własny tytuł szkoły" } : widget,
+      ),
+    };
+    expect(enrichLegacyDefaultSiteContent(customised).widgets).toEqual(
+      customised.widgets,
+    );
   });
 
   it("rejects repeated layout sections and unsafe widget links", () => {

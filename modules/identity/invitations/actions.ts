@@ -4,6 +4,7 @@ import { auth } from "@/lib/server/auth";
 import { db } from "@/lib/server/db";
 import { hashPassword } from "better-auth/crypto";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { isInvitableIdentityRole } from "@/modules/identity/auth/access";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { sendAuthEmail } from "@/modules/identity/email/email-provider";
@@ -60,6 +61,7 @@ export async function createInvitationAction(
   formData: FormData,
 ): Promise<InvitationActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "invitations");
   const parsed = createInvitationSchema.safeParse({
     email: formData.get("email"),
     name: formData.get("name"),
@@ -212,6 +214,7 @@ export async function createRoleQrInvitationAction(
   formData: FormData,
 ): Promise<InvitationActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "invitations");
   const parsed = createRoleQrInvitationSchema.safeParse({
     role: formData.get("role"),
     validity: formData.get("validity"),
@@ -291,6 +294,7 @@ export async function revokeInvitationAction(
   formData: FormData,
 ): Promise<InvitationActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "invitations");
   const parsed = revokeInvitationSchema.safeParse({
     invitationId: formData.get("invitationId"),
   });

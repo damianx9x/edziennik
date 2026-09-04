@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
@@ -235,6 +236,7 @@ export async function updateRecordAction(
   formData: FormData,
 ): Promise<RecordUpdateState> {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
+  await requireEnabledModule(session, "records");
   if (
     !["SYSTEM_OWNER", "DIRECTOR", "TEACHER"].includes(
       session.user.role,
@@ -379,6 +381,7 @@ export async function updateRecordAction(
 
 export async function reviewRecordChangeAction(formData: FormData): Promise<void> {
   const session = await requireDirector("/panel/szkola/powiadomienia");
+  await requireEnabledModule(session, "records");
   const requestId = String(formData.get("requestId") ?? "");
   const decision = formData.get("decision");
   if (!z.uuid().safeParse(requestId).success) return;

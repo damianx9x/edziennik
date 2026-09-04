@@ -14,6 +14,7 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { invitationRoleLabels } from "@/modules/identity/invitations/schema";
 import { PageStatisticsList } from "@/modules/observability/components/page-statistics-list";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Statystyki" };
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ const pageLabels: Record<string, string> = {
 
 export default async function StatisticsPage() {
   const session = await requireDirector("/panel/szkola/statystyki");
+  await requireEnabledModule(session, "statistics");
   const schoolId = session.user.schoolId;
   const now = new Date();
   const dayStart = new Date(now);

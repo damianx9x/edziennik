@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/server/db";
 import { requireActiveSession } from "@/modules/identity/auth/session";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export async function GET(
   context: { params: Promise<{ slotId: string }> },
 ) {
   const session = await requireActiveSession("/panel/plan");
+  await requireEnabledModule(session, "schedule");
   const { slotId } = await context.params;
   const parsed = z.string().uuid().safeParse(slotId);
   if (!parsed.success) {

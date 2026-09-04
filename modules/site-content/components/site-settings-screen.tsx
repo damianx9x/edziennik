@@ -32,6 +32,8 @@ import {
 import { optimizeSitePhoto } from "@/modules/site-content/image-optimizer";
 import {
   siteContentSchema,
+  siteWidgetTemplates,
+  type SiteWidgetType,
   type SiteContent,
 } from "@/modules/site-content/schema";
 import { useSiteContent } from "@/modules/site-content/site-content-provider";
@@ -567,6 +569,7 @@ function StartFields({ draft, setDraft }: FieldGroupProps) {
 }
 
 function LayoutFields({ draft, setDraft }: FieldGroupProps) {
+  const [widgetTemplate, setWidgetTemplate] = useState<SiteWidgetType>("testimonial");
   function moveSection(index: number, direction: -1 | 1) {
     const target = index + direction;
     if (target < 0 || target >= draft.layout.sections.length) return;
@@ -578,21 +581,26 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
   }
 
   function addWidget() {
-    if (draft.widgets.length >= 8) return;
+    if (draft.widgets.length >= 24) return;
+    const template = widgetTemplate in siteWidgetTemplates
+      ? siteWidgetTemplates[widgetTemplate as keyof typeof siteWidgetTemplates]
+      : {
+          badge: "Ważne",
+          title: "Nowy widget",
+          text: "Wpisz krótką, konkretną informację dla odwiedzających.",
+          actionLabel: "Dowiedz się więcej",
+          href: "#kontakt",
+          size: "medium" as const,
+          tone: "blue" as const,
+        };
     setDraft((current) => ({
       ...current,
       widgets: [
         ...current.widgets,
         {
           id: `widget-${Date.now()}`,
-          type: "notice",
-          badge: "Nowość",
-          title: "Nowy widget",
-          text: "Wpisz krótką, konkretną informację dla odwiedzających.",
-          actionLabel: "Dowiedz się więcej",
-          href: "#kontakt",
-          size: "medium",
-          tone: "blue",
+          type: widgetTemplate,
+          ...template,
         },
       ],
     }));
@@ -759,11 +767,17 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
       <div className="editor-section-callout">
         <div>
           <strong>Widgety — szybkie informacje</strong>
-          <span>Dodaj do 8 nowoczesnych kafli: wyróżnienie, liczbę, link albo komunikat.</span>
+          <span>Wybierz gotowy typ. Możesz dodać do 24 kafli, a każdy później dowolnie opisać i ustawić.</span>
         </div>
-        <button className="button button-primary button-small" type="button" onClick={addWidget} disabled={draft.widgets.length >= 8}>
-          <Plus aria-hidden="true" /> Dodaj widget
-        </button>
+        <div className="editor-widget-add">
+          <label className="editor-field"><span>Gotowy widget</span><select value={widgetTemplate} onChange={(event) => setWidgetTemplate(event.target.value as SiteWidgetType)}>
+            <option value="highlight">Wyróżnienie</option><option value="stat">Liczba lub fakt</option><option value="link">Szybki link</option><option value="notice">Komunikat</option>
+            {Object.entries(siteWidgetTemplates).map(([value, template]) => <option value={value} key={value}>{template.label}</option>)}
+          </select></label>
+          <button className="button button-primary button-small" type="button" onClick={addWidget} disabled={draft.widgets.length >= 24}>
+            <Plus aria-hidden="true" /> Dodaj widget
+          </button>
+        </div>
       </div>
 
       {draft.widgets.map((widget, index) => (
@@ -781,6 +795,7 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
                 <option value="stat">Liczba lub fakt</option>
                 <option value="link">Szybki link</option>
                 <option value="notice">Komunikat</option>
+                {Object.entries(siteWidgetTemplates).map(([value, template]) => <option value={value} key={value}>{template.label}</option>)}
               </select>
             </label>
             <label className="editor-field">

@@ -8,6 +8,7 @@ import {
   lockScheduleResources,
 } from "@/modules/schedule/resource-lock";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 import {
   archiveRecordSchema,
@@ -22,6 +23,7 @@ export async function createRoomAction(
   formData: FormData,
 ): Promise<RecordActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "records");
   const parsed = createRoomSchema.safeParse({
     locationId: formData.get("locationId"),
     name: formData.get("name"),
@@ -69,6 +71,7 @@ export async function createGroupAction(
   formData: FormData,
 ): Promise<RecordActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "records");
   const parsed = createGroupSchema.safeParse({
     locationId: formData.get("locationId"),
     name: formData.get("name"),
@@ -116,6 +119,7 @@ export async function createLocationAction(
   formData: FormData,
 ): Promise<RecordActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "records");
   const parsed = createLocationSchema.safeParse({
     name: formData.get("name"),
     address: formData.get("address"),
@@ -156,6 +160,7 @@ export async function createLocationAction(
 
 export async function archiveRecordAction(formData: FormData): Promise<void> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "records");
   const parsed = archiveRecordSchema.safeParse({
     recordId: formData.get("recordId"),
     recordType: formData.get("recordType"),
@@ -232,6 +237,7 @@ export async function archiveRecordAction(formData: FormData): Promise<void> {
 
 export async function restoreRecordAction(formData: FormData): Promise<void> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "records");
   if (session.user.role !== "SYSTEM_OWNER") return;
   const parsed = archiveRecordSchema.safeParse({
     recordId: formData.get("recordId"),

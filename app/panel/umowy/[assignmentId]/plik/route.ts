@@ -6,6 +6,7 @@ import { can } from "@/modules/access-control/can";
 import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession, requireDirector } from "@/modules/identity/auth/session";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export async function GET(
   request: Request,
@@ -16,6 +17,7 @@ export async function GET(
     return NextResponse.json({ message: "Dokument nie istnieje." }, { status: 404 });
   }
   const session = await requireActiveSession(`/panel/umowy/${assignmentId}/plik`);
+  await requireEnabledModule(session, "contracts");
   if (isPrivilegedIdentityRole(session.user.role)) {
     await requireDirector(`/panel/umowy/${assignmentId}/plik`);
   }

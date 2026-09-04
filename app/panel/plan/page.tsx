@@ -32,6 +32,7 @@ import type {
   TeacherAvailabilityView,
 } from "@/modules/schedule/types";
 import { resolveRequirementTeacherId } from "@/modules/schedule/requirement-teacher";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Plan zajęć" };
 export const dynamic = "force-dynamic";
@@ -46,6 +47,7 @@ type SearchParams = Promise<{
 
 async function scheduleSession() {
   const current = await requireActiveSession("/panel/plan");
+  await requireEnabledModule(current, "schedule");
   if (
     current.user.role === "SYSTEM_OWNER" ||
     current.user.role === "DIRECTOR"

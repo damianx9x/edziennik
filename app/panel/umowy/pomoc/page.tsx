@@ -16,6 +16,7 @@ import {
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { isPrivilegedIdentityRole } from "@/modules/identity/auth/access";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Umowy — pomoc i podstawy prawne" };
 
@@ -52,6 +53,7 @@ const sources = [
 
 export default async function ContractLegalHelpPage() {
   const session = await requireActiveSession("/panel/umowy/pomoc");
+  await requireEnabledModule(session, "contracts");
   if (!(isPrivilegedIdentityRole(session.user.role) || session.user.role === "PARENT")) {
     redirect("/panel/brak-dostepu");
   }

@@ -90,3 +90,23 @@ warunkiem wykonania zadania.
 - [ ] Klawiatura, focus, kontrast i rozmiar dotyku są poprawne.
 - [ ] Moduł nie dubluje funkcji z innego działu.
 - [ ] Testy, dokumentacja i paczka wydaniowa są aktualne.
+
+## 9. Moduły opcjonalne
+
+- Właściciel systemu ustawia widoczność modułu osobno dla każdej roli.
+- Wyłączenie usuwa pozycję z menu, skrótów pulpitu i samouczka.
+- Bezpośredni adres pokazuje prostą informację, że szkoła nie korzysta obecnie
+  z tej funkcji; nie wolno ujawnić danych modułu przed tą kontrolą.
+- Start, logowanie, MFA, pomoc i zgłoszenie problemu są zawsze dostępne.
+- Ponowne włączenie przywraca wcześniejsze dane — przełącznik nie jest
+  kasowaniem ani retencją.
+
+## 10. Wizytówka modułowa
+
+- Edytor oferuje gotowe typy widgetów, a nie pusty kreator kodu.
+- Maksymalnie 24 widgety chronią wydajność i czytelność strony.
+- Każdy widget ma typ, etykietę, tytuł, opis, akcję, rozmiar i ton kolorystyczny.
+- Link przechodzi walidację: sekcja `#`, bezpieczna ścieżka wewnętrzna,
+  `https:`, `mailto:` albo `tel:`.
+- Ruch jest jednorazowy i funkcjonalny; użytkownik ograniczający animacje
+  otrzymuje nieruchomy, kompletny widok.

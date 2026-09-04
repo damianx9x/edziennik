@@ -6,6 +6,7 @@ import { getFileStorage } from "@/modules/files/storage";
 import { requireActiveSession } from "@/modules/identity/auth/session";
 import { accessibleGroupWhere } from "@/modules/learning/access";
 import { canViewLearningStoredFile } from "@/modules/learning/file-access";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export async function GET(
   _request: Request,
@@ -17,6 +18,7 @@ export async function GET(
   }
 
   const session = await requireActiveSession(`/panel/nauka/plik/${storedFileId}`);
+  await requireEnabledModule(session, "learning");
   const actor = { id: session.user.id, schoolId: session.user.schoolId, role: session.user.role };
   const storedFile = await db.storedFile.findFirst({
     where: { id: storedFileId, schoolId: session.user.schoolId, archivedAt: null },

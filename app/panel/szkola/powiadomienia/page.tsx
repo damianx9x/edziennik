@@ -12,6 +12,7 @@ import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { AuthenticatedPanelShell } from "@/modules/identity/components/authenticated-panel-shell";
 import { reviewRecordChangeAction } from "@/modules/records/actions";
+import { requireEnabledModule } from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Centrum powiadomień" };
 export const dynamic = "force-dynamic";
@@ -28,6 +29,8 @@ const fieldLabels: Record<string, string> = {
 
 export default async function NotificationsPage() {
   const session = await requireDirector("/panel/szkola/powiadomienia");
+  await requireEnabledModule(session, "records");
+  await requireEnabledModule(session, "notifications");
   const requests = await db.recordChangeRequest.findMany({
     where: {
       schoolId: session.user.schoolId,

@@ -2,6 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/server/db";
@@ -63,6 +64,7 @@ export async function createContractPackageAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  await requireEnabledModule(session, "contracts");
   if (!isPrivilegedIdentityRole(session.user.role)) return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać pakiet." };
   const parsed = contractPackageSchema.safeParse({
     title: formData.get("title"), acceptanceMode: formData.get("acceptanceMode"),
@@ -146,6 +148,7 @@ export async function reuseContractPackageAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  await requireEnabledModule(session, "contracts");
   if (!isPrivilegedIdentityRole(session.user.role)) return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać pakiet." };
   const parsed = reuseContractPackageSchema.safeParse({ sourceVersionId: formData.get("sourceVersionId"), parentId: formData.get("parentId"), studentId: formData.get("studentId"), expiresAt: formData.get("expiresAt") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź odbiorcę." };
@@ -183,6 +186,7 @@ export async function uploadSignedContractAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireActiveSession(contractsPath);
+  await requireEnabledModule(session, "contracts");
   const parsed = signedContractSchema.safeParse({ assignmentId: formData.get("assignmentId"), confirmation: formData.get("confirmation") });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Sprawdź plik." };
   const assignment = await db.contractAssignment.findFirst({
@@ -216,6 +220,7 @@ export async function uploadSignedContractAction(
 
 export async function reviewSignedContractAction(formData: FormData): Promise<void> {
   const session = await requireDirector(contractsPath);
+  await requireEnabledModule(session, "contracts");
   if (!isPrivilegedIdentityRole(session.user.role)) return;
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const decision = String(formData.get("decision") ?? "");
@@ -248,6 +253,7 @@ export async function createContractAssignmentAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  await requireEnabledModule(session, "contracts");
   if (!isPrivilegedIdentityRole(session.user.role)) {
     return { status: "error", message: "Tylko dyrektor lub właściciel systemu może wysłać umowę." };
   }
@@ -416,6 +422,7 @@ export async function createContractVersionAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireDirector(contractsPath);
+  await requireEnabledModule(session, "contracts");
   if (!isPrivilegedIdentityRole(session.user.role)) {
     return { status: "error", message: "Tylko dyrektor lub właściciel systemu może utworzyć nową wersję." };
   }
@@ -562,6 +569,7 @@ export async function acceptContractAction(
   formData: FormData,
 ): Promise<ContractActionState> {
   const session = await requireActiveSession(contractsPath);
+  await requireEnabledModule(session, "contracts");
   const parsed = contractAcceptanceSchema.safeParse({
     assignmentId: formData.get("assignmentId"),
     documentConfirmation: formData.get("documentConfirmation"),
