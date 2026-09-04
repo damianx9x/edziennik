@@ -7,6 +7,10 @@ import { requireDirector } from "@/modules/identity/auth/session";
 import { revalidatePath } from "next/cache";
 
 import { createRecordOnlyEmail } from "./record-email";
+import {
+  buildStudentExternalIdBase,
+  nextAvailableExternalId,
+} from "./external-id";
 import { createPersonSchema } from "./schema";
 
 export async function createPersonAction(
@@ -32,11 +36,29 @@ export async function createPersonAction(
   }
 
   const name = `${parsed.data.firstName} ${parsed.data.lastName}`;
+  let externalId = parsed.data.externalId;
+  if (parsed.data.role === "STUDENT" && !externalId) {
+    const base = buildStudentExternalIdBase(
+      parsed.data.firstName,
+      parsed.data.lastName,
+    );
+    const existing = await db.user.findMany({
+      where: {
+        schoolId: session.user.schoolId,
+        externalId: { startsWith: base },
+      },
+      select: { externalId: true },
+    });
+    externalId = nextAvailableExternalId(
+      base,
+      existing.map((item) => item.externalId),
+    );
+  }
   const email =
     parsed.data.email ??
     createRecordOnlyEmail(
       session.user.schoolId,
-      parsed.data.externalId ?? name,
+      externalId ?? name,
     );
 
   try {
@@ -48,7 +70,7 @@ export async function createPersonAction(
         role: parsed.data.role,
         status: "INVITED",
         phone: parsed.data.phone,
-        externalId: parsed.data.externalId,
+        externalId,
         teacherProfile:
           parsed.data.role === "TEACHER"
             ? { create: { displayName: name } }

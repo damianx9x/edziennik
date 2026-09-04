@@ -1378,3 +1378,19 @@ syntetyczne i wersjonowane w repozytorium, więc generator jest powtarzalny.
 **Dlaczego:** wspólny dokument mieszał odpowiedzialności i nadal wymagał od
 nowej osoby domyślania się, które kroki jej dotyczą. Osobne instrukcje skracają
 drogę do odpowiedzi, a jednocześnie jasno pokazują ograniczenia roli.
+
+## ADR-101 — relacja grupy jest źródłem prowadzącego dla grafiku
+
+**Data:** 2026-09-04
+**Decyzja:** aktywny główny wykładowca z `GroupTeacher` jest domyślnym
+prowadzącym w ręcznym grafiku i generatorze. `SchedulingRequirement.teacherId`
+może wskazać innego aktywnego wykładowcę tej grupy, ale pusty albo nieaktualny
+wpis zawsze wraca do głównego prowadzącego. Zmiana przypisań porządkuje znacznik
+`isPrimary` i synchronizuje wymaganie w tej samej transakcji. Generator obejmuje
+również grupy bez wcześniej zapisanego rekordu wymagań, używając jawnych
+wartości domyślnych.
+
+**Dlaczego:** oddzielne, niesynchronizowane pola powodowały, że kartoteka
+pokazywała prowadzącego, a generator zgłaszał jego brak. Jeden kierunek
+dziedziczenia zachowuje prostotę kartoteki i pozwala nadal ustawić wyjątek dla
+konkretnego planu.

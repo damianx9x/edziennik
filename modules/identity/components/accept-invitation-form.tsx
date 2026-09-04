@@ -19,13 +19,13 @@ import {
 } from "@/modules/identity/invitations/actions";
 import { initialInvitationActionState } from "@/modules/identity/invitations/state";
 
-function AcceptButton() {
+function AcceptButton({ invalid }: { invalid: boolean }) {
   const { pending } = useFormStatus();
   return (
     <button
       className="button button-primary button-full"
       type="submit"
-      disabled={pending}
+      disabled={pending || invalid}
     >
       {pending ? (
         <>
@@ -63,6 +63,10 @@ export function AcceptInvitationForm({
     initialInvitationActionState,
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const passwordsDiffer =
+    passwordConfirmation.length > 0 && password !== passwordConfirmation;
 
   if (state.status === "success") {
     return (
@@ -182,6 +186,8 @@ export function AcceptInvitationForm({
               minLength={12}
               maxLength={128}
               required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               aria-describedby="invite-password-hint"
             />
             <button
@@ -209,7 +215,12 @@ export function AcceptInvitationForm({
             minLength={12}
             maxLength={128}
             required
+            value={passwordConfirmation}
+            onChange={(event) => setPasswordConfirmation(event.target.value)}
+            aria-invalid={passwordsDiffer}
+            aria-describedby={passwordsDiffer ? "invite-password-mismatch" : undefined}
           />
+          {passwordsDiffer ? <small id="invite-password-mismatch" className="field-error" role="alert">Hasła nie są takie same. Popraw drugie hasło.</small> : null}
         </label>
         </div>
 
@@ -219,7 +230,7 @@ export function AcceptInvitationForm({
           </div>
         ) : null}
 
-        <AcceptButton />
+        <AcceptButton invalid={passwordsDiffer} />
       </form>
 
       <div className="invitation-privacy-note">

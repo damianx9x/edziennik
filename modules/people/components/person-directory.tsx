@@ -71,11 +71,13 @@ const filters = [
 export function PersonDirectory({
   people,
   actorRole,
+  isSystemOwner = false,
   historyById,
   relationOptions,
 }: {
   people: PersonDirectoryRecord[];
   actorRole: "DIRECTOR" | "TEACHER";
+  isSystemOwner?: boolean;
   historyById: Record<string, RecordHistoryEntry[]>;
   relationOptions: {
     students: RelationshipOption[];
@@ -499,17 +501,17 @@ export function PersonDirectory({
               {actorRole === "DIRECTOR" ? (
                 <details className="person-archive">
                 <summary>
-                  <Archive aria-hidden="true" /> Archiwizuj kartotekę
+                  <Archive aria-hidden="true" /> {isSystemOwner ? "Usuń z aktywnych kartotek" : "Archiwizuj kartotekę"}
                 </summary>
                 <div>
                   <p>
                     Kartoteka zniknie z aktywnej listy, ale jej historia
-                    pozostanie w systemie.
+                    pozostanie w systemie. Dzięki temu umowy, płatności i audyt nie utracą spójności.
                   </p>
                   <form action={archiveRecordAction}>
                     <input type="hidden" name="recordId" value={selected.id} />
                     <input type="hidden" name="recordType" value="person" />
-                    <button type="submit">Potwierdź archiwizację</button>
+                    <button type="submit">{isSystemOwner ? "Potwierdź usunięcie z aktywnych" : "Potwierdź archiwizację"}</button>
                   </form>
                 </div>
               </details>

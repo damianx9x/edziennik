@@ -394,9 +394,10 @@ export function ScheduleWorkspace({
                     required
                     value={newGroupId}
                     onChange={(event) => {
+                      const group = groups.find((item) => item.id === event.target.value);
                       setNewGroupId(event.target.value);
-                      setNewTeacherId("");
-                      setNewRoomId("");
+                      setNewTeacherId(group?.teacherIds?.[0] ?? "");
+                      setNewRoomId(group?.preferredRoomId ?? "");
                     }}
                   >
                     <option value="" disabled>

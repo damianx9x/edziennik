@@ -29,6 +29,7 @@ import {
   CONTRACT_LEGAL_CHECKLIST_VERSION,
   getContractAcceptanceStatement,
 } from "./legal";
+import { CONTRACT_ELIGIBLE_PERSON_STATUSES } from "./eligibility";
 
 const contractsPath = "/panel/umowy";
 const MAX_CONTRACT_BYTES = 10 * 1024 * 1024;
@@ -88,7 +89,7 @@ export async function createContractPackageAction(
   }
   const relation = await db.parentChild.findFirst({
     where: { schoolId: session.user.schoolId, parentId: parsed.data.parentId, childId: parsed.data.studentId, archivedAt: null,
-      parent: { role: "PARENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null }, child: { role: "STUDENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null } },
+      parent: { role: "PARENT", status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] }, archivedAt: null }, child: { role: "STUDENT", status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] }, archivedAt: null } },
     select: { parentId: true },
   });
   if (!relation) return { status: "error", message: "Wybrany rodzic nie jest powiązany z tym uczniem." };
@@ -293,8 +294,8 @@ export async function createContractAssignmentAction(
       parentId: parsed.data.parentId,
       childId: parsed.data.studentId,
       archivedAt: null,
-      parent: { role: "PARENT", status: "ACTIVE", archivedAt: null },
-      child: { role: "STUDENT", status: "ACTIVE", archivedAt: null },
+      parent: { role: "PARENT", status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] }, archivedAt: null },
+      child: { role: "STUDENT", status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] }, archivedAt: null },
     },
     select: { parentId: true },
   });

@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/server/db";
 import { ContractCreateForm } from "@/modules/contracts/components/contract-create-form";
 import { ContractList } from "@/modules/contracts/components/contract-list";
+import { CONTRACT_ELIGIBLE_PERSON_STATUSES } from "@/modules/contracts/eligibility";
 import {
   getContractAcceptanceStatement,
   getContractActionLabel,
@@ -76,7 +77,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
 
   const parents = isManagement
     ? await db.user.findMany({
-        where: { schoolId: session.user.schoolId, role: "PARENT", status: { in: ["ACTIVE", "INVITED"] }, archivedAt: null },
+        where: { schoolId: session.user.schoolId, role: "PARENT", status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] }, archivedAt: null },
         orderBy: { name: "asc" },
         select: {
           id: true,
@@ -85,7 +86,11 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
           parentLinks: {
             where: {
               archivedAt: null,
-              child: { status: "ACTIVE", role: "STUDENT", archivedAt: null },
+              child: {
+                status: { in: [...CONTRACT_ELIGIBLE_PERSON_STATUSES] },
+                role: "STUDENT",
+                archivedAt: null,
+              },
             },
             select: { child: { select: { id: true, name: true } } },
           },

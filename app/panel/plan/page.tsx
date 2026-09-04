@@ -31,6 +31,7 @@ import type {
   ScheduleSlotView,
   TeacherAvailabilityView,
 } from "@/modules/schedule/types";
+import { resolveRequirementTeacherId } from "@/modules/schedule/requirement-teacher";
 
 export const metadata: Metadata = { title: "Plan zajęć" };
 export const dynamic = "force-dynamic";
@@ -160,6 +161,7 @@ export default async function SchedulePage({
       },
       teachers: {
         where: { archivedAt: null },
+        orderBy: [{ isPrimary: "desc" }, { assignedAt: "asc" }],
         select: { teacherId: true, isPrimary: true },
       },
       schedulingRequirement: true,
@@ -348,6 +350,7 @@ export default async function SchedulePage({
       ? group.enrollments.map((enrollment) => enrollment.studentId)
       : [],
     teacherIds: group.teachers.map((teacher) => teacher.teacherId),
+    preferredRoomId: group.schedulingRequirement?.preferredRoomId ?? null,
   }));
   const visibleRoomIds = new Set(slotsRaw.map((slot) => slot.roomId));
   const visibleTeacherIds = new Set(slotsRaw.map((slot) => slot.teacherId));
@@ -456,7 +459,10 @@ export default async function SchedulePage({
       locationsRaw.find((location) => location.id === group.locationId)?.name ??
       "Lokalizacja",
     studentCount: group.enrollments.length,
-    teacherId: group.schedulingRequirement?.teacherId ?? null,
+    teacherId: resolveRequirementTeacherId(
+      group.schedulingRequirement?.teacherId ?? null,
+      group.teachers,
+    ),
     preferredRoomId:
       group.schedulingRequirement?.preferredRoomId ?? null,
     lessonsPerWeek: group.schedulingRequirement?.lessonsPerWeek ?? 2,

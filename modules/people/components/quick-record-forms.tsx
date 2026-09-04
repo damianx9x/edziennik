@@ -335,12 +335,13 @@ export function QuickRecordForms({
                 <input name="phone" type="tel" maxLength={30} />
               </label>
               <label>
-                Id ucznia
+                Id ucznia <small>(opcjonalnie)</small>
                 <input
                   name="externalId"
                   maxLength={80}
-                  placeholder="Np. STU-001"
+                  placeholder="Np. JKOW"
                 />
+                <small>Jeśli zostawisz puste, system utworzy skrót z imienia i nazwiska, np. Jan Kowalski → JKOW.</small>
               </label>
             </div>
             <RecordSubmit

@@ -25,6 +25,7 @@ import {
   teacherAvailabilitySchema,
 } from "./schema";
 import { deterministicScheduleSolver } from "./solver";
+import { resolveRequirementTeacherId } from "./requirement-teacher";
 import type { ScheduleActionState } from "./types";
 
 const schedulePath = "/panel/plan";
@@ -218,6 +219,14 @@ export async function saveSchedulingRequirementAction(
         isPrimary: true,
       },
     });
+    await tx.groupTeacher.updateMany({
+      where: {
+        groupId: currentGroup.id,
+        archivedAt: null,
+        teacherId: { not: currentTeacher.id },
+      },
+      data: { isPrimary: false },
+    });
     const discardedGenerationCount =
       await discardReadyScheduleGenerations(tx, session.user.schoolId);
     await tx.auditLog.create({
@@ -393,24 +402,40 @@ export async function generateScheduleAction(formData: FormData) {
     1,
   );
 
-  const [requirements, rooms, teachers, availability, studentAvailability, fixedSlots, locations, travelRules] =
+  const [requirementGroups, rooms, teachers, availability, studentAvailability, fixedSlots, locations, travelRules] =
     await Promise.all([
-      db.schedulingRequirement.findMany({
+      db.courseGroup.findMany({
         where: {
           schoolId: session.user.schoolId,
           isActive: true,
-          group: { isActive: true, archivedAt: null },
+          archivedAt: null,
         },
-        include: {
-          group: {
+        select: {
+          id: true,
+          name: true,
+          locationId: true,
+          location: { select: { name: true } },
+          enrollments: {
+            where: { status: "ACTIVE" },
+            select: { studentId: true },
+          },
+          teachers: {
+            where: { archivedAt: null },
+            orderBy: [{ isPrimary: "desc" }, { assignedAt: "asc" }],
+            select: { teacherId: true, isPrimary: true },
+          },
+          schedulingRequirement: {
             select: {
-              name: true,
-              locationId: true,
-              location: { select: { name: true } },
-              enrollments: {
-                where: { status: "ACTIVE" },
-                select: { studentId: true },
-              },
+              id: true,
+              teacherId: true,
+              preferredRoomId: true,
+              lessonsPerWeek: true,
+              durationMinutes: true,
+              allowedWeekdays: true,
+              preferredWeekdays: true,
+              earliestStartMinute: true,
+              latestEndMinute: true,
+              preferredStartMinute: true,
             },
           },
         },
@@ -490,11 +515,28 @@ export async function generateScheduleAction(formData: FormData) {
       }),
     ]);
 
-  let scopedRequirements = requirements;
+  const resolvedRequirements = requirementGroups.map((group) => ({
+    id: group.schedulingRequirement?.id ?? group.id,
+    groupId: group.id,
+    teacherId: resolveRequirementTeacherId(
+      group.schedulingRequirement?.teacherId ?? null,
+      group.teachers,
+    ),
+    preferredRoomId: group.schedulingRequirement?.preferredRoomId ?? null,
+    lessonsPerWeek: group.schedulingRequirement?.lessonsPerWeek ?? 2,
+    durationMinutes: group.schedulingRequirement?.durationMinutes ?? 60,
+    allowedWeekdays: group.schedulingRequirement?.allowedWeekdays ?? [1, 2, 3, 4, 5],
+    preferredWeekdays: group.schedulingRequirement?.preferredWeekdays ?? [],
+    earliestStartMinute: group.schedulingRequirement?.earliestStartMinute ?? 15 * 60,
+    latestEndMinute: group.schedulingRequirement?.latestEndMinute ?? 19 * 60,
+    preferredStartMinute: group.schedulingRequirement?.preferredStartMinute ?? null,
+    group,
+  }));
+  let scopedRequirements = resolvedRequirements;
   let scopedRooms = rooms;
   let scopeLabel = "Cała szkoła";
   if (scope === "LOCATION") {
-    scopedRequirements = requirements.filter(
+    scopedRequirements = resolvedRequirements.filter(
       (requirement) => requirement.group.locationId === targetId,
     );
     scopedRooms = rooms.filter((room) => room.locationId === targetId);
@@ -502,20 +544,20 @@ export async function generateScheduleAction(formData: FormData) {
       locations.find((location) => location.id === targetId)?.name ??
       "Wybrana lokalizacja";
   } else if (scope === "GROUP") {
-    scopedRequirements = requirements.filter(
+    scopedRequirements = resolvedRequirements.filter(
       (requirement) => requirement.groupId === targetId,
     );
     scopeLabel =
       scopedRequirements[0]?.group.name ?? "Wybrana grupa";
   } else if (scope === "TEACHER") {
-    scopedRequirements = requirements.filter(
+    scopedRequirements = resolvedRequirements.filter(
       (requirement) => requirement.teacherId === targetId,
     );
     scopeLabel =
       teachers.find((teacher) => teacher.id === targetId)?.name ??
       "Wybrany wykładowca";
   } else if (scope === "ROOM") {
-    scopedRequirements = requirements.filter(
+    scopedRequirements = resolvedRequirements.filter(
       (requirement) => requirement.preferredRoomId === targetId,
     );
     scopedRooms = rooms.filter((room) => room.id === targetId);

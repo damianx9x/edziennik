@@ -31,6 +31,7 @@ export default async function RecordsPage() {
   const isDirector =
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR";
+  const isSystemOwner = session.user.role === "SYSTEM_OWNER";
   const actorRole: "DIRECTOR" | "TEACHER" = isDirector
     ? "DIRECTOR"
     : "TEACHER";
@@ -130,7 +131,6 @@ export default async function RecordsPage() {
         ...peopleWhere,
       },
       orderBy: [{ role: "asc" }, { name: "asc" }],
-      take: 300,
       select: {
         id: true,
         name: true,
@@ -330,8 +330,9 @@ export default async function RecordsPage() {
           <span className="section-kicker">Dane szkoły</span>
           <h1>Kartoteki</h1>
           <p>
-            Otwórz kartę osoby, grupy lub sali. Każda zmiana zostawia czytelny
-            ślad.
+            {isSystemOwner
+              ? "Jako twórca widzisz wszystkie aktywne kartoteki szkoły i możesz usuwać je z aktywnego obiegu. Każda operacja pozostaje w audycie."
+              : "Otwórz kartę osoby, grupy lub sali. Każda zmiana zostawia czytelny ślad."}
           </p>
         </div>
         {isDirector ? (
@@ -411,6 +412,7 @@ export default async function RecordsPage() {
         <PersonDirectory
           people={directoryPeople}
           actorRole={actorRole}
+          isSystemOwner={isSystemOwner}
           historyById={historyById}
           relationOptions={{
             students: directoryPeople.filter((person) => person.role === "STUDENT").map((person) => ({ id: person.id, name: person.name })),
@@ -426,6 +428,7 @@ export default async function RecordsPage() {
         <p>Zasoby są pogrupowane według lokalizacji, żeby łatwiej układać grafik.</p>
         <ResourceDirectory
           actorRole={actorRole}
+          isSystemOwner={isSystemOwner}
           historyById={historyById}
           locations={locations}
           groups={groups.map((group) => ({

@@ -1,5 +1,19 @@
 # Notatki wydania
 
+## 1.1.3 — spójne relacje kartotek, umów i grafiku
+
+- rodzic po wybraniu pokazuje wszystkie przypisane dzieci, także przed
+  aktywacją ich kont;
+- generator i formularz ręczny korzystają z prowadzącego przypisanego do grupy;
+- ręczny plan podpowiada prowadzącego i preferowaną salę;
+- identyfikator ucznia może zostać utworzony automatycznie, bez obowiązkowego
+  pola technicznego;
+- twórca widzi wszystkie aktywne kartoteki bez limitu 300 i może usuwać je z
+  aktywnego obiegu z zachowaniem audytu;
+- zaktualizowano biblioteki pośrednie wskazane przez audyt npm, a pakowanie
+  Raspberry przerywa pracę bez prawidłowego raportu rejestru;
+- walidacja zaproszenia od razu wskazuje różne hasła.
+
 ## 1.1.2 — pełne podręczniki każdej roli
 
 - dyrektor, wykładowca, rodzic i uczeń otrzymują osobny podręcznik PDF, który

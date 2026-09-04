@@ -20,26 +20,32 @@ export type StudentAvailabilityWindow = {
   endMinute: number;
 };
 
-async function ensurePrimaryTeacher(
+async function synchronizePrimaryTeacher(
   client: RelationshipClient,
+  schoolId: string,
   groupId: string,
 ) {
-  const primary = await client.groupTeacher.findFirst({
-    where: { groupId, archivedAt: null, isPrimary: true },
-    select: { teacherId: true },
-  });
-  if (primary) return;
-  const first = await client.groupTeacher.findFirst({
+  const teachers = await client.groupTeacher.findMany({
     where: { groupId, archivedAt: null },
-    orderBy: { assignedAt: "asc" },
-    select: { teacherId: true },
+    orderBy: [{ isPrimary: "desc" }, { assignedAt: "asc" }],
+    select: { teacherId: true, isPrimary: true },
   });
-  if (first) {
+  const primaryTeacherId = teachers[0]?.teacherId ?? null;
+  if (primaryTeacherId) {
+    await client.groupTeacher.updateMany({
+      where: { groupId, archivedAt: null, teacherId: { not: primaryTeacherId } },
+      data: { isPrimary: false },
+    });
     await client.groupTeacher.update({
-      where: { groupId_teacherId: { groupId, teacherId: first.teacherId } },
+      where: { groupId_teacherId: { groupId, teacherId: primaryTeacherId } },
       data: { isPrimary: true },
     });
   }
+  await client.schedulingRequirement.upsert({
+    where: { groupId },
+    update: { schoolId, teacherId: primaryTeacherId, isActive: true },
+    create: { schoolId, groupId, teacherId: primaryTeacherId },
+  });
 }
 
 function uniqueIds(ids: readonly string[]) {
@@ -281,7 +287,9 @@ export async function applyRelationshipDelta(
           create: { groupId: id, teacherId },
         });
       }
-      for (const id of removeIds) await ensurePrimaryTeacher(client, id);
+      for (const id of uniqueIds([...addIds, ...removeIds])) {
+        await synchronizePrimaryTeacher(client, schoolId, id);
+      }
     } else {
       await assertGroups(client, schoolId, [groupId!]);
       await assertUsers(client, schoolId, [...addIds, ...removeIds], "TEACHER");
@@ -296,7 +304,7 @@ export async function applyRelationshipDelta(
           create: { groupId: groupId!, teacherId: id },
         });
       }
-      await ensurePrimaryTeacher(client, groupId!);
+      await synchronizePrimaryTeacher(client, schoolId, groupId!);
     }
     return;
   }

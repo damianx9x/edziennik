@@ -23,12 +23,26 @@ mkdir -p "$STAGE" "$OUTPUT_DIR"
 git -C "$PROJECT_DIR" archive --format=tar "$COMMIT" | tar -xf - -C "$STAGE"
 printf '%s\n' "$COMMIT" > "$STAGE/KLA_RELEASE_COMMIT"
 AUDIT_RESULT="$TEMP_DIR/npm-audit.json"
-(cd "$PROJECT_DIR" && npm audit --omit=dev --json > "$AUDIT_RESULT") || true
+if [[ -n "${KLA_NPM_AUDIT_RESULT_FILE:-}" ]]; then
+  [[ -f "$KLA_NPM_AUDIT_RESULT_FILE" ]] || {
+    echo "Nie znaleziono wskazanego raportu audytu npm."; exit 1;
+  }
+  cp "$KLA_NPM_AUDIT_RESULT_FILE" "$AUDIT_RESULT"
+else
+  (cd "$PROJECT_DIR" && npm audit --omit=dev --json > "$AUDIT_RESULT") || true
+fi
 node - "$STAGE/package.json" "$AUDIT_RESULT" "$STAGE/KLA_RELEASE_METADATA.json" "$COMMIT" <<'NODE'
 const fs = require("node:fs");
+const crypto = require("node:crypto");
+const path = require("node:path");
 const [packagePath, auditPath, outputPath, commit] = process.argv.slice(2);
 const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
 const audit = JSON.parse(fs.readFileSync(auditPath, "utf8"));
+if (!audit.metadata?.vulnerabilities) {
+  throw new Error(
+    "Nie udało się potwierdzić audytu npm. Pakiet Raspberry nie powstanie bez prawidłowego wyniku rejestru.",
+  );
+}
 const values = audit.metadata?.vulnerabilities ?? {};
 const vulnerabilities = {
   total: Number(values.total ?? 0),
@@ -43,6 +57,10 @@ if (vulnerabilities.critical > 0 || vulnerabilities.high > 0) {
 fs.writeFileSync(outputPath, `${JSON.stringify({
   version: packageJson.version,
   commit,
+  lockfileSha256: crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(path.dirname(packagePath), "package-lock.json")))
+    .digest("hex"),
   auditedAt: new Date().toISOString(),
   vulnerabilities,
 }, null, 2)}\n`, { mode: 0o600 });

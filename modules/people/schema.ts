@@ -49,13 +49,6 @@ export const createPersonSchema = z
         message: "Wykładowca i rodzic potrzebują adresu e-mail.",
       });
     }
-    if (input.role === "STUDENT" && input.externalId.length < 2) {
-      context.addIssue({
-        code: "custom",
-        path: ["externalId"],
-        message: "Uczeń potrzebuje krótkiego identyfikatora szkolnego.",
-      });
-    }
   })
   .transform((input) => ({
     ...input,

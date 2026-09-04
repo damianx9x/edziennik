@@ -6,6 +6,7 @@ export type ScheduleResource = {
   capacity?: number | null;
   studentIds?: string[];
   teacherIds?: string[];
+  preferredRoomId?: string | null;
 };
 
 export type ScheduleLocation = {

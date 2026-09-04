@@ -60,6 +60,7 @@ export function ResourceDirectory({
   rooms,
   locations,
   actorRole,
+  isSystemOwner = false,
   historyById,
   relationOptions,
 }: {
@@ -72,6 +73,7 @@ export function ResourceDirectory({
     isOnline: boolean;
   }>;
   actorRole: "DIRECTOR" | "TEACHER";
+  isSystemOwner?: boolean;
   historyById: Record<string, RecordHistoryEntry[]>;
   relationOptions: {
     students: RelationshipOption[];
@@ -389,11 +391,11 @@ export function ResourceDirectory({
               {actorRole === "DIRECTOR" ? (
                 <details className="person-archive">
                   <summary>
-                    <Archive aria-hidden="true" /> Archiwizuj kartotekę
+                    <Archive aria-hidden="true" /> {isSystemOwner ? "Usuń z aktywnych kartotek" : "Archiwizuj kartotekę"}
                   </summary>
                   <div>
                     <p>
-                      Rekord zniknie z aktywnej listy, ale historia pozostanie.
+                      Rekord zniknie z aktywnej listy, ale historia i zależne dane pozostaną spójne.
                     </p>
                     <form action={archiveRecordAction}>
                       <input
@@ -406,7 +408,7 @@ export function ResourceDirectory({
                         name="recordType"
                         value={selected.kind === "ROOM" ? "room" : "group"}
                       />
-                      <button type="submit">Potwierdź archiwizację</button>
+                      <button type="submit">{isSystemOwner ? "Potwierdź usunięcie z aktywnych" : "Potwierdź archiwizację"}</button>
                     </form>
                   </div>
                 </details>
