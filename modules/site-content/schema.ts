@@ -3,6 +3,75 @@ import { z } from "zod";
 const shortText = z.string().trim().min(1).max(140);
 const paragraph = z.string().trim().min(1).max(900);
 
+export const siteSectionIds = [
+  "offer",
+  "story",
+  "locations",
+  "digital",
+  "modules",
+  "widgets",
+  "contact",
+] as const;
+
+export const defaultSiteLayout = {
+  contentWidth: "standard" as const,
+  cornerStyle: "rounded" as const,
+  heroScale: "balanced" as const,
+  sections: siteSectionIds.map((id) => ({
+    id,
+    visible: true,
+    width: id === "story" ? ("narrow" as const) : ("standard" as const),
+    spacing: "standard" as const,
+  })),
+};
+
+export const defaultSiteWidgets = [
+  {
+    id: "english-focus",
+    type: "highlight" as const,
+    badge: "Tylko angielski",
+    title: "Jedna specjalizacja. Pełne skupienie.",
+    text: "Zajęcia dla dzieci i młodzieży rozwijają mówienie, rozumienie, czytanie i pisanie.",
+    actionLabel: "Poznaj zajęcia",
+    href: "#zajecia",
+    size: "large" as const,
+    tone: "navy" as const,
+  },
+  {
+    id: "local-and-online",
+    type: "stat" as const,
+    badge: "Stacjonarnie + online",
+    title: "Blisko domu",
+    text: "Wybierz dogodną lokalizację albo lekcje online.",
+    actionLabel: "Sprawdź lokalizacje",
+    href: "#lokalizacje",
+    size: "small" as const,
+    tone: "blue" as const,
+  },
+  {
+    id: "contact-school",
+    type: "link" as const,
+    badge: "Kontakt",
+    title: "Zapytaj o miejsce w grupie",
+    text: "Zespół szkoły pomoże dobrać grupę i termin.",
+    actionLabel: "Przejdź do kontaktu",
+    href: "#kontakt",
+    size: "medium" as const,
+    tone: "yellow" as const,
+  },
+];
+
+const safeWidgetHref = z
+  .string()
+  .trim()
+  .max(300)
+  .refine(
+    (value) =>
+      /^#[a-z0-9-]+$/i.test(value) ||
+      /^(https?:|mailto:|tel:)/i.test(value),
+    "Podaj bezpieczny adres https:, mailto:, tel: albo odnośnik #sekcja.",
+  );
+
 export const siteContentSchema = z.object({
   version: z.literal(1),
   hero: z.object({
@@ -19,6 +88,40 @@ export const siteContentSchema = z.object({
       imageFit: z.enum(["cover", "contain"]),
     })
     .default({ layout: "split", imageFit: "cover" }),
+  layout: z
+    .object({
+      contentWidth: z.enum(["standard", "wide"]),
+      cornerStyle: z.enum(["soft", "rounded", "square"]),
+      heroScale: z.enum(["compact", "balanced", "cinematic"]),
+      sections: z
+        .array(
+          z.object({
+            id: z.enum(siteSectionIds),
+            visible: z.boolean(),
+            width: z.enum(["narrow", "standard", "wide"]),
+            spacing: z.enum(["compact", "standard", "spacious"]),
+          }),
+        )
+        .length(siteSectionIds.length)
+        .superRefine((sections, context) => {
+          const ids = sections.map((section) => section.id);
+          if (new Set(ids).size !== siteSectionIds.length) {
+            context.addIssue({
+              code: "custom",
+              message: "Każda sekcja strony może wystąpić tylko raz.",
+            });
+          }
+          for (const id of siteSectionIds) {
+            if (!ids.includes(id)) {
+              context.addIssue({
+                code: "custom",
+                message: `Brakuje sekcji ${id}.`,
+              });
+            }
+          }
+        }),
+    })
+    .default(defaultSiteLayout),
   slides: z
     .array(
       z.object({
@@ -97,6 +200,28 @@ export const siteContentSchema = z.object({
       )
       .length(4),
   }),
+  widgets: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(80),
+        type: z.enum(["highlight", "stat", "link", "notice"]),
+        badge: z.string().trim().min(1).max(60),
+        title: shortText,
+        text: paragraph,
+        actionLabel: shortText,
+        href: safeWidgetHref,
+        size: z.enum(["small", "medium", "large"]),
+        tone: z.enum(["blue", "yellow", "red", "navy"]),
+      }),
+    )
+    .min(1)
+    .max(8)
+    .superRefine((widgets, context) => {
+      if (new Set(widgets.map((widget) => widget.id)).size !== widgets.length) {
+        context.addIssue({ code: "custom", message: "Widgety muszą mieć unikalne identyfikatory." });
+      }
+    })
+    .default(defaultSiteWidgets),
   contact: z.object({
     kicker: shortText,
     title: shortText,

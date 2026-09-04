@@ -1,19 +1,20 @@
 {
-  "version": "1.1.3",
+  "version": "1.1.4",
   "date": "4 września 2026",
   "schoolChanges": [
-    "Po wybraniu rodzica lista uczniów pokazuje wszystkie aktywne powiązania, także dziecko oczekujące jeszcze na uruchomienie konta.",
-    "Przypisanie wykładowcy do grupy jest teraz jednym źródłem prawdy dla kartoteki, ręcznego planu i generatora grafiku.",
-    "Ręczne dodawanie lekcji automatycznie podpowiada przypisanego wykładowcę i preferowaną salę.",
-    "Id ucznia nie jest wymagane: puste pole tworzy czytelny skrót z imienia i nazwiska, z bezpiecznym numerem przy powtórzeniu.",
-    "Formularz zaproszenia od razu pokazuje, że wpisane hasła są różne, zanim rozpocznie tworzenie konta.",
-    "Kartoteki nie mają już technicznego limitu 300 aktywnych osób."
+    "Dyrektor może wysłać bezpieczny link albo przygotować losowe hasło tymczasowe widoczne tylko raz.",
+    "Hasło tymczasowe wygasa po 30 minutach, zamyka starsze sesje i wymusza ustawienie własnego hasła przy logowaniu.",
+    "Edytor wizytówki pozwala zmieniać kolejność, widoczność, szerokość i odstępy sekcji bez kodowania.",
+    "Do strony można dodać, skalować, kolorować i porządkować do ośmiu widgetów informacyjnych.",
+    "Mobilna wizytówka zawsze składa sekcje i widgety do jednej czytelnej kolumny.",
+    "Edytor ma gotowy przycisk uzupełnienia publicznego kontaktu i lokalizacji King’s Language Academy.",
+    "Właściciel systemu widzi archiwum wszystkich kartotek i może bezpiecznie przywrócić osobę, grupę albo salę."
   ],
   "ownerChanges": [
-    "Konto twórcy ma jawnie opisany dostęp do wszystkich aktywnych kartotek szkoły.",
-    "Twórca może usuwać osobę, grupę lub salę z aktywnego obiegu; historia i zależne dane pozostają spójne w audycie.",
-    "Usunięto limit 300 osób w odczycie kartotek, aby wyszukiwarka obejmowała całą szkołę.",
-    "Naprawiono starsze relacje grup i wymagań grafiku bez ręcznego przepisywania danych.",
-    "Zaktualizowano biblioteki pośrednie wskazane przez audyt bezpieczeństwa; paczka Raspberry nie powstanie bez prawidłowego raportu audytu."
+    "Właściciel systemu może przygotować hasło tymczasowe także dla dyrektora, ale dyrektor nie może resetować konta właściciela.",
+    "Jawne hasło nie trafia do bazy, logów ani audytu; zapisany zostaje wyłącznie skrót oraz techniczny fakt operacji.",
+    "Reset zwykłym linkiem nadal pozostaje zalecanym wariantem i automatycznie kończy tryb hasła tymczasowego.",
+    "Strona publiczna waliduje układ, widgety i bezpieczne linki, a zamknięcie resetu usuwa jawne hasło z widoku.",
+    "Usunięcie kartoteki oznacza odwracalną archiwizację; plan audytu obejmuje osobno Etapy 0–7 oraz pełną regresję."
   ]
 }

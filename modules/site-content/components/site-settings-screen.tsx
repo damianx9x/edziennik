@@ -8,10 +8,12 @@ import {
   Download,
   Eye,
   ImagePlus,
+  LayoutGrid,
   LayoutTemplate,
   MapPinned,
   Megaphone,
   PanelTop,
+  Plus,
   RotateCcw,
   Save,
   Settings2,
@@ -23,7 +25,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Brand } from "@/app/components/brand";
-import { defaultSiteContent } from "@/modules/site-content/default-content";
+import {
+  defaultSiteContent,
+  klaPublicProfile,
+} from "@/modules/site-content/default-content";
 import { optimizeSitePhoto } from "@/modules/site-content/image-optimizer";
 import {
   siteContentSchema,
@@ -33,6 +38,7 @@ import { useSiteContent } from "@/modules/site-content/site-content-provider";
 
 type EditorSection =
   | "start"
+  | "layout"
   | "slider"
   | "offer"
   | "locations"
@@ -45,12 +51,23 @@ const editorSections: {
   icon: typeof PanelTop;
 }[] = [
   { id: "start", label: "Początek strony", icon: PanelTop },
+  { id: "layout", label: "Układ i widgety", icon: LayoutGrid },
   { id: "slider", label: "Zdjęcia slidera", icon: ImagePlus },
   { id: "offer", label: "Oferta", icon: Megaphone },
   { id: "locations", label: "Lokalizacje", icon: MapPinned },
   { id: "panels", label: "Panele i funkcje", icon: LayoutTemplate },
   { id: "contact", label: "Kontakt", icon: Settings2 },
 ];
+
+const siteSectionLabels: Record<SiteContent["layout"]["sections"][number]["id"], string> = {
+  offer: "Oferta",
+  story: "Historia szkoły",
+  locations: "Lokalizacje",
+  digital: "eDziennik i role",
+  modules: "Funkcje systemu",
+  widgets: "Widgety informacyjne",
+  contact: "Kontakt",
+};
 
 export function SiteSettingsScreen({
   backHref = "/panel/demo",
@@ -345,6 +362,9 @@ function SiteContentEditor({
           {section === "start" ? (
             <StartFields draft={draft} setDraft={setDraft} />
           ) : null}
+          {section === "layout" ? (
+            <LayoutFields draft={draft} setDraft={setDraft} />
+          ) : null}
           {section === "slider" ? (
             <SliderFields
               draft={draft}
@@ -542,6 +562,254 @@ function StartFields({ draft, setDraft }: FieldGroupProps) {
           ))}
         </div>
       </EditorCard>
+    </div>
+  );
+}
+
+function LayoutFields({ draft, setDraft }: FieldGroupProps) {
+  function moveSection(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= draft.layout.sections.length) return;
+    setDraft((current) => {
+      const sections = [...current.layout.sections];
+      [sections[index], sections[target]] = [sections[target], sections[index]];
+      return { ...current, layout: { ...current.layout, sections } };
+    });
+  }
+
+  function addWidget() {
+    if (draft.widgets.length >= 8) return;
+    setDraft((current) => ({
+      ...current,
+      widgets: [
+        ...current.widgets,
+        {
+          id: `widget-${Date.now()}`,
+          type: "notice",
+          badge: "Nowość",
+          title: "Nowy widget",
+          text: "Wpisz krótką, konkretną informację dla odwiedzających.",
+          actionLabel: "Dowiedz się więcej",
+          href: "#kontakt",
+          size: "medium",
+          tone: "blue",
+        },
+      ],
+    }));
+  }
+
+  function moveWidget(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= draft.widgets.length) return;
+    setDraft((current) => {
+      const widgets = [...current.widgets];
+      [widgets[index], widgets[target]] = [widgets[target], widgets[index]];
+      return { ...current, widgets };
+    });
+  }
+
+  function removeWidget(id: string) {
+    if (draft.widgets.length === 1) return;
+    if (!window.confirm("Usunąć ten widget ze strony?")) return;
+    setDraft((current) => ({
+      ...current,
+      widgets: current.widgets.filter((widget) => widget.id !== id),
+    }));
+  }
+
+  return (
+    <div className="editor-fields">
+      <EditorCard
+        title="Wygląd całej strony"
+        hint="Na telefonie układ zawsze automatycznie składa się do jednej czytelnej kolumny."
+      >
+        <div className="editor-three-columns">
+          <label className="editor-field">
+            <span>Szerokość treści</span>
+            <select
+              value={draft.layout.contentWidth}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  layout: {
+                    ...current.layout,
+                    contentWidth: event.target.value as SiteContent["layout"]["contentWidth"],
+                  },
+                }))
+              }
+            >
+              <option value="standard">Spokojna i czytelna</option>
+              <option value="wide">Szeroka i nowoczesna</option>
+            </select>
+          </label>
+          <label className="editor-field">
+            <span>Zaokrąglenie bloków</span>
+            <select
+              value={draft.layout.cornerStyle}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  layout: {
+                    ...current.layout,
+                    cornerStyle: event.target.value as SiteContent["layout"]["cornerStyle"],
+                  },
+                }))
+              }
+            >
+              <option value="soft">Delikatne</option>
+              <option value="rounded">Nowoczesne</option>
+              <option value="square">Proste</option>
+            </select>
+          </label>
+          <label className="editor-field">
+            <span>Wielkość początku strony</span>
+            <select
+              value={draft.layout.heroScale}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  layout: {
+                    ...current.layout,
+                    heroScale: event.target.value as SiteContent["layout"]["heroScale"],
+                  },
+                }))
+              }
+            >
+              <option value="compact">Kompaktowa</option>
+              <option value="balanced">Wyważona</option>
+              <option value="cinematic">Duża i obrazowa</option>
+            </select>
+          </label>
+        </div>
+      </EditorCard>
+
+      <EditorCard
+        title="Kolejność i wielkość sekcji"
+        hint="Wyłącz sekcję, przesuń ją albo nadaj jej inną szerokość i ilość wolnego miejsca."
+      >
+        <div className="editor-layout-list">
+          {draft.layout.sections.map((item, index) => (
+            <div className="editor-layout-row" key={item.id}>
+              <label className="editor-layout-visible">
+                <input
+                  type="checkbox"
+                  checked={item.visible}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      layout: {
+                        ...current.layout,
+                        sections: current.layout.sections.map((section) =>
+                          section.id === item.id
+                            ? { ...section, visible: event.target.checked }
+                            : section,
+                        ),
+                      },
+                    }))
+                  }
+                />
+                <span>
+                  <strong>{siteSectionLabels[item.id]}</strong>
+                  <small>{item.visible ? "Widoczna na stronie" : "Ukryta"}</small>
+                </span>
+              </label>
+              <label className="editor-field">
+                <span>Szerokość</span>
+                <select
+                  value={item.width}
+                  onChange={(event) =>
+                    updateLayoutSection(setDraft, item.id, {
+                      width: event.target.value as typeof item.width,
+                    })
+                  }
+                >
+                  <option value="narrow">Wąska</option>
+                  <option value="standard">Standardowa</option>
+                  <option value="wide">Pełna</option>
+                </select>
+              </label>
+              <label className="editor-field">
+                <span>Odstępy</span>
+                <select
+                  value={item.spacing}
+                  onChange={(event) =>
+                    updateLayoutSection(setDraft, item.id, {
+                      spacing: event.target.value as typeof item.spacing,
+                    })
+                  }
+                >
+                  <option value="compact">Małe</option>
+                  <option value="standard">Standardowe</option>
+                  <option value="spacious">Duże</option>
+                </select>
+              </label>
+              <div className="editor-order-actions">
+                <button className="icon-button" type="button" onClick={() => moveSection(index, -1)} disabled={index === 0} aria-label={`Przesuń ${siteSectionLabels[item.id]} wyżej`}>
+                  <ArrowUp aria-hidden="true" />
+                </button>
+                <button className="icon-button" type="button" onClick={() => moveSection(index, 1)} disabled={index === draft.layout.sections.length - 1} aria-label={`Przesuń ${siteSectionLabels[item.id]} niżej`}>
+                  <ArrowDown aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </EditorCard>
+
+      <div className="editor-section-callout">
+        <div>
+          <strong>Widgety — szybkie informacje</strong>
+          <span>Dodaj do 8 nowoczesnych kafli: wyróżnienie, liczbę, link albo komunikat.</span>
+        </div>
+        <button className="button button-primary button-small" type="button" onClick={addWidget} disabled={draft.widgets.length >= 8}>
+          <Plus aria-hidden="true" /> Dodaj widget
+        </button>
+      </div>
+
+      {draft.widgets.map((widget, index) => (
+        <EditorCard title={`Widget ${index + 1}: ${widget.title}`} key={widget.id}>
+          <div className="editor-slide-actions">
+            <button className="icon-button" type="button" onClick={() => moveWidget(index, -1)} disabled={index === 0} aria-label="Przesuń widget wyżej"><ArrowUp aria-hidden="true" /></button>
+            <button className="icon-button" type="button" onClick={() => moveWidget(index, 1)} disabled={index === draft.widgets.length - 1} aria-label="Przesuń widget niżej"><ArrowDown aria-hidden="true" /></button>
+            <button className="icon-button icon-button-danger" type="button" onClick={() => removeWidget(widget.id)} disabled={draft.widgets.length === 1} aria-label="Usuń widget"><Trash2 aria-hidden="true" /></button>
+          </div>
+          <div className="editor-three-columns">
+            <label className="editor-field">
+              <span>Rodzaj</span>
+              <select value={widget.type} onChange={(event) => updateWidget(setDraft, widget.id, { type: event.target.value as typeof widget.type })}>
+                <option value="highlight">Wyróżnienie</option>
+                <option value="stat">Liczba lub fakt</option>
+                <option value="link">Szybki link</option>
+                <option value="notice">Komunikat</option>
+              </select>
+            </label>
+            <label className="editor-field">
+              <span>Wielkość</span>
+              <select value={widget.size} onChange={(event) => updateWidget(setDraft, widget.id, { size: event.target.value as typeof widget.size })}>
+                <option value="small">Mały</option>
+                <option value="medium">Średni</option>
+                <option value="large">Pełna szerokość</option>
+              </select>
+            </label>
+            <label className="editor-field">
+              <span>Kolor</span>
+              <select value={widget.tone} onChange={(event) => updateWidget(setDraft, widget.id, { tone: event.target.value as typeof widget.tone })}>
+                <option value="blue">Niebieski</option>
+                <option value="yellow">Żółty</option>
+                <option value="red">Czerwony</option>
+                <option value="navy">Granatowy</option>
+              </select>
+            </label>
+          </div>
+          <TextField label="Krótka etykieta" value={widget.badge} onChange={(value) => updateWidget(setDraft, widget.id, { badge: value })} />
+          <TextField label="Nagłówek" value={widget.title} onChange={(value) => updateWidget(setDraft, widget.id, { title: value })} />
+          <TextAreaField label="Opis" value={widget.text} onChange={(value) => updateWidget(setDraft, widget.id, { text: value })} />
+          <div className="editor-two-columns">
+            <TextField label="Tekst przycisku" value={widget.actionLabel} onChange={(value) => updateWidget(setDraft, widget.id, { actionLabel: value })} />
+            <TextField label="Adres, np. #kontakt lub https://…" value={widget.href} onChange={(value) => updateWidget(setDraft, widget.id, { href: value })} />
+          </div>
+        </EditorCard>
+      ))}
     </div>
   );
 }
@@ -808,6 +1076,21 @@ function LocationFields({ draft, setDraft }: FieldGroupProps) {
   return (
     <div className="editor-fields">
       <EditorCard title="Sekcja lokalizacji">
+        <button
+          className="button button-secondary button-small editor-preset-button"
+          type="button"
+          onClick={() =>
+            setDraft((current) => ({
+              ...current,
+              locations: {
+                ...current.locations,
+                items: [...klaPublicProfile.locations],
+              },
+            }))
+          }
+        >
+          <MapPinned aria-hidden="true" /> Wczytaj lokalizacje z profilu KLA
+        </button>
         <TextField
           label="Mały napis"
           value={draft.locations.kicker}
@@ -985,6 +1268,21 @@ function ContactFields({ draft, setDraft }: FieldGroupProps) {
   return (
     <div className="editor-fields">
       <EditorCard title="Sekcja kontaktowa">
+        <button
+          className="button button-secondary button-small editor-preset-button"
+          type="button"
+          onClick={() =>
+            setDraft((current) => ({
+              ...current,
+              contact: {
+                ...current.contact,
+                ...klaPublicProfile.contact,
+              },
+            }))
+          }
+        >
+          <Settings2 aria-hidden="true" /> Wczytaj publiczny kontakt KLA
+        </button>
         <TextField
           label="Mały napis"
           value={draft.contact.kicker}
@@ -1141,6 +1439,35 @@ function updateSlide(
     ...current,
     slides: current.slides.map((slide) =>
       slide.id === slideId ? { ...slide, ...patch } : slide,
+    ),
+  }));
+}
+
+function updateLayoutSection(
+  setDraft: FieldGroupProps["setDraft"],
+  id: SiteContent["layout"]["sections"][number]["id"],
+  patch: Partial<SiteContent["layout"]["sections"][number]>,
+) {
+  setDraft((current) => ({
+    ...current,
+    layout: {
+      ...current.layout,
+      sections: current.layout.sections.map((section) =>
+        section.id === id ? { ...section, ...patch } : section,
+      ),
+    },
+  }));
+}
+
+function updateWidget(
+  setDraft: FieldGroupProps["setDraft"],
+  id: string,
+  patch: Partial<SiteContent["widgets"][number]>,
+) {
+  setDraft((current) => ({
+    ...current,
+    widgets: current.widgets.map((widget) =>
+      widget.id === id ? { ...widget, ...patch } : widget,
     ),
   }));
 }

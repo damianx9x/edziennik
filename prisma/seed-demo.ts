@@ -93,6 +93,8 @@ async function ensureDemoAccount(input: {
       role: input.role,
       status: UserStatus.ACTIVE,
       emailVerified: true,
+      passwordChangeRequired: false,
+      temporaryPasswordExpiresAt: null,
     },
   });
   const credential = await prisma.account.findFirst({

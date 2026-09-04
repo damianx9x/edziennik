@@ -1,5 +1,24 @@
 # Decyzje architektoniczne
 
+## ADR-094 — hasło tymczasowe jest jednorazowym przepływem awaryjnym
+
+**Data:** 2026-09-04. **Decyzja:** zalecanym resetem pozostaje jednorazowy link
+e-mail. Dyrektor może dodatkowo wygenerować hasło tymczasowe dla zwykłego konta,
+a właściciel systemu także dla dyrektora. Hasło jest losowe, ważne 30 minut,
+widoczne tylko w wyniku bieżącej operacji, zapisane wyłącznie jako skrót i
+wymusza zmianę przed wejściem do panelu. Operacja unieważnia starsze sesje.
+Dyrektor nie może resetować konta właściciela ani używać tej funkcji do zmiany
+własnego hasła. Audyt przechowuje role, sposób przekazania i termin, ale nigdy
+hasło.
+
+## ADR-095 — wizytówka ma bezpieczny układ modułowy, nie dowolny HTML
+
+**Data:** 2026-09-04. **Decyzja:** dyrektor układa siedem znanych sekcji oraz do
+ośmiu strukturalnych widgetów. Może zmienić widoczność, kolejność, szerokość,
+odstępy, kolor i skalę, lecz nie wstrzykuje kodu. Telefon zawsze używa jednej
+kolumny. Pozwala to personalizować stronę bez tworzenia osobnego kreatora stron
+i bez ryzyka skryptów, niedostępnego układu albo poziomego przewijania.
+
 ## ADR-093 — kontrolowane przeciążenie pilota Raspberry
 
 **Data:** 2026-08-30. **Decyzja:** publiczny origin pozostaje dostępny wyłącznie
@@ -1394,3 +1413,43 @@ wartości domyślnych.
 pokazywała prowadzącego, a generator zgłaszał jego brak. Jeden kierunek
 dziedziczenia zachowuje prostotę kartoteki i pozwala nadal ustawić wyjątek dla
 konkretnego planu.
+
+## ADR-102 — usunięcie kartoteki oznacza odwracalną archiwizację
+
+**Data:** 2026-09-04
+**Decyzja:** dyrektor usuwa osobę, grupę albo salę z aktywnego obiegu przez
+archiwizację. Tylko właściciel systemu widzi kompletne archiwum i może
+przywrócić rekord. Operacja zachowuje relacje, historię, umowy i audyt oraz
+unieważnia nieopublikowane propozycje grafiku. Fizyczne kasowanie danych nie
+jest akcją codziennego interfejsu; podlega odrębnej retencji i procedurze RODO.
+
+**Dlaczego:** bezpośrednie usunięcie kartoteki mogłoby przerwać historię lekcji,
+umów, płatności albo wiadomości. Archiwizacja realizuje potrzebę porządkowania
+panelu, pozostaje odwracalna i nie udaje realizacji prawa do usunięcia danych,
+gdy istnieje podstawa do ich dalszego przechowywania.
+
+## ADR-103 — hasło tymczasowe jest jednorazowym procesem odzyskania
+
+**Data:** 2026-09-04
+**Decyzja:** dyrektor może przygotować hasło tymczasowe dla ról szkoły, a
+właściciel również dla dyrektora. Hasło ma co najmniej 24 znaki, wygasa po 30
+minutach, unieważnia wcześniejsze sesje i wymusza natychmiastowe ustawienie
+własnego hasła. Jawna wartość nie trafia do bazy ani audytu i znika z pamięci
+widoku po zamknięciu okna. Zalecanym wariantem pozostaje link e-mail.
+
+**Dlaczego:** ręczne przekazanie nowego stałego hasła utrwala wspólny sekret i
+nie daje pewności, że użytkownik go zmienił. Krótki, audytowany proces awaryjny
+pozwala pomóc osobie bez poczty, nie osłabiając zwykłej ścieżki odzyskania.
+
+## ADR-104 — wizytówka ma bezpieczny modułowy układ
+
+**Data:** 2026-09-04
+**Decyzja:** dyrektor może zmieniać kolejność, widoczność, szerokość i odstępy
+sekcji oraz dodawać do ośmiu walidowanych widgetów. Telefon zawsze składa układ
+do jednej kolumny, a linki przyjmują tylko kotwice, ścieżki wewnętrzne, HTTPS,
+telefon i e-mail. Gotowy preset KLA zawiera wyłącznie publiczne dane strony
+szkoły; prywatny profil właścicielki nie jest kopiowany do aplikacji.
+
+**Dlaczego:** edytor ma dawać realną swobodę bez możliwości rozbicia mobilnej
+strony albo wstrzyknięcia niebezpiecznego adresu. Rozdzielenie treści szkoły od
+prywatnego profilu utrzymuje jasną odpowiedzialność za publikowane informacje.

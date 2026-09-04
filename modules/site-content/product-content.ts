@@ -1,4 +1,4 @@
-import type { SiteContent } from "./schema";
+import { defaultSiteLayout, type SiteContent } from "./schema";
 
 const neutralSlide = (
   id: string,
@@ -27,6 +27,7 @@ export const productSiteContent: SiteContent = {
     secondaryCta: "Poznaj system",
   },
   slider: { layout: "split", imageFit: "cover" },
+  layout: defaultSiteLayout,
   slides: [
     neutralSlide(
       "product-workflow",
@@ -128,6 +129,30 @@ export const productSiteContent: SiteContent = {
       },
     ],
   },
+  widgets: [
+    {
+      id: "product-roles",
+      type: "stat",
+      badge: "4 role",
+      title: "Właściwe informacje dla właściwej osoby",
+      text: "Każdy widok wynika z roli oraz relacji zapisanych po stronie serwera.",
+      actionLabel: "Poznaj system",
+      href: "#jak-to-dziala",
+      size: "medium",
+      tone: "blue",
+    },
+    {
+      id: "product-privacy",
+      type: "highlight",
+      badge: "Prywatność",
+      title: "Neutralny pokaz bez danych szkoły",
+      text: "Publiczna prezentacja opisuje funkcje, ale nie renderuje danych operacyjnych.",
+      actionLabel: "Zobacz zakres",
+      href: "#mozliwosci",
+      size: "medium",
+      tone: "navy",
+    },
+  ],
   contact: {
     kicker: "Kontakt techniczny",
     title: "Zgłoś błąd prywatnie",

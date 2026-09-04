@@ -82,6 +82,15 @@ export const auth = betterAuth({
         category: "password-reset",
       });
     },
+    onPasswordReset: async ({ user }) => {
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          passwordChangeRequired: false,
+          temporaryPasswordExpiresAt: null,
+        },
+      });
+    },
   },
   emailVerification: {
     sendOnSignIn: true,
@@ -113,6 +122,12 @@ export const auth = betterAuth({
         type: "string",
         required: true,
         defaultValue: "INVITED",
+        input: false,
+      },
+      passwordChangeRequired: {
+        type: "boolean",
+        required: true,
+        defaultValue: false,
         input: false,
       },
     },
@@ -171,5 +186,6 @@ export type AuthSession = typeof auth.$Infer.Session & {
     schoolId?: string | null;
     status?: string | null;
     twoFactorEnabled?: boolean | null;
+    passwordChangeRequired?: boolean | null;
   };
 };

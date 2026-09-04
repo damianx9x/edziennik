@@ -18,6 +18,7 @@ export type ActiveSession = AuthSession & {
     schoolId: string;
     status: "ACTIVE";
     twoFactorEnabled?: boolean | null;
+    passwordChangeRequired?: boolean | null;
   };
 };
 
@@ -52,6 +53,13 @@ export async function requireActiveSession(
 
   if (!isActiveSession(session)) {
     redirect("/panel/konto-nieaktywne");
+  }
+
+  if (
+    session.user.passwordChangeRequired === true &&
+    returnPath !== "/panel/zmiana-hasla-tymczasowego"
+  ) {
+    redirect("/panel/zmiana-hasla-tymczasowego");
   }
 
   return session;

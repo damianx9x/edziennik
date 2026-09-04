@@ -1,5 +1,26 @@
 # Notatki wydania
 
+## 1.1.4 — odzyskiwanie kont i modułowa wizytówka
+
+- dyrektor może wysłać standardowy link resetu albo wygenerować losowe hasło
+  tymczasowe; właściciel systemu ma ten sam przepływ także dla dyrektora;
+- hasło tymczasowe jest widoczne tylko raz, wygasa po 30 minutach, unieważnia
+  wcześniejsze sesje i blokuje panel do czasu ustawienia własnego hasła;
+- dyrektor nie może resetować konta właściciela systemu, a własne hasło zmienia
+  wyłącznie w ustawieniach własnego konta;
+- edytor wizytówki pozwala zmieniać kolejność i widoczność sekcji, ich szerokość,
+  odstępy, skalę początku strony oraz styl narożników;
+- konfigurowalne widgety mają rodzaj, wielkość, kolor, tekst i bezpieczny link;
+  mobilny układ zawsze składa je do jednej kolumny;
+- edytor ma jawny preset publicznego kontaktu i lokalizacji szkoły, przygotowany
+  na podstawie informacji opublikowanych przez King’s Language Academy;
+- właściciel systemu otwiera osobne archiwum wszystkich osób, grup i sal oraz
+  może przywrócić kartotekę bez niszczenia historii albo zależności;
+- okno resetu hasła jest odseparowane od okna kartoteki: po zamknięciu usuwa
+  jawne hasło z pamięci widoku i nie pozostawia niewidocznej blokady ekranu;
+- starsze zapisane treści są uzupełniane o bezpieczne ustawienia domyślne bez
+  ręcznej migracji, a każda publikacja nadal tworzy wpis audytu.
+
 ## 1.1.3 — spójne relacje kartotek, umów i grafiku
 
 - rodzic po wybraniu pokazuje wszystkie przypisane dzieci, także przed

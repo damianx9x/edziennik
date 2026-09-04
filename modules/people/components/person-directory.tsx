@@ -13,6 +13,7 @@ import {
   Search,
   TrendingUp,
   Pencil,
+  RotateCcw,
   UserRound,
   Users,
   WalletCards,
@@ -27,7 +28,7 @@ import {
   useState,
 } from "react";
 
-import { archiveRecordAction } from "@/modules/groups/actions";
+import { archiveRecordAction, restoreRecordAction } from "@/modules/groups/actions";
 import { recordRoleLabels } from "@/modules/people/schema";
 import {
   RecordEditForm,
@@ -51,6 +52,7 @@ export type PersonDirectoryRecord = {
   externalId: string | null;
   role: "TEACHER" | "PARENT" | "STUDENT";
   status: "INVITED" | "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+  isArchived: boolean;
   hasAccount: boolean;
   relationLabel: string;
   relations: string[];
@@ -298,6 +300,15 @@ export function PersonDirectory({
                 </dl>
               </section>
 
+              {selected.isArchived ? (
+                <section className="records-archive-notice" aria-label="Kartoteka archiwalna">
+                  <Archive aria-hidden="true" />
+                  <div>
+                    <strong>Ta kartoteka jest w archiwum</strong>
+                    <p>Możesz bezpiecznie przeglądać jej dane i historię. Przywróć ją, aby ponownie edytować powiązania i korzystać z konta.</p>
+                  </div>
+                </section>
+              ) : (
               <section aria-labelledby="person-relations-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-relations-heading">Powiązania w szkole</h3>
@@ -379,7 +390,9 @@ export function PersonDirectory({
                   ) : null}
                 </div>
               </section>
+              )}
 
+              {!selected.isArchived ? (
               <section aria-labelledby="person-edit-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-edit-heading">
@@ -439,7 +452,9 @@ export function PersonDirectory({
                   </div>
                 </RecordEditForm>
               </section>
+              ) : null}
 
+              {!selected.isArchived ? (
               <section aria-labelledby="person-modules-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="person-modules-heading">Sprawy tej osoby</h3>
@@ -485,6 +500,7 @@ export function PersonDirectory({
                   ) : null}
                 </div>
               </section>
+              ) : null}
 
               <section aria-labelledby="person-history-heading">
                 <div className="person-dialog-section-heading">
@@ -498,7 +514,15 @@ export function PersonDirectory({
             </div>
 
             <footer className="person-dialog-footer">
-              {actorRole === "DIRECTOR" ? (
+              {isSystemOwner && selected.isArchived ? (
+                <form action={restoreRecordAction}>
+                  <input type="hidden" name="recordId" value={selected.id} />
+                  <input type="hidden" name="recordType" value="person" />
+                  <button className="button button-secondary" type="submit">
+                    <RotateCcw aria-hidden="true" /> Przywróć kartotekę
+                  </button>
+                </form>
+              ) : actorRole === "DIRECTOR" ? (
                 <details className="person-archive">
                 <summary>
                   <Archive aria-hidden="true" /> {isSystemOwner ? "Usuń z aktywnych kartotek" : "Archiwizuj kartotekę"}

@@ -193,12 +193,12 @@ enum ScheduleChangeRequestKind {
 }
 
 model School {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  slug      String   @unique
-  timeZone  String   @default("Europe/Warsaw")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  timeZone    String   @default("Europe/Warsaw")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   siteContent Json?
 
   users                      User[]
@@ -271,24 +271,26 @@ model Location {
 }
 
 model User {
-  id               String      @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
-  schoolId         String      @db.Uuid
-  email            String      @unique
-  name             String
-  role             String      @default("PARENT")
-  status           UserStatus  @default(INVITED)
-  emailVerified    Boolean     @default(false)
-  image            String?
-  phone            String?
-  externalId       String?
-  banned           Boolean?    @default(false)
-  banReason        String?
-  banExpires       DateTime?
-  twoFactorEnabled Boolean?    @default(false)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  archivedAt       DateTime?
-  pageVisits       PageVisit[]
+  id                         String      @id @default(dbgenerated("pg_catalog.gen_random_uuid()")) @db.Uuid
+  schoolId                   String      @db.Uuid
+  email                      String      @unique
+  name                       String
+  role                       String      @default("PARENT")
+  status                     UserStatus  @default(INVITED)
+  emailVerified              Boolean     @default(false)
+  image                      String?
+  phone                      String?
+  externalId                 String?
+  banned                     Boolean?    @default(false)
+  banReason                  String?
+  banExpires                 DateTime?
+  twoFactorEnabled           Boolean?    @default(false)
+  passwordChangeRequired     Boolean     @default(false)
+  temporaryPasswordExpiresAt DateTime?
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
+  archivedAt                 DateTime?
+  pageVisits                 PageVisit[]
 
   school                         School                       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   sessions                       Session[]
@@ -875,10 +877,10 @@ model LearningMaterial {
   updatedAt    DateTime  @updatedAt
   archivedAt   DateTime?
 
-  school     School      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  group      CourseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  createdBy  User        @relation("LearningMaterialCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  storedFile StoredFile? @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+  school     School                      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  group      CourseGroup                 @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy  User                        @relation("LearningMaterialCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  storedFile StoredFile?                 @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
   recipients LearningMaterialRecipient[]
 
   @@index([schoolId, publishedAt])
@@ -887,9 +889,9 @@ model LearningMaterial {
 }
 
 model LearningMaterialRecipient {
-  materialId String @db.Uuid
-  userId     String @db.Uuid
-  schoolId   String @db.Uuid
+  materialId String   @db.Uuid
+  userId     String   @db.Uuid
+  schoolId   String   @db.Uuid
   createdAt  DateTime @default(now())
 
   material LearningMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
@@ -1204,7 +1206,7 @@ model PageVisit {
   visitedAt     DateTime @default(now())
 
   school School? @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([schoolId, visitedAt])
   @@index([schoolId, path, visitedAt])

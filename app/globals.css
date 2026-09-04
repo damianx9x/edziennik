@@ -3793,6 +3793,12 @@ body:has(.invitation-page) .feedback-trigger {
     bottom: 16px;
   }
 
+  body:has(.content-editor-shell) .theme-trigger {
+    top: 13px;
+    bottom: auto;
+    left: 125px;
+  }
+
   .demo-topbar-actions > span {
     display: none;
   }
@@ -3940,6 +3946,10 @@ body:has(.invitation-page) .feedback-trigger {
 }
 
 body:has(.first-run-page) .theme-trigger {
+  display: none;
+}
+
+body:has(.temporary-password-page) .theme-trigger {
   display: none;
 }
 
@@ -14908,6 +14918,32 @@ html:has(dialog[open]) {
   font-weight: 900;
 }
 
+.records-archive-notice {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+
+.records-archive-notice > svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+}
+
+.records-archive-notice p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+}
+
+.editor-preset-button {
+  width: fit-content;
+  margin-bottom: 0.35rem;
+}
+
 .resource-directory {
   margin-top: 28px;
 }
@@ -16707,3 +16743,118 @@ html:has(dialog[open]) {
 .learning-recipient-options label { min-height: 44px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
 .learning-recipient-options input { width: 18px; height: 18px; }
 @media (max-width: 560px) { .learning-recipient-options { grid-template-columns: minmax(0, 1fr); } }
+
+/* One-time password recovery. The secret is rendered only in the dialog state
+   returned by the privileged server action and is never written to a log. */
+.password-reset-dialog {
+  width: min(680px, calc(100% - 28px));
+  max-height: min(820px, calc(100dvh - 28px));
+  padding: 0;
+  overflow: auto;
+  color: var(--ink);
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: var(--shadow-lg);
+}
+.password-reset-dialog::backdrop { background: rgb(10 18 42 / 66%); backdrop-filter: blur(4px); }
+.password-reset-dialog[open] { animation: dialog-enter var(--motion-base) var(--ease-enter); }
+.password-reset-dialog-card { padding: 24px; display: grid; gap: 14px; background: var(--paper); }
+.password-reset-dialog-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.password-reset-dialog-card h2 { margin: 6px 0; color: var(--navy-950); font-size: clamp(25px, 5vw, 36px); line-height: 1.05; letter-spacing: -.04em; }
+.password-reset-dialog-card header p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.password-reset-option { padding: 18px; display: grid; gap: 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.password-reset-option.is-recommended { border-color: #b8c8eb; background: color-mix(in srgb, var(--blue-100) 48%, var(--surface)); }
+.password-reset-option-heading { display: flex; align-items: flex-start; gap: 12px; }
+.password-reset-option-heading > svg { width: 23px; flex: 0 0 23px; color: var(--blue-700); }
+.password-reset-option-heading > div { display: grid; gap: 4px; }
+.password-reset-option-heading strong { color: var(--navy-950); font-size: 15px; }
+.password-reset-option-heading span { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.temporary-password-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.temporary-password-result { display: grid; gap: 9px; }
+.temporary-password-result > span { color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.temporary-password-result code { padding: 13px; overflow-wrap: anywhere; border: 1px dashed var(--blue-700); border-radius: 12px; background: var(--blue-100); color: var(--navy-950); font-size: clamp(15px, 3.7vw, 20px); font-weight: 850; user-select: all; }
+.temporary-password-result small { color: var(--red-700); font-size: 10px; font-weight: 800; }
+.temporary-password-done { display: grid; gap: 14px; }
+@keyframes dialog-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Modular school presentation. Desktop widths and spacing are editable, while
+   phone layouts deliberately collapse to one safe column. */
+.public-site.site-width-wide :is(.site-header, .hero, .section, .editorial-story, .contact-section) { width: min(1440px, calc(100% - 48px)); }
+.hero-scale-compact { min-height: 600px; }
+.hero-scale-compact :is(.hero-slider-viewport, .hero-slide) { min-height: 500px; }
+.hero-scale-compact h1 { font-size: clamp(48px, 5vw, 70px); }
+.hero-scale-cinematic { min-height: 820px; grid-template-columns: minmax(0, .72fr) minmax(580px, 1.28fr); }
+.hero-scale-cinematic :is(.hero-slider-viewport, .hero-slide) { min-height: 700px; }
+.home-layout-block { width: 100%; }
+.home-layout-narrow > :is(.section, .editorial-story, .contact-section) { width: min(980px, calc(100% - 48px)); }
+.home-layout-wide > :is(.section, .editorial-story, .contact-section) { width: min(1440px, calc(100% - 48px)); }
+.home-layout-block.home-spacing-compact > :is(.section, .editorial-story, .contact-section) { padding-top: 62px; padding-bottom: 62px; }
+.home-layout-block.home-spacing-spacious > :is(.section, .editorial-story, .contact-section) { padding-top: 142px; padding-bottom: 142px; }
+.home-layout-block.home-spacing-compact > .digital-section { padding-top: 68px; padding-bottom: 68px; }
+.home-layout-block.home-spacing-spacious > .digital-section { padding-top: 142px; padding-bottom: 142px; }
+.site-corners-soft :is(.offer-grid, .editor-card, .home-widget) { border-radius: 10px; }
+.site-corners-rounded :is(.offer-grid, .home-widget) { border-radius: 24px; }
+.site-corners-square :is(.offer-grid, .home-widget) { border-radius: 0; }
+.site-corners-rounded .offer-grid,
+.site-corners-soft .offer-grid { overflow: hidden; }
+.home-widgets-section { padding-top: 58px; }
+.home-widgets-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.home-widget { --widget-accent: var(--blue-700); min-height: 250px; padding: 25px; display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--paper); box-shadow: inset 0 4px 0 var(--widget-accent), var(--shadow-sm); }
+.home-widget-small { grid-column: span 4; }
+.home-widget-medium { grid-column: span 6; }
+.home-widget-large { grid-column: 1 / -1; min-height: 220px; }
+.home-widget-blue { --widget-accent: var(--blue-700); }
+.home-widget-yellow { --widget-accent: var(--yellow-500); }
+.home-widget-red { --widget-accent: var(--red-600); }
+.home-widget-navy { --widget-accent: var(--navy-900); color: var(--white); background: var(--navy-action); }
+.home-widget-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--widget-accent); }
+.home-widget-navy .home-widget-top { color: #9bb9ff; }
+.home-widget-top span { font-size: 10px; font-weight: 950; letter-spacing: .1em; text-transform: uppercase; }
+.home-widget-top svg { width: 28px; height: 28px; }
+.home-widget h2 { max-width: 740px; margin: 38px 0 10px; color: inherit; font-size: clamp(24px, 3vw, 38px); line-height: 1.04; letter-spacing: -.045em; }
+.home-widget p { max-width: 760px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.home-widget-navy p { color: #c8d1e7; }
+.home-widget a { width: fit-content; min-height: 44px; margin-top: auto; padding-top: 20px; display: inline-flex; align-items: center; gap: 7px; color: var(--navy-900); font-size: 12px; font-weight: 900; }
+.home-widget-navy a { color: var(--white); }
+.home-widget a svg { width: 16px; }
+
+.editor-three-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.editor-layout-list { display: grid; gap: 9px; }
+.editor-layout-row { padding: 12px; display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, .6fr) minmax(130px, .6fr) auto; align-items: end; gap: 10px; border: 1px solid #e0e3e9; border-radius: 14px; background: color-mix(in srgb, var(--surface) 95%, var(--blue-100)); }
+.editor-layout-visible { min-height: 48px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.editor-layout-visible input { width: 21px; height: 21px; accent-color: var(--blue-700); }
+.editor-layout-visible span { display: grid; gap: 3px; }
+.editor-layout-visible strong { color: var(--navy-950); font-size: 12px; }
+.editor-layout-visible small { color: var(--muted); font-size: 10px; }
+.editor-order-actions { min-height: 48px; display: flex; align-items: center; gap: 5px; }
+.editor-order-actions .icon-button:disabled { cursor: not-allowed; opacity: .35; }
+
+@media (max-width: 850px) {
+  .hero-scale-cinematic { grid-template-columns: 1fr; }
+  .editor-three-columns { grid-template-columns: 1fr; }
+  .editor-layout-row { grid-template-columns: 1fr 1fr; }
+  .editor-layout-visible { grid-column: 1 / -1; }
+  .editor-order-actions { justify-content: flex-end; }
+}
+@media (max-width: 620px) {
+  .password-reset-dialog { width: calc(100% - 18px); max-height: calc(100dvh - 18px); border-radius: 18px; }
+  .password-reset-dialog-card { padding: 17px; }
+  .temporary-password-actions { grid-template-columns: 1fr; }
+  .public-site :is(.hero-scale-compact, .hero-scale-balanced, .hero-scale-cinematic) { min-height: auto; }
+  .public-site :is(.hero-scale-compact, .hero-scale-balanced, .hero-scale-cinematic) :is(.hero-slider-viewport, .hero-slide) { min-height: 430px; }
+  .home-layout-block > :is(.section, .editorial-story, .contact-section),
+  .home-layout-narrow > :is(.section, .editorial-story, .contact-section),
+  .home-layout-wide > :is(.section, .editorial-story, .contact-section) { width: calc(100% - 28px); }
+  .home-layout-block.home-spacing-compact > :is(.section, .editorial-story, .contact-section),
+  .home-layout-block.home-spacing-standard > :is(.section, .editorial-story, .contact-section),
+  .home-layout-block.home-spacing-spacious > :is(.section, .editorial-story, .contact-section) { padding-top: 64px; padding-bottom: 64px; }
+  .home-widgets-grid { grid-template-columns: 1fr; }
+  .home-widget-small, .home-widget-medium, .home-widget-large { grid-column: 1; min-height: 230px; }
+  .editor-layout-row { grid-template-columns: 1fr; }
+  .editor-layout-visible { grid-column: 1; }
+  .editor-order-actions { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .password-reset-dialog[open] { animation: none; }
+}

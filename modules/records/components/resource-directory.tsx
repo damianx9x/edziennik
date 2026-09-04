@@ -9,11 +9,12 @@ import {
   History,
   MapPin,
   Pencil,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 
-import { archiveRecordAction } from "@/modules/groups/actions";
+import { archiveRecordAction, restoreRecordAction } from "@/modules/groups/actions";
 import { cefrLabels } from "@/modules/groups/schema";
 import {
   RecordEditForm,
@@ -40,6 +41,7 @@ type GroupRecord = {
   studentNames: string[];
   teacherNames: string[];
   preferredRoomId: string | null;
+  isArchived: boolean;
 };
 
 type RoomRecord = {
@@ -51,6 +53,7 @@ type RoomRecord = {
   locationId: string;
   locationName: string;
   preferredGroupIds: string[];
+  isArchived: boolean;
 };
 
 type ResourceRecord = GroupRecord | RoomRecord;
@@ -249,6 +252,15 @@ export function ResourceDirectory({
               </button>
             </header>
             <div className="person-dialog-body">
+              {selected.isArchived ? (
+                <section className="records-archive-notice" aria-label="Kartoteka archiwalna">
+                  <Archive aria-hidden="true" />
+                  <div>
+                    <strong>Ten zasób jest w archiwum</strong>
+                    <p>Historia pozostaje dostępna. Przywróć zasób, aby ponownie używać go w grafiku i edytować przypisania.</p>
+                  </div>
+                </section>
+              ) : (
               <section aria-labelledby="resource-relations-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="resource-relations-heading">Organizacja i przypisania</h3>
@@ -305,6 +317,8 @@ export function ResourceDirectory({
                   )}
                 </div>
               </section>
+              )}
+              {!selected.isArchived ? (
               <section aria-labelledby="resource-edit-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="resource-edit-heading">
@@ -377,6 +391,7 @@ export function ResourceDirectory({
                   </div>
                 </RecordEditForm>
               </section>
+              ) : null}
               <section aria-labelledby="resource-history-heading">
                 <div className="person-dialog-section-heading">
                   <h3 id="resource-history-heading">
@@ -388,7 +403,15 @@ export function ResourceDirectory({
               </section>
             </div>
             <footer className="person-dialog-footer">
-              {actorRole === "DIRECTOR" ? (
+              {isSystemOwner && selected.isArchived ? (
+                <form action={restoreRecordAction}>
+                  <input type="hidden" name="recordId" value={selected.id} />
+                  <input type="hidden" name="recordType" value={selected.kind === "ROOM" ? "room" : "group"} />
+                  <button className="button button-secondary" type="submit">
+                    <RotateCcw aria-hidden="true" /> Przywróć zasób
+                  </button>
+                </form>
+              ) : actorRole === "DIRECTOR" ? (
                 <details className="person-archive">
                   <summary>
                     <Archive aria-hidden="true" /> {isSystemOwner ? "Usuń z aktywnych kartotek" : "Archiwizuj kartotekę"}

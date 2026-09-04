@@ -1,4 +1,28 @@
-import type { SiteContent } from "./schema";
+import {
+  defaultSiteLayout,
+  defaultSiteWidgets,
+  type SiteContent,
+} from "./schema";
+
+export const klaPublicProfile = {
+  locations: [
+    "Przodkowo",
+    "Czeczewo",
+    "Wilanowo",
+    "Gdańsk — Nowatorów",
+    "Gdańsk — Morena",
+    "Gdańsk — Niedźwiednik",
+    "Gdynia — Pogórze",
+    "Online",
+  ],
+  contact: {
+    text: "Zapytaj o grupę, wolne miejsce i najbliższy termin zajęć. Odpowiemy telefonicznie, e-mailem albo przez Messenger.",
+    phoneDisplay: "533 609 841",
+    phoneHref: "tel:+48533609841",
+    email: "kingsjezykiobce@gmail.com",
+    facebookUrl: "https://www.facebook.com/szkolakingslanguageacademy",
+  },
+} as const;
 
 export const defaultSiteContent: SiteContent = {
   version: 1,
@@ -15,6 +39,7 @@ export const defaultSiteContent: SiteContent = {
     layout: "split",
     imageFit: "cover",
   },
+  layout: defaultSiteLayout,
   slides: [
     {
       id: "london-bus",
@@ -95,7 +120,7 @@ export const defaultSiteContent: SiteContent = {
     kicker: "Szkoła jest blisko",
     title: "Spotkajmy się stacjonarnie albo online",
     text: "Wybierz wygodną lokalizację. Aktualny grafik i dostępność miejsc potwierdzi zespół szkoły.",
-    items: ["Lokalizacja szkoły", "Online"],
+    items: [...klaPublicProfile.locations],
   },
   digital: {
     kicker: "Cyfrowe zaplecze, ludzkie podejście",
@@ -148,13 +173,10 @@ export const defaultSiteContent: SiteContent = {
       },
     ],
   },
+  widgets: defaultSiteWidgets,
   contact: {
     kicker: "Masz pytanie?",
     title: "Porozmawiajmy o najlepszym starcie.",
-    text: "Dane kontaktowe szkoły pojawią się po konfiguracji wizytówki.",
-    phoneDisplay: "Kontakt przez e-mail",
-    phoneHref: "mailto:damianx9x@me.com",
-    email: "damianx9x@me.com",
-    facebookUrl: "https://github.com/damianx9x/edziennik",
+    ...klaPublicProfile.contact,
   },
 };

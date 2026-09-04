@@ -68,21 +68,18 @@ Import, eksport i historia operacji są oddzielone od codziennego katalogu osób
 
 ## Edytowalna strona publiczna
 
-`modules/site-content/schema.ts` jest jednym kontraktem treści dla strony i
-panelu dyrektora. Domyślne treści są wersjonowane w repozytorium. Statyczne demo
-zapisuje zatwierdzony obiekt w `localStorage` pod kontrolą Zod, dzięki czemu
-klientka może ocenić UX bez publicznego endpointu zapisu.
+`modules/site-content/schema.ts` jest jednym kontraktem treści i układu dla
+strony oraz panelu dyrektora. PostgreSQL przechowuje wersję szkoły, a neutralny
+pokaz produktu ma osobny, statyczny zestaw danych i nie odczytuje treści szkoły.
+Dyrektor może ustalać kolejność, widoczność, szerokość i odstępy sekcji oraz
+tworzyć ograniczony zestaw strukturalnych widgetów. Nie ma pola na dowolny HTML
+ani skrypt. Zod odrzuca powtórzone sekcje, identyfikatory oraz linki inne niż
+`https:`, `http:`, `mailto:`, `tel:` i kotwice wewnętrzne.
 
-To rozwiązanie jest celowo przejściowe. Po uwierzytelnianiu:
-
-- dyrektor zapisuje opublikowaną i roboczą wersję treści do PostgreSQL,
-- zdjęcia trafiają do prywatnego `FileStorage`,
-- publikacja jest chronioną akcją i tworzy `AuditLog`,
-- poprzednią wersję można przywrócić,
-- publiczna strona odczytuje tylko wersję opublikowaną.
-
-Schemat Zod i komponenty edytora pozostają wspólne, więc migracja nie wymaga
-projektowania interfejsu od początku.
+Publikacja wymaga sesji dyrektora, kontroli tego samego źródła, limitu rozmiaru
+i walidacji całego dokumentu, a następnie zapisuje `AuditLog`. Starszy dokument
+bez układu lub widgetów dostaje bezpieczne wartości domyślne. Na telefonie
+warianty szerokości są celowo ignorowane i składane do jednej kolumny.
 
 ## Przepływ
 

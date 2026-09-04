@@ -230,6 +230,78 @@ export async function archiveRecordAction(formData: FormData): Promise<void> {
   }
 }
 
+export async function restoreRecordAction(formData: FormData): Promise<void> {
+  const session = await requireDirector();
+  if (session.user.role !== "SYSTEM_OWNER") return;
+  const parsed = archiveRecordSchema.safeParse({
+    recordId: formData.get("recordId"),
+    recordType: formData.get("recordType"),
+  });
+  if (!parsed.success) return;
+
+  const changed = await db.$transaction(async (transaction) => {
+    await lockScheduleResources(transaction, session.user.schoolId);
+    let changedCount: number;
+    let changedEntityType: string;
+    if (parsed.data.recordType === "room") {
+      const result = await transaction.room.updateMany({
+        where: {
+          id: parsed.data.recordId,
+          schoolId: session.user.schoolId,
+          archivedAt: { not: null },
+        },
+        data: { archivedAt: null, isActive: true },
+      });
+      changedCount = result.count;
+      changedEntityType = "Room";
+    } else if (parsed.data.recordType === "group") {
+      const result = await transaction.courseGroup.updateMany({
+        where: {
+          id: parsed.data.recordId,
+          schoolId: session.user.schoolId,
+          archivedAt: { not: null },
+        },
+        data: { archivedAt: null, isActive: true },
+      });
+      changedCount = result.count;
+      changedEntityType = "CourseGroup";
+    } else {
+      const result = await transaction.user.updateMany({
+        where: {
+          id: parsed.data.recordId,
+          schoolId: session.user.schoolId,
+          role: { in: ["TEACHER", "PARENT", "STUDENT"] },
+          archivedAt: { not: null },
+        },
+        data: { archivedAt: null, status: "ACTIVE" },
+      });
+      changedCount = result.count;
+      changedEntityType = "User";
+    }
+
+    if (changedCount === 1) {
+      const discardedGenerationCount =
+        await discardReadyScheduleGenerations(
+          transaction,
+          session.user.schoolId,
+        );
+      await transaction.auditLog.create({
+        data: {
+          schoolId: session.user.schoolId,
+          actorId: session.user.id,
+          action: "records.record.restored",
+          entityType: changedEntityType,
+          entityId: parsed.data.recordId,
+          metadata: { discardedGenerationCount },
+        },
+      });
+    }
+    return changedCount;
+  });
+
+  if (changed === 1) revalidateRecords();
+}
+
 function actionError(message?: string): RecordActionState {
   return {
     status: "error",

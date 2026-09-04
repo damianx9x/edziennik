@@ -18,6 +18,37 @@ describe("siteContentSchema", () => {
     expect(result.slider).toEqual({ layout: "split", imageFit: "cover" });
   });
 
+  it("adds the modular layout and widgets to an older exported file", () => {
+    const legacyContent: Partial<typeof defaultSiteContent> = {
+      ...defaultSiteContent,
+    };
+    delete legacyContent.layout;
+    delete legacyContent.widgets;
+
+    const result = siteContentSchema.parse(legacyContent);
+
+    expect(result.layout.sections).toHaveLength(7);
+    expect(result.widgets.length).toBeGreaterThan(0);
+  });
+
+  it("rejects repeated layout sections and unsafe widget links", () => {
+    const invalidContent = {
+      ...defaultSiteContent,
+      layout: {
+        ...defaultSiteContent.layout,
+        sections: defaultSiteContent.layout.sections.map((section) => ({
+          ...section,
+          id: "offer",
+        })),
+      },
+      widgets: defaultSiteContent.widgets.map((widget, index) =>
+        index === 0 ? { ...widget, href: "javascript:alert(1)" } : widget,
+      ),
+    };
+
+    expect(siteContentSchema.safeParse(invalidContent).success).toBe(false);
+  });
+
   it("requires at least one slider photo", () => {
     const contentWithoutSlides = {
       ...defaultSiteContent,

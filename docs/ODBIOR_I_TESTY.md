@@ -1,5 +1,28 @@
 # Checklista odbioru pre-release KLA
 
+## Plan audytu Etapów 0–7
+
+Każdy etap przechodzi osobny test funkcjonalny, negatywny test uprawnień,
+telefon 375 × 812, komputer 1440 × 900, kontrolę konsoli i zapis dowodu w
+`outputs/qa/stage-N/`. Błąd blokujący zatrzymuje wdrożenie kolejnego wydania.
+
+| Etap | Najważniejszy odbiór | Test, który ma wykryć błąd |
+| --- | --- | --- |
+| 0 | wizytówka, logowanie, responsywność | treść nie wychodzi poza telefon; neutralny tryb nie pobiera danych szkoły |
+| 1 | zaproszenia, role, e-mail, MFA, reset | dyrektor nie resetuje właściciela; hasło tymczasowe wygasa i wymusza zmianę |
+| 2 | kartoteki, import/eksport, relacje | rodzic nie widzi obcego dziecka; wielokrotne przypisania zapisują się po odświeżeniu |
+| 3 | grafik ręczny i generator | równoległa kolizja sali, grupy, osoby lub przejazdu zostaje odrzucona |
+| 4 | umowy, dokumenty i płatności | rodzic nie otwiera cudzej umowy; wysłany PDF pozostaje niezmienny |
+| 5 | wiadomości, ogłoszenia, PWA | uczeń nie dostaje formalnych spraw rodzica; załącznik ma właściwy dostęp |
+| 6 | materiały, zadania i postępy | wykładowca nie otwiera cudzej grupy; trend nie ujawnia danych innych dzieci |
+| 7 | backup, odtworzenie, aktualizacja, monitoring | podpisana paczka tworzy kopię, realnie ją odtwarza i zachowuje rollback |
+
+Po testach etapowych wykonywana jest regresja całego przebiegu: utworzenie szkoły
+→ zaproszenia → relacje → grafik → lekcja → wiadomość/materiał → umowa/płatność
+→ backup i test odtworzenia. Osobno sprawdzane są role, retencja, audyt, brak
+sekretów, migracje rozszerzające, WCAG AA oraz ponowny start Raspberry po zaniku
+zasilania.
+
 **Testujemy wyłącznie dane demonstracyjne.** Przy każdej pozycji zaznacz:
 `[x] działa`, dopisz urządzenie i ewentualną uwagę. Nie wpisuj danych dzieci.
 
@@ -20,6 +43,8 @@
   zobaczyć wynikające powiązania z wykładowcą.
 - [ ] Kartoteki grupy, sali i lokalizacji pokazują spójne relacje; sala nie
   przechowuje osobnej, sprzecznej listy uczniów.
+- [ ] Reset hasła pozwala wysłać link lub jednorazowo pokazać hasło tymczasowe;
+  po zamknięciu okna jawne hasło znika, a kartoteka nadal daje się zamknąć.
 - [ ] Import pokazuje instrukcję, waliduje plik i pozwala wybrać bezpieczne
   scalenie albo zastąpienie; eksport otwiera się poprawnie.
 - [ ] Grafik ręczny pozwala dodać/przesunąć lekcję, a konflikt sali,
@@ -41,6 +66,8 @@
 - [ ] Postęp ucznia pokazuje opis, historię, obecność i czytelny trend; można
   dodać obserwację bez diagnozowania lub automatycznego oceniania dziecka.
 - [ ] Statystyki i audyt nie pokazują pełnego IP ani treści prywatnych rozmów.
+- [ ] Edytor wizytówki pozwala zmienić kolejność, szerokość i odstępy sekcji,
+  dodać widget oraz przywrócić poprawny układ mobilny.
 - [ ] Zgłoszenie problemu pozwala najpierw przejść do błędu, świadomie zrobić
   zrzut, obejrzeć go i dopiero wysłać.
 
@@ -98,6 +125,17 @@
 - [ ] Wolny Internet / podwójne kliknięcie nie tworzy duplikatu; widać stan
   ładowania, sukces albo instrukcję naprawy błędu.
 - [ ] Po odświeżeniu zapisane relacje, płatności, wiadomości i prace nadal są.
+
+## Właściciel systemu — kontrola administracyjna
+
+- [ ] Właściciel widzi wszystkie aktywne kartoteki oraz osobną zakładkę
+  „Archiwum”, której nie widzi dyrektor.
+- [ ] Zarchiwizowana osoba, grupa albo sala jest tylko do odczytu; przywrócenie
+  oddaje ją do aktywnego obiegu bez utraty relacji i zapisuje operację w audycie.
+- [ ] Właściciel może przygotować hasło tymczasowe dyrektora; dyrektor nie może
+  wykonać tej operacji wobec właściciela.
+- [ ] Ustawienia serwera, kopii, SMTP i aktualizacji pozostają niedostępne dla
+  zwykłych ról szkoły.
 
 ## Wynik odbioru
 

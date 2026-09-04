@@ -25,13 +25,19 @@ import { ResourceDirectory } from "@/modules/records/components/resource-directo
 export const metadata: Metadata = { title: "Kartoteki szkoły" };
 export const dynamic = "force-dynamic";
 
-export default async function RecordsPage() {
+export default async function RecordsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stan?: string }>;
+}) {
   const session = await requireSchoolStaff("/panel/szkola/kartoteki");
+  const params = await searchParams;
   const schoolId = session.user.schoolId;
   const isDirector =
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR";
   const isSystemOwner = session.user.role === "SYSTEM_OWNER";
+  const showArchived = isSystemOwner && params.stan === "archiwalne";
   const actorRole: "DIRECTOR" | "TEACHER" = isDirector
     ? "DIRECTOR"
     : "TEACHER";
@@ -78,7 +84,10 @@ export default async function RecordsPage() {
       select: { id: true, name: true, address: true, isOnline: true },
     }),
     db.room.findMany({
-      where: { schoolId, archivedAt: null },
+      where: {
+        schoolId,
+        archivedAt: showArchived ? { not: null } : null,
+      },
       orderBy: { name: "asc" },
       select: {
         id: true,
@@ -96,7 +105,7 @@ export default async function RecordsPage() {
     db.courseGroup.findMany({
       where: {
         schoolId,
-        archivedAt: null,
+        archivedAt: showArchived ? { not: null } : null,
         ...(isDirector ? {} : { id: { in: teachingGroupIds } }),
       },
       orderBy: { name: "asc" },
@@ -127,7 +136,7 @@ export default async function RecordsPage() {
       where: {
         schoolId,
         role: { in: ["TEACHER", "PARENT", "STUDENT"] },
-        archivedAt: null,
+        archivedAt: showArchived ? { not: null } : null,
         ...peopleWhere,
       },
       orderBy: [{ role: "asc" }, { name: "asc" }],
@@ -208,6 +217,7 @@ export default async function RecordsPage() {
             "records.parent.linked",
             "records.relationships.changed",
             "records.student_availability.changed",
+            "records.record.restored",
           ],
         },
       },
@@ -266,6 +276,8 @@ export default async function RecordsPage() {
             ? "Dodano ucznia do grupy"
             : change.action === "records.parent.linked"
               ? "Zapisano relację rodzinną"
+              : change.action === "records.record.restored"
+                ? "Przywrócono z archiwum"
               : "Zmiana zapisana przez dyrektora",
       actorName: change.actor?.name ?? "System",
       createdAt: formatHistoryDate(change.createdAt),
@@ -296,6 +308,7 @@ export default async function RecordsPage() {
       externalId: person.externalId,
       role,
       status: person.status,
+      isArchived: person.status === "ARCHIVED",
       hasAccount: person.accounts.length > 0,
       relationLabel: formatRelationCount(role, relations.length),
       relations,
@@ -351,9 +364,14 @@ export default async function RecordsPage() {
       </header>
 
       <nav className="records-section-tabs" aria-label="Dział Kartoteki">
-        <Link className="active" href="/panel/szkola/kartoteki">
-          Osoby i zasoby
+        <Link className={!showArchived ? "active" : undefined} href="/panel/szkola/kartoteki">
+          Aktywne kartoteki
         </Link>
+        {isSystemOwner ? (
+          <Link className={showArchived ? "active" : undefined} href="/panel/szkola/kartoteki?stan=archiwalne">
+            Archiwum
+          </Link>
+        ) : null}
         {isDirector ? (
           <Link href="/panel/szkola/zaproszenia">Zaproszenia i dostęp</Link>
         ) : null}
@@ -394,7 +412,7 @@ export default async function RecordsPage() {
         </span>
       </section>
 
-      {isDirector ? (
+      {isDirector && !showArchived ? (
         <section className="records-action-zone" id="dodaj-kartoteke">
           <div>
             <span className="section-kicker">Jedno miejsce do dodawania</span>
@@ -444,6 +462,7 @@ export default async function RecordsPage() {
             studentNames: group.enrollments.map((item) => item.student.name),
             teacherNames: group.teachers.map((item) => item.teacher.name),
             preferredRoomId: group.schedulingRequirement?.preferredRoomId ?? null,
+            isArchived: showArchived,
           }))}
           rooms={rooms.map((room) => ({
             id: room.id,
@@ -453,6 +472,7 @@ export default async function RecordsPage() {
             locationName: room.location.name,
             scheduleCount: room._count.scheduleSlots,
             preferredGroupIds: room.schedulingRequirements.map((item) => item.group.id),
+            isArchived: showArchived,
           }))}
           relationOptions={{
             students: directoryPeople.filter((person) => person.role === "STUDENT").map((person) => ({ id: person.id, name: person.name })),

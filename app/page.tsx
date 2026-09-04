@@ -8,6 +8,9 @@ import {
   GraduationCap,
   Globe2,
   HeartHandshake,
+  Info,
+  Lightbulb,
+  Link2,
   MapPin,
   MessageCircleMore,
   MessagesSquare,
@@ -24,6 +27,7 @@ import { Brand } from "./components/brand";
 import { HeroSlider } from "./components/hero-slider";
 import { ProductShowcase } from "./components/product-showcase";
 import { useSiteContent } from "../modules/site-content/site-content-provider";
+import type { SiteContent } from "../modules/site-content/schema";
 
 const offerIcons = [MessagesSquare, School, BookOpenCheck, Globe2] as const;
 
@@ -39,7 +43,9 @@ export default function Home() {
   if (publicMode === "PRODUCT") return <ProductShowcase />;
 
   return (
-    <main>
+    <main
+      className={`public-site site-width-${content.layout.contentWidth} site-corners-${content.layout.cornerStyle}`}
+    >
       <header className="site-header">
         <Brand />
         <nav className="desktop-nav" aria-label="Główna nawigacja">
@@ -54,7 +60,7 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className={`hero hero-${content.slider.layout}`}>
+      <section className={`hero hero-${content.slider.layout} hero-scale-${content.layout.heroScale}`}>
         <div className="hero-copy">
           <span className="eyebrow">
             <Sparkles size={16} aria-hidden="true" />
@@ -106,165 +112,7 @@ export default function Home() {
         ))}
       </section>
 
-      <section className="section offer-section" id="zajecia">
-        <SectionHeading
-          kicker={content.offer.kicker}
-          title={content.offer.title}
-          text={content.offer.text}
-        />
-        <div className="offer-grid">
-          {content.offer.cards.map((item, index) => {
-            const Icon = offerIcons[index];
-            return (
-              <article
-                className={`offer-card offer-${item.tone}`}
-                key={item.title}
-              >
-                <div className="offer-card-top">
-                  <span>{item.eyebrow}</span>
-                  <Icon aria-hidden="true" />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-                <span className="offer-more">{item.detail}</span>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="editorial-story">
-        <span className="editorial-number" aria-hidden="true">
-          01
-        </span>
-        <div>
-          <span className="section-kicker">{content.story.kicker}</span>
-          <h2>{content.story.title}</h2>
-        </div>
-        <div className="editorial-story-copy">
-          <p>{content.story.text}</p>
-          <a
-            href={content.contact.facebookUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {content.story.linkLabel} <ArrowRight aria-hidden="true" />
-          </a>
-        </div>
-      </section>
-
-      <section className="section locations-section" id="lokalizacje">
-        <div className="locations-layout">
-          <SectionHeading
-            kicker={content.locations.kicker}
-            title={content.locations.title}
-            text={content.locations.text}
-          />
-          <div className="location-list">
-            {content.locations.items.map((location) => (
-              <span key={location}>
-                <MapPin aria-hidden="true" /> {location}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="digital-section" id="jak-to-dziala">
-        <div className="digital-intro">
-          <span className="section-kicker section-kicker-light">
-            {content.digital.kicker}
-          </span>
-          <h2>{content.digital.title}</h2>
-          <p>{content.digital.text}</p>
-          <Link className="button button-red" href="/panel">
-            {content.digital.cta} <ArrowRight size={19} aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="role-list">
-          <Role
-            number="01"
-            icon={<HeartHandshake aria-hidden="true" />}
-            title={content.digital.roles[0].title}
-            text={content.digital.roles[0].text}
-          />
-          <Role
-            number="02"
-            icon={<GraduationCap aria-hidden="true" />}
-            title={content.digital.roles[1].title}
-            text={content.digital.roles[1].text}
-          />
-          <Role
-            number="03"
-            icon={<Users aria-hidden="true" />}
-            title={content.digital.roles[2].title}
-            text={content.digital.roles[2].text}
-          />
-          <Role
-            number="04"
-            icon={<ShieldCheck aria-hidden="true" />}
-            title={content.digital.roles[3].title}
-            text={content.digital.roles[3].text}
-          />
-        </div>
-      </section>
-
-      <section className="section core-modules-section" id="mozliwosci">
-        <SectionHeading
-          kicker={content.modules.kicker}
-          title={content.modules.title}
-          text={content.modules.text}
-        />
-        <div className="core-modules-grid">
-          <CoreModule
-            number="01"
-            icon={<FileSignature aria-hidden="true" />}
-            title={content.modules.cards[0].title}
-            text={content.modules.cards[0].text}
-            detail={content.modules.cards[0].detail}
-          />
-          <CoreModule
-            number="02"
-            icon={<MessagesSquare aria-hidden="true" />}
-            title={content.modules.cards[1].title}
-            text={content.modules.cards[1].text}
-            detail={content.modules.cards[1].detail}
-          />
-          <CoreModule
-            number="03"
-            icon={<ReceiptText aria-hidden="true" />}
-            title={content.modules.cards[2].title}
-            text={content.modules.cards[2].text}
-            detail={content.modules.cards[2].detail}
-          />
-          <CoreModule
-            number="04"
-            icon={<BookOpenCheck aria-hidden="true" />}
-            title={content.modules.cards[3].title}
-            text={content.modules.cards[3].text}
-            detail={content.modules.cards[3].detail}
-          />
-        </div>
-      </section>
-
-      <section className="contact-section">
-        <div>
-          <span className="section-kicker">{content.contact.kicker}</span>
-          <h2>{content.contact.title}</h2>
-          <p>{content.contact.text}</p>
-        </div>
-        <div className="contact-actions">
-          <a className="button button-primary" href={content.contact.phoneHref}>
-            <Phone aria-hidden="true" /> {content.contact.phoneDisplay}
-          </a>
-          <a
-            className="button button-secondary"
-            href={`mailto:${content.contact.email}`}
-          >
-            <MessageCircleMore aria-hidden="true" /> Napisz do szkoły
-          </a>
-        </div>
-      </section>
+      <HomeSections content={content} />
 
       <footer>
         <Brand />
@@ -276,6 +124,128 @@ export default function Home() {
         <Link href="/panel">eDziennik</Link>
       </footer>
     </main>
+  );
+}
+
+function HomeSections({ content }: { content: SiteContent }) {
+  return content.layout.sections
+    .filter((section) => section.visible)
+    .map((layout) => (
+      <div
+        className={`home-layout-block home-layout-${layout.width} home-spacing-${layout.spacing}`}
+        key={layout.id}
+      >
+        <HomeSection id={layout.id} content={content} />
+      </div>
+    ));
+}
+
+function HomeSection({
+  id,
+  content,
+}: {
+  id: SiteContent["layout"]["sections"][number]["id"];
+  content: SiteContent;
+}) {
+  if (id === "offer") {
+    return (
+      <section className="section offer-section" id="zajecia">
+        <SectionHeading kicker={content.offer.kicker} title={content.offer.title} text={content.offer.text} />
+        <div className="offer-grid">
+          {content.offer.cards.map((item, index) => {
+            const Icon = offerIcons[index];
+            return (
+              <article className={`offer-card offer-${item.tone}`} key={item.title}>
+                <div className="offer-card-top"><span>{item.eyebrow}</span><Icon aria-hidden="true" /></div>
+                <h3>{item.title}</h3><p>{item.text}</p><span className="offer-more">{item.detail}</span>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+  if (id === "story") {
+    return (
+      <section className="editorial-story">
+        <span className="editorial-number" aria-hidden="true">01</span>
+        <div><span className="section-kicker">{content.story.kicker}</span><h2>{content.story.title}</h2></div>
+        <div className="editorial-story-copy">
+          <p>{content.story.text}</p>
+          <a href={content.contact.facebookUrl} target="_blank" rel="noreferrer">{content.story.linkLabel} <ArrowRight aria-hidden="true" /></a>
+        </div>
+      </section>
+    );
+  }
+  if (id === "locations") {
+    return (
+      <section className="section locations-section" id="lokalizacje">
+        <div className="locations-layout">
+          <SectionHeading kicker={content.locations.kicker} title={content.locations.title} text={content.locations.text} />
+          <div className="location-list">{content.locations.items.map((location) => <span key={location}><MapPin aria-hidden="true" /> {location}</span>)}</div>
+        </div>
+      </section>
+    );
+  }
+  if (id === "digital") {
+    return (
+      <section className="digital-section" id="jak-to-dziala">
+        <div className="digital-intro">
+          <span className="section-kicker section-kicker-light">{content.digital.kicker}</span>
+          <h2>{content.digital.title}</h2><p>{content.digital.text}</p>
+          <Link className="button button-red" href="/panel">{content.digital.cta} <ArrowRight size={19} aria-hidden="true" /></Link>
+        </div>
+        <div className="role-list">
+          <Role number="01" icon={<HeartHandshake aria-hidden="true" />} title={content.digital.roles[0].title} text={content.digital.roles[0].text} />
+          <Role number="02" icon={<GraduationCap aria-hidden="true" />} title={content.digital.roles[1].title} text={content.digital.roles[1].text} />
+          <Role number="03" icon={<Users aria-hidden="true" />} title={content.digital.roles[2].title} text={content.digital.roles[2].text} />
+          <Role number="04" icon={<ShieldCheck aria-hidden="true" />} title={content.digital.roles[3].title} text={content.digital.roles[3].text} />
+        </div>
+      </section>
+    );
+  }
+  if (id === "modules") {
+    const icons = [FileSignature, MessagesSquare, ReceiptText, BookOpenCheck] as const;
+    return (
+      <section className="section core-modules-section" id="mozliwosci">
+        <SectionHeading kicker={content.modules.kicker} title={content.modules.title} text={content.modules.text} />
+        <div className="core-modules-grid">
+          {content.modules.cards.map((card, index) => {
+            const Icon = icons[index];
+            return <CoreModule key={card.title} number={`0${index + 1}`} icon={<Icon aria-hidden="true" />} title={card.title} text={card.text} detail={card.detail} />;
+          })}
+        </div>
+      </section>
+    );
+  }
+  if (id === "widgets") {
+    const icons = { highlight: Lightbulb, stat: Sparkles, link: Link2, notice: Info } as const;
+    return (
+      <section className="section home-widgets-section" aria-label="Ważne informacje">
+        <div className="home-widgets-grid">
+          {content.widgets.map((widget) => {
+            const Icon = icons[widget.type];
+            const external = widget.href.startsWith("http");
+            return (
+              <article className={`home-widget home-widget-${widget.size} home-widget-${widget.tone}`} key={widget.id}>
+                <div className="home-widget-top"><span>{widget.badge}</span><Icon aria-hidden="true" /></div>
+                <h2>{widget.title}</h2><p>{widget.text}</p>
+                <a href={widget.href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>{widget.actionLabel} <ArrowRight aria-hidden="true" /></a>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="contact-section" id="kontakt">
+      <div><span className="section-kicker">{content.contact.kicker}</span><h2>{content.contact.title}</h2><p>{content.contact.text}</p></div>
+      <div className="contact-actions">
+        <a className="button button-primary" href={content.contact.phoneHref}><Phone aria-hidden="true" /> {content.contact.phoneDisplay}</a>
+        <a className="button button-secondary" href={`mailto:${content.contact.email}`}><MessageCircleMore aria-hidden="true" /> Napisz do szkoły</a>
+      </div>
+    </section>
   );
 }
 
