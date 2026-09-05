@@ -12,6 +12,9 @@ refresh_operations() {
   [[ -d "$CURRENT/raspberry/systemd" ]] || { echo "Brak plików operacyjnych bieżącego wydania."; exit 1; }
   install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
   install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+  install -m 755 "$CURRENT/raspberry/safe-restart.sh" /usr/local/sbin/kla-safe-restart
+  install -m 755 "$CURRENT/raspberry/restart-policy.py" /usr/local/sbin/kla-restart-policy
+  install -m 755 "$CURRENT/raspberry/prepare-memory-limits.py" /usr/local/sbin/kla-prepare-memory-limits
   install -m 755 "$CURRENT/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
   install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
   install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup
@@ -105,6 +108,9 @@ case "$ACTION" in
   startup-audit)
     exec /usr/local/sbin/kla-startup-audit
     ;;
+  prepare-memory-limits)
+    exec /usr/local/sbin/kla-prepare-memory-limits
+    ;;
   logs)
     journalctl -u edziennik-kla -u cloudflared --since "2 hours ago" --no-pager -n 400
     ;;
@@ -190,7 +196,7 @@ PY
     systemctl poweroff
     ;;
   *)
-    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, backup-download-prepare, backup-download-cleanup, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, benchmark-readonly, startup-audit, logs, email-config, bootstrap-code, update, reboot, poweroff."
+    echo "Dozwolone akcje: status, start, stop, restart, backup, restore-test, backup-download-prepare, backup-download-cleanup, recovery-key-once, auto-unlock-enable, refresh-operations, optimize-now, benchmark-readonly, startup-audit, prepare-memory-limits, logs, email-config, bootstrap-code, update, reboot, poweroff."
     exit 2
     ;;
 esac

@@ -108,7 +108,7 @@ switched=1
 
 runuser -u kla -- bash -lc "cd /opt/kla/current && set -a && source /etc/kla/edziennik.env && set +a && npm run db:migrate:deploy"
 systemctl start edziennik-kla
-/usr/local/sbin/edziennik-kla-health
+KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-health
 switched=0
 trap - ERR INT TERM
 echo "Odtworzenie zakończone. Poprzednia baza i dokumenty pozostają tymczasowo w szyfrowanym sejfie."

@@ -1,7 +1,7 @@
 # Produkcja i rozwój
 
 Stan: 5 września 2026. Adres operacyjny: https://demo.kingslanguageacademy.pl.
-Pozostałe domeny czekają na osobne zadanie. Wydanie bazowe: 1.3.0; kandydat: 1.4.0.
+Pozostałe domeny czekają na osobne zadanie. Wydanie bazowe: 1.4.0 (wdrożone); kandydat: 1.5.0.
 Numer etapu opisuje historię, nie status dostępności modułu.
 
 ## Ewaluacja zakresu 0–7
@@ -39,7 +39,42 @@ To nie jest certyfikat bezpieczeństwa ani deklaracja braku wszystkich błędów
   dotychczas test wykonywany przez aktualizator nie odświeżał tego wskaźnika.
 
 Nie zmieniamy danych szkoły, treści jej strony, haseł, kluczy ani DNS.
-Nie wykonujemy restartu zasilania ani destrukcyjnego odtwarzania produkcyjnej bazy.
+Nie wykonujemy destrukcyjnego odtwarzania produkcyjnej bazy. Kontrolowany restart
+urządzenia jest dopuszczony w oknie serwisowym; nie symulujemy wyciągania zasilania.
+
+## Kandydat 1.5.0 — niezawodność produkcji
+
+- Zaplanowane restarty aplikacji w ustawieniach właściciela: codziennie/niedziela,
+  czas Europe/Warsaw, domyślnie wyłączone, bez nadrabiania po starcie.
+- Wspólna blokada chroni backup, aktualizację i odtwarzanie przed watchdogiem oraz
+  planowanym restartem. Wewnętrzny healthcheck odtwarzania działa mimo własnej blokady.
+- Restart wymaga kopii młodszej niż 48 h z poprawną sumą; ma 15-minutową przerwę
+  między próbami. Nie restartuje bazy ani tunelu.
+- Retencja kopii odczytuje rzeczywiste ustawienie panelu. Brak skonfigurowanego USB
+  zgłasza niepełną kopię jako błąd, zachowując poprawny eksport lokalny.
+- Przygotowanie kontrolera pamięci w konfiguracji bootu (bez automatycznego rebootu
+  podczas aktualizacji); diagnostyka nie myli braku kontrolera z samym restartem usługi.
+- Broker ma ograniczony czas odbioru polecenia i sprawdza typ głównego obiektu JSON.
+
+### Stan dziesięciu priorytetów — dowody i pozostała praca
+
+| Priorytet | Stan w tej rundzie | Co nadal wymaga odbioru |
+| --- | --- | --- |
+| Kopia poza Pi / UPS | zaszyfrowana kopia pobrana na Maca, SHA-256 zgodne | automatyczny niezależny cel i fizyczny UPS |
+| Monitoring zewnętrzny | publiczny HTTPS sprawdzany z Maca podczas prac | całodobowy monitor na niezależnym hoście oraz kanał alertu |
+| Drugie urządzenie | Mac: odszyfrowanie, bezpieczne rozpakowanie, pg_restore PostgreSQL 17; 59 tabel i 1 plik, 3 s | pełne uruchomienie aplikacji na zapasowym hoście i pomiar przełączenia ruchu |
+| Cztery role na telefonach | regresja uprawnień automatyczna, nowe UI sprawdzone w rozmiarach mobilnym i desktop | rzeczywiste iOS/Android oraz użytkownicy każdej roli |
+| E-mail | nie zmieniano SMTP ani DNS | wiadomości próbne, nagłówki Authentication-Results i kolejka błędów |
+| Grafik | istniejące testy solvera i kolizji w regresji | odbiór rzeczywistego planu i czasów przejazdu |
+| Redakcja strony | szkic/podgląd i odrzucanie zmian wdrożone w 1.4.0 | trwała historia publikacji z przywracaniem wersji |
+| WCAG | formularz restartów: etykiety, fokus, walidacja, bez poziomego przewijania | pełny audyt czytnikiem ekranu i urządzeniami |
+| Wydajność | 384 ograniczone żądania odczytu, 0 nieoczekiwanych błędów, kontrolowane 429 | sesje zalogowane i długi test stabilności; kontroler pamięci po reboot |
+| Dane / incydenty | procedury istnieją, brak nowego automatycznego kasowania danych biznesowych | formalne zatwierdzenie retencji, odpowiedzialnych osób i zgód publikacji |
+
+Test zewnętrzny 1.4.0: 19/19 ograniczonych prób negatywnych bez obejścia uprawnień,
+bez użycia znanych kont, bez tworzenia kont i bez odczytu danych prywatnych.
+To nie jest pełny pentest, test DDoS ani certyfikat bezpieczeństwa. Raport techniczny:
+`docs/security/2026-09-05-production-reliability.md`.
 
 ## Zasady utrzymania
 

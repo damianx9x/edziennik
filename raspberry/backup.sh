@@ -18,9 +18,11 @@ RECIPIENT="$(sed -n 's/^Public key: //p' "$VAULT/secrets/backup-recipient.txt")"
 [[ -n "$RECIPIENT" ]] || { echo "Brak klucza szyfrowania kopii."; exit 1; }
 install -d -m 700 "$BACKUP_DIR"
 USB_TEST_BACKUP=""
+USB_COPY_FAILED=0
 BACKUP_RETENTION_DAYS=30
 if [[ -f /etc/kla/backup-policy.env ]]; then
   source /etc/kla/backup-policy.env
+  BACKUP_RETENTION_DAYS="${KLA_BACKUP_RETENTION_DAYS:-30}"
 fi
 [[ "$BACKUP_RETENTION_DAYS" =~ ^(14|30|90)$ ]] || { echo "Nieprawidłowy okres przechowywania backupu." >&2; exit 1; }
 
@@ -60,6 +62,7 @@ if [[ -f /etc/kla/backup-usb.env ]]; then
     find "$USB_BACKUP_DIR" -maxdepth 1 -type f -mtime +"$BACKUP_RETENTION_DAYS" -delete
   else
     echo "Skonfigurowany dysk USB nie jest zamontowany. Kopia w sejfie została zachowana, ale kopia USB nie powstała." >&2
+    USB_COPY_FAILED=1
   fi
 fi
 
@@ -94,4 +97,5 @@ if [[ "${1:-}" == "--test-restore" ]]; then
   KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-restore --test "$TEST_BACKUP"
 fi
 
+[[ "$USB_COPY_FAILED" == "0" ]] || { echo "Kopia lokalna jest gotowa, ale skonfigurowana kopia USB wymaga ponowienia po podłączeniu dysku." >&2; exit 1; }
 echo "Kopia gotowa: $BACKUP_DIR/kla-$STAMP.tar.age"

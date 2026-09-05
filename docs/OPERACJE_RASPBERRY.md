@@ -323,3 +323,21 @@ Kraj jest przekazywany przez Cloudflare automatycznie. Aby zobaczyć także
 województwa, w Cloudflare dla domeny włącz regułę **Managed Transforms → Add
 visitor location headers**. Aplikacja wykorzysta wyłącznie kod i nazwę regionu;
 nie zapisuje surowego adresu IP ani pełnego identyfikatora przeglądarki.
+
+## Planowane restarty i kontroler pamięci (1.5.0)
+
+W ustawieniach właściciela, w części sterowania serwerem, formularz
+**Automatyczny restart aplikacji** zapisuje częstotliwość i godzinę czasu polskiego.
+Domyślnie wyłączony. Zapis wymaga świadomego potwierdzenia i trafia do audytu.
+Restart pomija aktywne prace serwisowe oraz brak poprawnej kopii z ostatnich 48 h;
+odstęp między próbami wynosi co najmniej 15 min. Nie restartuje PostgreSQL ani tunelu.
+Stan i logi: `systemctl status edziennik-kla-planned-restart.timer` oraz
+`journalctl -u edziennik-kla-planned-restart.service`.
+
+Jeśli `/sys/fs/cgroup/cgroup.controllers` nie zawiera `memory`, limity z pliku
+systemd nie są egzekwowane. Po aktualizacji operator uruchamia
+`sudo kla-control prepare-memory-limits`, sprawdza kopię i `sudo kla-control startup-audit`,
+a następnie wykonuje kontrolowany restart urządzenia. Narzędzie zachowuje pozostałe
+argumenty startowe i kopię cmdline.txt. Nie wymienia systemu ani nie formatuje dysku.
+Po uruchomieniu sprawdź kontroler i `systemctl show edziennik-kla -p MemoryCurrent -p MemoryMax`.
+Samo zniknięcie etykiety UI nie zastępuje tych pomiarów.

@@ -112,6 +112,7 @@ print(json.dumps({
   "latestBackupAt": latest, "usbBackupPath": usb_target,
   "sftpConfigured": os.path.isfile("/etc/kla/backup-sftp.env"),
   "backupPolicy": policy,
+  "restartPolicy": json.loads(subprocess.check_output(["/usr/local/sbin/kla-restart-policy", "status"], text=True, timeout=2)),
   "autoUnlockEnabled": auto_unlock_ready,
   "startupProtection": startup_protection,
   "emailConfigured": any(line.startswith("EMAIL_PROVIDER=") and not line.endswith("=disabled") for line in read("/srv/kla-vault/secrets/edziennik.env").splitlines()),
@@ -147,8 +148,11 @@ PY
     ;;
   restart-app)
     systemd-run --quiet --unit="kla-panel-restart-$(date +%s)" --on-active=3s \
-      /usr/bin/systemctl restart edziennik-kla
-    echo "Restart aplikacji został zaplanowany. Strona wróci automatycznie w ciągu kilkunastu sekund."
+      /usr/local/sbin/kla-safe-restart
+    echo "Zlecono restart aplikacji. Zostanie pominięty podczas prac serwisowych, bez świeżej kopii lub przed upływem 15 minut od poprzedniej próby."
+    ;;
+  set-restart-policy)
+    exec /usr/local/sbin/kla-restart-policy configure
     ;;
   set-backup-policy)
     PAYLOAD="$(mktemp)"

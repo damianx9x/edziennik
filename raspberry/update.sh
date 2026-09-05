@@ -141,6 +141,9 @@ mv "$NEW" "$CURRENT"
 switched=1
 install -m 644 "$CURRENT"/raspberry/systemd/* /etc/systemd/system/
 install -m 755 "$CURRENT/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-kla-health
+install -m 755 "$CURRENT/raspberry/safe-restart.sh" /usr/local/sbin/kla-safe-restart
+install -m 755 "$CURRENT/raspberry/restart-policy.py" /usr/local/sbin/kla-restart-policy
+install -m 755 "$CURRENT/raspberry/prepare-memory-limits.py" /usr/local/sbin/kla-prepare-memory-limits
 install -m 755 "$CURRENT/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
 install -m 755 "$CURRENT/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly
 install -m 755 "$CURRENT/raspberry/backup.sh" /usr/local/sbin/edziennik-kla-backup

@@ -1522,3 +1522,18 @@ API ogranicza liczbę odbieranych bajtów przed zbudowaniem pełnego żądania.
 
 **Konsekwencje:** prywatny tryb Safari nie blokuje zapisu, błąd sieci nie odsłania
 zapisanej wcześniej prezentacji szkoły. Edycja offline nie jest obiecywana.
+
+## ADR-107 — kontrolowana konserwacja i rzeczywiste limity pamięci
+
+**Data:** 2026-09-05
+**Decyzja:** opcjonalny timer restartuje wyłącznie aplikację, nie bazę i urządzenie.
+Walidowana polityka właściciela przechodzi przez istniejący broker; brak dowolnych
+poleceń shell. Czas to Europe/Warsaw, bez nadrabiania pominiętych terminów.
+Backup, restore, aktualizator, healthcheck i restart respektują wspólną blokadę.
+Restart planowy wymaga kopii z sumą SHA-256 nie starszej niż 48 h, ma cooldown 15 min.
+
+Linux musi faktycznie udostępniać kontroler memory w cgroup v2. Przygotowanie
+flagi bootu jest odrębną operacją od aktualizacji i od restartu aplikacji. Weryfikacja
+po kontrolowanym reboocie sprawdza kontroler i liczbowy MemoryCurrent.
+Harmonogram jest domyślnie wyłączony. Nie obiecujemy braku utraty niezapisanych
+formularzy ani odporności na awarię sprzętu bez UPS i kopii poza urządzeniem.

@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-bash -n "$ROOT"/raspberry/*.sh
+for script in "$ROOT"/raspberry/*.sh; do bash -n "$script"; done
 
 required_files=(
   raspberry/install.sh
@@ -58,6 +58,7 @@ python3 -m py_compile \
   "$ROOT/raspberry/test-safe-archive.py" \
   "$ROOT/raspberry/web-control-daemon.py"
 python3 "$ROOT/raspberry/test-safe-archive.py"
+python3 "$ROOT/raspberry/test-operations.py"
 
 grep -q 'cryptsetup luksFormat --type luks2' "$ROOT/raspberry/vault-create.sh"
 grep -q 'KLA_MALWARE_SCAN_MODE=required' "$ROOT/raspberry/install.sh"

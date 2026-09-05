@@ -9,6 +9,12 @@ readonly STATE_DIR="/run/edziennik-kla-health"
 readonly MAX_RESTARTS=2
 readonly RESTART_WINDOW_SECONDS=600
 
+# An intentional stop during restore/update must not be "repaired" mid-write.
+if [[ "${KLA_MAINTENANCE_LOCK_HELD:-0}" != "1" ]]; then
+  exec 9>/run/lock/kla-maintenance.lock
+  flock -n 9 || exit 0
+fi
+
 log() {
   logger -t "$LOG_TAG" -- "$*"
 }

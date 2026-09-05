@@ -17,12 +17,14 @@ import {
   runReadonlyBenchmark,
   runBackupNow,
   setBackupPolicy,
+  setRestartPolicy,
   setSmtpConfiguration,
   setSmsGateConfiguration,
   setPublicPresentationMode,
   setUsbBackupTarget,
 } from "./server-control";
 import { summarizeBenchmark } from "./benchmark-result";
+import { restartPolicySchema } from "./restart-policy";
 
 export type ServerActionState = {
   status: "idle" | "success" | "error";
@@ -96,6 +98,23 @@ export async function restartApplicationAction(previous: ServerActionState): Pro
     return { status: "success", message };
   } catch (error) {
     return initialError(error instanceof Error ? error.message : "Nie udało się zaplanować restartu aplikacji.");
+  }
+}
+
+export async function configureRestartPolicyAction(_: ServerActionState, formData: FormData): Promise<ServerActionState> {
+  const session = await requireSystemOwner("/panel/bog/ustawienia");
+  const parsed = restartPolicySchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return initialError(parsed.error.issues[0]?.message ?? "Sprawdź harmonogram restartu.");
+  const { frequency, hour, minute } = parsed.data;
+  try {
+    // Record intent before invoking the privileged broker; never perform an unaudited change.
+    await audit(session.user.id, session.user.schoolId, "system.restart.policy_requested", { frequency, hour, minute });
+    const message = await setRestartPolicy({ frequency, hour, minute });
+    await audit(session.user.id, session.user.schoolId, "system.restart.policy_configured", { frequency, hour, minute });
+    revalidatePath("/panel/bog/ustawienia");
+    return { status: "success", message };
+  } catch {
+    return initialError("Nie udało się potwierdzić harmonogramu. Odśwież ustawienia i sprawdź zapisany stan.");
   }
 }
 

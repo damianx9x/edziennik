@@ -52,6 +52,7 @@ import type {
   StorageDevice,
 } from "../server-control";
 import { classifyStorageTargets } from "../storage";
+import { RestartPolicyForm } from "./restart-policy-form";
 
 const initialState: ServerActionState = { status: "idle" };
 const initialSftpState: SftpActionState = { status: "idle" };
@@ -432,7 +433,7 @@ export function RaspberryStatusOverview({
           <i />{" "}
           {status.memoryControllerEnabled
             ? "limity pamięci aktywne"
-            : "limity pamięci czekają na bezpieczny restart"}
+            : "systemowa kontrola pamięci nie jest aktywna"}
         </span>
         <span className="ready">
           <i /> sejf:{" "}
@@ -479,7 +480,7 @@ export function RaspberryStatusOverview({
                 ? "Nie udało się odczytać stanu zasilania CPU — sprawdź go lokalnie przed benchmarkiem. "
                 : ""}
             {!status.memoryControllerEnabled
-              ? "Profil ochrony pamięci zostanie włączony dopiero po naprawie automatycznego odblokowania sejfu i kontrolowanym restarcie. Overclock pozostaje wyłączony."
+              ? "Sama aplikacja ma limit pamięci JavaScript, ale limity usługi wymagają włączenia kontrolera pamięci w Linuxie i restartu całej Raspberry. Restart samej aplikacji nie wystarczy. Opiekun powinien najpierw wykonać kopię i audyt startu."
               : ""}
           </span>
         </p>
@@ -1352,6 +1353,7 @@ export function RaspberryControlPanel({
           </div>
         </header>
         <div className="raspberry-config-grid">
+          <RestartPolicyForm policy={status.restartPolicy} />
           <article className="integration-card">
             <header>
               <TerminalSquare aria-hidden="true" />

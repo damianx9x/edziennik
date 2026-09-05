@@ -1,0 +1,10 @@
+[Unit]
+Description=KLA guarded application restart
+After=network-online.target
+ConditionPathIsMountPoint=/srv/kla-vault
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/kla-safe-restart
+TimeoutStartSec=180
+UMask=0077

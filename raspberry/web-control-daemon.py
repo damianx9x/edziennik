@@ -19,7 +19,7 @@ ALLOWED_ACTIONS = {
     "sftp-prepare", "sftp-confirm", "sftp-clear", "recovery-key-once",
     "recovery-key-first-run-once",
     "export-create", "import-prepare", "import-restore", "set-smtp",
-    "set-sms-gate", "set-public-mode",
+    "set-sms-gate", "set-public-mode", "set-restart-policy",
 }
 
 
@@ -33,12 +33,15 @@ def timeout_for(action: str) -> int:
 
 class Handler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
+        self.connection.settimeout(10)
         raw = self.rfile.readline(MAX_REQUEST_BYTES + 1)
         if not raw or len(raw) > MAX_REQUEST_BYTES or not raw.endswith(b"\n"):
             self.respond(False, "", "Nieprawidłowy rozmiar polecenia.")
             return
         try:
             request = json.loads(raw)
+            if not isinstance(request, dict):
+                raise ValueError("Polecenie musi być obiektem JSON.")
             action = request.get("action")
             arguments = request.get("args", [])
             stdin = request.get("input", "")

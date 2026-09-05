@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createConnection } from "node:net";
+import type { RestartPolicy } from "./restart-policy";
 
 export type RaspberryStatus = {
   available: boolean;
@@ -10,6 +11,7 @@ export type RaspberryStatus = {
   throttledHex?: string;
   currentThrottling?: boolean | null;
   memoryControllerEnabled?: boolean;
+  restartPolicy?: RestartPolicy;
   vaultRotational?: boolean | null;
   load?: number[];
   memory?: { total: number; available: number };
@@ -164,6 +166,10 @@ export async function runBackupNow(): Promise<string> {
 
 export async function restartApplication(): Promise<string> {
   return runControl("restart-app");
+}
+
+export async function setRestartPolicy(input: RestartPolicy): Promise<string> {
+  return runControl("set-restart-policy", [], JSON.stringify(input));
 }
 
 export async function runReadonlyBenchmark(): Promise<string> {

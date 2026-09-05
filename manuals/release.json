@@ -1,16 +1,15 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "date": "5 września 2026",
   "schoolChanges": [
-    "Edytor strony pokazuje niezapisane zmiany i pozwala odrzucić szkic bez naruszenia opublikowanej treści.",
-    "Widget można powielić, ukryć bez usuwania, wyśrodkować i zmienić odstępy; podgląd pokazuje efekt przed zapisem.",
-    "Naprawiono czytelność granatowych widgetów przy zmianie tła i krycia.",
-    "Zapis działa także przy zablokowanej pamięci przeglądarki. Brak połączenia nie usuwa roboczej treści."
+    "Prace serwisowe i odtwarzanie kopii są chronione przed równoczesną interwencją watchdogu.",
+    "Właściciel może zaplanować krótką przerwę aplikacji poza godzinami zajęć. Niezapisane formularze mogą wymagać ponowienia.",
+    "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
   ],
   "ownerChanges": [
-    "Praca nad projektem przechodzi z etapów do utrzymania produkcji i kolejnych wydań rozwojowych.",
-    "API treści ogranicza rozmiar przy odbieraniu strumienia; nie ufa samemu nagłówkowi Content-Length.",
-    "Każdy udany test odtworzenia, także podczas aktualizacji, odświeża datę w stanie serwera.",
-    "Weryfikacja obejmuje regresję ról i modułów oraz nowe testy zapisu, trybu publicznego i limitów treści."
+    "Nowy harmonogram restartu aplikacji: wyłączony, codziennie lub w niedzielę, według czasu polskiego.",
+    "Restart wymaga aktualnej kopii i wolnej blokady serwisowej; nie restartuje bazy ani Raspberry.",
+    "Naprawiono odczyt retencji backupu z ustawień oraz opis nieaktywnej kontroli pamięci Linux.",
+    "Instalator przygotowuje kontrolę pamięci; aktualną Raspberry można przygotować kontrolowanym poleceniem i zrestartować po audycie startu."
   ]
 }
