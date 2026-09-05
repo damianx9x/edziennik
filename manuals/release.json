@@ -1,25 +1,16 @@
 {
-  "version": "1.3.0",
-  "date": "4 września 2026",
+  "version": "1.4.0",
+  "date": "5 września 2026",
   "schoolChanges": [
-    "Właściciel może włączyć lub wyłączyć każdy moduł osobno dla dyrektora, wykładowcy, rodzica i ucznia.",
-    "Wyłączona funkcja znika z menu, pulpitu i samouczka, ale nie usuwa zapisanych danych.",
-    "Edytor wizytówki pozwala zmieniać kolejność, widoczność, szerokość i odstępy sekcji bez kodowania.",
-    "Do strony można dodać, skalować, kolorować i porządkować do 24 widgetów oraz skorzystać z 15 nowych gotowych typów.",
-    "Mobilna wizytówka zawsze składa sekcje i widgety do jednej czytelnej kolumny.",
-    "Edytor ma gotowy przycisk uzupełnienia publicznego kontaktu i lokalizacji King’s Language Academy.",
-    "Wizytówka ma bogatszą treść, jednorazowe animacje i szanuje systemowe ograniczenie ruchu.",
-    "Kartoteki oraz zaproszenia są teraz jednym działem z dwiema jasnymi zakładkami, zamiast dwóch mylących pozycji menu.",
-    "Właściciel może przekazać dyrektorowi edycję strony i import lub eksport danych; masowy transfer pozostaje domyślnie wyłączony.",
-    "Widgety mają bezpieczne ustawienia tła, krycia, obramowania i wtopienia koloru, a telefon nadal układa je w jedną kolumnę."
+    "Edytor strony pokazuje niezapisane zmiany i pozwala odrzucić szkic bez naruszenia opublikowanej treści.",
+    "Widget można powielić, ukryć bez usuwania, wyśrodkować i zmienić odstępy; podgląd pokazuje efekt przed zapisem.",
+    "Naprawiono czytelność granatowych widgetów przy zmianie tła i krycia.",
+    "Zapis działa także przy zablokowanej pamięci przeglądarki. Brak połączenia nie usuwa roboczej treści."
   ],
   "ownerChanges": [
-    "Aktualizator Raspberry sprawdza teraz prawdziwe pliki CSS i JavaScript strony; niekompletne wydanie jest automatycznie odrzucane i cofane.",
-    "Macierz modułów jest zapisywana dla szkoły i każda jej zmiana trafia do audytu.",
-    "Kontrola modułu działa po stronie serwera także dla akcji zapisu i prywatnych plików; samo ukrycie przycisku nie jest zabezpieczeniem.",
-    "Start, logowanie, MFA, pomoc i zgłoszenia są stałym rdzeniem i nie mogą zostać przypadkowo wyłączone.",
-    "Właściciel zawsze zachowuje dostęp do modułów, aby móc naprawić konfigurację i odzyskać dane.",
-    "Audyt Etapów 0–7 obejmuje pełną regresję, build, sprawdzenie paczki Raspberry oraz prawdziwe klikanie mobilne i desktopowe.",
-    "Dokumentacja publiczna ma neutralny opis produktu, większą galerię, stronę angielską i aktualną checklistę prac."
+    "Praca nad projektem przechodzi z etapów do utrzymania produkcji i kolejnych wydań rozwojowych.",
+    "API treści ogranicza rozmiar przy odbieraniu strumienia; nie ufa samemu nagłówkowi Content-Length.",
+    "Każdy udany test odtworzenia, także podczas aktualizacji, odświeża datę w stanie serwera.",
+    "Weryfikacja obejmuje regresję ról i modułów oraz nowe testy zapisu, trybu publicznego i limitów treści."
   ]
 }

@@ -6,7 +6,7 @@
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-111827)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1)
-![Status](https://img.shields.io/badge/status-pre--production-E4A11B)
+![Status](https://img.shields.io/badge/status-production_+_development-18794e)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-663399)](LICENSE)
 
 Mobilny system operacyjny prywatnej szkoły językowej: od pierwszego zaproszenia
@@ -15,7 +15,7 @@ ucznia. Interfejs został zaprojektowany dla dyrektora, wykładowcy, rodzica i
 ucznia, a osobne centrum techniczne daje właścicielowi kontrolę nad serwerem,
 backupem, zdarzeniami i bezpieczeństwem.
 
-**Publiczny pilot:** [demo.kingslanguageacademy.pl](https://demo.kingslanguageacademy.pl)
+**Adres operacyjny:** [demo.kingslanguageacademy.pl](https://demo.kingslanguageacademy.pl)
 **Projekt i rozwój:** Damian Eron · [damianx9x@me.com](mailto:damianx9x@me.com)
 
 > Publiczny adres domyślnie pokazuje neutralną stronę produktu. Panel jest
@@ -24,6 +24,10 @@ backupem, zdarzeniami i bezpieczeństwem.
 > [SECURITY.md](SECURITY.md).
 
 ## Co rozwiązuje produkt
+
+Od września 2026 rozwój prowadzimy poprzez kolejne wersjonowane wydania, a nie
+otwieranie następnych etapów pilota. [Stan, dowody testów i priorytety](docs/CURRENT_WORK.md)
+oddzielają wykonane prace od warunków operacyjnych, które wymagają potwierdzenia.
 
 | Obszar | Rezultat |
 | --- | --- |
@@ -122,7 +126,7 @@ komercyjnie. Nazwa i znaki konkretnej szkoły są opisane osobno w [NOTICE](NOTI
   wiadomości i surowych adresów IP;
 - nginx, limity aplikacji i Cloudflare chronią mały serwer przed gwałtownym ruchem.
 
-To wydanie jest **pre-production**. Prawdziwe dane wymagają zakończenia odbioru,
+Projekt jest utrzymywany w modelu **produkcja + rozwój**. Prawdziwe dane nadal wymagają zakończenia odbioru,
 konfiguracji retencji, SMTP, kopii poza budynkiem, MFA oraz zatwierdzenia procesu
 prawnego i RODO przez właściwych specjalistów.
 

@@ -41,6 +41,7 @@ import { HeroSlider } from "./components/hero-slider";
 import { ProductShowcase } from "./components/product-showcase";
 import { useSiteContent } from "../modules/site-content/site-content-provider";
 import type { SiteContent } from "../modules/site-content/schema";
+import { widgetClassName } from "../modules/site-content/widget-style";
 
 const offerIcons = [MessagesSquare, School, BookOpenCheck, Globe2] as const;
 
@@ -256,12 +257,12 @@ function HomeSection({
     return (
       <section className="section home-widgets-section" aria-label="Ważne informacje">
         <div className="home-widgets-grid">
-          {content.widgets.map((widget) => {
+          {content.widgets.filter((widget) => widget.visible !== false).map((widget) => {
             const Icon = icons[widget.type];
             const external = widget.href.startsWith("http");
             return (
               <article
-                className={`home-widget home-widget-${widget.size} home-widget-${widget.tone} home-widget-surface-${widget.surface ?? "solid"} home-widget-border-${widget.borderStyle ?? "accent"} home-widget-blend-${widget.blend ?? "normal"}`}
+                className={widgetClassName(widget)}
                 data-widget-type={widget.type}
                 key={widget.id}
                 style={{ "--widget-opacity": Number(widget.opacity ?? "100") / 100 } as React.CSSProperties}

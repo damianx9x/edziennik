@@ -9,16 +9,15 @@ kompletną listę kroków zamiast serii pytań.
 
 Budujemy mobilny eDziennik prywatnej szkoły wyłącznie języka angielskiego.
 Największy problem biznesowy to grafik oparty na trzech zasobach: sala,
-wykładowca i grupa. Role: dyrektor,
-wykładowca, rodzic, uczeń. 1 września 2026 ma powstać pilot opisany w
-`docs/PRODUCT_SCOPE.md` i `docs/FUNKCJE_I_ROLE.md`: zawiera umowy online,
+wykładowca i grupa. Role: właściciel techniczny, dyrektor,
+wykładowca, rodzic, uczeń. Od 5 września 2026 prowadzimy produkcję i rozwój
+opisane w `docs/PRODUCT_SCOPE.md` i `docs/FUNKCJE_I_ROLE.md`: umowy online,
 komunikator z masowymi ogłoszeniami, ręczny status płatności oraz materiały i
 zadania. Nie jest to cała wizja produktu.
 
-Domena główna szkoły to `kingslanguageacademy.pl`. Krótka domena
-`kingsedu.pl` przekierowuje do niej kodem 301. Statyczny pokaz Etapu 0–0,5 może
-działać na zwykłym hostingu home.pl; pełna aplikacja nadal wymaga Node.js i
-PostgreSQL.
+Bieżący adres produkcyjny: `demo.kingslanguageacademy.pl`, serwer Raspberry Pi.
+Obsługa `kingslanguageacademy.pl` i `kingsedu.pl` jest odłożona; nie zmieniaj DNS
+bez osobnego zadania. Pełna aplikacja wymaga Node.js i PostgreSQL.
 
 ## Źródła prawdy
 
@@ -38,7 +37,8 @@ uproszczeń prawnych ani decyzji technicznych.
 
 ## Zasady pracy
 
-- Realizuj wyłącznie bieżący etap.
+- Realizuj zakres bieżącego wydania. Etapy 0–7 są historią powstawania produktu,
+  nie kolejką przyszłych obietnic. Błędy produkcyjne mają pierwszeństwo przed funkcjami.
 - Przed zmianą sprawdź stan Gita, zależności i testy.
 - Nie nadpisuj zmian użytkownika i nie rób pobocznych refaktoryzacji.
 - UI i komunikacja: polski. Kod, nazwy zmiennych i commity: angielski.
@@ -56,24 +56,25 @@ uproszczeń prawnych ani decyzji technicznych.
 ## Git
 
 - Główna gałąź: `main`.
-- Kolejny etap: `stage/N-short-name`.
-- Przed etapem tag ostatniej zaakceptowanej wersji: `stage-(N-1)-accepted`.
+- Zmiany: `fix/short-name` lub `feat/short-name`; po odbiorze integracja do `main`.
+- Wydania oznaczaj SemVer; tag `vX.Y.Z` wskazuje sprawdzony commit.
+- Nie kasuj historycznych tagów etapów ani gałęzi z niepołączonymi zmianami.
 - Commit opisuje wynik, np. `feat(schedule): prevent room conflicts`.
 - Nie commituj `.env`, baz, eksportów, backupów ani danych klientki.
 - Bez force push i bez przepisywania współdzielonej historii.
 - Przed commitem: `npm run check`, `npm run build`.
-- Po etapie: `npm run package:release`.
+- Przed wdrożeniem: `npm run package:release` i `npm run package:raspberry`.
 
 ## Cykl odbioru każdej zmiany
 
 Każdy fragment funkcji przechodzi zawsze w tej kolejności:
 
-1. implementacja na gałęzi etapu,
+1. implementacja na gałęzi zmiany,
 2. lokalne testy automatyczne i migracje,
 3. lokalne klikanie na telefonie 375 × 812 i komputerze 1440 × 900,
 4. kontrola konsoli, logów i zrzutów QA,
 5. commit wyłącznie przechodzącego stanu,
-6. uruchomienie serwera testowego na Raspberry dokładnie z tego commita,
+6. podpisana aktualizacja Raspberry dokładnie z tego commita, z kopią i rollbackiem,
 7. kontrola publicznego HTTPS, logowania i uprawnień,
 8. przekazanie klientce linku oraz kont demo,
 9. zapisanie jej uwag jako zakresu następnego commita.
@@ -87,12 +88,13 @@ komendy zawiera `docs/ODBIOR_I_TESTY.md`.
 - Next.js 16 App Router, React 19, TypeScript, serwer Node.js.
 - Tailwind CSS 4; dostępne komponenty, shadcn/ui tylko przez oficjalne CLI.
 - PostgreSQL + Prisma ORM 7.
-- Etap 1: Better Auth, zaproszenia, weryfikacja e-mail, TOTP 2FA dyrektora.
-- Etap 3: dnd-kit.
-- Analityka: Recharts.
+- Better Auth, zaproszenia, weryfikacja e-mail, TOTP 2FA dyrektora.
+- Grafik: dnd-kit.
+- Analityka: istniejące komponenty React/SVG; nie zakładaj obecności Recharts.
 - E-mail i SMS za interfejsami dostawców oraz przez kolejkę.
-- PWA przez manifest Next.js i serwis worker w Etapie 5.
-- Pilot: MyDevil MD2 lub lepszy; nie zwykły hosting współdzielony home.pl.
+- PWA przez manifest Next.js i serwis worker.
+- Produkcja: Raspberry Pi, systemd, nginx, Cloudflare Tunnel. Nie przenoś hostingu
+  ani bazy w ramach porządków.
 
 Zmiana stosu wymaga ADR i zgody użytkownika, jeśli wpływa na koszt, hosting albo
 migrację danych.

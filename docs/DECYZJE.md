@@ -1505,3 +1505,20 @@ oznacza nieudane wdrożenie i automatyczny powrót do poprzedniej wersji.
 **Dlaczego:** sam zdrowy endpoint API nie dowodzi, że użytkownik otrzyma
 działający interfejs. Kontrola musi obejmować dokładnie tę warstwę, którą
 ładuje przeglądarka.
+
+## ADR-106 — produkcja i rozwój, serwer jako źródło treści
+
+**Data:** 2026-09-05
+**Decyzja:** zamykamy etapowy model planowania; utrzymujemy bieżącą instalację
+na demo.kingslanguageacademy.pl poprzez podpisane, wersjonowane wydania.
+Historia etapów pozostaje do regresji. Zmiana trybu organizacyjnego nie zastępuje
+akceptacji prawnej, odbioru ról, zewnętrznego backupu ani konfiguracji nadawcy.
+
+Edytor pobiera treść z serwera z limitem oczekiwania. localStorage jedynie
+sygnalizuje zmianę innym kartom, a IndexedDB nie przechowuje kopii publicznej
+treści. Powodzenie zapisu oznacza potwierdzenie JSON przez serwer; nie zależy
+od uprawnień do pamięci przeglądarki. Ukrycie widgetu nie usuwa jego treści.
+API ogranicza liczbę odbieranych bajtów przed zbudowaniem pełnego żądania.
+
+**Konsekwencje:** prywatny tryb Safari nie blokuje zapisu, błąd sieci nie odsłania
+zapisanej wcześniej prezentacji szkoły. Edycja offline nie jest obiecywana.

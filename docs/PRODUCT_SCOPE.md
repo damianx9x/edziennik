@@ -1,8 +1,9 @@
-# eDziennik KLA — zakres i etapy produktu
+# eDziennik KLA — produkt i historia rozwoju
 
-Stan produktu na 4 września 2026. Etapy 0–6 tworzą sprawdzony technicznie
-zakres pilota, a Etap 7 obejmuje odbiór przedprodukcyjny i przygotowanie
-operacyjne.
+Od 5 września 2026 pracujemy w modelu **produkcja + rozwój**. Bieżący adres to
+`demo.kingslanguageacademy.pl`. Etapy poniżej są historią budowy i indeksem
+obszarów regresji, nie zapowiedzią kolejnych faz. Aktualny stan i priorytety:
+`docs/CURRENT_WORK.md`. Każde wydanie nadal wymaga testów i bezpiecznej aktualizacji.
 
 ## Zakres produktu
 
@@ -12,7 +13,7 @@ Zakres obejmuje także kartoteki i relacje rodzinne, umowy oraz raty,
 komunikację, materiały, zadania, obecność i opisowe postępy ucznia. Aktualny
 podział odpowiedzialności opisuje `docs/FUNKCJE_I_ROLE.md`.
 
-Wydanie pozostaje przedprodukcyjne do czasu zakończenia odbioru bezpieczeństwa,
+Przejście na utrzymanie produkcyjne nie zastępuje odbioru bezpieczeństwa,
 konfiguracji retencji, procedur RODO, SMTP, zewnętrznej kopii oraz testu
 odtworzenia w środowisku docelowym. Podpis kwalifikowany, płatności internetowe
 i bramka SMS są możliwymi rozszerzeniami, a nie ukrytymi obietnicami bieżącej

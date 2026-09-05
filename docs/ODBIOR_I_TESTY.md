@@ -1,4 +1,9 @@
-# Checklista odbioru pre-release KLA
+# Odbiór wydań produkcyjnych KLA
+
+Od 5 września 2026 zakresy 0–7 traktujemy jako obszary regresji. Wynik audytu
+bieżącego wydania jest w `docs/CURRENT_WORK.md`; archiwalne wyniki poniżej nie
+są dowodem ponownego ręcznego sprawdzenia wszystkich ekranów. Zrzuty bieżących
+wydań zapisujemy w `outputs/qa/releases/vX.Y.Z/`.
 
 ## Plan audytu Etapów 0–7
 

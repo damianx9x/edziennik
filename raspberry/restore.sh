@@ -42,6 +42,13 @@ if [[ "$MODE" == "--test" ]]; then
   runuser -u postgres -- pg_restore --no-owner --dbname="$TEST_DB" "$TEMP_DIR/database.dump"
   runuser -u postgres -- psql --dbname="$TEST_DB" --tuples-only --command='SELECT count(*) FROM "School";' >/dev/null
   runuser -u postgres -- dropdb "$TEST_DB"
+  # Every successful restore test updates the same status, including tests
+  # performed by the updater or the web panel, not only the scheduled timer.
+  install -d -m 700 "$VAULT/restore-tests"
+  date -Iseconds > "$VAULT/restore-tests/latest-ok.tmp"
+  printf '%s\n' "$(basename "$BACKUP")" > "$VAULT/restore-tests/latest-backup.tmp"
+  mv "$VAULT/restore-tests/latest-backup.tmp" "$VAULT/restore-tests/latest-backup"
+  mv "$VAULT/restore-tests/latest-ok.tmp" "$VAULT/restore-tests/latest-ok"
   echo "TEST ODTWORZENIA OK: baza i dokumenty są czytelne."
   exit 0
 fi

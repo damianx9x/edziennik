@@ -17,6 +17,46 @@ bazę, dokumenty, hasło bazy ani sekret sesji.
 
 ## Zachowanie przy nagłym większym ruchu
 
+### Horyzont wieloletni: do 1000 kont, zwykle 3–5 osób jednocześnie
+
+To profil do pomiaru, nie gwarancja pojemności. Sama liczba kont nie jest
+głównym kosztem: rosną przede wszystkim załączniki, historia odwiedzin i kopie.
+Kod ma jedną ograniczoną pulę PostgreSQL na proces, limity zapytań i indeksy
+szkoła/czas w historii. Nie należy zwiększać puli do liczby użytkowników.
+Nie ma obecnie kompletnej automatycznej retencji wszystkich tabel.
+
+**Co już robi system:** cotygodniowy timer usuwa prywatne pliki uprzednio
+zarchiwizowane zgodnie z konfiguracją `/etc/kla/retention.env`. Wartość 0 nie
+usuwa danej kategorii. Ten mechanizm nie jest retencją wszystkich rozmów,
+statystyk, audytu, sesji ani całej dokumentacji szkoły. Kopie mają osobną politykę.
+
+**Propozycja do następnego wydania, bez włączania kasowania danych teraz:**
+
+| Dane | Proponowane postępowanie | Warunek |
+| --- | --- | --- |
+| wygasłe sesje i tokeny | małe dzienne porcje, poza czasem zajęć | test, że aktywne sesje/MFA nie znikają |
+| surowe odwiedziny | np. 30–90 dni, później anonimowe sumy dzienne | zachować uzgodnioną historię trendów bez identyfikatorów |
+| logi dostarczenia e-mail | usunąć zbędne szczegóły po uzgodnionym czasie | nie usuwać niewysłanej kolejki ani nierozwiązanych błędów |
+| materiały i czaty | archiwum roku szkolnego i reguły per kategoria | uprzednia decyzja administratora danych |
+| umowy, raty, obecności, audyt | osobna retencja i blokada przy sporze | nie przyjmować jednej liczby dni dla całej szkoły |
+| backup | rotacja lokalna i niezależna kopia poza urządzeniem | możliwość odtworzenia + instrukcja ponownego stosowania retencji po restore |
+
+Usuwanie powinno mieć najpierw podgląd liczby rekordów i rozmiaru, potem
+zatwierdzenie; wykonanie porcjami z limitem czasu, audytem i blokadą równoległych
+operacji. Nie uruchamiać `VACUUM FULL` na działającej aplikacji. Utrzymywać
+autovacuum, analizować wolne zapytania i realny przyrost indeksów przed partycjonowaniem.
+
+Przykład planowania pojemności (założenie, nie pomiar): 1000 osób × 10 MB
+nowych plików miesięcznie = około 10 GB/miesiąc. Jedna pełna kopia może wymagać
+podobnego miejsca co dane, a przygotowanie i test odtworzenia wymagają dodatkowej
+przestrzeni. Trzydzieści pełnych kopii nie oznacza trzydziestu małych przyrostów.
+Dlatego monitorować osobno: bazę, pliki, kopie i wolne miejsce. Progi robocze
+ostrzeżenia 25% wolnego, krytyczny 15% należy dopasować do wielkości pełnej kopii.
+
+Odbiór skalowania: syntetyczne dane 1000 kont na osobnej bazie, 5 równoległych
+sesji, pomiar p95, błędów, pamięci i czasu backupu; dopiero po tym korekta limitów.
+Nie testować wzrostu przez tworzenie 1000 kont w produkcyjnej bazie.
+
 Publiczny ruch przechodzi przez Cloudflare Tunnel, a prywatny origin nasłuchuje
 wyłącznie na `127.0.0.1`. Nginx kompresuje odpowiedzi, utrzymuje długi cache dla
 wersjonowanych plików Next.js oraz ogranicza liczbę równoległych połączeń i prób

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@/app/generated/prisma/client";
 
 import { db } from "@/lib/server/db";
+import { BodyTooLargeError, readBoundedText } from "@/lib/server/bounded-body";
 import { isTrustedSameOrigin } from "@/lib/server/same-origin";
 import { requireDirector } from "@/modules/identity/auth/session";
 import { requireEnabledModule } from "@/modules/module-access/server";
@@ -56,10 +57,12 @@ export async function PUT(request: Request) {
   if (!isTrustedSameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
   const session = await requireDirector("/panel/szkola/narzedzia/strona");
   await requireEnabledModule(session, "siteEditor");
-  const declared = Number(request.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declared) && declared > 15 * 1024 * 1024) return NextResponse.json({ message: "Treść i zdjęcia są za duże." }, { status: 413 });
-  const raw = await request.text();
-  if (raw.length > 15 * 1024 * 1024) return NextResponse.json({ message: "Treść i zdjęcia są za duże." }, { status: 413 });
+  let raw: string;
+  try { raw = await readBoundedText(request, 15 * 1024 * 1024); }
+  catch (error) {
+    if (error instanceof BodyTooLargeError) return NextResponse.json({ message: "Treść i zdjęcia są za duże." }, { status: 413 });
+    return NextResponse.json({ message: "Przerwano odbieranie treści. Spróbuj ponownie." }, { status: 400 });
+  }
   const value: unknown = (() => { try { return JSON.parse(raw); } catch { return null; } })();
   const parsed = siteContentSchema.safeParse(value);
   if (!parsed.success) return NextResponse.json({ message: "Sprawdź puste lub zbyt długie pola." }, { status: 400 });

@@ -315,6 +315,9 @@ export const siteContentSchema = z.object({
         opacity: z.enum(["100", "85", "65", "40"]).optional(),
         borderStyle: z.enum(["none", "line", "accent", "shadow"]).optional(),
         blend: z.enum(["normal", "multiply", "soft-light"]).optional(),
+        visible: z.boolean().optional(),
+        alignment: z.enum(["left", "center"]).optional(),
+        density: z.enum(["compact", "comfortable", "spacious"]).optional(),
       }),
     )
     .min(1)

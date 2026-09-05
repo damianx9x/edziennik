@@ -1,35 +1,82 @@
-# Stan wdrożenia i dalsze prace
+# Produkcja i rozwój
 
-Aktualizacja: 4 września 2026.
+Stan: 5 września 2026. Adres operacyjny: https://demo.kingslanguageacademy.pl.
+Pozostałe domeny czekają na osobne zadanie. Wydanie bazowe: 1.3.0; kandydat: 1.4.0.
+Numer etapu opisuje historię, nie status dostępności modułu.
 
-## Co działa
+## Ewaluacja zakresu 0–7
 
-- Etapy 0–6 są zamknięte technicznie i objęte testami regresji.
-- Etap 7 działa na Raspberry Pi w trybie przedprodukcyjnym.
-- Publiczna strona, logowanie, role, kartoteki, grafik, umowy, płatności,
-  wiadomości, powiadomienia, nauka i postępy są połączone jednym modelem ról.
-- Właściciel może włączać moduły osobno dla ról bez kasowania danych.
-- Dyrektor może otrzymać delegowany dostęp do edycji strony oraz importu i
-  eksportu kartotek; import danych jest domyślnie wyłączony.
-- Wydanie Raspberry jest podpisane, sprawdza migracje, zasoby przeglądarki,
-  zdrowie usługi i wykonuje rollback przy błędzie.
+| Obszar | Co zweryfikowano w tej rundzie | Granica dowodu |
+| --- | --- | --- |
+| Fundament i role (0–1) | testy sesji, centralnych uprawnień, MFA, zaproszeń, resetów, modułów | nie zastępuje przejścia MFA na urządzeniu dyrektora |
+| Kartoteki (2) | testy relacji, importu, identyfikatorów, plików i autoryzacji | nie wykonano masowego importu na produkcji |
+| Grafik (3) | testy solvera, kolizji, blokad zasobów, dziennika i prezentacji | brak nowego pełnego odbioru planu przez każdą rolę |
+| Umowy i płatności (4) | testy kwalifikacji odbiorców, schematów i pakietów dokumentów | test kodu nie jest opinią prawną konkretnej umowy |
+| Komunikacja (5) | testy kolejki, odbiorców i powiadomień e-mail | rzeczywista dostarczalność zależy od SMTP i domeny nadawcy |
+| Nauka (6) | testy materiałów, uprawnień, postępów i PWA | nie diagnozujemy ani automatycznie nie oceniamy dzieci |
+| Operacje (7) | testy eksportu, konfiguracji kopii, diagnostyki, migracji i paczki | status usług nie dowodzi odporności na utratę całego urządzenia |
 
-## Co jest aktualnie wdrażane
+Regresja automatyczna: 71 plików / 248 testów w pierwszym przebiegu tej rundy.
+Skan zależności produkcyjnych npm: 0 znanych podatności w chwili sprawdzenia.
+To nie jest certyfikat bezpieczeństwa ani deklaracja braku wszystkich błędów.
 
-- jednoznaczny dział „Kartoteki i konta” z zakładkami zamiast dublowania pozycji;
-- rozbudowane, lecz ograniczone do bezpiecznego katalogu style widgetów;
-- publiczne adresy szkoły i przekierowanie krótkiej domeny;
-- aktualna galeria i polsko-angielska dokumentacja projektu;
-- zadaniowy odbiór na telefonie i komputerze każdej roli.
+## Naprawy kandydata 1.4.0
 
-## Warunki decyzji produkcyjnej
+- Błąd niezawodności: blokada localStorage mogła zamienić udany zapis w komunikat
+  błędu. Serwer jest teraz jedynym źródłem prawdy, synchronizacja kart jest opcjonalna.
+- Błąd ładowania: brak limitu oczekiwania i zależność od IndexedDB mogły zatrzymać
+  ekran. Odczyt ma limit 15 s, zapis 30 s, brak potwierdzenia daje bezpieczny komunikat.
+- Błąd informacji zwrotnej: HTML strony logowania nie może udawać poprawnej
+  odpowiedzi zapisu. Zapis wymaga JSON z `ok: true`.
+- Ryzyko zużycia pamięci: API treści ogranicza strumień do 15 MiB również bez
+  Content-Length. Dotychczas sprawdzało rozmiar dopiero po wczytaniu całości.
+- Kontrast: tekst granatowego widgetu dobiera wariant do tła i jego krycia.
+  Najechanie myszą nie nadpisuje wybranego obramowania.
+- Edytor: stan zapisu, ochrona przed podwójnym kliknięciem, zachowanie szkicu przy
+  błędzie, ostrzeżenie przed zamknięciem z niezapisanymi zmianami, odrzucanie szkicu,
+  powielanie i ukrywanie widgetów, wyrównanie, odstępy i podgląd wyglądu.
+- Operacje: każdy pomyślny test odtworzenia aktualizuje datę w centrum systemu;
+  dotychczas test wykonywany przez aktualizator nie odświeżał tego wskaźnika.
 
-- [ ] zaakceptowane teksty umów, informacji konsumenckich i procedur RODO;
-- [ ] MFA dyrektora zweryfikowane na urządzeniu docelowym;
-- [ ] działające SMTP wraz z próbą dostarczenia i obsługą błędu;
-- [ ] zewnętrzna, zaszyfrowana kopia oraz udokumentowany test odtworzenia;
-- [ ] retencja ustalona osobno dla umów, wiadomości, obecności i audytu;
-- [ ] testy odbiorowe dyrektora, wykładowcy, rodzica i ucznia na telefonie;
-- [ ] decyzja o docelowym hostingu, UPS i osobie odpowiedzialnej za incydenty.
+Nie zmieniamy danych szkoły, treści jej strony, haseł, kluczy ani DNS.
+Nie wykonujemy restartu zasilania ani destrukcyjnego odtwarzania produkcyjnej bazy.
 
-Prawdziwych danych dzieci nie należy wprowadzać przed zamknięciem tej listy.
+## Zasady utrzymania
+
+### Dodatkowy test zewnętrzny bez konta — 5 września
+
+Przeprowadzono ograniczony test przez publiczny HTTPS, bez sesji, znanych haseł
+i dostępu SSH w ścieżce ataku. Rejestracja „GPT6 ASTRA Hacked” i wariant z
+wstrzykniętym polem roli otrzymały HTTP 400 / EMAIL_PASSWORD_SIGN_UP_DISABLED.
+Administracyjne tworzenie konta bez sesji: HTTP 401. Panel właściciela,
+edytor i zakończony instalator przekierowały do logowania (307). Nagłówek
+próbujący ominąć middleware nie zmienił wyniku. Konto nie zostało utworzone.
+Nie wykazano obejścia w tych próbach; nie jest to pełny pentest ani test DDoS.
+
+Retencję wieloletnią dla 1000 kont / 3–5 równoległych sesji opisuje
+`docs/OPERACJE_RASPBERRY.md`. Nie włączono nowego kasowania danych. Istniejący
+timer retencji plików nie jest kompletną retencją bazy — to jawne zadanie rozwojowe.
+
+1. Najpierw incydent i możliwość odzyskania danych, potem rozwój.
+2. Jedno wydanie = sprawdzony commit, pięć aktualnych podręczników, podpisana paczka.
+3. Aktualizacja obok bieżącej wersji; kopia i test odtworzenia przed przełączeniem.
+4. Zachowujemy aktualne wydanie i poprzednie do cofnięcia. Stare artefakty przenosimy
+   odzyskiwalnie do Kosza, nie kasujemy kopii danych ani kluczy.
+5. Nie przepisujemy wspólnej historii Gita. Dostęp do funkcji kontroluje serwer.
+6. Zakres ręcznych testów i ograniczenia raportujemy oddzielnie od testów jednostkowych.
+
+## Dziesięć kolejnych priorytetów
+
+1. **Kopia poza Raspberry + UPS** — chronią przed awarią dysku i zanikiem prądu.
+2. **Monitoring spoza urządzenia** — alert także wtedy, gdy sama Raspberry nie działa.
+3. **Próba odtworzenia na drugim urządzeniu** — zmierzyć czas i potwierdzić kompletny powrót pracy.
+4. **Odbiór czterech ról na rzeczywistych telefonach** — sprawdzić codzienną pracę, nie tylko komponenty.
+5. **Dostarczalność e-mail** — SPF/DKIM/DMARC, próby dostarczenia i czytelna kolejka błędów.
+6. **Dopracowanie grafiku na rzeczywistych ograniczeniach** — brak teleportacji, konflikty i czytelne powody braku terminu.
+7. **Redakcyjny podgląd całej strony** — wersje robocze, historia publikacji i cofanie bez ręcznego importu JSON.
+8. **Dostępność WCAG** — klawiatura, czytnik ekranu, kontrast i duży tekst na wszystkich ważnych przepływach.
+9. **Budżet wydajności Raspberry** — pomiary przy realistycznej liczbie sesji i limit kosztownych operacji.
+10. **Procedury danych i incydentów** — zatwierdzona retencja, zgody publikacji zdjęć, role odpowiedzialnych osób.
+
+Wymagania formalne, kopia poza urządzeniem i faktyczny odbiór użytkowników pozostają
+zadaniami operacyjnymi. Nie oznaczamy ich jako wykonane samą zmianą nazwy na produkcję.

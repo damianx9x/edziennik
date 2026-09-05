@@ -7,7 +7,11 @@ It brings scheduling, people and family relationships, contracts, instalments,
 messages, teaching materials, attendance and student progress into one
 role-aware application.
 
-**Public pilot:** [demo.kingslanguageacademy.pl](https://demo.kingslanguageacademy.pl)
+**Operational deployment:** [demo.kingslanguageacademy.pl](https://demo.kingslanguageacademy.pl)
+
+The project now follows production maintenance and versioned development releases.
+Historical stages are regression areas, not future feature promises. See the
+[current status and verification boundaries](docs/CURRENT_WORK.md).
 **Design and development:** Damian Eron · [damianx9x@me.com](mailto:damianx9x@me.com)
 
 ## Why this project exists
@@ -54,8 +58,8 @@ files, SMS and future object storage.
 
 ## Current status
 
-This repository is **pre-production**. Stages 0–6 are technically complete;
-Stage 7 is the acceptance and operational-readiness phase. Real student data
+This repository follows **production maintenance + development**. Stages 0–7
+are historical implementation and regression areas. Real student data
 requires completed privacy/legal review, retention settings, director MFA,
 working outbound mail, an off-device encrypted backup and a documented restore
 test. See [current work](docs/CURRENT_WORK.md), [product scope](docs/PRODUCT_SCOPE.md)

@@ -1,5 +1,19 @@
 # Notatki wydania
 
+## 1.4.0 — utrzymanie produkcji i niezawodny edytor
+
+- produkcja i rozwój zastępują planowanie etapami; domeny dodatkowe są odłożone;
+- zapis treści jest niezależny od blokad pamięci Safari, ograniczony czasowo i
+  wymaga rzeczywistego potwierdzenia serwera;
+- edytor chroni przed podwójnym zapisem, pokazuje niezapisane zmiany i pozwala
+  odrzucić szkic; telefon dostaje kompaktowy wybór sekcji;
+- widgety można powielać, ukrywać bez kasowania, wyrównywać i ustawiać odstępy;
+  rozwijany podgląd pokazuje roboczy wygląd bez publikacji;
+- poprawiony kontrast i zachowanie obramowania przy wskazaniu myszą;
+- strumieniowy limit API chroni pamięć także bez nagłówka rozmiaru;
+- test odtworzenia wykonany podczas aktualizacji odświeża stan w panelu;
+- pięć podręczników ma aktualną listę zmian. Nie zmieniamy danych ani kluczy.
+
 ## 1.3.0 — spójna administracja i bezpieczna personalizacja
 
 - kartoteki oraz zaproszenia działają jako jeden obszar „Kartoteki i konta” z

@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
+  Copy,
   Download,
   Eye,
   ImagePlus,
@@ -37,6 +38,7 @@ import {
   type SiteContent,
 } from "@/modules/site-content/schema";
 import { useSiteContent } from "@/modules/site-content/site-content-provider";
+import { WidgetPreview } from "./widget-preview";
 
 type EditorSection =
   | "start"
@@ -89,12 +91,13 @@ export function SiteSettingsScreen({
   useEffect(() => {
     if (!protectedMode) return;
     const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort("timeout"), 15_000);
     void fetch("/api/site-content?scope=editor", {
       cache: "no-store",
       signal: controller.signal,
     })
       .then(async (response) => {
-        if (!response.ok) throw new Error("editor-content-load-failed");
+        if (!response.ok || response.redirected) throw new Error("editor-content-load-failed");
         const parsed = siteContentSchema.safeParse(await response.json());
         if (!parsed.success) throw new Error("editor-content-invalid");
         setProtectedContent(parsed.data);
@@ -103,7 +106,7 @@ export function SiteSettingsScreen({
         if (error instanceof DOMException && error.name === "AbortError") return;
         setProtectedLoadError(true);
       });
-    return () => controller.abort();
+    return () => { window.clearTimeout(timeout); controller.abort(); };
   }, [protectedMode]);
 
   if (protectedLoadError) {
@@ -150,6 +153,10 @@ function SiteContentEditor({
   protectedMode: boolean;
 }) {
   const [draft, setDraft] = useState(initialContent);
+  const [savedDraft, setSavedDraft] = useState(initialContent);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(savedDraft);
   const [section, setSection] = useState<EditorSection>("start");
   const [status, setStatus] = useState<{
     kind: "idle" | "success" | "error";
@@ -159,12 +166,24 @@ function SiteContentEditor({
   const importRef = useRef<HTMLInputElement>(null);
 
   async function save() {
-    const result = await onSave(draft);
-    setStatus({
-      kind: result.ok ? "success" : "error",
-      message: result.message,
-    });
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const result = await onSave(draft);
+      if (result.ok) setSavedDraft(draft);
+      setStatus({ kind: result.ok ? "success" : "error", message: result.message });
+    } catch {
+      setStatus({ kind: "error", message: "Nie potwierdzono zapisu. Pobierz kopię i spróbuj ponownie." });
+    } finally { savingRef.current = false; setSaving(false); }
   }
+
+  useEffect(() => {
+    if (!dirty) return;
+    function warn(event: BeforeUnloadEvent) { event.preventDefault(); event.returnValue = ""; }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   async function restoreDefaults() {
     if (
@@ -174,12 +193,17 @@ function SiteContentEditor({
     ) {
       return;
     }
-    await onReset();
-    setDraft(defaultSiteContent);
-    setStatus({
-      kind: "success",
-      message: "Przywrócono domyślną treść KLA.",
-    });
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onReset();
+      setDraft(defaultSiteContent);
+      setSavedDraft(defaultSiteContent);
+      setStatus({ kind: "success", message: "Przywrócono domyślną treść KLA." });
+    } catch {
+      setStatus({ kind: "error", message: "Nie potwierdzono przywrócenia. Zachowano Twoją roboczą treść; sprawdź połączenie." });
+    } finally { savingRef.current = false; setSaving(false); }
   }
 
   function exportContent() {
@@ -201,6 +225,7 @@ function SiteContentEditor({
   async function importContent(file: File | undefined) {
     if (!file) return;
     try {
+      if (file.size > 15_000_000) throw new Error("too-large");
       const parsed = siteContentSchema.safeParse(JSON.parse(await file.text()));
       if (!parsed.success) throw new Error();
       setDraft(parsed.data);
@@ -311,7 +336,7 @@ function SiteContentEditor({
             <ArrowLeft aria-hidden="true" /> {backLabel}
           </Link>
           <Link className="button button-secondary button-small" href="/" target="_blank">
-            <Eye aria-hidden="true" /> Zobacz stronę
+            <Eye aria-hidden="true" /> Zobacz opublikowaną stronę
           </Link>
         </div>
       </header>
@@ -322,6 +347,10 @@ function SiteContentEditor({
             <span className="section-kicker">Ustawienia strony</span>
             <h1>Edytuj bez kodu</h1>
             <p>Wybierz fragment strony, zmień treść i zapisz.</p>
+            <p role="status">{saving ? "Zapisuję…" : dirty ? "Masz nieopublikowane zmiany." : "Brak niezapisanych zmian."}</p>
+            <button type="button" className="button button-secondary button-small" disabled={!dirty || saving} onClick={() => {
+              if (window.confirm("Odrzucić zmiany od ostatniego zapisu?")) { setDraft(savedDraft); setStatus({ kind: "idle", message: "" }); }
+            }}>Odrzuć robocze zmiany</button>
           </div>
           <nav aria-label="Sekcje strony">
             {editorSections.map((item) => {
@@ -339,6 +368,7 @@ function SiteContentEditor({
               );
             })}
           </nav>
+          <label className="editor-mobile-section editor-field"><span>Co chcę zmienić</span><select value={section} onChange={(event) => setSection(event.target.value as EditorSection)}>{editorSections.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
           <div className="editor-demo-note">
             <strong>{protectedMode ? "Treść szkoły" : "Tryb demonstracyjny"}</strong>
             {protectedMode ? (
@@ -424,6 +454,7 @@ function SiteContentEditor({
             className="danger-text"
             type="button"
             onClick={restoreDefaults}
+            disabled={saving}
             aria-label="Przywróć domyślne treści"
           >
             <RotateCcw aria-hidden="true" />
@@ -447,9 +478,11 @@ function SiteContentEditor({
             className="button button-primary"
             type="button"
             onClick={save}
+            disabled={saving || !!workingSlideId}
+            aria-busy={saving}
             data-testid="save-site-content"
           >
-            <Save aria-hidden="true" /> Zapisz zmiany
+            <Save aria-hidden="true" /> {saving ? "Zapisuję…" : "Zapisz zmiany"}
           </button>
         </div>
       </div>
@@ -781,8 +814,16 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
       </div>
 
       {draft.widgets.map((widget, index) => (
-        <EditorCard title={`Widget ${index + 1}: ${widget.title}`} key={widget.id}>
+        <details className="editor-widget-group" key={widget.id} open={index === 0 ? true : undefined}>
+        <summary>Widget {index + 1}: {widget.title}{widget.visible === false ? " · ukryty" : ""}</summary>
+        <EditorCard title="Treść i wygląd widgetu">
+          <div className="editor-three-columns">
+            <label className="editor-layout-visible"><input type="checkbox" checked={widget.visible !== false} onChange={(event) => updateWidget(setDraft, widget.id, { visible: event.target.checked })} /> Widoczny na stronie</label>
+            <label className="editor-field"><span>Wyrównanie tekstu</span><select value={widget.alignment ?? "left"} onChange={(event) => updateWidget(setDraft, widget.id, { alignment: event.target.value as "left" | "center" })}><option value="left">Do lewej</option><option value="center">Na środku</option></select></label>
+            <label className="editor-field"><span>Odstępy w bloku</span><select value={widget.density ?? "comfortable"} onChange={(event) => updateWidget(setDraft, widget.id, { density: event.target.value as "compact" | "comfortable" | "spacious" })}><option value="compact">Kompaktowe</option><option value="comfortable">Wygodne</option><option value="spacious">Przestronne</option></select></label>
+          </div>
           <div className="editor-slide-actions">
+            <button className="icon-button" type="button" disabled={draft.widgets.length >= 24} aria-label="Powiel widget" onClick={() => setDraft((current) => ({ ...current, widgets: current.widgets.length >= 24 ? current.widgets : [...current.widgets.slice(0, index + 1), { ...widget, id: `widget-${crypto.randomUUID()}` }, ...current.widgets.slice(index + 1)] }))}><Copy aria-hidden="true" /></button>
             <button className="icon-button" type="button" onClick={() => moveWidget(index, -1)} disabled={index === 0} aria-label="Przesuń widget wyżej"><ArrowUp aria-hidden="true" /></button>
             <button className="icon-button" type="button" onClick={() => moveWidget(index, 1)} disabled={index === draft.widgets.length - 1} aria-label="Przesuń widget niżej"><ArrowDown aria-hidden="true" /></button>
             <button className="icon-button icon-button-danger" type="button" onClick={() => removeWidget(widget.id)} disabled={draft.widgets.length === 1} aria-label="Usuń widget"><Trash2 aria-hidden="true" /></button>
@@ -854,6 +895,7 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
             </label>
           </div>
           <p className="editor-field-help">„Bez tła” i cienka linia wtapiają treść w stronę. „Miękka warstwa” łagodnie oddziela tekst bez ciężkiego kafla.</p>
+          <details className="editor-widget-preview"><summary>Podgląd wyglądu tego widgetu</summary><WidgetPreview widget={widget} /></details>
           <TextField label="Krótka etykieta" value={widget.badge} onChange={(value) => updateWidget(setDraft, widget.id, { badge: value })} />
           <TextField label="Nagłówek" value={widget.title} onChange={(value) => updateWidget(setDraft, widget.id, { title: value })} />
           <TextAreaField label="Opis" value={widget.text} onChange={(value) => updateWidget(setDraft, widget.id, { text: value })} />
@@ -862,6 +904,7 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
             <TextField label="Adres, np. #kontakt lub https://…" value={widget.href} onChange={(value) => updateWidget(setDraft, widget.id, { href: value })} />
           </div>
         </EditorCard>
+        </details>
       ))}
     </div>
   );
