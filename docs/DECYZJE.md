@@ -1,5 +1,25 @@
 # Decyzje architektoniczne
 
+## ADR-107 — uprawnienia administracyjne są delegowane jak moduły
+
+**Data:** 2026-09-04. **Decyzja:** edycja publicznej strony oraz masowy import
+i eksport kartotek są osobnymi pozycjami macierzy modułów dla dyrektora.
+Edycja strony jest domyślnie włączona, a transfer danych domyślnie wyłączony.
+Właściciel zachowuje dostęp naprawczy. Każda trasa odczytu, zapisu i pobrania
+sprawdza politykę na serwerze, dlatego delegowanie nie polega wyłącznie na
+pokazaniu przycisku.
+
+## ADR-106 — wygląd widgetu pozostaje ograniczonym kontraktem
+
+**Data:** 2026-09-04. **Decyzja:** widget może otrzymać pełne, barwione,
+miękkie albo przezroczyste tło, jedno z czterech poziomów krycia, kontrolowane
+obramowanie i dwa łagodne sposoby łączenia kolorów. Dowolny CSS, filtry i
+skrypty pozostają zabronione. Na telefonie układ zawsze przechodzi do jednej
+kolumny, a ruch respektuje `prefers-reduced-motion`.
+
+**Dlaczego:** szkoła otrzymuje widoczną swobodę stylistyczną bez utraty
+czytelności, przewidywalnego skalowania i odporności na wstrzyknięcie kodu.
+
 ## ADR-096 — moduły są włączane osobno dla każdej roli
 
 **Data:** 2026-09-04. **Decyzja:** właściciel systemu zarządza jedną szkolną
@@ -157,7 +177,7 @@ płatniczy lub księgowy.
 ## ADR-001 — pilot zamiast pełnej produkcji
 
 **Data:** 2026-07-25
-**Decyzja:** 1 września dostarczamy pilot na danych demonstracyjnych.
+**Decyzja:** pierwsze wydanie odbiorowe działa na danych demonstracyjnych.
 **Dlaczego:** pierwotny zakres nie mieści się w budżecie/czasie, a dane dzieci
 wymagają odbioru bezpieczeństwa i prawa.
 
@@ -248,7 +268,7 @@ wygląd, a selekcja nadal minimalizuje dane małoletnich.
 ## ADR-013 — cztery moduły w zakresie startowym
 
 **Data:** 2026-07-25
-**Decyzja:** pilot do 1 września zawiera podstawowe umowy online, komunikator z
+**Decyzja:** zakres pilota zawiera podstawowe umowy online, komunikator z
 masowymi ogłoszeniami, ręczny status płatności oraz materiały i zadania.
 **Dlaczego:** są to funkcje wymagane do rozpoczęcia pracy szkoły. Ich granice
 określa `docs/PRODUCT_SCOPE.md`; funkcje zaawansowane pozostają po pilocie.
@@ -284,7 +304,7 @@ mikrointerakcje nie uzasadniają kolejnej biblioteki.
 **Data:** 2026-07-25
 **Decyzja:** Etap 0–0,5 ma dodatkowy eksport statyczny dla zwykłego hostingu
 home.pl. Nie zastępuje on wydania Node.js pełnego eDziennika.
-**Dlaczego:** klientka może szybko i tanio ocenić stronę oraz UX na własnej
+**Dlaczego:** szkoła może szybko i tanio ocenić stronę oraz UX na własnej
 domenie, bez udawania, że hosting plików obsłuży logowanie, kolejkę i bazę.
 
 ## ADR-018 — jedna domena kanoniczna
@@ -456,7 +476,7 @@ statycznej stronie pokazowej.
 usuwa też ryzyko przeniesienia zależności natywnych z macOS na Linux, a osobny
 staging izoluje syntetyczne dane od przyszłej produkcji.
 
-## ADR-036 — powtarzalny seed stagingu bez danych klientki
+## ADR-036 — powtarzalny seed stagingu bez danych szkoły
 
 **Data:** 2026-07-26
 **Decyzja:** pierwsza instalacja VPS po migracjach uruchamia idempotentny seed
@@ -469,7 +489,7 @@ kopiowania bazy z laptopa, danych widocznych na zrzutach ani danych dzieci.
 ## ADR-037 — tymczasowy test z Maca przez tunel wychodzący
 
 **Data:** 2026-07-26
-**Decyzja:** przed zakupem VPS klientka może testować izolowany build aplikacji
+**Decyzja:** przed zakupem VPS szkoła może testować izolowany build aplikacji
 uruchomiony na Macu przez losowy Cloudflare Quick Tunnel HTTPS. Nie otwieramy
 portu routera i nie używamy publicznego IP jako adresu logowania. Runtime,
 logi, PID-y oraz plik przekazania trafiają wyłącznie do ignorowanego `.data`.
@@ -479,16 +499,16 @@ teście.
 natomiast tunel wychodzący pozwala wykonać krótki odbiór bez zmiany routera.
 Losowy adres i brak SLA są akceptowalne wyłącznie dla tymczasowego testu.
 
-## ADR-038 — lokalna bramka jakości przed każdym odbiorem klientki
+## ADR-038 — lokalna bramka jakości przed każdym odbiorem
 
 **Data:** 2026-07-26
 **Decyzja:** każda zmiana najpierw przechodzi komplet lokalnych testów,
 następnie trafia do osobnego commita, a dopiero potem jest budowana na
-tymczasowym serwerze Mac z dokładnie tego commita. Klientka dostaje link HTTPS
+tymczasowym serwerze Mac z dokładnie tego commita. Osoba odbierająca dostaje link HTTPS
 i konta syntetyczne dopiero po publicznym teście logowania, uprawnień i logów.
 Jej uwagi rozpoczynają następny commit; nie poprawiamy kodu „w locie” na
 działającym pokazie.
-**Dlaczego:** zawsze wiadomo, którą wersję klientka ocenia, a błędny lub
+**Dlaczego:** zawsze wiadomo, którą wersję szkoła ocenia, a błędny lub
 nieukończony lokalny kod nie trafia do odbioru.
 
 ## ADR-039 — MFA dyrektora czasowo wyłączone w pilocie
@@ -500,7 +520,7 @@ kontroluje `KLA_REQUIRE_DIRECTOR_MFA`; brak zmiennej oznacza bezpieczne
 wymuszenie, a wartość `0` jest jawnym wyjątkiem pilota. Diagnostyka pokazuje
 wyjątek jako ostrzeżenie. Przed prawdziwymi danymi ustawiamy wartość `1` i
 ponownie przechodzimy test MFA.
-**Dlaczego:** klientka ma szybciej testować bieżące funkcje bez zmiany danych
+**Dlaczego:** osoba odbierająca ma szybciej testować bieżące funkcje bez zmiany danych
 logowania, ale wyjątek nie może osłabić konta technicznego ani zostać
 niezauważony przy przejściu na produkcję.
 
@@ -897,7 +917,7 @@ Prisma jest przypięta przez `overrides` do poprawionej wersji 8.0.2. CI wykonuj
 podatność w drzewie produkcyjnym. Każda aktualizacja nadal przechodzi pełne
 testy i build przed przyjęciem.
 
-## ADR-067 — pakiet dokumentów klientki i harmonogram rat
+## ADR-067 — pakiet dokumentów szkoły i harmonogram rat
 
 **Data:** 2026-08-22
 **Decyzja:** źródłem treści prawnej pozostają niezmienne PDF-y przygotowane
@@ -1009,7 +1029,7 @@ e-maile spełniają warunki danych demonstracyjnych. Przed usunięciem zawsze
 powstaje szyfrowany snapshot bazy i prywatnych plików. Klucz odzyskiwania jest
 przechowywany oddzielnie od snapshotu i repozytorium.
 
-**Dlaczego:** klientka musi móc powtarzać odbiór od zera oraz wrócić do bogatego
+**Dlaczego:** operator musi móc powtarzać odbiór od zera oraz wrócić do bogatego
 demo bez ręcznego odtwarzania danych. Twarda blokada zapobiega przypadkowemu
 uruchomieniu destrukcyjnej komendy na produkcji.
 

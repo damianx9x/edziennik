@@ -11,6 +11,8 @@ export const configurableModuleKeys = [
   "contracts",
   "payments",
   "statistics",
+  "siteEditor",
+  "dataTransfer",
 ] as const;
 
 export type ConfigurableModuleKey = (typeof configurableModuleKeys)[number];
@@ -77,6 +79,16 @@ export const moduleCatalog: Record<
     description: "Odwiedziny i stan działania szkoły.",
     supportedRoles: ["DIRECTOR"],
   },
+  siteEditor: {
+    label: "Edycja strony publicznej",
+    description: "Treść, zdjęcia, układ i widgety wizytówki.",
+    supportedRoles: ["DIRECTOR"],
+  },
+  dataTransfer: {
+    label: "Import i eksport CSV/XLSX",
+    description: "Masowe przenoszenie kartotek z arkusza.",
+    supportedRoles: ["DIRECTOR"],
+  },
 };
 
 const rolePolicySchema = z.object({
@@ -100,7 +112,9 @@ export const defaultModuleAccessPolicy = Object.fromEntries(
     Object.fromEntries(
       configurableRoles.map((role) => [
         role,
-        moduleCatalog[key].supportedRoles.includes(role),
+        key === "dataTransfer"
+          ? false
+          : moduleCatalog[key].supportedRoles.includes(role),
       ]),
     ),
   ]),

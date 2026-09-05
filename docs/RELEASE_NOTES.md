@@ -1,5 +1,20 @@
 # Notatki wydania
 
+## 1.3.0 — spójna administracja i bezpieczna personalizacja
+
+- kartoteki oraz zaproszenia działają jako jeden obszar „Kartoteki i konta” z
+  czytelnymi zakładkami;
+- edycja strony i masowy import/eksport są delegowane dyrektorowi z macierzy
+  modułów, a operacje są chronione również po stronie serwera;
+- import oraz eksport danych pozostają domyślnie dostępne tylko właścicielowi;
+- widgety otrzymały ograniczone ustawienia tła, krycia, obramowania i łagodnego
+  łączenia kolorów bez możliwości wstrzyknięcia kodu;
+- ustawienia dyrektora nie dublują już kartotek, zaproszeń i statystyk;
+- publiczna dokumentacja ma neutralny opis zakresu, większą galerię,
+  angielski README oraz aktualną checklistę prac;
+- wdrożenie Raspberry weryfikuje rzeczywiste pliki CSS i JavaScript, a przy
+  ich braku automatycznie odrzuca wydanie i wraca do działającej wersji.
+
 ## 1.1.4 — odzyskiwanie kont i modułowa wizytówka
 
 - dyrektor może wysłać standardowy link resetu albo wygenerować losowe hasło
@@ -65,7 +80,7 @@
   prywatnych danych panelu;
 - każda rola szkoły może otworzyć prywatny, audytowany kanał pomocy technicznej
   z twórcą aplikacji bez przechodzenia do poczty;
-- Etapy 5 i 6 są zamknięte technicznie; zadaniowy odbiór klientki pozostaje w
+- Etapy 5 i 6 są zamknięte technicznie; zadaniowy odbiór szkoły pozostaje w
   Etapie 7.
 
 ## 1.1.0 · 30 sierpnia 2026

@@ -1,5 +1,6 @@
 import { db } from "@/lib/server/db";
 import { requireDirector } from "@/modules/identity/auth/session";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { createRecordsCsv } from "@/modules/imports/export";
 import { loadSchoolExportRows } from "@/modules/imports/export-school";
 
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await requireDirector("/panel/szkola/narzedzia");
+  await requireEnabledModule(session, "dataTransfer");
   const schoolId = session.user.schoolId;
   const { rows, counts } = await loadSchoolExportRows(schoolId);
   const csv = createRecordsCsv(rows);

@@ -19,7 +19,11 @@ import {
   invitationRoleLabels,
 } from "@/modules/identity/invitations/schema";
 import { maskEmail } from "@/modules/identity/invitations/token";
-import { requireEnabledModule } from "@/modules/module-access/server";
+import {
+  getModuleAccessPolicy,
+  moduleIsEnabled,
+  requireEnabledModule,
+} from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Zaproszenia" };
 export const dynamic = "force-dynamic";
@@ -27,6 +31,12 @@ export const dynamic = "force-dynamic";
 export default async function InvitationsPage() {
   const session = await requireDirector();
   await requireEnabledModule(session, "invitations");
+  const moduleAccess = await getModuleAccessPolicy(session.user.schoolId);
+  const recordsEnabled = moduleIsEnabled(
+    moduleAccess,
+    "records",
+    session.user.role,
+  );
   const [invitations, accounts] = await Promise.all([
     db.invitation.findMany({
       where: { schoolId: session.user.schoolId },
@@ -78,7 +88,9 @@ export default async function InvitationsPage() {
       </header>
 
       <nav className="records-section-tabs" aria-label="Dział Kartoteki">
-        <Link href="/panel/szkola/kartoteki">Osoby i zasoby</Link>
+        {recordsEnabled ? (
+          <Link href="/panel/szkola/kartoteki">Osoby i zasoby</Link>
+        ) : null}
         <Link className="active" href="/panel/szkola/zaproszenia">
           Zaproszenia i dostęp
         </Link>

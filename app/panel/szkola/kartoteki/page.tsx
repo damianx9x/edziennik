@@ -21,7 +21,11 @@ import {
 import { QuickRecordForms } from "@/modules/people/components/quick-record-forms";
 import type { RecordHistoryEntry } from "@/modules/records/components/record-edit-form";
 import { ResourceDirectory } from "@/modules/records/components/resource-directory";
-import { requireEnabledModule } from "@/modules/module-access/server";
+import {
+  getModuleAccessPolicy,
+  moduleIsEnabled,
+  requireEnabledModule,
+} from "@/modules/module-access/server";
 
 export const metadata: Metadata = { title: "Kartoteki szkoły" };
 export const dynamic = "force-dynamic";
@@ -39,6 +43,17 @@ export default async function RecordsPage({
     session.user.role === "SYSTEM_OWNER" ||
     session.user.role === "DIRECTOR";
   const isSystemOwner = session.user.role === "SYSTEM_OWNER";
+  const moduleAccess = await getModuleAccessPolicy(schoolId);
+  const invitationsEnabled = moduleIsEnabled(
+    moduleAccess,
+    "invitations",
+    session.user.role,
+  );
+  const dataTransferEnabled = moduleIsEnabled(
+    moduleAccess,
+    "dataTransfer",
+    session.user.role,
+  );
   const showArchived = isSystemOwner && params.stan === "archiwalne";
   const actorRole: "DIRECTOR" | "TEACHER" = isDirector
     ? "DIRECTOR"
@@ -352,12 +367,14 @@ export default async function RecordsPage({
         </div>
         {isDirector ? (
           <div className="records-heading-actions">
-            <Link
-              className="button button-secondary"
-              href="/panel/szkola/narzedzia#dane"
-            >
-              <Wrench aria-hidden="true" /> Narzędzia danych
-            </Link>
+            {dataTransferEnabled ? (
+              <Link
+                className="button button-secondary"
+                href="/panel/szkola/narzedzia#dane"
+              >
+                <Wrench aria-hidden="true" /> Narzędzia danych
+              </Link>
+            ) : null}
             <a className="button button-primary" href="#dodaj-kartoteke">
               <Plus aria-hidden="true" /> Dodaj kartotekę
             </a>
@@ -374,7 +391,7 @@ export default async function RecordsPage({
             Archiwum
           </Link>
         ) : null}
-        {isDirector ? (
+        {isDirector && invitationsEnabled ? (
           <Link href="/panel/szkola/zaproszenia">Zaproszenia i dostęp</Link>
         ) : null}
       </nav>

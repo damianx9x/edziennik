@@ -1,5 +1,5 @@
 {
-  "version": "1.2.1",
+  "version": "1.3.0",
   "date": "4 września 2026",
   "schoolChanges": [
     "Właściciel może włączyć lub wyłączyć każdy moduł osobno dla dyrektora, wykładowcy, rodzica i ucznia.",
@@ -8,7 +8,10 @@
     "Do strony można dodać, skalować, kolorować i porządkować do 24 widgetów oraz skorzystać z 15 nowych gotowych typów.",
     "Mobilna wizytówka zawsze składa sekcje i widgety do jednej czytelnej kolumny.",
     "Edytor ma gotowy przycisk uzupełnienia publicznego kontaktu i lokalizacji King’s Language Academy.",
-    "Wizytówka ma bogatszą treść, jednorazowe animacje i szanuje systemowe ograniczenie ruchu."
+    "Wizytówka ma bogatszą treść, jednorazowe animacje i szanuje systemowe ograniczenie ruchu.",
+    "Kartoteki oraz zaproszenia są teraz jednym działem z dwiema jasnymi zakładkami, zamiast dwóch mylących pozycji menu.",
+    "Właściciel może przekazać dyrektorowi edycję strony i import lub eksport danych; masowy transfer pozostaje domyślnie wyłączony.",
+    "Widgety mają bezpieczne ustawienia tła, krycia, obramowania i wtopienia koloru, a telefon nadal układa je w jedną kolumnę."
   ],
   "ownerChanges": [
     "Aktualizator Raspberry sprawdza teraz prawdziwe pliki CSS i JavaScript strony; niekompletne wydanie jest automatycznie odrzucane i cofane.",
@@ -16,6 +19,7 @@
     "Kontrola modułu działa po stronie serwera także dla akcji zapisu i prywatnych plików; samo ukrycie przycisku nie jest zabezpieczeniem.",
     "Start, logowanie, MFA, pomoc i zgłoszenia są stałym rdzeniem i nie mogą zostać przypadkowo wyłączone.",
     "Właściciel zawsze zachowuje dostęp do modułów, aby móc naprawić konfigurację i odzyskać dane.",
-    "Audyt Etapów 0–7 przeszedł 229 testów etapowych, a pełna regresja pozostaje obowiązkowa przed wdrożeniem."
+    "Audyt Etapów 0–7 obejmuje pełną regresję, build, sprawdzenie paczki Raspberry oraz prawdziwe klikanie mobilne i desktopowe.",
+    "Dokumentacja publiczna ma neutralny opis produktu, większą galerię, stronę angielską i aktualną checklistę prac."
   ]
 }

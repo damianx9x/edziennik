@@ -78,6 +78,32 @@ describe("siteContentSchema", () => {
     expect(siteContentSchema.safeParse(invalidContent).success).toBe(false);
   });
 
+  it("accepts restrained widget surfaces and rejects invented blend modes", () => {
+    const styled = {
+      ...defaultSiteContent,
+      widgets: defaultSiteContent.widgets.map((widget, index) =>
+        index === 0
+          ? {
+              ...widget,
+              surface: "soft",
+              opacity: "65",
+              borderStyle: "line",
+              blend: "soft-light",
+            }
+          : widget,
+      ),
+    };
+    expect(siteContentSchema.safeParse(styled).success).toBe(true);
+    expect(
+      siteContentSchema.safeParse({
+        ...styled,
+        widgets: styled.widgets.map((widget, index) =>
+          index === 0 ? { ...widget, blend: "difference" } : widget,
+        ),
+      }).success,
+    ).toBe(false);
+  });
+
   it("requires at least one slider photo", () => {
     const contentWithoutSlides = {
       ...defaultSiteContent,

@@ -260,7 +260,12 @@ function HomeSection({
             const Icon = icons[widget.type];
             const external = widget.href.startsWith("http");
             return (
-              <article className={`home-widget home-widget-${widget.size} home-widget-${widget.tone}`} data-widget-type={widget.type} key={widget.id}>
+              <article
+                className={`home-widget home-widget-${widget.size} home-widget-${widget.tone} home-widget-surface-${widget.surface ?? "solid"} home-widget-border-${widget.borderStyle ?? "accent"} home-widget-blend-${widget.blend ?? "normal"}`}
+                data-widget-type={widget.type}
+                key={widget.id}
+                style={{ "--widget-opacity": Number(widget.opacity ?? "100") / 100 } as React.CSSProperties}
+              >
                 <div className="home-widget-top"><span>{widget.badge}</span><Icon aria-hidden="true" /></div>
                 <h2>{widget.title}</h2><p>{widget.text}</p>
                 <a href={widget.href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}>{widget.actionLabel} <ArrowRight aria-hidden="true" /></a>

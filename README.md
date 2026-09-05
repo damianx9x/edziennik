@@ -1,5 +1,7 @@
 # eDziennik KLA
 
+[Polski](README.md) · [English](README.en.md)
+
 [![CI](https://github.com/damianx9x/edziennik/actions/workflows/ci.yml/badge.svg)](https://github.com/damianx9x/edziennik/actions/workflows/ci.yml)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-111827)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6)
@@ -166,6 +168,7 @@ Instalacja i utrzymanie Raspberry: [docs/OPERACJE_RASPBERRY.md](docs/OPERACJE_RA
 - [Instrukcja właściciela systemu — PDF](output/pdf/Instrukcja_eDziennika_KLA_dla_wlasciciela_systemu.pdf)
 - [Funkcje i role](docs/FUNKCJE_I_ROLE.md)
 - [Zakres i stan produktu](docs/PRODUCT_SCOPE.md)
+- [Bieżący stan i dalsze prace](docs/CURRENT_WORK.md)
 - [Architektura](docs/ARCHITEKTURA.md)
 - [Bezpieczeństwo, prawo i RODO](docs/BEZPIECZENSTWO_PRAWO_RODO.md)
 - [System UI](docs/SYSTEM_UI.md)

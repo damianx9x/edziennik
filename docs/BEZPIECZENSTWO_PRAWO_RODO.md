@@ -1,7 +1,7 @@
 # Bezpieczeństwo i RODO — przed prawdziwymi danymi
 
 To checklista techniczno-organizacyjna, nie porada prawna. Treści i podstawy
-musi zatwierdzić prawnik lub IOD klientki.
+musi zatwierdzić prawnik lub IOD administratora danych.
 
 ## Audyt umów elektronicznych — 22 sierpnia 2026
 

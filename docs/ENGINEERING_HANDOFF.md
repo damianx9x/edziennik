@@ -147,7 +147,7 @@ Raspberry: `sudo kla-update "/ścieżka/do/rozpakowanej-paczki"`, potem
   serwerowych, sesji, bazy, kolejki ani prywatnych pobrań.
 
 Środowiska i sekrety muszą być rozdzielone. Produkcyjnej bazy nigdy nie kopiuje
-się na demo. Paczka nie zawiera `.env`, bazy, backupu ani danych klientki.
+się na demo. Paczka nie zawiera `.env`, bazy, backupu ani danych szkoły.
 
 ## Główne ryzyka i rekomendowana kolejność
 

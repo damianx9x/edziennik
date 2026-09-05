@@ -1,35 +1,33 @@
-# eDziennik KLA 2026 — plan realizacji
+# eDziennik KLA — zakres i etapy produktu
 
-Stan produktu na 31 sierpnia 2026. Etapy 0–6 tworzą wersję 1.0 pilota.
+Stan produktu na 4 września 2026. Etapy 0–6 tworzą sprawdzony technicznie
+zakres pilota, a Etap 7 obejmuje odbiór przedprodukcyjny i przygotowanie
+operacyjne.
 
-## Uczciwy zakres
+## Zakres produktu
 
-1500 zł i termin 1 września nie pokrywają całej wizji. Do tego dnia dostarczamy
-**pilot najważniejszych przepływów**, początkowo na danych demonstracyjnych.
-Nie nazywamy go gotowym produkcyjnie systemem dla danych dzieci bez odbioru
-bezpieczeństwa, dokumentacji RODO i testu klientki.
+eDziennik KLA jest systemem dla niewielkiej prywatnej szkoły języka
+angielskiego. Priorytetem jest grafik oparty na sali, wykładowcy i grupie.
+Zakres obejmuje także kartoteki i relacje rodzinne, umowy oraz raty,
+komunikację, materiały, zadania, obecność i opisowe postępy ucznia. Aktualny
+podział odpowiedzialności opisuje `docs/FUNKCJE_I_ROLE.md`.
 
-Priorytetem pozostaje grafik: sala + wykładowca + grupa. Decyzją właściciela
-projektu pilot obejmuje także podstawowe wersje: umów online, ręcznych statusów
-płatności, komunikatora z masowymi ogłoszeniami oraz materiałów i zadań
-domowych. Aktualny stan opisuje `docs/FUNKCJE_I_ROLE.md`.
+Wydanie pozostaje przedprodukcyjne do czasu zakończenia odbioru bezpieczeństwa,
+konfiguracji retencji, procedur RODO, SMTP, zewnętrznej kopii oraz testu
+odtworzenia w środowisku docelowym. Podpis kwalifikowany, płatności internetowe
+i bramka SMS są możliwymi rozszerzeniami, a nie ukrytymi obietnicami bieżącej
+wersji.
 
-Rozbudowane podpisy kwalifikowane, płatności internetowe, SMS, rozbudowana
-analityka i Skarbiec Słówek pozostają osobno wycenionym rozwojem. Ten szerszy
-pilot jest możliwy tylko przy utrzymaniu prostych przepływów i rezygnacji z
-dodatków w terminie do 1 września.
+## Najważniejsze decyzje zakresowe
 
-## Kluczowe korekty względem RTF
+1. Pilot nie jest automatycznie zgodą na użycie prawdziwych danych.
+2. Better Auth zapewnia gotowe TOTP 2FA dyrektora.
+3. Natywny Next.js Node i PostgreSQL obsługują logikę serwerową aplikacji.
+4. PWA korzysta ze standardów Next.js i nie cache’uje prywatnych ekranów.
+5. Podstawy przetwarzania i retencja są ustalane osobno dla rodzaju danych.
+6. Wgląd dyrektora to jawny, audytowany komunikator służbowy, nie ukryte DW.
 
-1. 1 września = pilot, nie cała produkcja.
-2. Better Auth zamiast Auth.js, bo wymóg obejmuje gotowe TOTP 2FA dyrektora.
-3. MyDevil MD2 zamiast MD1: 2 GB RAM daje sensowniejszy margines niż 1 GB.
-4. Natywny Next.js Node zamiast zgodności Cloudflare/Vinext.
-5. PWA przez standardy Next.js, nie przez dodatek instalowany z przyzwyczajenia.
-6. Podstawy przetwarzania i retencja są ustalane per rodzaj danych.
-7. Wgląd dyrektora to jawny, audytowany komunikator służbowy, nie ukryte DW.
-
-## Harmonogram do 1 września
+## Historia etapów
 
 ### Etap 0 — fundament (25–27 lipca)
 
@@ -114,7 +112,7 @@ Cykliczność pozostaje kontrolowanym rozszerzeniem grafiku.**
 - filtry po trzech zasobach,
 - dzisiejsze zajęcia, temat oraz szybka obecność na telefonie.
 
-Odbiór: klientka układa demonstracyjny tydzień bez instrukcji; również dwie
+Odbiór: osoba testująca układa demonstracyjny tydzień bez instrukcji; również dwie
 równoległe próby nie zapisują konfliktu.
 
 ### Etap 4 — umowy i płatności (12–16 sierpnia)
@@ -132,8 +130,8 @@ równoległe próby nie zapisują konfliktu.
 ### Etap 5 — komunikator i ogłoszenia (17–21 sierpnia)
 
 **Stan: zamknięty technicznie 31 sierpnia 2026. Funkcje przeszły testy
-automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczne
-potwierdzenie klientki pozostaje częścią Etapu 7.**
+automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczny
+odbiór zadaniowy pozostaje częścią Etapu 7.**
 
 - służbowe rozmowy grupowe i potwierdzenia odczytu,
 - rozmowy z osobami wskazanymi przez dyrektora, z jawnym składem uczestników,
@@ -148,8 +146,8 @@ osobie spoza kanału działają na tej samej, serwerowej kontroli ról.
 ### Etap 6 — materiały, zadania i panele klienta (22–25 sierpnia)
 
 **Stan: zamknięty technicznie 31 sierpnia 2026. Funkcje przeszły testy
-automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczne
-potwierdzenie klientki pozostaje częścią Etapu 7.**
+automatyczne, test roli i klikanie na telefonie oraz komputerze. Ostateczny
+odbiór zadaniowy pozostaje częścią Etapu 7.**
 
 - materiał jako plik lub link przypisany do grupy,
 - zadanie, termin i status oddania,
@@ -165,24 +163,21 @@ pozwalają dodać panel do ekranu telefonu bez cache'owania danych szkoły.
 ### Etap 7 — pilot i odbiór (26–28 sierpnia)
 
 **Stan: w toku — funkcje, infrastruktura i podręczniki są wdrożone testowo.
-Pozostają: zadaniowy odbiór klientki i decyzja prawno-bezpieczeństwowa
+Pozostają: zadaniowy odbiór szkoły i decyzja prawno-bezpieczeństwowa
 „go/no-go” przed prawdziwymi danymi.**
 
 - prawdziwa marka, bez danych uczniów,
-- test zadaniowy z klientką bez podpowiadania,
+- test zadaniowy z przedstawicielem szkoły bez podpowiadania,
 - staging, backup i próbne odtworzenie,
 - osobny, obszerny podręcznik ze zrzutami dla dyrektora, wykładowcy, rodzica i
   ucznia oraz osobny podręcznik właściciela; wszystkie pobierane z bieżącego
   wdrożenia, i protokół odbioru.
 
-### Rezerwa (29–31 sierpnia)
-
-Tylko błędy blokujące, bez nowych funkcji.
-
-### 1 września
+### Odbiór przedprodukcyjny
 
 Pokaz i decyzja „go/no-go” dla prawdziwych danych. Produkcja wymaga zamknięcia
-czerwonych punktów z `BEZPIECZENSTWO_PRAWO_RODO.md`.
+czerwonych punktów z `BEZPIECZENSTWO_PRAWO_RODO.md` oraz checklisty w
+`docs/CURRENT_WORK.md`.
 
 ## Rozwój po pilocie
 
@@ -200,13 +195,13 @@ Szkielet Etapu 0–0,5 jest osobnym statycznym eksportem i może działać na
 zwykłym współdzielonym hostingu home.pl. Nie zawiera logowania ani prawdziwych
 danych. Procedura znajduje się w `INSTRUKCJA_HOME_PL.md`.
 
-Rekomendacja dla pełnego pilota: konto klientki w MyDevil MD2. Oficjalna oferta podaje Node.js,
+Jedną z opcji dla pełnego pilota jest MyDevil MD2. Oficjalna oferta podaje Node.js,
 PostgreSQL 16, SSH/Git, Warszawę, codzienne kopie i 2 GB RAM. Cena regularna
 MD2 to obecnie 400 zł brutto/rok; promocje są czasowe:
 [oferta MyDevil](https://www.mydevil.net/nasza-oferta/).
 
-Zwykły hosting stron home.pl nie jest celem dla stałego serwera Next.js. Jeśli
-klientka wymaga home.pl, pozostaje
+Zwykły hosting stron home.pl nie jest celem dla stałego serwera Next.js. Przy
+konieczności użycia infrastruktury home.pl pozostaje
 [VPS Linux](https://home.pl/serwery/vps-linux/) wraz z samodzielnym utrzymaniem
 systemu, reverse proxy, firewalla, aktualizacji i backupów. Przy tym budżecie
 to nieproporcjonalne ryzyko.
@@ -237,8 +232,8 @@ i sprawdzony backup.
 
 ## Bramki
 
-- Przed Etapem 1: odpowiedzi z `USTALENIA_Z_KLIENTKA.md`.
+- Przed Etapem 1: zatwierdzone wymagania funkcjonalne i role.
 - Przed prawdziwym importem: zatwierdzony zakres pól i bezpieczny kanał.
-- Przed e-mail/SMS: konto klientki i limit kosztu.
+- Przed e-mail/SMS: konto dostawcy szkoły i limit kosztu.
 - Przed produkcją: checklista bezpieczeństwa i odbiór.
 - Przed umowami: treść i sposób akceptacji zatwierdzone przez prawnika.

@@ -816,6 +816,44 @@ function LayoutFields({ draft, setDraft }: FieldGroupProps) {
               </select>
             </label>
           </div>
+          <div className="editor-four-columns">
+            <label className="editor-field">
+              <span>Tło</span>
+              <select value={widget.surface ?? "solid"} onChange={(event) => updateWidget(setDraft, widget.id, { surface: event.target.value as NonNullable<typeof widget.surface> })}>
+                <option value="solid">Pełne</option>
+                <option value="tint">Delikatnie barwione</option>
+                <option value="soft">Miękka warstwa</option>
+                <option value="transparent">Bez tła</option>
+              </select>
+            </label>
+            <label className="editor-field">
+              <span>Krycie tła</span>
+              <select value={widget.opacity ?? "100"} onChange={(event) => updateWidget(setDraft, widget.id, { opacity: event.target.value as NonNullable<typeof widget.opacity> })}>
+                <option value="100">100%</option>
+                <option value="85">85%</option>
+                <option value="65">65%</option>
+                <option value="40">40%</option>
+              </select>
+            </label>
+            <label className="editor-field">
+              <span>Obramowanie</span>
+              <select value={widget.borderStyle ?? "accent"} onChange={(event) => updateWidget(setDraft, widget.id, { borderStyle: event.target.value as NonNullable<typeof widget.borderStyle> })}>
+                <option value="none">Brak</option>
+                <option value="line">Cienka linia</option>
+                <option value="accent">Kolorystyczny akcent</option>
+                <option value="shadow">Miękki cień</option>
+              </select>
+            </label>
+            <label className="editor-field">
+              <span>Wtopienie koloru</span>
+              <select value={widget.blend ?? "normal"} onChange={(event) => updateWidget(setDraft, widget.id, { blend: event.target.value as NonNullable<typeof widget.blend> })}>
+                <option value="normal">Naturalne</option>
+                <option value="multiply">Głębsze</option>
+                <option value="soft-light">Miękkie światło</option>
+              </select>
+            </label>
+          </div>
+          <p className="editor-field-help">„Bez tła” i cienka linia wtapiają treść w stronę. „Miękka warstwa” łagodnie oddziela tekst bez ciężkiego kafla.</p>
           <TextField label="Krótka etykieta" value={widget.badge} onChange={(value) => updateWidget(setDraft, widget.id, { badge: value })} />
           <TextField label="Nagłówek" value={widget.title} onChange={(value) => updateWidget(setDraft, widget.id, { title: value })} />
           <TextAreaField label="Opis" value={widget.text} onChange={(value) => updateWidget(setDraft, widget.id, { text: value })} />

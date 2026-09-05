@@ -8,6 +8,7 @@ import { db } from "@/lib/server/db";
 import { getFileStorage } from "@/modules/files/storage";
 import { scanFileForMalware } from "@/modules/files/malware-scanner";
 import { requireDirector } from "@/modules/identity/auth/session";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import { createRecordOnlyEmail } from "@/modules/people/record-email";
 import {
   discardReadyScheduleGenerations,
@@ -32,6 +33,7 @@ export async function previewImportAction(
   formData: FormData,
 ): Promise<ImportActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "dataTransfer");
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return importError("Wybierz plik CSV albo XLSX.");
@@ -126,6 +128,7 @@ export async function commitImportAction(
   formData: FormData,
 ): Promise<ImportActionState> {
   const session = await requireDirector();
+  await requireEnabledModule(session, "dataTransfer");
   const parsedInput = commitImportSchema.safeParse({
     batchId: formData.get("batchId"),
   });

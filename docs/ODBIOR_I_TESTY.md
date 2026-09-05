@@ -18,7 +18,7 @@ Etapy sprawdzono kolejno, bez pomijania błędów między etapami:
 
 Nowa macierz modułów jest dodatkowo testowana osobno. Kontrola działa przed
 odczytem strony, wykonaniem akcji i wydaniem prywatnego pliku. Ręczny odbiór
-klientki nadal pozostaje konieczny przed decyzją o prawdziwych danych.
+szkoły nadal pozostaje konieczny przed decyzją o prawdziwych danych.
 
 Każdy etap przechodzi osobny test funkcjonalny, negatywny test uprawnień,
 telefon 375 × 812, komputer 1440 × 900, kontrolę konsoli i zapis dowodu w

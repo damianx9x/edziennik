@@ -311,6 +311,10 @@ export const siteContentSchema = z.object({
         href: safeWidgetHref,
         size: z.enum(["small", "medium", "large"]),
         tone: z.enum(["blue", "yellow", "red", "navy"]),
+        surface: z.enum(["solid", "tint", "soft", "transparent"]).optional(),
+        opacity: z.enum(["100", "85", "65", "40"]).optional(),
+        borderStyle: z.enum(["none", "line", "accent", "shadow"]).optional(),
+        blend: z.enum(["normal", "multiply", "soft-light"]).optional(),
       }),
     )
     .min(1)

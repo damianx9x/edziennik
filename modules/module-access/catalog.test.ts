@@ -8,12 +8,13 @@ import {
 } from "./catalog";
 
 describe("role module access policy", () => {
-  it("starts with every supported pilot module enabled", () => {
+  it("starts with supported daily modules enabled and bulk transfer delegated explicitly", () => {
     for (const key of configurableModuleKeys) {
       for (const role of moduleCatalog[key].supportedRoles) {
-        expect(defaultModuleAccessPolicy[key][role]).toBe(true);
+        expect(defaultModuleAccessPolicy[key][role]).toBe(key !== "dataTransfer");
       }
     }
+    expect(defaultModuleAccessPolicy.dataTransfer.DIRECTOR).toBe(false);
   });
 
   it("does not expose unsupported role and module combinations", () => {

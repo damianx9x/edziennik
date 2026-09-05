@@ -55,14 +55,14 @@ function navigationGroup(
 ): string | null {
   if (role === "SYSTEM_OWNER") {
     if (["home", "logs", "server-settings"].includes(key)) return "System";
-    if (["school", "records", "invitations", "schedule", "messages", "notifications"].includes(key)) return "Obsługa szkoły";
+    if (["school", "records", "schedule", "messages", "notifications"].includes(key)) return "Obsługa szkoły";
     if (["learning", "progress"].includes(key)) return "Nauka";
     if (["contracts", "payments"].includes(key)) return "Dokumenty i rozliczenia";
     if (["tools", "statistics"].includes(key)) return "Administracja szkołą";
   }
   if (role === "DIRECTOR") {
     if (["home", "schedule", "messages", "notifications"].includes(key)) return "Codzienna praca";
-    if (["records", "invitations"].includes(key)) return "Szkoła i osoby";
+    if (["records"].includes(key)) return "Szkoła i osoby";
     if (["learning", "progress"].includes(key)) return "Nauka";
     if (["contracts", "payments"].includes(key)) return "Dokumenty i rozliczenia";
     if (["tools", "statistics"].includes(key)) return "Administracja";
@@ -254,11 +254,29 @@ export async function AuthenticatedPanelShell({
   children: ReactNode;
 }) {
   const moduleAccess = await getModuleAccessPolicy(session.user.schoolId);
-  const navigation = getNavigation(session.user.role).filter((item) =>
+  const visibleNavigation = getNavigation(session.user.role).filter((item) =>
     session.user.role === "SYSTEM_OWNER" ||
     !Object.prototype.hasOwnProperty.call(moduleAccess, item.key) ||
     moduleIsEnabled(moduleAccess, item.key as ConfigurableModuleKey, session.user.role),
   );
+  const recordsVisible = visibleNavigation.some((item) => item.key === "records");
+  const invitationsVisible = visibleNavigation.some((item) => item.key === "invitations");
+  const navigation = visibleNavigation
+    .filter((item) => item.key !== "invitations" || !recordsVisible)
+    .map((item) => {
+      if (item.key === "records" && invitationsVisible) {
+        return { ...item, label: "Kartoteki i konta" };
+      }
+      if (item.key === "invitations" && !recordsVisible) {
+        return { ...item, key: "records" as const, label: "Konta i zaproszenia" };
+      }
+      return item;
+    })
+    .filter((item) => {
+      if (session.user.role !== "DIRECTOR" || item.key !== "tools") return true;
+      return moduleIsEnabled(moduleAccess, "siteEditor", "DIRECTOR") ||
+        moduleIsEnabled(moduleAccess, "dataTransfer", "DIRECTOR");
+    });
   const notificationsEnabled = moduleIsEnabled(
     moduleAccess,
     "notifications",

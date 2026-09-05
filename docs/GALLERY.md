@@ -23,6 +23,36 @@ szkoły pozostaje konfigurowalny we wdrożeniu.
 
 ![Mobilne logowanie do eDziennika](assets/screenshots/login-mobile.png)
 
+Logowanie jest wspólną, spokojną bramą do paneli ról. Publiczna rejestracja
+pozostaje zamknięta: szkoła zaprasza konkretną osobę, a dyrektor może wysłać
+link odzyskiwania albo wygenerować krótkotrwałe hasło tymczasowe.
+
+![Awaryjne odzyskanie konta na telefonie](assets/screenshots/password-reset-mobile.png)
+
+## Strona szkoły i edytor bez kodowania
+
+Publiczna strona może działać jako wizytówka konkretnej szkoły albo neutralna
+prezentacja produktu. Dyrektor z delegowanym dostępem edytuje bez kodowania
+tekst, zdjęcia, kolejność i szerokość sekcji oraz bezpieczne widgety.
+
+![Publiczna strona szkoły na komputerze](assets/screenshots/school-home-desktop.png)
+
+| Edytor na komputerze | Edytor na telefonie |
+| --- | --- |
+| ![Układ i widgety w edytorze desktopowym](assets/screenshots/site-editor-desktop.png) | ![Układ i widgety w edytorze mobilnym](assets/screenshots/site-editor-mobile.png) |
+
+Widget otrzymuje jeden z gotowych typów, rozmiar, akcent, krycie tła i styl
+obramowania. Ograniczony katalog chroni dostępność oraz spójność; edytor nie
+przyjmuje własnego HTML ani skryptu.
+
+## Kartoteka i relacje rodzinne
+
+Karta osoby łączy dane kontaktowe z powiązaniami w szkole. Dyrektor edytuje
+rodziców, dzieci, grupy i wykładowców, a wykładowca otrzymuje tylko zakres
+wynikający z przypisanych grup.
+
+![Syntetyczna karta rodzica na telefonie](assets/screenshots/record-mobile.png)
+
 ## Grafik — komputer i telefon
 
 Widok desktopowy pokazuje tydzień i zależności zasobów. Na telefonie system

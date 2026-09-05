@@ -15,6 +15,10 @@ vi.mock("@/modules/identity/auth/session", () => ({
   requireDirector: mocks.requireDirector,
 }));
 
+vi.mock("@/modules/module-access/server", () => ({
+  requireEnabledModule: vi.fn(),
+}));
+
 describe("public site content", () => {
   beforeEach(() => {
     mocks.findUnique.mockReset();

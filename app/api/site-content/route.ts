@@ -4,6 +4,7 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { db } from "@/lib/server/db";
 import { isTrustedSameOrigin } from "@/lib/server/same-origin";
 import { requireDirector } from "@/modules/identity/auth/session";
+import { requireEnabledModule } from "@/modules/module-access/server";
 import {
   defaultSiteContent,
   enrichLegacyDefaultSiteContent,
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
   const requestedScope = new URL(request.url).searchParams.get("scope");
   if (requestedScope === "editor") {
     const session = await requireDirector("/panel/szkola/narzedzia/strona");
+    await requireEnabledModule(session, "siteEditor");
     const school = await db.school.findUnique({
       where: { id: session.user.schoolId },
       select: { siteContent: true },
@@ -53,6 +55,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   if (!isTrustedSameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
   const session = await requireDirector("/panel/szkola/narzedzia/strona");
+  await requireEnabledModule(session, "siteEditor");
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (Number.isFinite(declared) && declared > 15 * 1024 * 1024) return NextResponse.json({ message: "Treść i zdjęcia są za duże." }, { status: 413 });
   const raw = await request.text();
@@ -70,6 +73,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   if (!isTrustedSameOrigin(request)) return NextResponse.json({ message: "Nieprawidłowe źródło żądania." }, { status: 403 });
   const session = await requireDirector("/panel/szkola/narzedzia/strona");
+  await requireEnabledModule(session, "siteEditor");
   await db.$transaction([
     db.school.update({ where: { id: session.user.schoolId }, data: { siteContent: Prisma.DbNull } }),
     db.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "site.content.reset", entityType: "School", entityId: session.user.schoolId } }),
