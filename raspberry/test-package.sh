@@ -16,6 +16,7 @@ required_files=(
   raspberry/benchmark-readonly.sh
   raspberry/runtime-guards.sh
   raspberry/startup-audit.sh
+  raspberry/ensure-vault-startup.sh
   docs/OPERACJE_RASPBERRY.md
   raspberry/vault-create.sh
   raspberry/vault-create-partition.sh
@@ -41,6 +42,7 @@ required_files=(
 for file in "${required_files[@]}"; do
   [[ -s "$ROOT/$file" ]] || { echo "Brak wymaganego pliku: $file"; exit 1; }
 done
+bash -n "$ROOT/raspberry/mac-control/kla-server-control.sh"
 
 for executable in \
   raspberry/install.sh \

@@ -1,7 +1,6 @@
 [Unit]
 Description=Wielowarstwowa kontrola i samonaprawa KLA eDziennik
 After=postgresql.service clamav-daemon.service nginx.service edziennik-kla.service cloudflared.service
-ConditionPathIsMountPoint=/srv/kla-vault
 
 [Service]
 Type=oneshot

@@ -19,6 +19,9 @@ check_active() {
 }
 
 echo "KLA — audyt startu i watchdogów"
+[[ -x /usr/lib/systemd/system-generators/systemd-cryptsetup-generator ]] \
+  && ok "obsługa szyfrowanych dysków systemd" \
+  || fail "brak pakietu systemd-cryptsetup; crypttab nie wystarcza"
 
 if [[ -f /etc/kla/vault-auto-unlock.key ]] \
   && [[ "$(stat -c '%U:%G:%a' /etc/kla/vault-auto-unlock.key)" == "root:root:600" ]] \
@@ -55,6 +58,7 @@ if mountpoint -q "$KLA_VAULT_MOUNT"; then
   for pair in \
     'postgresql.service|PostgreSQL' \
     'edziennik-kla.service|aplikacja' \
+    'kla-web-control.service|panel sterowania' \
     'nginx.service|prywatny origin' \
     'cloudflared.service|tunel Cloudflare' \
     'clamav-daemon.service|skaner plików'; do

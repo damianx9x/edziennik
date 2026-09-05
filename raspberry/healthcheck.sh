@@ -102,6 +102,10 @@ check_postgresql_with_recovery() {
 }
 
 if ! mountpoint -q /srv/kla-vault; then
+  if [[ -f /etc/kla/vault-auto-unlock.key ]] && [[ -x /usr/lib/systemd/system-generators/systemd-cryptsetup-generator ]]; then
+    log "Sejf nie jest jeszcze zamontowany; ponawiam kontrolowany start jednostki montowania."
+    systemctl start --no-block 'srv-kla\x2dvault.mount' || true
+  fi
   log "ALARM: szyfrowany sejf jest zamknięty. Automatyczny start nie może uruchomić bazy ani aplikacji."
   exit 1
 fi
@@ -111,7 +115,7 @@ install -d -m 0750 "$STATE_DIR"
 DEPLOYMENT_MODE="$(awk -F= '$1 == "KLA_DEPLOYMENT_MODE" {print $2}' /etc/kla/edziennik.env 2>/dev/null || true)"
 FAILED=0
 
-for service in postgresql clamav-daemon nginx edziennik-kla; do
+for service in postgresql clamav-daemon nginx edziennik-kla kla-web-control; do
   ensure_active "$service" || FAILED=1
 done
 

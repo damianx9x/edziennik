@@ -291,6 +291,8 @@ install -m 755 "$SOURCE_DIR/raspberry/healthcheck.sh" /usr/local/sbin/edziennik-
 install -m 755 "$SOURCE_DIR/raspberry/safe-restart.sh" /usr/local/sbin/kla-safe-restart
 install -m 755 "$SOURCE_DIR/raspberry/restart-policy.py" /usr/local/sbin/kla-restart-policy
 install -m 755 "$SOURCE_DIR/raspberry/prepare-memory-limits.py" /usr/local/sbin/kla-prepare-memory-limits
+install -m 755 "$SOURCE_DIR/raspberry/ensure-vault-startup.sh" /usr/local/sbin/kla-ensure-vault-startup
+/usr/local/sbin/kla-ensure-vault-startup
 /usr/local/sbin/kla-prepare-memory-limits
 install -m 755 "$SOURCE_DIR/raspberry/safe-archive.py" /usr/local/sbin/kla-safe-archive
 install -m 755 "$SOURCE_DIR/raspberry/benchmark-readonly.sh" /usr/local/sbin/kla-benchmark-readonly

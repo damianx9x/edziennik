@@ -1,7 +1,7 @@
 # Produkcja i rozwój
 
 Stan: 5 września 2026. Adres operacyjny: https://demo.kingslanguageacademy.pl.
-Pozostałe domeny czekają na osobne zadanie. Wydanie bazowe: 1.4.0 (wdrożone); kandydat: 1.5.0.
+Pozostałe domeny czekają na osobne zadanie. Wydanie bazowe: 1.5.0 (wdrożone); kandydat: 1.5.1.
 Numer etapu opisuje historię, nie status dostępności modułu.
 
 ## Ewaluacja zakresu 0–7
@@ -55,6 +55,20 @@ urządzenia jest dopuszczony w oknie serwisowym; nie symulujemy wyciągania zasi
 - Przygotowanie kontrolera pamięci w konfiguracji bootu (bez automatycznego rebootu
   podczas aktualizacji); diagnostyka nie myli braku kontrolera z samym restartem usługi.
 - Broker ma ograniczony czas odbioru polecenia i sprawdza typ głównego obiektu JSON.
+
+### Poprawka 1.5.1 po rzeczywistym reboocie
+
+Kontrolowany reboot uruchomił kontroler pamięci (MemoryCurrent stał się liczbowy),
+ale ujawnił brak systemd-cryptsetup i 30-sekundowy timeout montowania. Usługa
+sterowania nie wróciła po błędzie zależności, choć baza i aplikacja ruszyły później.
+Poprawka instaluje brakujący generator crypttab, wiąże mount z nazwą mappera,
+czeka do 180 sekund i ponawia montowanie w healthchecku. Watchdog obejmuje broker.
+Pilot po aktualizacji uruchamia synchronizację narzędzi NOWEGO wydania; stary
+aktualizator nie musi znać listy nowych plików. Brak formatu i zmian kluczy.
+
+Poczta: publiczny TXT SPF istnieje (`v=spf1 a mx ~all`), lecz zapytanie o DMARC
+zwróciło alias do domeny głównej bez rekordu `v=DMARC1`. Nie zmieniano DNS.
+DKIM i rzeczywista domena nadawcy wymagają nagłówków dostarczonej wiadomości.
 
 ### Stan dziesięciu priorytetów — dowody i pozostała praca
 

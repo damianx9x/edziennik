@@ -57,7 +57,8 @@ FILESYSTEM_UUID="$(blkid -s UUID -o value "/dev/mapper/$MAPPER")"
 sed -i '/^[[:space:]]*kla-data[[:space:]]/d' /etc/crypttab 2>/dev/null || true
 printf 'kla-data UUID=%s %s luks,nofail\n' "$CRYPT_UUID" "$KEY_FILE" >> /etc/crypttab
 sed -i '\|[[:space:]]/srv/kla-vault[[:space:]]|d' /etc/fstab
-printf 'UUID=%s /srv/kla-vault ext4 noatime,nodiratime,nofail,x-systemd.device-timeout=30 0 2\n' "$FILESYSTEM_UUID" >> /etc/fstab
+printf '/dev/mapper/kla-data /srv/kla-vault ext4 noatime,nodiratime,nofail,x-systemd.device-timeout=180 0 2\n' >> /etc/fstab
+if [[ -x /usr/local/sbin/kla-ensure-vault-startup ]]; then /usr/local/sbin/kla-ensure-vault-startup; fi
 systemctl daemon-reload
 echo "Automatyczne odblokowanie po zaniku prądu jest aktywne. Klucz znajduje się na karcie systemowej root-only."
 echo "Uwaga: kradzież całego Raspberry razem z dyskiem osłabia ochronę LUKS; pełne eksporty nadal wymagają osobnego klucza age."

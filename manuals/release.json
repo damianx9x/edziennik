@@ -1,12 +1,15 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "date": "5 września 2026",
   "schoolChanges": [
+    "Poprawiono uruchamianie serwera po restarcie i opóźnionym zgłoszeniu dysku. Dane szkoły pozostają bez zmian.",
     "Prace serwisowe i odtwarzanie kopii są chronione przed równoczesną interwencją watchdogu.",
     "Właściciel może zaplanować krótką przerwę aplikacji poza godzinami zajęć. Niezapisane formularze mogą wymagać ponowienia.",
     "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
   ],
   "ownerChanges": [
+    "Audyt wykrywa brak systemd-cryptsetup. Instalator i synchronizacja narzędzi uzupełniają ten pakiet.",
+    "Montowanie sejfu czeka do 180 sekund; watchdog ponawia je i pilnuje również panelu sterowania.",
     "Nowy harmonogram restartu aplikacji: wyłączony, codziennie lub w niedzielę, według czasu polskiego.",
     "Restart wymaga aktualnej kopii i wolnej blokady serwisowej; nie restartuje bazy ani Raspberry.",
     "Naprawiono odczyt retencji backupu z ustawień oraz opis nieaktywnej kontroli pamięci Linux.",

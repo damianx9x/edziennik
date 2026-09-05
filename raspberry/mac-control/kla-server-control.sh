@@ -224,6 +224,8 @@ case "$ACTION" in
     [[ "$PACKAGE" == *.tar.gz ]] || { echo "Aktualizacja wymaga paczki .tar.gz."; exit 2; }
     scp "${SCP_OPTIONS[@]}" "$PACKAGE" "$KLA_USER@$KLA_HOST:/srv/kla-vault/control-incoming/edziennik-kla-raspberry-source.tar.gz"
     remote "sudo /usr/local/sbin/kla-control update"
+    # The old updater may not know new operational helpers. Invoke the new release.
+    remote "sudo /usr/local/sbin/kla-control refresh-operations"
     ;;
   reboot|poweroff)
     remote "sudo /usr/local/sbin/kla-control $ACTION"

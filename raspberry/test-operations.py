@@ -68,6 +68,13 @@ class OperationsTest(unittest.TestCase):
         self.assertIn('BACKUP_RETENTION_DAYS="${KLA_BACKUP_RETENTION_DAYS:-30}"', (ROOT / 'backup.sh').read_text())
         self.assertIn('KLA_MAINTENANCE_LOCK_HELD=1 /usr/local/sbin/edziennik-kla-health', (ROOT / 'restore.sh').read_text())
 
+    def test_late_disk_and_control_broker_recovery(self):
+        self.assertNotIn('ConditionPathIsMountPoint=', (ROOT / 'systemd/edziennik-kla-health.service').read_text())
+        self.assertIn("systemctl start --no-block 'srv-kla\\x2dvault.mount'", (ROOT / 'healthcheck.sh').read_text())
+        self.assertIn('edziennik-kla kla-web-control', (ROOT / 'healthcheck.sh').read_text())
+        self.assertIn('systemd-cryptsetup-generator', (ROOT / 'ensure-vault-startup.sh').read_text())
+        self.assertIn('x-systemd.device-timeout=180', (ROOT / 'ensure-vault-startup.sh').read_text())
+
     def test_restart_shares_lock_and_has_cooldown(self):
         text = (ROOT / 'safe-restart.sh').read_text()
         self.assertIn('/run/lock/kla-maintenance.lock', text)

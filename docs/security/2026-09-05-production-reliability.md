@@ -57,3 +57,14 @@ TypeScript validates the form and required acknowledgement. Browser QA uses a
 temporary local-only fixture removed before build/commit; it does not alter the
 production restart policy. New UI was checked at 375×812 and 1440×900.
 Final deployment and reboot results must be recorded separately after completion.
+
+## Follow-up discovered by the actual reboot (v1.5.1)
+
+Memory controller activated successfully. Boot still exceeded the 30-second vault
+device timeout. The installed OS lacked the systemd-cryptsetup generator; checking
+crypttab/key file presence alone had given an incomplete startup assessment.
+The control broker also remained stopped after the mount dependency failure.
+The hotfix installs the missing OS component, uses the mapper mount dependency,
+raises the wait to 180 seconds, retries mounting without interactive key prompts,
+and includes the broker in service recovery. The Mac pilot refreshes operational
+helpers from the newly verified release after the previous updater finishes.
