@@ -16,7 +16,12 @@ if ! mountpoint -q "$KLA_VAULT_MOUNT" && ((AUTO_UNLOCK_READY == 1 && BOOT_SECOND
 fi
 echo "KLA — stan urządzenia"
 if mountpoint -q "$KLA_VAULT_MOUNT"; then
-  echo "[OK] szyfrowany sejf jest otwarty"
+  VAULT_OPTIONS="$(findmnt -rn -M "$KLA_VAULT_MOUNT" -o OPTIONS)" || VAULT_OPTIONS=""
+  if [[ -z "$VAULT_OPTIONS" || ",$VAULT_OPTIONS," == *,ro,* || ",$VAULT_OPTIONS," == *,emergency_ro,* ]]; then
+    echo "[STOP] sejf otwarty, ale dysk nie pozwala na zapis — sprawdź zasilanie i dysk. Ponowne wpisanie klucza nie naprawi tego błędu."
+  else
+    echo "[OK] szyfrowany sejf jest otwarty w trybie zapisu"
+  fi
 elif ((STARTING == 1)); then
   echo "[START] sejf otwiera się automatycznie — po zaniku prądu może to potrwać do 5 minut"
 else
@@ -25,7 +30,9 @@ fi
 SERVICES=(postgresql clamav-daemon edziennik-kla nginx)
 [[ "$DEPLOYMENT_MODE" != "local-demo" ]] && SERVICES+=(cloudflared)
 for SERVICE in "${SERVICES[@]}"; do
-  if systemctl is-active --quiet "$SERVICE"; then
+  if [[ "$SERVICE" == "postgresql" ]] && ! runuser -u postgres -- pg_isready --quiet; then
+    echo "[STOP] PostgreSQL nie przyjmuje połączeń"
+  elif systemctl is-active --quiet "$SERVICE"; then
     echo "[OK] $SERVICE"
   elif ((STARTING == 1)); then
     echo "[START] $SERVICE oczekuje na sejf"
@@ -33,8 +40,8 @@ for SERVICE in "${SERVICES[@]}"; do
     echo "[STOP] $SERVICE"
   fi
 done
-if curl --fail --silent --max-time 5 http://127.0.0.1:3000/ >/dev/null; then
-  echo "[OK] aplikacja odpowiada"
+if curl --fail --silent --max-time 5 http://127.0.0.1:3000/api/health >/dev/null; then
+  echo "[OK] aplikacja i baza odpowiadają"
 elif ((STARTING == 1)); then
   echo "[START] aplikacja jeszcze się uruchamia"
 else

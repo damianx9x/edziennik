@@ -1,13 +1,17 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "date": "5 września 2026",
   "schoolChanges": [
+    "Doprecyzowano diagnostykę awarii dysku. Ta aktualizacja nie zmienia kartotek ani uprawnień szkoły.",
     "Poprawiono uruchamianie serwera po restarcie i opóźnionym zgłoszeniu dysku. Dane szkoły pozostają bez zmian.",
     "Prace serwisowe i odtwarzanie kopii są chronione przed równoczesną interwencją watchdogu.",
     "Właściciel może zaplanować krótką przerwę aplikacji poza godzinami zajęć. Niezapisane formularze mogą wymagać ponowienia.",
     "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
   ],
   "ownerChanges": [
+    "Stan serwera odróżnia otwarty sejf tylko do odczytu od zamkniętego sejfu. W pierwszym przypadku ponowne wpisanie klucza nie pomaga.",
+    "Watchdog nie restartuje bazy przy wykrytym ro lub emergency_ro. Najpierw trzeba sprawdzić zasilanie i dysk.",
+    "Polecenie odblokowania sprawdza rzeczywistą gotowość PostgreSQL i aplikacji, zanim zgłosi sukces.",
     "Audyt wykrywa brak systemd-cryptsetup. Instalator i synchronizacja narzędzi uzupełniają ten pakiet.",
     "Montowanie sejfu czeka do 180 sekund; watchdog ponawia je i pilnuje również panelu sterowania.",
     "Nowy harmonogram restartu aplikacji: wyłączony, codziennie lub w niedzielę, według czasu polskiego.",

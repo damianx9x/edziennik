@@ -17,6 +17,30 @@ bazę, dokumenty, hasło bazy ani sekret sesji.
 
 ## Zachowanie przy nagłym większym ruchu
 
+### Sejf otwarty, ale dysk tylko do odczytu
+
+Komunikat `Read-only file system` nie oznacza błędnego klucza. Sejf mógł
+otworzyć się poprawnie, a Linux zablokować zapis po błędach dysku USB.
+Opcja montowania `emergency_ro` oznacza taką awarię również wtedy, gdy obok
+niej widać `rw`. Panel stanu i watchdog rozpoznają oba warianty: `ro` i
+`emergency_ro`. Watchdog wstrzymuje wtedy próby restartowania usług; nie
+naprawia ani nie formatuje dysku.
+
+1. Nie odłączaj ponownie zasilania i nie wymuszaj montowania do zapisu.
+2. Sprawdź zasilacz Raspberry oraz zasilanie, kabel i obudowę dysku. Spadki
+   napięcia wymagają naprawy sprzętowej, nie dodatkowych restartów.
+3. Zachowaj zaszyfrowaną kopię poza Raspberry. Specjalista powinien zatrzymać
+   procesy zapisujące, odmontować właściwą partycję i dopiero wtedy sprawdzić
+   system plików. Nie uruchamiaj `fsck` na zamontowanym sejfie.
+4. Po naprawie sprawdź bazę, utwórz nową kopię i odtwórz ją testowo w osobnej
+   bazie. Gdy aktualne dane są czytelne, nie zastępuj ich starszym backupem.
+5. Włącz ponownie timery wyłączone na czas serwisu i sprawdź publiczny HTTPS.
+
+Sam status `active` usługi PostgreSQL nie wystarcza: jednostka nadrzędna może
+być aktywna przy niedziałającym klastrze. `kla-status` sprawdza gotowość bazy
+oraz `/api/health`, a nie tylko stronę główną. Żaden watchdog nie gwarantuje
+odporności na niesprawne zasilanie lub fizyczne uszkodzenie nośnika.
+
 ### Horyzont wieloletni: do 1000 kont, zwykle 3–5 osób jednocześnie
 
 To profil do pomiaru, nie gwarancja pojemności. Sama liczba kont nie jest

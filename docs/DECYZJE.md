@@ -1,5 +1,19 @@
 # Decyzje architektoniczne
 
+## ADR-108 — awaria zapisu nie jest awarią klucza
+
+**Data:** 2026-09-05. **Decyzja:** diagnostyka rozpoznaje również ext4
+`emergency_ro` współwystępujące z `rw`. Watchdog nie podejmuje wtedy prób
+restartowania usług zapisujących dane. Odblokowanie nie zmienia praw katalogu
+już zamontowanego sejfu i potwierdza gotowość bazy oraz aplikacji przed sukcesem.
+
+**Dlaczego:** po błędzie zapisu USB ponawianie hasła i restartów nie naprawia
+nośnika. Naprawa systemu plików wymaga uprzedniej kopii oraz odmontowania.
+Nie wprowadzamy automatycznego formatowania, wymuszania zapisu ani resetowania
+bazy. W trybie incydentu dopuszczamy instalację wyłącznie zweryfikowanych
+narzędzi operacyjnych z podpisanego commita, z kopią poprzednich skryptów i
+osobnym identyfikatorem poprawki; działający build aplikacji pozostaje bez zmian.
+
 ## ADR-107 — uprawnienia administracyjne są delegowane jak moduły
 
 **Data:** 2026-09-04. **Decyzja:** edycja publicznej strony oraz masowy import

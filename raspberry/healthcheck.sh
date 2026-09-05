@@ -110,6 +110,14 @@ if ! mountpoint -q /srv/kla-vault; then
   exit 1
 fi
 
+# Linux may report rw together with emergency_ro after an aborted journal.
+# Never repeatedly restart writers against a damaged/read-only filesystem.
+VAULT_OPTIONS="$(findmnt -rn -M /srv/kla-vault -o OPTIONS)" || VAULT_OPTIONS=""
+if [[ -z "$VAULT_OPTIONS" || ",$VAULT_OPTIONS," == *,ro,* || ",$VAULT_OPTIONS," == *,emergency_ro,* ]]; then
+  log "ALARM: dysk sejfu nie pozwala na zapis. Sprawdź zasilanie i dysk; automatyczne restarty bazy zostały wstrzymane."
+  exit 1
+fi
+
 install -d -m 0750 "$STATE_DIR"
 
 DEPLOYMENT_MODE="$(awk -F= '$1 == "KLA_DEPLOYMENT_MODE" {print $2}' /etc/kla/edziennik.env 2>/dev/null || true)"

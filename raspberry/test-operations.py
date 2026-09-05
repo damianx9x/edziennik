@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -23,6 +24,39 @@ memory = load('prepare-memory-limits')
 
 
 class OperationsTest(unittest.TestCase):
+    def test_readonly_vault_never_restarts_services(self):
+        for options in ('ro,noatime', 'rw,noatime,emergency_ro', ''):
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as folder:
+                path = Path(folder)
+                script = (ROOT / 'healthcheck.sh').read_text()
+                script = script.replace('/run/lock/kla-maintenance.lock', str(path / 'lock'))
+                for name, body in {
+                    'flock': 'exit 0',
+                    'mountpoint': 'exit 0',
+                    'findmnt': 'printf "%s\\n" "$TEST_OPTIONS"',
+                    'logger': 'exit 0',
+                    'systemctl': 'echo called >> "$TEST_CALLS"; exit 0',
+                }.items():
+                    stub = path / name
+                    stub.write_text('#!/bin/sh\n' + body + '\n')
+                    stub.chmod(0o755)
+                calls = path / 'calls'
+                env = {**os.environ, 'PATH': f'{path}:' + os.environ['PATH'],
+                       'TEST_OPTIONS': options, 'TEST_CALLS': str(calls)}
+                result = subprocess.run(['bash', '-c', script], env=env, timeout=3)
+                self.assertEqual(result.returncode, 1)
+                self.assertFalse(calls.exists(), 'read-only volume must not trigger writer restarts')
+
+    def test_unlock_detects_emergency_readonly_before_start(self):
+        text = (ROOT / 'unlock.sh').read_text()
+        self.assertLess(text.index('emergency_ro'), text.index('systemctl start'))
+        self.assertIn('if ! mountpoint -q', text)
+        self.assertIn('/api/health', text)
+        status = (ROOT / 'status.sh').read_text()
+        self.assertIn('pg_isready --quiet', status)
+        self.assertIn('emergency_ro', status)
+        self.assertIn('/api/health', status)
+
     def test_configuration_roundtrip_and_disable(self):
         with tempfile.TemporaryDirectory() as folder:
             directory = Path(folder)
