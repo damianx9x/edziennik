@@ -1,0 +1,12 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KLA — serwer</title><link rel="stylesheet" href="/panel.css"><script src="/panel.js" defer></script></head>
+<body><main><header><p class="eyebrow">KLA / KONSOLA LOKALNA</p><h1>Twój serwer.<br>Wszystko pod kontrolą.</h1><p>Ten panel działa na Raspberry, również gdy strona szkoły jest niedostępna.</p></header>
+<section aria-labelledby="status-title"><div class="heading"><h2 id="status-title">Stan urządzenia</h2><button id="refresh">Odśwież stan</button></div><p id="summary" role="status">Łączę z urządzeniem…</p><ul id="status"></ul><p id="updated" class="muted"></p></section>
+<section aria-labelledby="actions-title"><h2 id="actions-title">Co chcesz zrobić?</h2><div class="actions">
+<button data-action="start">Uruchom serwis<span>Włącza istniejące usługi, nie tworzy nowej bazy.</span></button>
+<button data-action="safe-restart">Bezpieczny restart aplikacji<span>Wymaga kopii. Nie restartuje Raspberry ani bazy.</span></button>
+<button data-action="backup">Zrób kopię teraz<span>Szyfrowana baza i prywatne pliki w skonfigurowanym miejscu.</span></button>
+<button data-action="restore-test">Sprawdź odtworzenie kopii<span>Test w osobnej bazie. Twoje dane pozostają bez zmian.</span></button></div>
+<p id="result" role="status" aria-live="polite"></p></section>
+<details><summary>Gdy coś nie działa</summary><p><strong>Zamknięty sejf:</strong> otwórz Terminal i wpisz <code>sudo kla-unlock</code>. Panel nie przechowuje hasła sejfu.</p><p><strong>Dysk tylko do odczytu lub problem z zasilaniem:</strong> nie wyciągaj wtyczki, nie formatuj dysku i nie ponawiaj restartów. Sprawdź zasilanie Raspberry i dysku.</p><p>Restart nie naprawia uszkodzonego nośnika. Kopię przechowuj również poza Raspberry.</p></details>
+<footer><a href="https://demo.kingslanguageacademy.pl" target="_blank" rel="noopener noreferrer">Otwórz eDziennik ↗</a><p>KLA · Damian Eron · Lokalny dostęp administratora</p></footer>
+</main><dialog id="confirm"><form method="dialog"><h2>Potwierdź operację</h2><p id="confirmation"></p><div class="heading"><button value="cancel">Anuluj</button><button id="accept" value="ok">Wykonaj</button></div></form></dialog></body></html>

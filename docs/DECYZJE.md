@@ -1,5 +1,16 @@
 # Decyzje architektoniczne
 
+## ADR-109 — konsola lokalna niezależna od bazy
+
+**Data:** 2026-09-08. Panel HTML działa jako usługa systemd użytkownika pulpitu,
+na loopback, i wywołuje wyłącznie istniejące dozwolone akcje `kla-control`.
+Chromium otwiera panel przez prywatny plik sesji po zalogowaniu pulpitu.
+Nie dodajemy publicznego webowego terminala ani nowych praw administratora.
+Awaria aplikacji/DB nie blokuje samego panelu; awaria systemu lub zasilania
+wciąż wymaga interwencji. Instalacja nie modyfikuje bazy, szyfrowania ani DNS.
+Wydanie 1.1.1 kontynuuje historię 1.5.2 zgodnie z decyzją właściciela o serii
+1.1.x. Dotychczasowe tagi i podpisy pozostają zachowane.
+
 ## ADR-108 — awaria zapisu nie jest awarią klucza
 
 **Data:** 2026-09-05. **Decyzja:** diagnostyka rozpoznaje również ext4

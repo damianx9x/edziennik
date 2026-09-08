@@ -155,4 +155,6 @@ grep -q 'install -d -m 700 -o kla -g kla.*imports' "$ROOT/raspberry/update.sh"
 grep -q 'STATIC_RUNTIME_COUNT' "$ROOT/raspberry/update.sh"
 grep -q 'verify_browser_assets' "$ROOT/raspberry/update.sh"
 
+python3 "$ROOT/raspberry/local-panel/test_panel.py"
+bash -n "$ROOT/raspberry/local-panel/install.sh" "$ROOT/raspberry/local-panel/open.sh"
 echo "Pakiet Raspberry: składnia i zabezpieczenia są kompletne."

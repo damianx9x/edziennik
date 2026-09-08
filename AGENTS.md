@@ -58,6 +58,8 @@ uproszczeń prawnych ani decyzji technicznych.
 - Główna gałąź: `main`.
 - Zmiany: `fix/short-name` lub `feat/short-name`; po odbiorze integracja do `main`.
 - Wydania oznaczaj SemVer; tag `vX.Y.Z` wskazuje sprawdzony commit.
+- Kolejne wydania pozostają w serii `1.1.x`. Przed przejściem do `1.2.x`
+  lub wyżej zapytaj właściciela. Zachowaj istniejące historyczne tagi.
 - Nie kasuj historycznych tagów etapów ani gałęzi z niepołączonymi zmianami.
 - Commit opisuje wynik, np. `feat(schedule): prevent room conflicts`.
 - Nie commituj `.env`, baz, eksportów, backupów ani danych klientki.

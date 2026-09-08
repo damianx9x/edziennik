@@ -1,7 +1,8 @@
 {
-  "version": "1.5.2",
-  "date": "5 września 2026",
+  "version": "1.1.1",
+  "date": "8 września 2026",
   "schoolChanges": [
+    "Dodano niezależny lokalny panel serwera dla opiekuna Raspberry. Funkcje szkoły i dane pozostają bez zmian.",
     "Doprecyzowano diagnostykę awarii dysku. Ta aktualizacja nie zmienia kartotek ani uprawnień szkoły.",
     "Poprawiono uruchamianie serwera po restarcie i opóźnionym zgłoszeniu dysku. Dane szkoły pozostają bez zmian.",
     "Prace serwisowe i odtwarzanie kopii są chronione przed równoczesną interwencją watchdogu.",
@@ -9,6 +10,9 @@
     "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
   ],
   "ownerChanges": [
+    "Panel KLA — serwer otwiera się automatycznie w sesji pulpitu Raspberry. Pozwala odświeżyć stan, uruchomić serwis, wykonać bezpieczny restart aplikacji, backup i test odtworzenia.",
+    "Każda operacja wymaga potwierdzenia. Panel działa tylko lokalnie i korzysta z istniejących uprawnień kla-control. Nie przyjmuje hasła sejfu ani dowolnych poleceń.",
+    "Numeracja wraca do uzgodnionej serii 1.1.x. Starsze tagi pozostają w historii; nie oznacza to cofnięcia danych ani kodu.",
     "Stan serwera odróżnia otwarty sejf tylko do odczytu od zamkniętego sejfu. W pierwszym przypadku ponowne wpisanie klucza nie pomaga.",
     "Watchdog nie restartuje bazy przy wykrytym ro lub emergency_ro. Najpierw trzeba sprawdzić zasilanie i dysk.",
     "Polecenie odblokowania sprawdza rzeczywistą gotowość PostgreSQL i aplikacji, zanim zgłosi sukces.",
