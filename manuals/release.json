@@ -1,5 +1,5 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "date": "8 września 2026",
   "schoolChanges": [
     "Dodano niezależny lokalny panel serwera dla opiekuna Raspberry. Funkcje szkoły i dane pozostają bez zmian.",
@@ -10,6 +10,7 @@
     "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
   ],
   "ownerChanges": [
+    "Poprawiono pierwszy start lokalnego panelu: osobny profil Chromium nie zatrzymuje uruchomienia pytaniem o systemowy pęk kluczy. Nie zapisuj w tym profilu haseł.",
     "Panel KLA — serwer otwiera się automatycznie w sesji pulpitu Raspberry. Pozwala odświeżyć stan, uruchomić serwis, wykonać bezpieczny restart aplikacji, backup i test odtworzenia.",
     "Każda operacja wymaga potwierdzenia. Panel działa tylko lokalnie i korzysta z istniejących uprawnień kla-control. Nie przyjmuje hasła sejfu ani dowolnych poleceń.",
     "Numeracja wraca do uzgodnionej serii 1.1.x. Starsze tagi pozostają w historii; nie oznacza to cofnięcia danych ani kodu.",

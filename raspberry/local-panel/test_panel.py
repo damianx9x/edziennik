@@ -13,6 +13,12 @@ spec.loader.exec_module(panel)
 
 
 class PanelTests(unittest.TestCase):
+    def test_launcher_uses_dedicated_noninteractive_profile(self):
+        launcher = Path(__file__).with_name('open.sh').read_text()
+        self.assertIn('--password-store=basic', launcher)
+        self.assertIn('--user-data-dir="$HOME/.local/share/kla-local-panel-browser"', launcher)
+        self.assertNotIn('--no-sandbox', launcher)
+
     def setUp(self):
         self.server = panel.ThreadingHTTPServer(('127.0.0.1', 0), panel.Handler)
         self.server.state = panel.State(demo=True)

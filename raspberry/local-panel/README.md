@@ -1,6 +1,9 @@
-# KLA — lokalny panel Raspberry, 1.1.1
+# KLA — lokalny panel Raspberry, 1.1.2
 
 Panel jest dodatkiem do istniejącej instalacji KLA, nie instalatorem nowej bazy.
+Profil przeglądarki służy wyłącznie panelowi lokalnemu. Nie zapisuj w nim haseł
+ani nie używaj go do logowania do szkoły. Panel pomija pytanie o utworzenie
+pęku kluczy pulpitu, aby pierwszy start nie wymagał dodatkowej konfiguracji.
 Wymaga Python 3, Chromium, systemd użytkownika oraz już skonfigurowanego
 `sudo -n /usr/local/sbin/kla-control`. Nie poszerza uprawnień sudo.
 
