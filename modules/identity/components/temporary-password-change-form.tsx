@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
@@ -40,7 +42,7 @@ export function TemporaryPasswordChangeForm({ expired }: { expired: boolean }) {
   }
 
   return (
-    <form className="auth-form" action={action} aria-busy={pending}>
+    <ActionForm state={state} className="auth-form" action={action} aria-busy={pending}>
       <label>
         <span>Hasło tymczasowe</span>
         <span className="password-field">
@@ -99,6 +101,6 @@ export function TemporaryPasswordChangeForm({ expired }: { expired: boolean }) {
           <><KeyRound aria-hidden="true" /> Ustaw własne hasło</>
         )}
       </button>
-    </form>
+    </ActionForm>
   );
 }

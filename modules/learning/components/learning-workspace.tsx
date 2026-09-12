@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -227,7 +229,7 @@ function PublisherPanel({ group }: { group: LearningGroupView }) {
       </header>
 
       {mode === "material" ? (
-        <form action={materialAction} className="learning-form">
+        <ActionForm state={materialState} action={materialAction} className="learning-form">
           <input type="hidden" name="groupId" value={group.id} />
           <label><span>Tytuł</span><input name="title" required minLength={2} maxLength={140} placeholder="np. Powtórka: Past Simple" /></label>
           <label className="learning-wide"><span>Krótki opis <small>(opcjonalnie)</small></span><textarea name="description" rows={3} maxLength={2000} placeholder="Napisz, co warto zrobić z tym materiałem." /></label>
@@ -241,9 +243,9 @@ function PublisherPanel({ group }: { group: LearningGroupView }) {
             {materialPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Upload aria-hidden="true" />}
             {materialPending ? "Publikuję…" : "Opublikuj materiał"}
           </button>
-        </form>
+        </ActionForm>
       ) : (
-        <form action={homeworkAction} className="learning-form">
+        <ActionForm state={homeworkState} action={homeworkAction} className="learning-form">
           <input type="hidden" name="groupId" value={group.id} />
           <label><span>Tytuł</span><input name="title" required minLength={2} maxLength={140} placeholder="np. Ćwiczenia 1–4" /></label>
           <label><span>Termin <small>(opcjonalnie)</small></span><input name="dueAt" type="datetime-local" /></label>
@@ -253,7 +255,7 @@ function PublisherPanel({ group }: { group: LearningGroupView }) {
             {homeworkPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
             {homeworkPending ? "Publikuję…" : "Wyślij zadanie grupie"}
           </button>
-        </form>
+        </ActionForm>
       )}
     </section>
   );
@@ -312,7 +314,7 @@ function HomeworkCard({ assignment, role }: { assignment: LearningGroupView["hom
           {ownSubmission.teacherFeedback ? (
             <div className="homework-feedback"><MessageSquareText aria-hidden="true" /><span><strong>Informacja od wykładowcy</strong>{ownSubmission.teacherFeedback}</span></div>
           ) : null}
-          <form action={submissionAction} className="homework-submit-form">
+          <ActionForm state={submissionState} action={submissionAction} className="homework-submit-form">
             <input type="hidden" name="assignmentId" value={assignment.id} />
             <label><span>Twoja odpowiedź</span><textarea name="studentNote" rows={3} maxLength={3000} placeholder="Możesz wpisać odpowiedź lub krótką wiadomość." /></label>
             <LearningFileField compact />
@@ -321,7 +323,7 @@ function HomeworkCard({ assignment, role }: { assignment: LearningGroupView["hom
               {submissionPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
               {submissionPending ? "Przekazuję…" : ownSubmission.submittedAt ? "Wyślij poprawioną pracę" : "Oddaj pracę"}
             </button>
-          </form>
+          </ActionForm>
         </div>
       ) : null}
 
@@ -357,12 +359,12 @@ function ReviewSubmission({ submission }: { submission: Submission }) {
         {submission.studentNote ? <p><strong>Odpowiedź:</strong> {submission.studentNote}</p> : null}
         {submission.storedFileId ? <a href={`/panel/nauka/plik/${submission.storedFileId}`} target="_blank" rel="noreferrer"><Download aria-hidden="true" /> Otwórz załącznik ucznia</a> : null}
         {canReview ? (
-          <form action={action}>
+          <ActionForm state={state} action={action}>
             <input type="hidden" name="submissionId" value={submission.id} />
             <label><span>Informacja zwrotna</span><textarea name="feedback" required minLength={2} maxLength={3000} rows={3} defaultValue={submission.teacherFeedback ?? ""} placeholder="Co już jest dobrze i co warto poprawić?" /></label>
             <ActionFeedback state={state} />
             <button className="button button-secondary" type="submit" disabled={pending}>{pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}{pending ? "Zapisuję…" : "Przekaż informację"}</button>
-          </form>
+          </ActionForm>
         ) : <p className="learning-muted">Informację zwrotną dodasz po oddaniu pracy.</p>}
       </div>
     </details>

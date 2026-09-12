@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { Check, GripHorizontal, Info, LoaderCircle, Send, Save, X } from "lucide-react";
 import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -73,7 +75,7 @@ export function RecordEditForm({
     initialRecordUpdateState,
   );
   return (
-    <form className="record-edit-form" action={action}>
+    <ActionForm state={state} className="record-edit-form" action={action}>
       <input type="hidden" name="entityType" value={entityType} />
       <input type="hidden" name="entityId" value={entityId} />
       {children}
@@ -97,7 +99,7 @@ export function RecordEditForm({
         </p>
       ) : null}
       <SubmitButton isDirector={isDirector} />
-    </form>
+    </ActionForm>
   );
 }
 

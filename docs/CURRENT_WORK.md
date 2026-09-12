@@ -1,3 +1,26 @@
+# Stan bieżący — 12 września 2026
+
+Produkcja bazowa: **1.1.2**, commit a6758b4. Kandydat hotfix: **1.1.3**.
+Adres obecny: demo.kingslanguageacademy.pl. Damian potwierdził przejście na
+kingslanguageacademy.pl; zmiana domeny jeszcze nie została wykonana.
+Kanoniczny pełny zakres, etapy i wznowienie: [HOTFIX_2026-09-12.md](HOTFIX_2026-09-12.md).
+
+Kandydat obejmuje zachowanie formularzy po błędzie, status uploadu, zamykanie
+okien, retencję diagnostyki, liczenie odwiedzin per klient, panel rodzica z
+lokalizacjami/grupami z bazy, generowane czytelne loginy i hasła dzieci od 8 znaków,
+firmowe e-maile HTML z wersją tekstową oraz lokalizacje strony pobierane z kartotek.
+Grupę wybraną przez rodzica potwierdza szkoła przed przyznaniem jej zasobów.
+
+Dowody lokalne: 278 testów, lint/TypeScript/Prisma/migracje/manuals PASS;
+zaproszenie i jednorazowość linku, zachowanie formularza po błędzie, załącznik PNG
+z chronionym pobieraniem, zgłoszenie/akceptacja dziecka, utworzenie konta i wybór
+grupy, zatwierdzenie przez dyrektora, zmiana hasła i logowanie lucjazolc z 8 znakami.
+Wszystkie konta i pliki QA są syntetyczne. Brak rzeczywistego testu dostarczalności
+SMTP w tej rundzie. Nowe usuwanie kartotek, rozwój nauki i grafiku oraz domena są
+nadal w kolejce, nie są oznaczone jako gotowe.
+
+## Historia wcześniejszych rund (poniższe numery wydań są historyczne)
+
 # Produkcja i rozwój
 
 Stan: 5 września 2026. Adres operacyjny: https://demo.kingslanguageacademy.pl.

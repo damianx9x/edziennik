@@ -1,8 +1,8 @@
 [Unit]
-Description=Cotygodniowa retencja prywatnych plików KLA
+Description=Codzienna retencja diagnostyki i archiwalnych plików KLA
 
 [Timer]
-OnCalendar=Sun *-*-* 04:30:00
+OnCalendar=*-*-* 04:30:00
 RandomizedDelaySec=20min
 Persistent=true
 

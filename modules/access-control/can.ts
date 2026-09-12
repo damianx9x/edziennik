@@ -18,6 +18,7 @@ export type Action =
   | "manage:schedule"
   | "edit:lesson"
   | "view:student"
+  | "manage:child-account"
   | "edit:attendance"
   | "manage:contracts"
   | "view:contract"
@@ -127,6 +128,10 @@ export function can(
     if (actor.role === "TEACHER") {
       return resource.teacherIds?.includes(actor.id) === true;
     }
+  }
+
+  if (action === "manage:child-account") {
+    return actor.role === "PARENT" && resource.parentIds?.includes(actor.id) === true;
   }
 
   if (action === "view:conversation" || action === "send:group-message") {

@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   Activity,
   ArchiveRestore,
@@ -578,7 +580,7 @@ export function RaspberryBackupSettings({
             Wybranie nośnika nie formatuje go ani nie usuwa istniejących plików.
             Kopia jest szyfrowana przed zapisaniem.
           </p>
-          <form
+          <ActionForm state={usbState}
             action={usbAction}
             className="owner-config-form owner-config-form-single"
           >
@@ -619,7 +621,7 @@ export function RaspberryBackupSettings({
               )}{" "}
               Użyj do backupu
             </button>
-          </form>
+          </ActionForm>
           {!mountedUsb.length && primaryExternal.length ? (
             <p className="integration-limit compact">
               <HardDrive aria-hidden="true" />
@@ -663,7 +665,7 @@ export function RaspberryBackupSettings({
             Domyślnie kopia powstaje codziennie w nocy. Zmiana nie usuwa od razu
             żadnego archiwum.
           </p>
-          <form action={policyAction} className="owner-config-form">
+          <ActionForm state={policyState} action={policyAction} className="owner-config-form">
             <label>
               Jak często
               <select name="frequency" defaultValue={policy.frequency}>
@@ -691,9 +693,9 @@ export function RaspberryBackupSettings({
               )}{" "}
               Zapisz harmonogram
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={policyState} />
-          <form action={backupAction}>
+          <ActionForm state={backupState} action={backupAction}>
             <button
               className="button button-secondary"
               disabled={backupPending}
@@ -705,7 +707,7 @@ export function RaspberryBackupSettings({
               )}{" "}
               Zrób kopię i sprawdź odtworzenie
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={backupState} />
         </article>
 
@@ -735,7 +737,7 @@ export function RaspberryBackupSettings({
             Raspberry loguje się kluczem SSH, bez zapisywania hasła do SFTP.
             Najpierw zobaczysz odcisk serwera i klucz do dodania u dostawcy.
           </p>
-          <form action={sftpAction} className="owner-config-form">
+          <ActionForm state={sftpState} action={sftpAction} className="owner-config-form">
             <label>
               Adres serwera
               <input name="host" required placeholder="backup.example.pl" />
@@ -767,7 +769,7 @@ export function RaspberryBackupSettings({
               )}{" "}
               Sprawdź serwer
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={sftpState} />
           {prepared ? (
             <div className="sftp-confirmation">
@@ -787,7 +789,7 @@ export function RaspberryBackupSettings({
                 <KeyRound aria-hidden="true" />{" "}
                 {copiedKey ? "Skopiowano" : "Skopiuj klucz publiczny"}
               </button>
-              <form
+              <ActionForm state={sftpConfirmState}
                 action={sftpConfirmAction}
                 className="owner-config-form owner-config-form-single"
               >
@@ -820,7 +822,7 @@ export function RaspberryBackupSettings({
                   )}{" "}
                   Włącz i przetestuj SFTP
                 </button>
-              </form>
+              </ActionForm>
               <Feedback state={sftpConfirmState} />
             </div>
           ) : null}
@@ -856,7 +858,7 @@ export function RaspberryBackupSettings({
               wznowić po przerwaniu połączenia.
             </span>
           </p>
-          <form action={exportAction}>
+          <ActionForm state={exportState} action={exportAction}>
             <button className="button button-primary" disabled={exportPending}>
               {exportPending ? (
                 <LoaderCircle className="spin" />
@@ -865,7 +867,7 @@ export function RaspberryBackupSettings({
               )}{" "}
               Przygotuj kopię do pobrania
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={exportState} />
           {exportState.downloadUrl ? (
             <div className="owner-export-ready">
@@ -974,7 +976,7 @@ function RaspberryCommunicationSettings({
               <ExternalLink aria-hidden="true" />
             </a>
           </details>
-          <form action={smtpAction} className="owner-config-form">
+          <ActionForm state={smtpState} action={smtpAction} className="owner-config-form">
             <label>
               Adres nadawcy
               <input
@@ -1026,7 +1028,7 @@ function RaspberryCommunicationSettings({
               )}{" "}
               Sprawdź, zapisz i wyślij test
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={smtpState} />
         </article>
         <article
@@ -1046,7 +1048,7 @@ function RaspberryCommunicationSettings({
             Osobny telefon z aplikacją SMS Gateway for Android wysyła wiadomości
             z własnej karty SIM. Koszt zależy od taryfy operatora.
           </p>
-          <form
+          <ActionForm state={smsState}
             action={smsAction}
             className="owner-config-form owner-config-form-single"
           >
@@ -1071,7 +1073,7 @@ function RaspberryCommunicationSettings({
               )}{" "}
               Włącz SMS
             </button>
-          </form>
+          </ActionForm>
           <Feedback state={smsState} />
         </article>
       </div>
@@ -1178,7 +1180,7 @@ export function RaspberryControlPanel({
               wiadomości i pliki pozostają bez zmian.
             </p>
             <div className="public-mode-options" aria-label="Wybór publicznej strony">
-              <form
+              <ActionForm state={presentationState}
                 action={presentationAction}
                 className={`public-mode-option ${status.publicPresentationMode === "school" ? "active" : ""}`}
               >
@@ -1199,8 +1201,8 @@ export function RaspberryControlPanel({
                     Pokaż stronę szkoły
                   </button>
                 )}
-              </form>
-              <form
+              </ActionForm>
+              <ActionForm state={presentationState}
                 action={presentationAction}
                 className={`public-mode-option ${status.publicPresentationMode === "product" ? "active" : ""}`}
               >
@@ -1221,7 +1223,7 @@ export function RaspberryControlPanel({
                     Pokaż możliwości systemu
                   </button>
                 )}
-              </form>
+              </ActionForm>
             </div>
             <Feedback state={presentationState} />
             <a className="button button-secondary public-preview-link" href="/" target="_blank" rel="noreferrer">
@@ -1400,7 +1402,7 @@ export function RaspberryControlPanel({
               Restartuje tylko aplikację eDziennika. Baza, tunel i Raspberry
               pozostają uruchomione, a watchdog kontroluje powrót strony.
             </p>
-            <form action={restartAction}>
+            <ActionForm state={restartState} action={restartAction}>
               <button
                 className="button button-secondary"
                 disabled={restartPending}
@@ -1412,9 +1414,9 @@ export function RaspberryControlPanel({
                 )}{" "}
                 Uruchom ponownie aplikację
               </button>
-            </form>
+            </ActionForm>
             <Feedback state={restartState} />
-            <form action={benchmarkAction}>
+            <ActionForm state={benchmarkState} action={benchmarkAction}>
               <button
                 className="button button-secondary"
                 disabled={benchmarkPending}
@@ -1426,7 +1428,7 @@ export function RaspberryControlPanel({
                 )}{" "}
                 Zmierz bezpiecznie wydajność
               </button>
-            </form>
+            </ActionForm>
             <Feedback state={benchmarkState} />
             <ul className="backup-requirements">
               <li>

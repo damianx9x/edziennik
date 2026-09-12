@@ -25,6 +25,7 @@ const fieldLabels: Record<string, string> = {
   capacity: "Liczba miejsc",
   cefrLevel: "Poziom CEFR",
   locationId: "Lokalizacja",
+  groupId: "Grupa dziecka",
 };
 
 export default async function NotificationsPage() {
@@ -51,6 +52,10 @@ export default async function NotificationsPage() {
   const groupIds = requests
     .filter((item) => item.entityType === "GROUP")
     .map((item) => item.entityId);
+  for (const request of requests) {
+    const payload = request.payload as Record<string, unknown> | null;
+    if (typeof payload?.groupId === "string") groupIds.push(payload.groupId);
+  }
   const [users, rooms, groups] = await Promise.all([
     db.user.findMany({
       where: { id: { in: userIds }, schoolId: session.user.schoolId },
@@ -92,7 +97,7 @@ export default async function NotificationsPage() {
           <span className="section-kicker">Do sprawdzenia</span>
           <h1>Centrum powiadomień</h1>
           <p>
-            Tutaj zatwierdzasz korekty kartotek przesłane przez wykładowców.
+            Tutaj zatwierdzasz korekty kartotek i zgłoszenia dzieci od rodziców.
             Każda decyzja zapisuje się w historii.
           </p>
         </div>
@@ -143,7 +148,11 @@ export default async function NotificationsPage() {
                     <div key={field}>
                       <dt>{fieldLabels[field] ?? field}</dt>
                       <dd>
-                        {payload.kind === "RELATIONSHIPS" ? (
+                        {payload.kind === "CHILD_GROUP" ? (
+                          <span><small>Zapis do grupy</small>{String(payload.name)} · {locationNames.get(String(payload.locationId)) ?? "Lokalizacja niedostępna"} · {names.get(String(payload.groupId)) ?? "Grupa niedostępna"}. Konto dziecka jest już utworzone. Potwierdź właściwą grupę.</span>
+                        ) : payload.kind === "CHILD_ENROLLMENT" ? (
+                          <span><small>Nowe dziecko</small>{String(payload.name)}. Przed zatwierdzeniem sprawdź duplikaty w kartotekach. Jeśli dziecko już istnieje, odrzuć zgłoszenie i przypisz rodzica do istniejącej kartoteki.</span>
+                        ) : payload.kind === "RELATIONSHIPS" ? (
                           <>
                             <span><small>Dodane</small>{formatCount(payload.addIds, "pozycji")}</span>
                             <span><small>Usunięte</small>{formatCount(payload.removeIds, "pozycji")}</span>

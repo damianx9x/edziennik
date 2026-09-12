@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { FilePlus2, LoaderCircle } from "lucide-react";
 import { useActionState, useState } from "react";
 
@@ -34,7 +36,7 @@ export function ContractVersionForm({
   return (
     <details className="contract-version-details">
       <summary><FilePlus2 aria-hidden="true" /> Edytuj — utwórz nową wersję</summary>
-      <form action={action}>
+      <ActionForm state={state} action={action}>
         <input type="hidden" name="contractId" value={contractId} />
         <input type="hidden" name="sourceAssignmentId" value={assignmentId} />
         <div className="contract-version-grid">
@@ -132,7 +134,7 @@ export function ContractVersionForm({
           {pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <FilePlus2 aria-hidden="true" />}
           {pending ? "Tworzę wersję…" : "Wyślij nową wersję"}
         </button>
-      </form>
+      </ActionForm>
     </details>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   CheckCircle2,
   DoorOpen,
@@ -178,7 +180,7 @@ export function QuickRecordForms({
               <small>Nazwa i opcjonalna liczba miejsc</small>
             </span>
           </summary>
-          <form ref={roomFormRef} action={roomAction}>
+          <ActionForm state={roomState} ref={roomFormRef} action={roomAction}>
             <LocationSelect locations={locations} />
             <label>
               Nazwa sali
@@ -200,7 +202,7 @@ export function QuickRecordForms({
               label="Dodaj salę"
               state={roomState}
             />
-          </form>
+          </ActionForm>
           </details>
 
           <details
@@ -217,7 +219,7 @@ export function QuickRecordForms({
               <small>Nazwa i orientacyjny poziom</small>
             </span>
           </summary>
-          <form ref={groupFormRef} action={groupAction}>
+          <ActionForm state={groupState} ref={groupFormRef} action={groupAction}>
             <LocationSelect locations={locations} />
             <label>
               Nazwa grupy
@@ -238,7 +240,7 @@ export function QuickRecordForms({
               label="Dodaj grupę"
               state={groupState}
             />
-          </form>
+          </ActionForm>
           </details>
 
           <details
@@ -255,7 +257,7 @@ export function QuickRecordForms({
               <small>Oddział stacjonarny albo zajęcia online</small>
             </span>
           </summary>
-          <form ref={locationFormRef} action={locationAction}>
+          <ActionForm state={locationState} ref={locationFormRef} action={locationAction}>
             <label>
               Nazwa lokalizacji
               <input
@@ -282,7 +284,7 @@ export function QuickRecordForms({
               label="Dodaj lokalizację"
               state={locationState}
             />
-          </form>
+          </ActionForm>
           </details>
 
           <details
@@ -299,7 +301,7 @@ export function QuickRecordForms({
               <small>Wykładowca, rodzic albo uczeń</small>
             </span>
           </summary>
-          <form ref={personFormRef} action={personAction}>
+          <ActionForm state={personState} ref={personFormRef} action={personAction}>
             <label>
               Rola
               <select name="role" defaultValue="STUDENT">
@@ -349,7 +351,7 @@ export function QuickRecordForms({
               label="Dodaj osobę"
               state={personState}
             />
-          </form>
+          </ActionForm>
           </details>
         </div>
       </div>

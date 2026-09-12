@@ -269,7 +269,7 @@ export const siteContentSchema = z.object({
     kicker: shortText,
     title: shortText,
     text: paragraph,
-    items: z.array(shortText).min(1).max(20),
+    items: z.array(z.string().trim().min(1).max(600)).max(200),
   }),
   digital: z.object({
     kicker: shortText,

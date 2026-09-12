@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCheck, ChevronRight, Clock3, Download, GripHorizontal, MailWarning, Megaphone, MessageSquarePlus, Paperclip, Plus, RefreshCw, Search, Send, ShieldCheck, Users, X } from "lucide-react";
@@ -24,6 +26,8 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
 }) {
   const [messageState, messageAction, messagePending] = useActionState(sendMessageAction, initialMessagingState);
   const [announcementState, announcementAction, announcementPending] = useActionState(sendAnnouncementAction, initialMessagingState);
+  const [initialMessageId] = useState(newRequestId);
+  const [initialAnnouncementId] = useState(newRequestId);
   const [query, setQuery] = useState("");
   const [channelKind, setChannelKind] = useState<"ALL" | "GROUP" | "DIRECT">("ALL");
   const [location, setLocation] = useState("ALL");
@@ -56,9 +60,6 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
   }, [recipientDirectory, recipientGroup, recipientQuery, recipientRole, selectedRecipients]);
 
   function closeDialog(ref: React.RefObject<HTMLDialogElement | null>, reset: () => void) { ref.current?.close(); reset(); }
-  function rotateRequestId(ref: React.RefObject<HTMLInputElement | null>) {
-    window.setTimeout(() => { if (ref.current) ref.current.value = newRequestId(); }, 0);
-  }
   function addEmoji(emoji: string) {
     const field = draftRef.current;
     if (!field) return;
@@ -77,6 +78,10 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
     }, 0);
     return () => window.clearTimeout(timer);
   }, [messageState]);
+
+  useEffect(() => {
+    if (announcementState.status === "success" && announcementRequestId.current) announcementRequestId.current.value = newRequestId();
+  }, [announcementState]);
 
   useEffect(() => {
     const messageList = messageListRef.current;
@@ -147,14 +152,14 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
                 </article>;
               })}
             </div>
-            <form ref={messageFormRef} className="messaging-composer" action={messageAction} onSubmit={() => rotateRequestId(messageRequestId)}>
-              {selected.kind === "GROUP" ? <input type="hidden" name="groupId" value={selected.groupId ?? ""} /> : <input type="hidden" name="conversationId" value={selected.conversationId ?? ""} />}<input ref={messageRequestId} type="hidden" name="clientRequestId" defaultValue={newRequestId()} />
+            <ActionForm state={messageState} ref={messageFormRef} className="messaging-composer" action={messageAction}>
+              {selected.kind === "GROUP" ? <input type="hidden" name="groupId" value={selected.groupId ?? ""} /> : <input type="hidden" name="conversationId" value={selected.conversationId ?? ""} />}<input ref={messageRequestId} type="hidden" name="clientRequestId" defaultValue={initialMessageId} />
               <label htmlFor="message-body">{selected.kind === "DIRECT" ? "Wiadomość do wybranych osób" : "Wiadomość do całej grupy"}</label><div className="messaging-composer-main"><textarea ref={draftRef} id="message-body" name="body" maxLength={2000} rows={2} placeholder="Napisz wiadomość albo wyślij sam załącznik…" /><button disabled={messagePending} type="submit" aria-label="Wyślij wiadomość"><Send aria-hidden="true" /></button></div>
               {selectedAttachment ? <div className="messaging-selected-attachment"><Paperclip aria-hidden="true" /><span>{selectedAttachment}</span><button type="button" aria-label="Usuń wybrany załącznik" onClick={() => { if (attachmentRef.current) attachmentRef.current.value = ""; setSelectedAttachment(null); }}><X aria-hidden="true" /></button></div> : null}
               <div className="messaging-composer-toolbar"><div aria-label="Dodaj emoji">{["👋", "👍", "😊", "🎉"].map((emoji) => <button key={emoji} type="button" onClick={() => addEmoji(emoji)} aria-label={`Dodaj ${emoji}`}>{emoji}</button>)}</div><details ref={attachmentDetailsRef}><summary><Plus aria-hidden="true" /> Załącznik i opcje</summary><div className="messaging-composer-options"><label><Paperclip /><span>Dodaj PDF, JPG lub PNG</span><input ref={attachmentRef} type="file" name="attachment" accept="application/pdf,image/jpeg,image/png" onChange={(event) => selectAttachment(event.target.files?.[0])} /></label>{["DIRECTOR", "TEACHER"].includes(role) ? <label><input type="checkbox" name="requiresAcknowledgement" /><span>Poproś o świadome potwierdzenie przeczytania</span></label> : null}</div></details></div>
               {attachmentError ? <p className="messaging-status error" role="alert">{attachmentError}</p> : null}
               {messageState.message ? <p className={`messaging-status ${messageState.status}`} role="status">{messageState.message}</p> : null}
-            </form>
+            </ActionForm>
           </>
         )}
       </div>
@@ -162,8 +167,8 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
       {role === "DIRECTOR" ? <>
         <dialog className="messaging-dialog" ref={announcementDialog} onClose={resetAnnouncement}>
           <div className="messaging-dialog-handle" onPointerDown={dragAnnouncement}><GripHorizontal aria-hidden="true" /><span>Przeciągnij lub zmień rozmiar okna</span><button type="button" aria-label="Zamknij" onClick={() => closeDialog(announcementDialog, resetAnnouncement)}><X aria-hidden="true" /></button></div>
-          <form action={announcementAction} onSubmit={() => rotateRequestId(announcementRequestId)} className="messaging-dialog-body"><span className="section-kicker">Ogłoszenie masowe</span><h2>Jedna wiadomość, wybrane grupy</h2><p>Odbiorcy zobaczą ogłoszenie w swoich rozmowach. E-mail jest dodatkowym powiadomieniem.</p>
-            <input ref={announcementRequestId} type="hidden" name="clientRequestId" defaultValue={newRequestId()} />
+          <ActionForm state={announcementState} action={announcementAction} className="messaging-dialog-body"><span className="section-kicker">Ogłoszenie masowe</span><h2>Jedna wiadomość, wybrane grupy</h2><p>Odbiorcy zobaczą ogłoszenie w swoich rozmowach. E-mail jest dodatkowym powiadomieniem.</p>
+            <input ref={announcementRequestId} type="hidden" name="clientRequestId" defaultValue={initialAnnouncementId} />
             <fieldset><legend>Wybierz grupy</legend><div className="messaging-checkboxes">{groups.map((group) => <label key={group.key}><input type="checkbox" name="groupIds" value={group.groupId ?? ""} /><span><strong>{group.name}</strong><small>{group.locationName}</small></span></label>)}</div></fieldset>
             <label>Temat<input name="subject" maxLength={120} placeholder="Np. Zmiana godziny zajęć w piątek" required /></label>
             <label>Treść<textarea name="body" rows={5} maxLength={3000} placeholder="Napisz konkretnie, co się zmienia i czy odbiorca musi coś zrobić." required /></label>
@@ -171,7 +176,7 @@ export function MessagingWorkspace({ role, currentUserId, channels, selectedKey,
             <label className="messaging-ack-option"><input type="checkbox" name="requiresAcknowledgement" /><span><strong>Wymagaj potwierdzenia</strong><small>Odbiorca wybierze „Potwierdzam, że przeczytałem/am”. Samo otwarcie wiadomości nie wystarczy.</small></span></label>
             {announcementState.message ? <p className={`messaging-status ${announcementState.status}`} role="status">{announcementState.message}</p> : null}
             <div className="messaging-dialog-actions"><button type="button" onClick={() => closeDialog(announcementDialog, resetAnnouncement)}>Anuluj</button><button type="submit" disabled={announcementPending}><Megaphone aria-hidden="true" /> {announcementPending ? "Wysyłanie…" : "Wyślij ogłoszenie"}</button></div>
-          </form>
+          </ActionForm>
         </dialog>
         <dialog className="messaging-dialog" ref={directDialog} onClose={resetDirect}>
           <div className="messaging-dialog-handle" onPointerDown={dragDirect}><GripHorizontal aria-hidden="true" /><span>Nowa rozmowa</span><button type="button" aria-label="Zamknij" onClick={() => closeDialog(directDialog, resetDirect)}><X aria-hidden="true" /></button></div>

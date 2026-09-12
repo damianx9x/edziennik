@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -99,7 +101,7 @@ export function AcceptInvitationForm({
         {kind === "EMAIL" ? ` · ${maskedEmail}` : ""}
       </p>
 
-      <form className="auth-form" action={formAction}>
+      <ActionForm state={state} className="auth-form" action={formAction}>
         <input type="hidden" name="token" value={token} />
         <div className="invitation-form-section">
           <div className="invitation-form-section-heading">
@@ -231,7 +233,7 @@ export function AcceptInvitationForm({
         ) : null}
 
         <AcceptButton invalid={passwordsDiffer} />
-      </form>
+      </ActionForm>
 
       <div className="invitation-privacy-note">
         <ShieldCheck aria-hidden="true" />

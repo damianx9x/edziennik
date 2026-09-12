@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { Check, Search, UsersRound } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 
@@ -64,7 +66,7 @@ export function RelationshipEditor({
           <p>{description}</p>
         </div>
       </div>
-      <form action={action}>
+      <ActionForm state={state} action={action}>
         <input type="hidden" name="entityId" value={entityId} />
         <input type="hidden" name="relationKind" value={relationKind} />
         {options.length > 6 ? (
@@ -124,7 +126,7 @@ export function RelationshipEditor({
               ? "Zapisz przypisania"
               : "Wyślij zmianę do dyrektora"}
         </button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

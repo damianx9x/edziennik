@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* A closed native dialog must never leave an empty panel in the layout. */
+dialog:not([open]) { display: none !important; }
+.form-transfer-status { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px; margin-block: 12px; border-radius: 12px; background: var(--surface); color: var(--navy-900); font-size: .9rem; }
+.form-transfer-status progress { max-width: 100%; accent-color: var(--blue); }
+
+.family-list { display: grid; gap: 20px; }
+.family-card { border: 1px solid #d9d7d2; background: var(--paper, #fff); border-radius: 20px; padding: clamp(16px, 3vw, 28px); margin-block: 20px; min-width: 0; }
+.family-form { display: grid; gap: 16px; max-width: 640px; }
+.family-form label { display: grid; gap: 8px; font-weight: 600; }
+.family-form input { min-height: 48px; border: 1px solid #aaa; border-radius: 10px; padding: 12px; width: 100%; min-width: 0; background: var(--paper, #fff); color: inherit; }
+.family-access summary { min-height: 48px; cursor: pointer; padding-block: 12px; }
+.family-login { overflow-wrap: anywhere; }
+.family-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+.family-list .family-card { margin-block: 0; }
+.family-card h2 { font-size: 1.4rem; margin-bottom: 8px; }
+.family-form { max-width: 760px; }
+.family-form fieldset { display: grid; gap: 16px; border: 1px solid var(--line, #d9d7d2); border-radius: 16px; padding: 20px; min-width: 0; }
+.family-form legend { padding-inline: 8px; font-weight: 750; font-size: 1.1rem; }
+.family-form select { min-height: 52px; width: 100%; min-width: 0; padding: 12px; border-radius: 10px; background: var(--paper, #fff); color: inherit; border: 1px solid #aaa; font: inherit; }
+.family-form input { font-size: 16px; }
+.family-login-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-block: 16px; }
+.family-login-row > div { flex: 1; min-width: 0; }
+.family-login-row strong, .family-login-row span { display: block; }
+.family-login-row strong { font-size: 1.15rem; user-select: all; }
+.family-login-hint { flex-basis: 100%; line-height: 1.5; }
+.family-result { padding: 20px; border-radius: 14px; border: 1px solid currentColor; }
+.family-result-success { color: #245c43; background: #edf8f0; }
+.family-result-error { color: #9f2336; background: #fff0f2; }
+@media(max-width: 600px) { .family-form fieldset { padding: 14px; } .family-form .button { width: 100%; } .family-login-row > div { flex-basis: 100%; } }
+
 .restart-policy-fields { display: grid; gap: 1rem; border: 0; padding: 0; min-width: 0; }
 .restart-policy-fields label { display: grid; gap: .4rem; }
 .restart-policy-fields input:not([type="checkbox"]), .restart-policy-fields select { width: 100%; min-width: 0; min-height: 44px; }

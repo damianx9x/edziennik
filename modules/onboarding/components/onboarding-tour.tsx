@@ -53,12 +53,12 @@ export function OnboardingTour({ role, openInitially, enabledModules }: { role: 
   const current = roleSteps[step];
   const Icon = current.icon;
   const manualLabel = manualLabels[manualAudienceForRole(role)];
-  function close() { dialogRef.current?.close(); setStep(0); }
+  function close() { setDismissedLocally(true); dialogRef.current?.close(); setStep(0); }
   function finishInitialTour() { setDismissedLocally(true); close(); setOfferManual(true); }
   function closeManualOffer() { manualDialogRef.current?.close(); setOfferManual(false); }
   return <>
     <button className="app-panel-help" type="button" onClick={() => dialogRef.current?.showModal()} aria-label="Pokaż samouczek"><CircleHelp aria-hidden="true" /></button>
-    <dialog ref={dialogRef} className="onboarding-dialog" aria-labelledby="onboarding-title">
+    <dialog ref={dialogRef} className="onboarding-dialog" aria-labelledby="onboarding-title" onCancel={() => setDismissedLocally(true)} onClose={() => setDismissedLocally(true)}>
       <div className="onboarding-shell">
         <header>
           <span>Krótki samouczek · {step + 1} z {roleSteps.length}</span>

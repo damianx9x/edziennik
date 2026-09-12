@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -126,7 +128,7 @@ export function FirstRunForm({
         </div>
       ) : null}
 
-      <form className="auth-form" action={action} aria-busy={pending}>
+      <ActionForm state={state} className="auth-form" action={action} aria-busy={pending}>
         <label>
           <span>Jednorazowy kod instalacyjny</span>
           <input
@@ -244,7 +246,7 @@ export function FirstRunForm({
             <>{emailReady ? "Wyślij e-mail aktywacyjny" : "Utwórz konto bez poczty"} <ArrowRight aria-hidden="true" /></>
           )}
         </button>
-      </form>
+      </ActionForm>
       <p className="auth-help">
         <ShieldCheck aria-hidden="true" /> Dane pozostają w zaszyfrowanej instalacji szkoły.
       </p>
@@ -266,7 +268,7 @@ function FirstRunEmailSetup() {
         <MailCheck aria-hidden="true" />
         <span><strong>Najpierw ustaw wysyłkę e-mail</strong><small>Kreator sprawdzi SMTP i wyśle prawdziwą wiadomość testową.</small></span>
       </summary>
-      <form className="auth-form" action={action} aria-busy={pending}>
+      <ActionForm state={state} className="auth-form" action={action} aria-busy={pending}>
         <label><span>Kod instalacyjny</span><input name="setupCode" type="password" autoComplete="off" required disabled={pending} /></label>
         <label><span>E-mail do testu</span><input name="testEmail" type="email" autoComplete="email" required disabled={pending} /></label>
         <label><span>Adres nadawcy</span><input name="from" type="email" placeholder="sekretariat@domena.pl" required disabled={pending} /></label>
@@ -280,7 +282,7 @@ function FirstRunEmailSetup() {
         <button className="button button-secondary button-full" type="submit" disabled={pending}>
           {pending ? <><LoaderCircle className="spin" aria-hidden="true" /> Sprawdzam i wysyłam test…</> : <><MailCheck aria-hidden="true" /> Sprawdź SMTP i zapisz</>}
         </button>
-      </form>
+      </ActionForm>
     </details>
   );
 }
@@ -312,7 +314,7 @@ function PendingActivation({
           {initialMessage}
         </div>
       ) : null}
-      <form className="auth-form" action={action}>
+      <ActionForm state={state} className="auth-form" action={action}>
         <label>
           <span>Jednorazowy kod instalacyjny</span>
           <input name="setupCode" type="password" autoComplete="off" required />
@@ -332,7 +334,7 @@ function PendingActivation({
         >
           {pending ? <><LoaderCircle className="spin" aria-hidden="true" /> Wysyłam…</> : "Wyślij nową wiadomość"}
         </button>
-      </form>
+      </ActionForm>
       <Link className="auth-text-button" href="/panel/logowanie">
         Mam już potwierdzenie — przejdź do logowania
       </Link>

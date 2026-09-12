@@ -1,27 +1,17 @@
 {
-  "version": "1.1.2",
-  "date": "8 września 2026",
+  "version": "1.1.3",
+  "date": "12 września 2026",
   "schoolChanges": [
-    "Dodano niezależny lokalny panel serwera dla opiekuna Raspberry. Funkcje szkoły i dane pozostają bez zmian.",
-    "Doprecyzowano diagnostykę awarii dysku. Ta aktualizacja nie zmienia kartotek ani uprawnień szkoły.",
-    "Poprawiono uruchamianie serwera po restarcie i opóźnionym zgłoszeniu dysku. Dane szkoły pozostają bez zmian.",
-    "Prace serwisowe i odtwarzanie kopii są chronione przed równoczesną interwencją watchdogu.",
-    "Właściciel może zaplanować krótką przerwę aplikacji poza godzinami zajęć. Niezapisane formularze mogą wymagać ponowienia.",
-    "Codzienne funkcje szkoły i uprawnienia ról pozostają bez zmian."
+    "Dodasz dziecko w jednym formularzu: imię i nazwisko, lokalizacja, grupa oraz hasło. Dziecko nie potrzebuje e-maila.",
+    "Login dziecka powstaje z imienia i nazwiska, bez spacji i polskich znaków. Możesz go skopiować i zmienić dziecku hasło.",
+    "Jeśli formularz zgłosi błąd, zachowasz wpisane dane. Podczas wysyłania pliku zobaczysz status.",
+    "Poprawiono zamykanie samouczka. Wiadomości e-mail mają czytelny przycisk i zapasowy link do otwarcia konta lub wiadomości."
   ],
   "ownerChanges": [
-    "Poprawiono pierwszy start lokalnego panelu: osobny profil Chromium nie zatrzymuje uruchomienia pytaniem o systemowy pęk kluczy. Nie zapisuj w tym profilu haseł.",
-    "Panel KLA — serwer otwiera się automatycznie w sesji pulpitu Raspberry. Pozwala odświeżyć stan, uruchomić serwis, wykonać bezpieczny restart aplikacji, backup i test odtworzenia.",
-    "Każda operacja wymaga potwierdzenia. Panel działa tylko lokalnie i korzysta z istniejących uprawnień kla-control. Nie przyjmuje hasła sejfu ani dowolnych poleceń.",
-    "Numeracja wraca do uzgodnionej serii 1.1.x. Starsze tagi pozostają w historii; nie oznacza to cofnięcia danych ani kodu.",
-    "Stan serwera odróżnia otwarty sejf tylko do odczytu od zamkniętego sejfu. W pierwszym przypadku ponowne wpisanie klucza nie pomaga.",
-    "Watchdog nie restartuje bazy przy wykrytym ro lub emergency_ro. Najpierw trzeba sprawdzić zasilanie i dysk.",
-    "Polecenie odblokowania sprawdza rzeczywistą gotowość PostgreSQL i aplikacji, zanim zgłosi sukces.",
-    "Audyt wykrywa brak systemd-cryptsetup. Instalator i synchronizacja narzędzi uzupełniają ten pakiet.",
-    "Montowanie sejfu czeka do 180 sekund; watchdog ponawia je i pilnuje również panelu sterowania.",
-    "Nowy harmonogram restartu aplikacji: wyłączony, codziennie lub w niedzielę, według czasu polskiego.",
-    "Restart wymaga aktualnej kopii i wolnej blokady serwisowej; nie restartuje bazy ani Raspberry.",
-    "Naprawiono odczyt retencji backupu z ustawień oraz opis nieaktywnej kontroli pamięci Linux.",
-    "Instalator przygotowuje kontrolę pamięci; aktualną Raspberry można przygotować kontrolowanym poleceniem i zrestartować po audycie startu."
+    "Odwiedziny są liczone osobno dla anonimowych klientów; różne adresy nie tłumią swoich wejść.",
+    "Retencja diagnostyki: odwiedziny 30 dni, audyt 180 dni, nieaktywne liczniki prób 7 dni. Codzienne przetwarzanie ma ograniczone partie.",
+    "Diagnostyka przeglądarki zbiera wyłącznie ostrzeżenia i błędy: maksymalnie 60 wpisów przez 30 minut, z ograniczeniem powtórzeń.",
+    "Logi systemowe pozostają ograniczone do 256 MB i 14 dni. Dane biznesowe mają oddzielne zasady retencji.",
+    "Aktywne lokalizacje z kartotek są automatycznie widoczne na stronie szkoły."
   ]
 }

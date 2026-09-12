@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { CalendarClock } from "lucide-react";
 import { useActionState } from "react";
 
@@ -40,7 +42,7 @@ export function StudentAvailabilityEditor({
           <p>Każdy dzień może mieć inne godziny. Generator spróbuje dopasować do nich grupę.</p>
         </div>
       </div>
-      <form action={action}>
+      <ActionForm state={state} action={action}>
         <input type="hidden" name="studentId" value={studentId} />
         <div className="student-availability-days">
           {days.map(([weekday, label]) => {
@@ -63,7 +65,7 @@ export function StudentAvailabilityEditor({
         <button className="button button-secondary relationship-save" type="submit" disabled={pending}>
           {pending ? "Zapisywanie…" : actorRole === "DIRECTOR" ? "Zapisz preferencje" : "Wyślij preferencje do dyrektora"}
         </button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

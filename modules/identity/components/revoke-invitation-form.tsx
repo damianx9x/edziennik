@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { Ban, LoaderCircle, X } from "lucide-react";
 import { useActionState, useEffect, useRef } from "react";
 
@@ -78,7 +80,7 @@ export function RevokeInvitationForm({
             zaproszenie.
           </p>
 
-          <form action={action}>
+          <ActionForm state={state} action={action}>
             <input type="hidden" name="invitationId" value={invitationId} />
             <button
               className="button button-secondary"
@@ -109,7 +111,7 @@ export function RevokeInvitationForm({
                 {state.message}
               </p>
             ) : null}
-          </form>
+          </ActionForm>
         </div>
       </dialog>
     </>

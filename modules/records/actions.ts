@@ -1,6 +1,8 @@
 "use server";
 
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
+import { childRequestSchema, childGroupRequestSchema, childLoginDomain } from "@/modules/identity/family-schema";
 import { revalidatePath } from "next/cache";
 import { requireEnabledModule } from "@/modules/module-access/server";
 
@@ -400,10 +402,39 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
 
     let discardedGenerationCount = 0;
     if (decision === "approve") {
+      const childRequest = childRequestSchema.safeParse(request.payload);
+      const childGroupRequest = childGroupRequestSchema.safeParse(request.payload);
       const specialPayload = relationshipRequestPayloadSchema.safeParse(
         request.payload,
       );
-      if (specialPayload.success) {
+      if (childGroupRequest.success) {
+        const input = childGroupRequest.data;
+        const link = await transaction.parentChild.findFirst({ where: {
+          schoolId: session.user.schoolId, parentId: request.requestedById, childId: input.childId, archivedAt: null,
+          parent: { schoolId: session.user.schoolId, role: "PARENT", status: "ACTIVE", archivedAt: null },
+          child: { schoolId: session.user.schoolId, role: "STUDENT", status: "ACTIVE", archivedAt: null },
+        } });
+        const group = await transaction.courseGroup.findFirst({ where: { id: input.groupId, schoolId: session.user.schoolId,
+          locationId: input.locationId, isActive: true, archivedAt: null, location: { schoolId: session.user.schoolId, isActive: true, archivedAt: null } } });
+        if (!link || !group || request.entityId !== input.childId) throw new Error("Child or group no longer active.");
+        await transaction.enrollment.upsert({ where: { groupId_studentId: { groupId: group.id, studentId: input.childId } },
+          create: { groupId: group.id, studentId: input.childId }, update: { status: "ACTIVE", endedAt: null } });
+        discardedGenerationCount = await discardReadyScheduleGenerations(transaction, session.user.schoolId);
+        await transaction.auditLog.create({ data: { schoolId: session.user.schoolId, actorId: session.user.id, action: "identity.child.group_approved", entityType: "User", entityId: input.childId, metadata: { groupId: group.id } } });
+      } else if (childRequest.success) {
+        const parent = await transaction.user.findFirst({ where: { id: request.requestedById, schoolId: session.user.schoolId, role: "PARENT", status: "ACTIVE", archivedAt: null } });
+        if (!parent || request.entityType !== "USER" || request.entityId !== parent.id) throw new Error("Parent request no longer valid.");
+        // Approval creates a fresh record, never claims an existing student by name.
+        const child = await transaction.user.create({ data: {
+          schoolId: parent.schoolId, name: childRequest.data.name,
+          email: `uczen-${randomBytes(8).toString("hex")}@${childLoginDomain}`,
+          role: "STUDENT", status: "INVITED",
+          // Reserved non-deliverable login, identity vouched for by school + guardian.
+          emailVerified: true, studentProfile: { create: {} },
+        } });
+        await transaction.parentChild.create({ data: { schoolId: parent.schoolId, parentId: parent.id, childId: child.id } });
+        await transaction.auditLog.create({ data: { schoolId: parent.schoolId, actorId: session.user.id, action: "identity.child.approved", entityType: "User", entityId: child.id, metadata: { requestId: request.id } } });
+      } else if (specialPayload.success) {
         if (specialPayload.data.kind === "RELATIONSHIPS") {
           await applyRelationshipDelta(transaction, {
             schoolId: session.user.schoolId,
@@ -481,6 +512,7 @@ export async function reviewRecordChangeAction(formData: FormData): Promise<void
   });
   revalidatePath("/panel/szkola/kartoteki");
   revalidatePath("/panel/szkola/powiadomienia");
+  revalidatePath("/panel/rodzic/dzieci");
 }
 
 function activeLocationExists(

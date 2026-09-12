@@ -33,6 +33,11 @@ export function pageVisitHourlyLimit(authenticated: boolean) {
   return authenticated ? 180 : 300;
 }
 
+export function pageVisitClientScope(userId: string | null, clientHash: string | null) {
+  // Anonymous browsers must not share a global deduplication bucket.
+  return userId ? { userId } : { userId: null, clientHash };
+}
+
 function firstForwardedValue(value: string | null) {
   return value?.split(",", 1)[0]?.trim() || null;
 }

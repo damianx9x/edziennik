@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { CheckCircle2, CircleHelp, LoaderCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
@@ -39,7 +41,7 @@ export function ContractAcceptForm({
   }
 
   return (
-    <form action={action} className="contract-accept-form">
+    <ActionForm state={state} action={action} className="contract-accept-form">
       <input type="hidden" name="assignmentId" value={assignmentId} />
       <div className="contract-decision-heading">
         <ShieldCheck aria-hidden="true" />
@@ -90,6 +92,6 @@ export function ContractAcceptForm({
       {requiresPayment ? (
         <small className="contract-action-explanation">Kliknięcie składa oświadczenie woli, zawiera odpłatną umowę w formie dokumentowej i uruchamia obowiązek zapłaty na pokazanych warunkach.</small>
       ) : null}
-    </form>
+    </ActionForm>
   );
 }

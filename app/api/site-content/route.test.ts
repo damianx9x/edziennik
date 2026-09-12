@@ -51,8 +51,19 @@ describe("public site content", () => {
     expect(response.headers.get("x-kla-public-mode")).toBe("SCHOOL");
     expect(mocks.findUnique).toHaveBeenCalledWith({
       where: { slug: "synthetic-school" },
-      select: { siteContent: true },
+      select: { siteContent: true, locations: { take: 200, where: { isActive: true, archivedAt: null }, orderBy: { name: "asc" }, select: { name: true, address: true, isOnline: true } } },
     });
+  });
+
+  it("publishes only active catalog locations and removes stale manual entries", async () => {
+    process.env.KLA_PUBLIC_PRESENTATION_MODE = "school";
+    mocks.findUnique.mockResolvedValue({ siteContent: null, locations: [{ name: "Szkoła QA", address: "Adres QA", isOnline: false }] });
+    const { GET } = await import("./route");
+    const response = await GET(new Request("https://example.test/api/site-content"));
+    expect((await response.json()).locations.items).toEqual(["Szkoła QA — Adres QA"]);
+    mocks.findUnique.mockResolvedValue({ siteContent: null, locations: [] });
+    const empty = await GET(new Request("https://example.test/api/site-content"));
+    expect((await empty.json()).locations.items).toEqual([]);
   });
 
   it("loads the signed-in director's school in editor scope even in product mode", async () => {

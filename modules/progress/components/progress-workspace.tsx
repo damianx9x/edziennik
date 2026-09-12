@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   Activity,
   CalendarCheck2,
@@ -144,7 +146,7 @@ function ObservationForm({ studentId, studentName }: { studentId: string; studen
   return (
     <section className="progress-observation-form" aria-labelledby="observation-form-title">
       <header><div><span className="section-kicker">Nowa obserwacja</span><h2 id="observation-form-title">{studentName}</h2></div><span className="progress-scale-help">1 — potrzebuje wsparcia · 5 — działa samodzielnie</span></header>
-      <form action={action}>
+      <ActionForm state={state} action={action}>
         <input type="hidden" name="studentId" value={studentId} />
         <label><span>Data obserwacji</span><input type="date" name="observedAt" defaultValue={new Date().toISOString().slice(0, 10)} /></label>
         <div className="progress-score-grid">
@@ -154,7 +156,7 @@ function ObservationForm({ studentId, studentName }: { studentId: string; studen
         <label className="progress-note-field"><span>Krótka, rzeczowa notatka <small>(opcjonalnie)</small></span><textarea name="note" maxLength={2000} rows={4} placeholder="Opisz konkret: co już działa i jaki będzie następny mały krok." /></label>
         {state.status !== "idle" ? <p className={`form-status ${state.status}`} role={state.status === "error" ? "alert" : "status"}>{state.message}</p> : null}
         <button className="button button-primary" type="submit" disabled={pending}>{pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}{pending ? "Zapisuję…" : "Zapisz obserwację"}</button>
-      </form>
+      </ActionForm>
     </section>
   );
 }

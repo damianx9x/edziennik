@@ -6,6 +6,7 @@ import {
   isSameOriginPageVisit,
   isTrackedPagePath,
   pageVisitHourlyLimit,
+  pageVisitClientScope,
 } from "@/modules/observability/page-visits";
 import { resolvePageVisitSchoolId } from "@/modules/observability/page-visit-scope";
 import { getCoarseRequestContext } from "@/modules/observability/request-context";
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
     request.headers,
     process.env.KLA_ANALYTICS_SALT ?? process.env.BETTER_AUTH_SECRET ?? "",
   );
+  const clientScope = pageVisitClientScope(userId, requestContext.clientHash);
   await db.$transaction(async (transaction) => {
     const tenantKey = schoolId ?? "platform-product";
     const limiterKey = `page-visit:${tenantKey}:${userId ?? requestContext.clientHash ?? "anonymous"}`;
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
       transaction.pageVisit.findFirst({
         where: {
           schoolId,
-          userId,
+          ...clientScope,
           path,
           visitedAt: { gte: new Date(now - 30_000) },
         },
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
       transaction.pageVisit.count({
         where: {
           schoolId,
-          userId,
+          ...clientScope,
           visitedAt: { gte: new Date(now - 60 * 60_000) },
         },
       }),

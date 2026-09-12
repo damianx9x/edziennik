@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import { useActionState } from "react";
 import { Clock3, LoaderCircle } from "lucide-react";
 import { configureRestartPolicyAction, type ServerActionState } from "../server-actions";
@@ -16,7 +18,7 @@ export function RestartPolicyForm({ policy }: { policy?: RestartPolicy }) {
         <div><span className="section-kicker">Zaplanowana przerwa</span><h3 id="restart-policy-title">Automatyczny restart aplikacji</h3></div>
       </header>
       <p>Opcjonalne odświeżenie aplikacji o wybranej godzinie czasu polskiego. Baza danych, Raspberry i tunel pozostają uruchomione. Watchdog działa także przy wyłączonym harmonogramie.</p>
-      <form action={action} className="settings-form" key={JSON.stringify(policy)}>
+      <ActionForm state={state} action={action} className="settings-form" key={JSON.stringify(policy)}>
         <fieldset disabled={pending} className="restart-policy-fields">
           <legend className="sr-only">Harmonogram restartu</legend>
           <label>Częstotliwość
@@ -33,7 +35,7 @@ export function RestartPolicyForm({ policy }: { policy?: RestartPolicy }) {
           <label className="restart-policy-confirm"><input type="checkbox" name="confirmed" value="yes" required />Rozumiem, że restart może na krótko przerwać pracę. Wybieram porę poza zajęciami.</label>
           <button className="button button-primary" disabled={pending}>{pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Clock3 aria-hidden="true" />}{pending ? "Zapisuję…" : "Zapisz harmonogram restartu"}</button>
         </fieldset>
-      </form>
+      </ActionForm>
       {state.message ? <p className={`stage4-feedback ${state.status}`} role="status">{state.message}</p> : null}
       <p className="muted">Restart jest pomijany podczas backupu, importu lub aktualizacji, bez kopii z ostatnich 48 godzin oraz przez 15 minut od poprzedniej próby. Pominięty termin nie jest wykonywany po następnym włączeniu urządzenia. Niezapisany formularz może wymagać ponowienia.</p>
     </article>

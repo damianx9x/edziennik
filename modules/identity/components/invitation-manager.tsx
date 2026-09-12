@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   Check,
   Clipboard,
@@ -241,7 +243,7 @@ export function InvitationManager() {
       </div>
 
       {mode === "email" ? (
-        <form ref={emailFormRef} className="auth-form invite-form" action={emailAction}>
+        <ActionForm state={emailState} ref={emailFormRef} className="auth-form invite-form" action={emailAction}>
           <div className="invite-form-grid">
             <label>
               <span>Imię i nazwisko</span>
@@ -282,9 +284,9 @@ export function InvitationManager() {
           </label>
           <InvitationResult state={emailState} />
           <SubmitInvitationButton mode="email" />
-        </form>
+        </ActionForm>
       ) : (
-        <form className="auth-form invite-form" action={qrAction}>
+        <ActionForm state={qrState} className="auth-form invite-form" action={qrAction}>
           <div className="invite-qr-intro">
             <Link2 aria-hidden="true" />
             <p>
@@ -326,7 +328,7 @@ export function InvitationManager() {
           </div>
           <InvitationResult state={qrState} />
           <SubmitInvitationButton mode="qr" />
-        </form>
+        </ActionForm>
       )}
     </section>
   );

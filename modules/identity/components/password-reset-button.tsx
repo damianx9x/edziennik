@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   Check,
   Clipboard,
@@ -114,13 +116,13 @@ function PasswordResetDialog({ userId, onDismiss }: { userId: string; onDismiss:
               <span>Użytkownik sam wybiera nowe hasło.</span>
             </div>
           </div>
-          <form action={linkAction}>
+          <ActionForm state={linkState} action={linkAction}>
             <input type="hidden" name="userId" value={userId} />
             <button className="button button-primary button-full" type="submit" disabled={linkPending}>
               {linkPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Mail aria-hidden="true" />}
               Wyślij link do zmiany hasła
             </button>
-          </form>
+          </ActionForm>
           {linkState.message ? (
             <p className={`record-form-message is-${linkState.status}`} role="status">
               {linkState.message}
@@ -148,7 +150,7 @@ function PasswordResetDialog({ userId, onDismiss }: { userId: string; onDismiss:
               <small>Po zamknięciu okna hasła nie da się ponownie wyświetlić.</small>
             </div>
           ) : (
-            <form action={temporaryAction} className="temporary-password-actions">
+            <ActionForm state={temporaryState} action={temporaryAction} className="temporary-password-actions">
               <input type="hidden" name="userId" value={userId} />
               <button
                 className="button button-secondary"
@@ -169,7 +171,7 @@ function PasswordResetDialog({ userId, onDismiss }: { userId: string; onDismiss:
               >
                 <Mail aria-hidden="true" /> Wyślij e-mailem
               </button>
-            </form>
+            </ActionForm>
           )}
           {temporaryState.message ? (
             <p className={`record-form-message is-${temporaryState.status}`} role="status">

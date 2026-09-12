@@ -426,6 +426,8 @@ model RateLimit {
   key         String @unique
   count       Int
   lastRequest BigInt
+  @@index([lastRequest])
+
 }
 
 model Invitation {
@@ -1001,6 +1003,8 @@ model AuditLog {
   @@index([schoolId, createdAt])
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
+  @@index([createdAt])
+
 }
 
 model Conversation {
@@ -1214,6 +1218,8 @@ model PageVisit {
   @@index([schoolId, countryCode, regionCode, visitedAt])
   @@index([schoolId, clientHash, visitedAt])
   @@index([userId, visitedAt])
+  @@index([visitedAt])
+
 }
 
 model FeedbackReport {

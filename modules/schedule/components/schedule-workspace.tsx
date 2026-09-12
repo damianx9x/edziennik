@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   DndContext,
   KeyboardSensor,
@@ -364,7 +366,7 @@ export function ScheduleWorkspace({
               <CalendarPlus aria-hidden="true" />
               Dodaj zajęcia
             </summary>
-            <form action={createAction} className="schedule-create-form">
+            <ActionForm state={createState} action={createAction} className="schedule-create-form">
               <div className="schedule-form-heading">
                 <div>
                   <span className="section-kicker">Nowa lekcja</span>
@@ -561,7 +563,7 @@ export function ScheduleWorkspace({
               >
                 {createPending ? "Sprawdzam dostępność…" : "Dodaj do grafiku"}
               </button>
-            </form>
+            </ActionForm>
           </details>
         ) : null}
       </section>
@@ -946,7 +948,7 @@ function LessonCard({
         >
           <summary aria-label={`Opcje zajęć grupy ${slot.groupName}`}>•••</summary>
           <div>
-            {canManage ? <form action={moveAction}>
+            {canManage ? <ActionForm state={moveState} action={moveAction}>
               <input type="hidden" name="slotId" value={slot.id} />
               <label>
                 Nowy dzień
@@ -978,8 +980,8 @@ function LessonCard({
                 <Move aria-hidden="true" />{" "}
                 {movePending ? "Sprawdzam…" : "Zmień termin"}
               </button>
-            </form> : null}
-            <form action={cancelAction} className="schedule-cancel-form">
+            </ActionForm> : null}
+            <ActionForm state={cancelState} action={cancelAction} className="schedule-cancel-form">
               <input type="hidden" name="slotId" value={slot.id} />
               <label>
                 <span>Powód odwołania</span>
@@ -1005,7 +1007,7 @@ function LessonCard({
               >
                 {cancelPending ? "Wysyłam…" : slot.canRequestChange ? "Wyślij wniosek do dyrektora" : "Odwołaj i powiadom"}
               </button>
-            </form>
+            </ActionForm>
           </div>
         </details>
       ) : null}
@@ -1140,7 +1142,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
               </div>
             </section>
           ) : slot.canEditLesson ? (
-            <form action={action} className="lesson-edit-form">
+            <ActionForm state={state} action={action} className="lesson-edit-form">
               <input type="hidden" name="slotId" value={slot.id} />
               <input type="hidden" name="version" value={slot.version} />
               <label className="lesson-topic-field">
@@ -1177,7 +1179,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
                   {pending ? "Zapisuję…" : "Zapisz lekcję"}
                 </button>
               </footer>
-            </form>
+            </ActionForm>
           ) : (
             <>
               <section className="lesson-readonly-topic">
@@ -1186,7 +1188,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
               </section>
               <AttendanceOverview slot={slot} titleId={titleId} />
               {slot.canConfirmArrival ? (
-                <form action={checkInAction} className="lesson-self-check-in">
+                <ActionForm state={checkInState} action={checkInAction} className="lesson-self-check-in">
                   <input type="hidden" name="slotId" value={slot.id} />
                   <div>
                     <strong>Jesteś już na zajęciach?</strong>
@@ -1210,7 +1212,7 @@ function LessonDetailsDialog({ slot }: { slot: ScheduleSlotView }) {
                   {checkInState.message ? (
                     <p className={`assistant-form-message ${checkInState.status}`} role="status">{checkInState.message}</p>
                   ) : null}
-                </form>
+                </ActionForm>
               ) : null}
               <footer className="lesson-journal-footer lesson-view-footer">
                 <Link className="button button-secondary" href={`/panel/plan/${slot.id}/kalendarz`}>
@@ -1279,7 +1281,7 @@ function ScheduleRequestReview({ slot }: { slot: ScheduleSlotView }) {
         <h3 id={`request-${request.id}`}>Wniosek o odwołanie zajęć</h3>
         <p><strong>{request.requestedByName}</strong>: {request.reason}</p>
       </div>
-      <form action={action}>
+      <ActionForm state={state} action={action}>
         <input type="hidden" name="requestId" value={request.id} />
         <label>
           <span>Notatka do decyzji (opcjonalnie)</span>
@@ -1290,7 +1292,7 @@ function ScheduleRequestReview({ slot }: { slot: ScheduleSlotView }) {
           <button className="button button-secondary" type="submit" name="decision" value="REJECT" disabled={pending}>Odrzuć wniosek</button>
           <button className="button button-primary" type="submit" name="decision" value="APPROVE" disabled={pending}>{pending ? "Zapisuję…" : "Zatwierdź i powiadom"}</button>
         </div>
-      </form>
+      </ActionForm>
     </section>
   );
 }

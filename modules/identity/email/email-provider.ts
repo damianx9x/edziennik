@@ -2,6 +2,7 @@ import { z } from "zod";
 import nodemailer from "nodemailer";
 
 import { resolveEmailProvider } from "./provider-config";
+import { renderBrandedEmail } from "./branded-email";
 
 const authEmailSchema = z.object({
   to: z.email(),
@@ -36,6 +37,8 @@ export async function sendAuthEmail(
   message: AuthEmail,
 ): Promise<"sent" | "skipped"> {
   const parsed = authEmailSchema.parse(message);
+  // School-approved child aliases are logins, not mailboxes.
+  if (parsed.to.toLowerCase().endsWith("@children.kla.invalid")) return "skipped";
   const provider = resolveEmailProvider();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -51,6 +54,7 @@ export async function sendAuthEmail(
     return "skipped";
   }
 
+  const html = renderBrandedEmail(parsed, getCanonicalOrigin());
   if (provider === "smtp") {
     const port = Number(process.env.SMTP_PORT);
     if (!Number.isInteger(port) || port < 1 || port > 65_535) {
@@ -75,6 +79,7 @@ export async function sendAuthEmail(
         to: parsed.to,
         subject: parsed.subject,
         text: parsed.text,
+        html,
       });
     } finally {
       transport.close();
@@ -93,6 +98,7 @@ export async function sendAuthEmail(
       to: [parsed.to],
       subject: parsed.subject,
       text: parsed.text,
+      html,
     }),
     redirect: "error",
     signal: AbortSignal.timeout(10_000),

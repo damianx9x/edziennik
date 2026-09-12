@@ -57,7 +57,7 @@ export default async function ParentPanelPage() {
           <span className="section-kicker">Najbliższe zajęcia</span>
           <h2>{nextLesson ? nextLesson.group.name : childrenCount ? "Brak kolejnych zaplanowanych zajęć" : "Plan pojawi się po powiązaniu dziecka"}</h2>
           <p>
-            {nextLesson ? `${formatLessonDate(nextLesson.startAt)} · ${nextLesson.room.name}` : childrenCount ? "Sprawdź pełny plan — szkoła może dopiero przygotowywać kolejny tydzień." : "Dyrektor powiąże konto z dzieckiem. Nie musisz niczego uzupełniać samodzielnie."}
+            {nextLesson ? `${formatLessonDate(nextLesson.startAt)} · ${nextLesson.room.name}` : childrenCount ? "Sprawdź pełny plan — szkoła może dopiero przygotowywać kolejny tydzień." : "Otwórz Moje dzieci, dodaj dziecko i wybierz jego grupę."}
           </p>
         </div>
         <span className="stage-one-badge">
@@ -66,6 +66,7 @@ export default async function ParentPanelPage() {
       </section> : null}
 
       <div className="parent-module-grid">
+        <article><ShieldCheck aria-hidden="true" /><h2>Moje dzieci</h2><p>Dodaj dziecko, wybierz miejsce zajęć i grupę. Tutaj też zmienisz hasło dziecka.</p><Link href="/panel/rodzic/dzieci">Otwórz moje dzieci</Link></article>
         {moduleIsEnabled(moduleAccess, "messages", "PARENT") ? <article id="wiadomosci">
           <Bell aria-hidden="true" />
           <span className="module-status module-status-ready">Gotowe</span>
@@ -75,7 +76,7 @@ export default async function ParentPanelPage() {
         </article> : null}
         {moduleIsEnabled(moduleAccess, "learning", "PARENT") ? <article className="module-card-linked">
           <BookOpenCheck aria-hidden="true" />
-          <span className="module-status module-status-empty">0 zadań</span>
+          <span className="module-status module-status-ready">Materiały grup</span>
           <h2>Materiały i zadania</h2>
           <p>Wszystko dla dziecka w jednym, prostym widoku.</p>
           <Link href="/panel/nauka">Otwórz naukę</Link>

@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   CalendarClock,
   CheckCircle2,
@@ -395,7 +397,7 @@ function PaymentStatusEditor({ item }: { item: PaymentItem }) {
     item.storedStatus ?? (item.displayStatus === "OVERDUE" ? "OVERDUE" : "PENDING");
 
   return (
-    <form action={action} className="payment-status-editor">
+    <ActionForm state={state} action={action} className="payment-status-editor">
       <div className="person-dialog-section-heading">
         <h3><Pencil aria-hidden="true" /> Edytuj status</h3>
         <span>Zapis bezpośredni dyrektora</span>
@@ -421,6 +423,6 @@ function PaymentStatusEditor({ item }: { item: PaymentItem }) {
         {pending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Save aria-hidden="true" />}
         {pending ? "Zapisuję…" : "Zapisz status"}
       </button>
-    </form>
+    </ActionForm>
   );
 }

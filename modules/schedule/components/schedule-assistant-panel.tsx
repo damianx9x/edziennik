@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   AlertCircle,
   ArrowRight,
@@ -659,7 +661,7 @@ function RequirementForm({
         </div>
         <ArrowRight aria-hidden="true" />
       </summary>
-      <form action={action} className="assistant-config-form">
+      <ActionForm state={state} action={action} className="assistant-config-form">
         <input type="hidden" name="groupId" value={requirement.groupId} />
         <div className="assistant-form-grid">
           <label>
@@ -808,7 +810,7 @@ function RequirementForm({
         <button className="button button-secondary" type="submit" disabled={pending}>
           {pending ? "Zapisuję…" : "Zapisz wymagania grupy"}
         </button>
-      </form>
+      </ActionForm>
     </details>
   );
 }
@@ -900,7 +902,7 @@ export function AvailabilityForm({
         </div>
         <ArrowRight aria-hidden="true" />
       </summary>
-      <form action={action} className="assistant-config-form">
+      <ActionForm state={state} action={action} className="assistant-config-form">
         <input type="hidden" name="teacherId" value={entry.teacherId} />
         <fieldset className="availability-day-fieldset">
           <legend>Dostępność w tygodniu</legend>
@@ -946,7 +948,7 @@ export function AvailabilityForm({
         <button className="button button-secondary" type="submit" disabled={pending}>
           {pending ? "Zapisuję…" : "Zapisz dostępność"}
         </button>
-      </form>
+      </ActionForm>
     </details>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "@/modules/forms/action-form";
+
 import {
   AlertCircle,
   CheckCircle2,
@@ -80,7 +82,7 @@ export function ImportWizard() {
         </li>
       </ol>
 
-      <form action={previewAction} className="import-upload-form">
+      <ActionForm state={previewState} action={previewAction} className="import-upload-form">
         <label className="file-drop">
           <Upload aria-hidden="true" />
           <span>
@@ -113,7 +115,7 @@ export function ImportWizard() {
             )}
           </button>
         </div>
-      </form>
+      </ActionForm>
 
       {previewState.message ? (
         <p
@@ -209,7 +211,7 @@ export function ImportWizard() {
                 </p>
               ) : null}
 
-              <form action={commitAction} className="import-confirm">
+              <ActionForm state={commitState} action={commitAction} className="import-confirm">
                 <input
                   type="hidden"
                   name="batchId"
@@ -235,7 +237,7 @@ export function ImportWizard() {
                     `Zapisz ${preview.totalRows} wierszy`
                   )}
                 </button>
-              </form>
+              </ActionForm>
             </>
           )}
         </div>

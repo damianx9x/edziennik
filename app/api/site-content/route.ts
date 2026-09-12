@@ -42,13 +42,19 @@ export async function GET(request: Request) {
   }
   const publicSchoolSlug = process.env.KLA_PUBLIC_SCHOOL_SLUG;
   const school = publicSchoolSlug
-    ? await db.school.findUnique({ where: { slug: publicSchoolSlug }, select: { siteContent: true } })
+    ? await db.school.findUnique({ where: { slug: publicSchoolSlug }, select: {
+      siteContent: true,
+      locations: { take: 200, where: { isActive: true, archivedAt: null }, orderBy: { name: "asc" }, select: { name: true, address: true, isOnline: true } },
+    } })
     : null;
   const parsed = siteContentSchema.safeParse(school?.siteContent);
   const content = parsed.success
     ? enrichLegacyDefaultSiteContent(parsed.data)
     : defaultSiteContent;
-  return NextResponse.json(content, {
+  const publicContent = school ? { ...content, locations: { ...content.locations,
+    items: school.locations.map((location) => `${location.name}${location.isOnline ? " · online" : location.address ? ` — ${location.address}` : ""}`),
+  } } : content;
+  return NextResponse.json(publicContent, {
     headers: { "Cache-Control": "no-store", "X-KLA-Public-Mode": mode },
   });
 }

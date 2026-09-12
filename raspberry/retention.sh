@@ -5,8 +5,35 @@ umask 077
 VAULT=/srv/kla-vault
 CONFIG=/etc/kla/retention.env
 mountpoint -q "$VAULT" || exit 0
-[[ -f "$CONFIG" ]] || exit 0
-source "$CONFIG"
+if [[ -f "$CONFIG" ]]; then source "$CONFIG"; fi
+
+# Diagnostic data has a finite lifetime independently of business documents.
+# Bounded batches avoid a long transaction/large locks on the Raspberry.
+for days in "${KLA_RETENTION_VISITS_DAYS:-30}" "${KLA_RETENTION_AUDIT_DAYS:-180}"; do
+  [[ "$days" =~ ^[0-9]+$ && "$days" -ge 1 && "$days" -le 3650 ]] || {
+    echo "Retencja diagnostyki wymaga 1–3650 dni." >&2; exit 1;
+  }
+done
+for batch in {1..20}; do
+  runuser -u postgres -- psql -d kla_edziennik -v ON_ERROR_STOP=1 \
+    -v visit_days="${KLA_RETENTION_VISITS_DAYS:-30}" \
+    -v audit_days="${KLA_RETENTION_AUDIT_DAYS:-180}" <<'SQL'
+SET lock_timeout = '3s';
+SET statement_timeout = '30s';
+DELETE FROM "PageVisit" WHERE id IN (
+  SELECT id FROM "PageVisit" WHERE "visitedAt" < now() - (:'visit_days' || ' days')::interval
+  ORDER BY "visitedAt" LIMIT 5000
+);
+DELETE FROM "AuditLog" WHERE id IN (
+  SELECT id FROM "AuditLog" WHERE "createdAt" < now() - (:'audit_days' || ' days')::interval
+  ORDER BY "createdAt" LIMIT 5000
+);
+DELETE FROM "RateLimit" WHERE id IN (
+  SELECT id FROM "RateLimit" WHERE "lastRequest" < (extract(epoch FROM now() - interval '7 days') * 1000)::bigint
+  LIMIT 5000
+);
+SQL
+done
 
 delete_archived_files() {
   local purpose="$1" days="$2"
