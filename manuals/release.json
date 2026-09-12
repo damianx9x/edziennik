@@ -1,11 +1,13 @@
 {
-  "version": "1.1.4",
+  "version": "1.1.5",
   "date": "12 września 2026",
   "schoolChanges": [
-    "Szkoła może poprawić błędnie wybraną rolę konta. Po zmianie zaloguj się ponownie, aby otworzyć właściwy panel."
+    "Wiadomości e-mail mają firmowy wygląd, przycisk do otwarcia oraz zapasowy link.",
+    "Panel rodzica i zmiana ról pozostają dostępne jak w poprzednim wydaniu."
   ],
   "ownerChanges": [
-    "Kartoteka osoby zawiera zmianę roli: rodzic, uczeń lub wykładowca. Zmiana wylogowuje dotychczasowe sesje i porządkuje dostęp oraz oczekujące zgłoszenia.",
-    "Zmiana roli wykładowcy z przyszłymi lekcjami wymaga wcześniejszego przypisania tych lekcji innej osobie."
+    "Usunięto elementy programu testowego i bounty z interfejsu.",
+    "Statystyki pokazują pełne zliczenia z 30 dni, aktywność kodów klientów, popularne widoki oraz wejścia bez rozpoznanej lokalizacji.",
+    "Panel Raspberry pokazuje stan napięcia, ale nie blokuje już operacji na tej podstawie."
   ]
 }

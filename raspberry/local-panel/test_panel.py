@@ -67,13 +67,21 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(self.request('/api/action', {'action': 'backup', 'confirmed': True})[0], 202)
         self.assertEqual(self.request('/../../etc/passwd')[0], 404)
 
-    def test_actual_undervoltage_blocks_writes(self):
+    def test_power_reading_does_not_block_operations(self):
         state = panel.State()
         with patch.object(state, 'status', return_value='[UWAGA] zasilanie/temperatura: 0x50005'), patch.object(panel, 'control') as command:
+            command.return_value.returncode = 0
+            command.return_value.stdout = 'Kopia gotowa'
+            state.work('backup')
+            command.assert_called_once_with('backup')
+            self.assertEqual(state.job['state'], 'done')
+
+    def test_readonly_vault_still_blocks_writes(self):
+        state = panel.State()
+        with patch.object(state, 'status', return_value='dysk nie pozwala na zapis'), patch.object(panel, 'control') as command:
             state.work('backup')
             command.assert_not_called()
             self.assertEqual(state.job['state'], 'error')
-            self.assertIn('napięcie', state.job['message'])
 
 
 if __name__ == '__main__':

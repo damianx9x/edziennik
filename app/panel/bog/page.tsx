@@ -66,7 +66,8 @@ export default async function SystemOwnerPage() {
     raspberryStatus,
     rateLimitRows,
     trafficRows,
-    challengeAccountCount,
+    clientTraffic,
+    popularPaths,
   ] = await Promise.all([
     db.school.count(),
     db.user.count({ where: { status: "ACTIVE", archivedAt: null } }),
@@ -94,23 +95,14 @@ export default async function SystemOwnerPage() {
     }),
     getRaspberryStatus(),
     db.rateLimit.findMany({ orderBy: { lastRequest: "desc" }, take: 200 }),
-    db.pageVisit.findMany({
-      where: { visitedAt: { gte: thirtyDaysAgo } },
-      select: {
-        countryCode: true,
-        regionCode: true,
-        regionName: true,
-        deviceFamily: true,
-        browserFamily: true,
-      },
-      take: 10_000,
+    db.pageVisit.groupBy({
+      by: ["countryCode", "regionCode", "regionName", "deviceFamily", "browserFamily"],
+      where: { visitedAt: { gte: thirtyDaysAgo } }, _count: { _all: true },
     }),
-    db.user.count({
-      where: {
-        name: { equals: "zadanie_wykonane", mode: "insensitive" },
-        archivedAt: null,
-      },
-    }),
+    db.pageVisit.groupBy({ by: ["clientHash"], where: { visitedAt: { gte: thirtyDaysAgo }, clientHash: { not: null } },
+      _count: { _all: true }, _max: { visitedAt: true }, orderBy: { _count: { id: "desc" } }, take: 30 }),
+    db.pageVisit.groupBy({ by: ["path"], where: { visitedAt: { gte: thirtyDaysAgo } },
+      _count: { _all: true }, orderBy: { _count: { id: "desc" } }, take: 12 }),
   ]);
 
   const protectedActivity = summarizeProtectedActivity(
@@ -147,11 +139,11 @@ export default async function SystemOwnerPage() {
       const current = regionCounts.get(code);
       regionCounts.set(code, {
         name: visit.regionName ?? code,
-        visits: (current?.visits ?? 0) + 1,
+        visits: (current?.visits ?? 0) + visit._count._all,
       });
     }
     const device = `${visit.deviceFamily ?? "Nieznane"} · ${visit.browserFamily ?? "Inna"}`;
-    deviceCounts.set(device, (deviceCounts.get(device) ?? 0) + 1);
+    deviceCounts.set(device, (deviceCounts.get(device) ?? 0) + visit._count._all);
   }
   const regionActivity = [...regionCounts]
     .map(([code, value]) => ({ code, ...value }))
@@ -172,7 +164,7 @@ export default async function SystemOwnerPage() {
           <span className="section-kicker">Dostęp najwyższego poziomu</span>
           <h1>Centrum systemu</h1>
           <p>
-            Stan aplikacji, głębokie logi i narzędzia naprawcze bez ujawniania
+            Stan aplikacji, ruch i narzędzia administracyjne bez ujawniania
             sekretów ani prywatnych treści.
           </p>
         </div>
@@ -224,15 +216,21 @@ export default async function SystemOwnerPage() {
         regionActivity={regionActivity}
         deviceActivity={deviceActivity}
         polandVisits={
-          trafficRows.filter((visit) => visit.countryCode === "PL").length
+          trafficRows.filter((visit) => visit.countryCode === "PL").reduce((sum, visit) => sum + visit._count._all, 0)
         }
         foreignVisits={
           trafficRows.filter(
             (visit) => visit.countryCode && visit.countryCode !== "PL",
-          ).length
+          ).reduce((sum, visit) => sum + visit._count._all, 0)
         }
-        challengeAccountFound={challengeAccountCount > 0}
+        unknownVisits={trafficRows.filter((visit) => !visit.countryCode).reduce((sum, visit) => sum + visit._count._all, 0)}
       />
+
+      <section className="owner-security-card owner-traffic-detail"><h2>Ruch z ostatnich 30 dni</h2>
+        <p>Pełne zliczenia w bazie, bez ograniczenia do pierwszych 10 000 wejść. Kod klienta jest skrótem sygnału sieciowego, nie nazwiskiem ani liczbą osób; jedna sieć może być wspólna.</p>
+        <div className="owner-traffic-tables"><div><h3>Najaktywniejsze kody klientów</h3><div className="table-scroll"><table><thead><tr><th>Kod klienta</th><th>Wejścia</th><th>Ostatnio</th></tr></thead><tbody>{clientTraffic.map((row) => <tr key={row.clientHash}><td><code title="Pseudonim klienta">{row.clientHash?.slice(0, 12).toUpperCase()}</code></td><td>{row._count._all}</td><td>{row._max.visitedAt ? new Intl.DateTimeFormat("pl-PL", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Warsaw" }).format(row._max.visitedAt) : "—"}</td></tr>)}</tbody></table></div>{!clientTraffic.length && <p>Brak rozpoznanych kodów klientów w tym okresie.</p>}</div>
+        <div><h3>Najczęściej otwierane widoki</h3><ul>{popularPaths.map((row) => <li key={row.path}><span>{row.path}</span><strong>{row._count._all}</strong></li>)}</ul></div></div>
+      </section>
 
       {activeUserCount === 1 ? (
         <section className="owner-first-step">

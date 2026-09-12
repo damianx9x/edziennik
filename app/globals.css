@@ -17011,3 +17011,11 @@ html:has(dialog[open]) {
   .home-widget:hover { transform: none; }
   .password-reset-dialog[open] { animation: none; }
 }
+
+.owner-traffic-tables { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; margin-top: 20px; }
+.owner-traffic-tables .table-scroll { overflow-x: auto; }
+.owner-traffic-tables table { width: 100%; border-collapse: collapse; text-align: left; }
+.owner-traffic-tables th, .owner-traffic-tables td { padding: 12px 8px; border-bottom: 1px solid var(--line); }
+.owner-traffic-tables ul { list-style: none; padding: 0; }
+.owner-traffic-tables li { display: flex; justify-content: space-between; gap: 16px; padding-block: 12px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+@media(max-width: 800px) { .owner-traffic-tables { grid-template-columns: 1fr; } }

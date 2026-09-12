@@ -56,9 +56,7 @@ class State:
                 message = 'Symulacja zakończona. Nie wykonano polecenia na serwerze.'
             else:
                 status = self.status()
-                power = re.search(r'zasilanie/temperatura: (0x[0-9a-fA-F]+)', status)
-                if power and int(power.group(1), 16) & 1:
-                    raise RuntimeError('Raspberry zgłasza teraz zbyt niskie napięcie. Najpierw sprawdź zasilacz i zasilanie dysku. Operacja została wstrzymana, aby nie obciążać nośnika.')
+                # Power readings remain visible in status; they no longer block operations.
                 if 'dysk nie pozwala na zapis' in status or 'sejf zamknięty' in status:
                     raise RuntimeError('Najpierw przywróć dostęp do sejfu. Panel nie formatuje dysku ani nie wymusza zapisu. Użyj Terminala: sudo kla-unlock. Przy błędzie dysku sprawdź zasilanie.')
                 result = control(action)
