@@ -1,6 +1,6 @@
 # Stan bieżący — 12 września 2026
 
-Produkcja bazowa: **1.1.2**, commit a6758b4. Kandydat hotfix: **1.1.3**.
+Produkcja: **1.1.3**, commit 692cca0. Pilny kandydat: **1.1.4 — zmiana ról**. Pełny zakres i stan w `docs/HOTFIX_2026-09-12.md`.
 Adres obecny: demo.kingslanguageacademy.pl. Damian potwierdził przejście na
 kingslanguageacademy.pl; zmiana domeny jeszcze nie została wykonana.
 Kanoniczny pełny zakres, etapy i wznowienie: [HOTFIX_2026-09-12.md](HOTFIX_2026-09-12.md).

@@ -43,6 +43,7 @@ import {
 import { StudentAvailabilityEditor } from "@/modules/records/components/student-availability-editor";
 import { openPersonConversationAction } from "@/modules/messaging/actions";
 import { PasswordResetButton } from "@/modules/identity/components/password-reset-button";
+import { ChangeRoleForm } from "@/modules/records/components/change-role-form";
 
 export type PersonDirectoryRecord = {
   id: string;
@@ -501,6 +502,8 @@ export function PersonDirectory({
                 </div>
               </section>
               ) : null}
+
+              {actorRole === "DIRECTOR" && !selected.isArchived && <ChangeRoleForm key={selected.id} id={selected.id} role={selected.role} />}
 
               <section aria-labelledby="person-history-heading">
                 <div className="person-dialog-section-heading">

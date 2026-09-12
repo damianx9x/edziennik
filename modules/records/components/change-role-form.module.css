@@ -1,0 +1,9 @@
+.panel { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--paper); min-width: 0; }
+.panel summary { min-height: 44px; cursor: pointer; font-weight: 750; display: flex; align-items: center; }
+.form { display: grid; gap: 16px; padding-top: 12px; }
+.form label { display: grid; gap: 8px; font-size: 14px; line-height: 1.5; }
+.form p { position: static; margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.form select { width: 100%; min-height: 48px; padding: 10px; }
+.form .confirmation { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.confirmation input { flex: 0 0 24px; width: 24px; height: 24px; min-height: 24px; }
+.form button { min-height: 48px; width: 100%; font-size: 14px; }
