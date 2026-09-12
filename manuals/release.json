@@ -12,6 +12,7 @@
     "Retencja diagnostyki: odwiedziny 30 dni, audyt 180 dni, nieaktywne liczniki prób 7 dni. Codzienne przetwarzanie ma ograniczone partie.",
     "Diagnostyka przeglądarki zbiera wyłącznie ostrzeżenia i błędy: maksymalnie 60 wpisów przez 30 minut, z ograniczeniem powtórzeń.",
     "Logi systemowe pozostają ograniczone do 256 MB i 14 dni. Dane biznesowe mają oddzielne zasady retencji.",
-    "Aktywne lokalizacje z kartotek są automatycznie widoczne na stronie szkoły."
+    "Aktywne lokalizacje z kartotek są automatycznie widoczne na stronie szkoły.",
+    "Zaktualizowano zależności z poprawkami wykrytymi przez audyt wydania, w tym Next.js, sharp i Nodemailer."
   ]
 }

@@ -4,11 +4,12 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ "&"
 export function renderBrandedEmail(message: EmailContent, origin: string): string {
   const canonical = new URL(origin);
   const urls = message.text.match(/https?:\/\/[^\s<>"']+/g) ?? [];
-  const actionUrl = urls.find((value) => {
+  const primaryUrl = urls.find((value) => {
     try { return new URL(value).origin === canonical.origin; } catch { return false; }
-  }) ?? new URL(message.category === "message" ? "/panel/wiadomosci" : "/panel/logowanie", canonical).href;
-  const labels = { verification: "Potwierdź adres e-mail", "password-reset": urls.length ? "Ustaw nowe hasło" : "Przejdź do logowania", invitation: "Aktywuj moje konto", message: "Otwórz wiadomości" };
-  const body = message.text.split(/\n\s*\n/).map((paragraph) => `<p style="margin:0 0 18px;line-height:1.7;color:#303b57">${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`).join("");
+  });
+  const actionUrl = primaryUrl ?? new URL(message.category === "message" ? "/panel/wiadomosci" : "/panel/logowanie", canonical).href;
+  const labels = { verification: "Potwierdź adres e-mail", "password-reset": primaryUrl ? "Ustaw nowe hasło" : "Przejdź do logowania", invitation: "Aktywuj moje konto", message: "Otwórz wiadomości" };
+  const body = message.text.split(/\n\s*\n/).map((paragraph) => `<p style="margin:0 0 18px;line-height:1.7;color:#303b57;overflow-wrap:anywhere;word-break:break-word">${escapeHtml(paragraph.replaceAll(actionUrl, "(użyj przycisku poniżej)")).replaceAll("\n", "<br>")}</p>`).join("");
   return `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f4f2ed;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border-radius:16px;overflow:hidden">
 <tr><td style="background:#18264f;padding:28px 28px 24px;border-bottom:5px solid #ce2446"><div style="font-size:30px;font-weight:bold;color:#fff">King’s</div><div style="font-size:14px;color:#fff;letter-spacing:1px">LANGUAGE ACADEMY</div></td></tr>
